@@ -14,6 +14,7 @@ const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
 const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage'));
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
+const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
 
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
@@ -104,6 +105,13 @@ export const routeConfig = [
     path: '/buyer/profile',
     element: ProfilePage,
     protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/wallet',
+    element: MyWalletPage,
+    protected: false,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
   },

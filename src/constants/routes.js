@@ -32,6 +32,7 @@ export const BUYER_ROUTES = {
   ORDER_CONFIRMATION: '/buyer/order-confirmation/:orderId',
   ADDRESSES: '/buyer/addresses',
   PAYMENT_METHODS: '/buyer/payment-methods',
+  WALLET: '/buyer/wallet',
   NOTIFICATIONS: '/buyer/notifications',
 };
 
