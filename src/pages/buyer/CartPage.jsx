@@ -86,7 +86,7 @@ const CartPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems.length, selectedItems.size]);
 
-  const handleBack = () => navigate(-1);
+  const handleBack = () => navigate(PUBLIC_ROUTES.HOME);
 
   // Handle item selection
   const handleItemSelect = (itemId) => {
@@ -137,7 +137,7 @@ const CartPage = () => {
     <div className="cart-page bg-white" style={{ minHeight: '100vh' }}>
       <Container className="py-4">
         {/* Breadcrumbs */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb mb-0" style={{ backgroundColor: 'transparent', padding: 0 }}>
               <li className="breadcrumb-item">
@@ -174,7 +174,7 @@ const CartPage = () => {
               </li>
             </ol>
           </nav>
-        </div>
+        </div> */}
 
         {/* Header Section */}
         <div className="d-flex justify-content-between align-items-start mb-4">
@@ -200,7 +200,7 @@ const CartPage = () => {
               <h1 className="mb-1 fw-bold" style={{ fontSize: '2rem', color: '#212529' }}>
                 My Cart
               </h1>
-              <p className="text-muted mb-0 small" style={{ fontSize: '0.875rem' }}>
+              <p className="text-muted mb-0">
                 Items in your bag not reserved — check out now to make them yours.
               </p>
             </div>
@@ -216,7 +216,7 @@ const CartPage = () => {
         )}
 
         {/* Main Content */}
-        <Row>
+        <Row style={{ marginTop: '35px' }}>
           {/* Cart Items Section */}
           <Col lg={8} className="mb-4">
             <CartSection

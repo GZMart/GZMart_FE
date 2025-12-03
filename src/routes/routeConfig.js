@@ -89,7 +89,7 @@ export const routeConfig = [
   {
     path: '/buyer/checkout',
     element: CheckoutPage,
-    protected: true,
+    protected: false,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
   },

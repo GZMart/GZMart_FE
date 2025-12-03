@@ -103,7 +103,9 @@ const RecommendSection = ({ limit = 4 }) => {
     <section className="recommend-section py-5 bg-light">
       <div className="position-relative">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h4 className="fw-bold mb-0">YOU MIGHT ALSO LIKE</h4>
+          <h4 className="fw-bold mb-0" style={{ fontSize: '2rem' }}>
+            YOU MIGHT ALSO LIKE
+          </h4>
           {products.length > limit && (
             <div className="d-flex gap-2">
               <Button
