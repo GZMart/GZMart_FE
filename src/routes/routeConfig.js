@@ -82,7 +82,7 @@ export const routeConfig = [
   {
     path: '/buyer/cart',
     element: CartPage,
-    protected: true,
+    protected: false,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
   },
