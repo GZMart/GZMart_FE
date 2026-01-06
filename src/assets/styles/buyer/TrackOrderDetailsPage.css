@@ -1,0 +1,470 @@
+.track-order-details-page {
+  min-height: 100vh;
+  padding: 32px 0;
+  background-color: #fff;
+}
+
+.track-order-details-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header Section */
+.track-order-header {
+  margin-bottom: 32px;
+}
+
+.back-button-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.back-button {
+  color: #333 !important;
+  font-size: 18px;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 48px;
+  height: 48px;
+  min-width: 48px !important;
+  border: 2px solid #e8e8e8;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.back-button:hover {
+  color: #1890ff !important;
+  border-color: #1890ff;
+  background-color: #f5f5f5 !important;
+}
+
+.back-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  user-select: none;
+  pointer-events: none;
+}
+
+.page-title {
+  margin: 0 !important;
+  font-weight: 700 !important;
+  color: #000;
+  font-size: 32px;
+  letter-spacing: -0.5px;
+}
+
+/* Order Info Card */
+.order-info-card {
+  border: none;
+  background-color: #fffbe6;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.order-info-card .ant-card-body {
+  padding: 20px !important;
+}
+
+.order-info-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-id {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+
+.order-meta {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.order-info-right {
+  text-align: right;
+}
+
+.order-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1890ff;
+}
+
+/* Expected Arrival */
+.expected-arrival {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 12px 0;
+  gap: 5px;
+}
+
+.arrival-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.arrival-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Progress Card */
+.progress-card {
+  border: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  margin-bottom: 32px;
+  background-color: #fafafa;
+}
+
+.progress-card .ant-card-body {
+  padding: 40px 24px 20px 24px !important;
+}
+
+.progress-section {
+  display: flex;
+  justify-content: center;
+}
+
+.custom-progress-bar {
+  position: relative;
+  height: 90px;
+  width: 80%;
+  max-width: 100%;
+}
+
+.progress-track {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #d9d9d9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #1890ff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-points {
+  position: relative;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-point {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.progress-point:nth-child(1) {
+  left: 0;
+}
+
+.progress-point:nth-child(2) {
+  left: 33.33%;
+}
+
+.progress-point:nth-child(3) {
+  left: 66.66%;
+}
+
+.progress-point:nth-child(4) {
+  left: 100%;
+}
+
+.point-circle {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 3px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #bfbfbf;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.point-circle.active {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(24, 144, 255, 0.4);
+}
+
+.point-label {
+  position: absolute;
+  top: 50px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  left: 50%;
+  width: max-content;
+}
+
+/* Order Activity Section */
+.order-activity-section {
+  margin-top: 40px;
+}
+
+.activity-title {
+  margin-bottom: 24px !important;
+  font-weight: 600 !important;
+  color: #000 !important;
+}
+
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 16px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  align-items: flex-start;
+}
+
+.activity-item.activity-success {
+  background-color: #f6ffed;
+  border-left: 3px solid #52c41a;
+}
+
+.activity-item.activity-primary {
+  background-color: #f5f7fa;
+  border-left: 3px solid #1890ff;
+}
+
+.activity-item.activity-default {
+  background-color: #fafafa;
+  border-left: 3px solid #d9d9d9;
+}
+
+.activity-icon-wrapper {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 20px;
+  min-width: 44px;
+}
+
+.activity-item.activity-success .activity-icon-wrapper {
+  background-color: #f0fce3;
+  color: #52c41a;
+}
+
+.activity-item.activity-primary .activity-icon-wrapper {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.activity-item.activity-default .activity-icon-wrapper {
+  background-color: #f0f0f0;
+  color: #8c8c8c;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-message {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #262626;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.activity-timestamp {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .track-order-details-container {
+    padding: 0 15px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .order-info-right {
+    text-align: left;
+  }
+
+  .order-price {
+    font-size: 18px;
+  }
+
+  .progress-card .ant-card-body {
+    padding: 36px 20px !important;
+  }
+
+  .custom-progress-bar {
+    height: 80px;
+    width: 88%;
+  }
+
+  .point-circle {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+
+  .point-label {
+    top: 42px;
+    font-size: 11px;
+  }
+
+  .activity-item {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .activity-message {
+    font-size: 12px;
+  }
+
+  .activity-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .track-order-details-page {
+    padding: 20px 0;
+  }
+
+  .track-order-details-container {
+    padding: 0 12px;
+  }
+
+  .track-order-header {
+    margin-bottom: 24px;
+  }
+
+  .back-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px !important;
+    font-size: 16px;
+  }
+
+  .back-text {
+    font-size: 14px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .order-id {
+    font-size: 16px;
+  }
+
+  .order-meta {
+    font-size: 12px;
+  }
+
+  .order-price {
+    font-size: 16px;
+  }
+
+  .arrival-label,
+  .arrival-date {
+    font-size: 13px;
+  }
+
+  .progress-card .ant-card-body {
+    padding: 32px 16px !important;
+  }
+
+  .custom-progress-bar {
+    height: 85px;
+    width: 85%;
+  }
+
+  .progress-track {
+    top: 16px;
+  }
+
+  .point-circle {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .point-label {
+    top: 42px;
+    font-size: 10px;
+  }
+
+  .activity-item {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .activity-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+
+  .activity-message {
+    font-size: 12px;
+  }
+
+  .activity-timestamp {
+    font-size: 11px;
+  }
+}

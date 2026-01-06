@@ -10,6 +10,8 @@ export const PUBLIC_ROUTES = {
   SEARCH: '/search',
   LOGIN: '/login',
   REGISTER: '/register',
+  WISHLIST: '/wishlist',
+  TRACK_ORDER: '/track-order',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password/:token',
   ABOUT: '/about',
