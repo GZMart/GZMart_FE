@@ -1,18 +1,25 @@
 import { Button, Badge, Typography } from 'antd';
 import { ShareAltOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import '../../assets/styles/buyer/DealCard.css';
 
 const { Text } = Typography;
 
 const DealCard = ({ deal, type = 'pending' }) => {
+  const navigate = useNavigate();
+
   const formatTimeLeft = (time) => {
     if (!time) return '0h : 00m : 00s';
     const pad = (num) => String(num).padStart(2, '0');
     return `${pad(time.hours)}h : ${pad(time.minutes)}m : ${pad(time.seconds)}s`;
   };
 
+  const handleDealClick = () => {
+    navigate(`/deal/${deal.id}`);
+  };
+
   return (
-    <div className={`deal-card deal-card-${type}`}>
+    <div className={`deal-card deal-card-${type}`} onClick={handleDealClick} style={{ cursor: 'pointer' }}>
       <div className="deal-card-top-section">
         {/* Product Image - Left Side */}
         <div className="deal-card-image">

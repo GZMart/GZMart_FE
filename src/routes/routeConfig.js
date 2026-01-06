@@ -18,6 +18,7 @@ const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
 const TrackOrderDetailsPage = lazy(() => import('@pages/buyer/TrackOrderDetailsPage'));
 const MyDealsPage = lazy(() => import('@pages/buyer/MyDealsPage'));
+const DealDetailsPage = lazy(() => import('@pages/buyer/DealDetailsPage'));
 
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
@@ -95,6 +96,12 @@ export const routeConfig = [
   {
     path: '/my-deals',
     element: MyDealsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/deal/:dealId',
+    element: DealDetailsPage,
     public: true,
     layout: 'main',
   },
