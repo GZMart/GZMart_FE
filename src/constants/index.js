@@ -176,6 +176,44 @@ export const TOAST_DURATION = {
 export const DEFAULT_CURRENCY = 'VND';
 export const CURRENCY_SYMBOL = '₫';
 
+// Theme Colors
+export const THEME_COLORS = {
+  PRIMARY: '#FF6B35',
+  SECONDARY: '#FFD23F',
+  DARK: '#1F2937',
+  LIGHT: '#F9FAFB',
+  WHITE: '#FFFFFF',
+  BLACK: '#000000',
+  TEXT_PRIMARY: '#1F2937',
+  TEXT_SECONDARY: '#6B7280',
+  BORDER: '#E5E7EB',
+  GRAY_100: '#F3F4F6',
+  GRAY_200: '#E5E7EB',
+  GRAY_300: '#D1D5DB',
+  GRAY_700: '#374151',
+  GRAY_800: '#1F2937',
+  GRAY_900: '#111827',
+};
+
+// Categories
+export const CATEGORIES = {
+  MOBILE: 'mobile',
+  COSMETICS: 'cosmetics',
+  ELECTRONICS: 'electronics',
+  FURNITURE: 'furniture',
+  WATCHES: 'watches',
+  DECOR: 'decor',
+};
+
+export const CATEGORY_LABELS = {
+  [CATEGORIES.MOBILE]: 'Mobile',
+  [CATEGORIES.COSMETICS]: 'Cosmetics',
+  [CATEGORIES.ELECTRONICS]: 'Electronics',
+  [CATEGORIES.FURNITURE]: 'Furniture',
+  [CATEGORIES.WATCHES]: 'Watches',
+  [CATEGORIES.DECOR]: 'Decor',
+};
+
 export default {
   USER_ROLES,
   ROLE_LABELS,
@@ -186,4 +224,7 @@ export default {
   SOCKET_EVENTS,
   STORAGE_KEYS,
   DATE_FORMATS,
+  THEME_COLORS,
+  CATEGORIES,
+  CATEGORY_LABELS,
 };

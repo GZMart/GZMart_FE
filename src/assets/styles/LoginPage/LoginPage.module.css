@@ -1,0 +1,2173 @@
+/* Header Styles */
+.mainHeader {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.topBar {
+  background: #1a1a1a;
+  color: white;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.topBarContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topBarLinks {
+  display: flex;
+  gap: 2rem;
+}
+
+.topBarLinks span {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.topBarLinks span:hover {
+  opacity: 0.8;
+}
+
+.mainNav {
+  display: flex;
+  align-items: center;
+  padding: 1rem 0;
+  gap: 2rem;
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.menuToggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: #333;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #000;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.flashBadge {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.searchBar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #F5F5F5;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  max-width: 600px;
+}
+
+.searchBar svg {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.searchBar input {
+  border: none;
+  background: none;
+  outline: none;
+  width: 100%;
+  font-size: 1rem;
+  color: #333;
+}
+
+.searchBar input::placeholder {
+  color: #999;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navIconLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #333;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.navIconLink:hover {
+  color: #FF6B6B;
+}
+
+.categoryMenu {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid #F0F0F0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.categoryMenu::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryBtn {
+  background: #000;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.categoryBtn:first-child {
+  background: #000;
+}
+
+.categoryBtn:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.categoryBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Login Container */
+.loginContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 160px);
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  max-width: 1440px;
+  margin: 0 auto;
+  gap: 0;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Content Wrapper - Contains left and right sections */
+.contentWrapper {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  flex: 1;
+}
+
+/* Left Section - Illustration */
+.leftSection {
+  flex: 1;
+  background: white;
+  padding: 1rem 4rem 4rem 4rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: hidden;
+  min-height: 600px;
+}
+
+/* Navigation Bar - Spans full width with Back (left) and Share (right) buttons */
+.navigationBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 4rem 0.5rem 4rem;
+  background: white;
+  flex-shrink: 0;
+}
+
+/* Back Button */
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: none;
+}
+
+.backButton:hover {
+  opacity: 0.8;
+  transform: none;
+}
+
+.backButton:hover .backIconCircle {
+  background: #f8f9fa;
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.backIconCircle {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 50%;
+  border: 2px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.welcomeContent {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 600px;
+  text-align: left;
+  width: 100%;
+  gap: 2rem;
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.2;
+  text-shadow: none;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #666;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+/* Illustration Wrapper */
+.illustrationWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem auto; /* Center horizontally */
+  z-index: 5;
+}
+
+/* CSS Illustration - Shopping Cart Scene */
+.cssIllustration {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animated Background Circles */
+.bgCircle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  animation: float 6s ease-in-out infinite;
+}
+
+.bgCircle:nth-child(1) {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  top: 10%;
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.bgCircle:nth-child(2) {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  bottom: 15%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.bgCircle:nth-child(3) {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  top: 50%;
+  right: 5%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+/* Shopping Bag - Main Element */
+.shoppingBag {
+  position: relative;
+  width: 220px;
+  height: 240px;
+  z-index: 2;
+}
+
+/* Bag Handle */
+.bagHandle {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 35px;
+  border: 10px solid #667eea;
+  border-bottom: none;
+  border-radius: 60px 60px 0 0;
+  animation: handleSwing 3s ease-in-out infinite;
+}
+
+@keyframes handleSwing {
+  0%, 100% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  50% {
+    transform: translateX(-50%) rotate(2deg);
+  }
+}
+
+/* Bag Body */
+.bagBody {
+  position: absolute;
+  top: 25px;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0 0 25px 25px;
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  gap: 15px;
+}
+
+/* Items inside bag */
+.bagItem {
+  width: 80%;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  animation: itemPop 2s ease-in-out infinite;
+}
+
+.bagItem:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.bagItem:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.bagItem:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes itemPop {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.5;
+  }
+}
+
+/* Floating Cart Icon */
+.floatingCart {
+  position: absolute;
+  top: -30px;
+  right: -40px;
+  width: 140px;
+  height: 120px;
+  animation: cartFloat 4s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes cartFloat {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(10px, -10px) rotate(5deg);
+  }
+  75% {
+    transform: translate(-10px, 10px) rotate(-5deg);
+  }
+}
+
+/* Cart Body */
+.cartBody {
+  position: relative;
+  width: 90px;
+  height: 70px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(240, 147, 251, 0.4);
+}
+
+/* Cart Handle */
+.cartBody::before {
+  content: '';
+  position: absolute;
+  width: 60px;
+  height: 30px;
+  border: 8px solid #f5576c;
+  border-bottom: none;
+  border-radius: 30px 30px 0 0;
+  top: -25px;
+  left: 15px;
+}
+
+/* Cart Wheels */
+.cartWheel {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  border: 4px solid #f5576c;
+  bottom: -18px;
+  animation: wheelSpin 2s linear infinite;
+}
+
+.cartWheel:nth-child(2) {
+  left: 15px;
+}
+
+.cartWheel:nth-child(3) {
+  right: 15px;
+}
+
+@keyframes wheelSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Price Tag */
+.priceTag {
+  position: absolute;
+  bottom: -20px;
+  left: -50px;
+  width: 90px;
+  height: 90px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  box-shadow: 0 10px 30px rgba(79, 172, 254, 0.4);
+  animation: priceRotate 5s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes priceRotate {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(360deg) scale(1.1);
+  }
+}
+
+/* Floating Decorative Circles */
+.floatingCircle {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  animation: decorFloat 3s ease-in-out infinite;
+}
+
+.floatingCircle:nth-child(6) {
+  width: 60px;
+  height: 60px;
+  top: 20%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.floatingCircle:nth-child(7) {
+  width: 45px;
+  height: 45px;
+  bottom: 25%;
+  left: 5%;
+  animation-delay: 1s;
+}
+
+.floatingCircle:nth-child(8) {
+  width: 70px;
+  height: 70px;
+  bottom: 10%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+@keyframes decorFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-15px) scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+/* Signup Prompt */
+.signupPrompt {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 400;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0;
+}
+
+.signupText {
+  color: #666;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.signupLink {
+  color: #1a1a1a;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-underline-offset: 3px;
+}
+
+.signupLink:hover {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+  text-decoration: underline;
+  color: #667eea;
+}
+
+/* Right Section - Form */
+.rightSection {
+  flex: 0 0 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 1rem 3.5rem 4rem 3.5rem;
+  position: relative;
+  background: white;
+  box-shadow: none;
+  min-height: 600px;
+  border-left: 1px solid #e8e8e8;
+}
+
+/* Share Button Container */
+/* Share Button */
+.shareButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #e8e8e8;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shareButton:hover {
+  background: #f8f9fa;
+  border-color: #d0d0d0;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shareButton:hover svg {
+  color: #333;
+}
+
+.shareButton svg {
+  width: 18px;
+  height: 18px;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.formWrapper {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.input {
+  width: 100%;
+  padding: 1.125rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  background: white;
+  color: #1a1a1a;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.input::placeholder {
+  color: #999;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.input:hover {
+  border-color: #d0d0d0;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fafbff;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordWrapper .input {
+  padding-right: 4rem;
+}
+
+.togglePassword {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.togglePassword:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.loginButton {
+  width: 100%;
+  padding: 1.25rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1;
+  color: white;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 0.75rem;
+  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.3);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.loginButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.loginButton:hover::before {
+  left: 100%;
+}
+
+.loginButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 40px rgba(26, 26, 26, 0.4);
+  background: #2a2a2a;
+}
+
+.loginButton:active {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(26, 26, 26, 0.3);
+}
+
+.divider {
+  position: relative;
+  text-align: center;
+  margin: 1.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e8e8e8, transparent);
+}
+
+.divider span {
+  color: #999;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding: 0 0.5rem;
+}
+
+.socialButton {
+  width: 100%;
+  padding: 1.125rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: #1a1a1a;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.socialButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e8e8e8 100%);
+  transition: width 0.4s ease;
+  z-index: 0;
+}
+
+.socialButton:hover::before {
+  width: 100%;
+}
+
+.socialButton:hover {
+  border-color: #d0d0d0;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.socialButton span,
+.socialButton svg {
+  position: relative;
+  z-index: 1;
+}
+
+.socialButtonFacebook {
+  width: 100%;
+  padding: 1.125rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: white;
+  background: linear-gradient(135deg, #1877F2 0%, #0d5dbf 100%);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  box-shadow: 0 8px 20px rgba(24, 119, 242, 0.3);
+}
+
+.socialButtonFacebook:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(24, 119, 242, 0.4);
+}
+
+.socialButton:active,
+.socialButtonFacebook:active {
+  transform: translateY(-1px);
+}
+
+/* Footer Styles */
+.mainFooter {
+  background: #1a1a1a;
+  color: #aaa;
+  padding: 3rem 0 1.5rem;
+  margin-top: 2rem;
+}
+
+.footerContent {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1.3fr;
+  gap: 3rem;
+  margin-bottom: 2rem;
+}
+
+.footerSection h6 {
+  margin: 0;
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: white;
+}
+
+.footerText {
+  font-size: 0.9375rem;
+  line-height: 1.8;
+  color: #999;
+  margin: 0;
+}
+
+.footerHeading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.5px;
+}
+
+.footerLinks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footerLinks li {
+  margin-bottom: 0.75rem;
+}
+
+.footerLinks a {
+  color: #999;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: color 0.2s;
+}
+
+.footerLinks a:hover {
+  color: white;
+}
+
+.browseAll a {
+  color: #FFB84D !important;
+  font-weight: 600;
+}
+
+.appButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.appButton {
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.appButton:hover {
+  border-color: #666;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.appButton svg {
+  flex-shrink: 0;
+}
+
+.appButton div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.appSmallText {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.appButton strong {
+  font-size: 1rem;
+  color: white;
+}
+
+.popularTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.popularTags span {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.4rem 0.875rem;
+  font-size: 0.875rem;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.popularTags span:hover {
+  background: #333;
+  border-color: #666;
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .leftSection {
+    padding: 3rem;
+  }
+
+  .rightSection {
+    flex: 0 0 500px;
+    padding: 3rem;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .searchBar {
+    max-width: 400px;
+  }
+
+  .categoryMenu {
+    gap: 0.5rem;
+  }
+
+  .categoryBtn {
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .footerContent {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .leftSection {
+    padding: 2.5rem;
+    display: flex;
+    justify-content: center; /* Center content */
+  }
+
+  .welcomeContent {
+    width: 100%;
+    max-width: 550px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center all children */
+  }
+
+  .rightSection {
+    flex: 0 0 450px;
+    padding: 2.5rem;
+  }
+
+  .title {
+    font-size: 2.75rem;
+    text-align: center; /* Center text */
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    text-align: center; /* Center text */
+  }
+
+  .illustrationWrapper {
+    max-width: 400px;
+    height: auto; /* Auto height to prevent overlapping */
+    min-height: 320px; /* Minimum height for shopping bag */
+    margin: 0 auto 1.5rem auto; /* Center illustration */
+  }
+
+  .shoppingBag {
+    width: 180px;
+    height: 200px;
+  }
+
+  .bagHandle {
+    width: 100px;
+    height: 30px;
+    border-width: 8px;
+    top: -15px;
+  }
+
+  .bagBody {
+    height: 180px;
+    top: 20px;
+  }
+
+  .bagItem {
+    height: 25px;
+  }
+
+  .floatingCart {
+    width: 120px;
+    height: 100px;
+  }
+
+  .cartBody {
+    width: 80px;
+    height: 60px;
+  }
+
+  .cartBody::before {
+    width: 50px;
+    height: 25px;
+    border-width: 6px;
+    top: -20px;
+  }
+
+  .cartWheel {
+    width: 20px;
+    height: 20px;
+    bottom: -15px;
+  }
+
+  .priceTag {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+  }
+
+  .signupPrompt {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .loginContainer {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .leftSection {
+    min-height: 60vh;
+    padding: 3rem 2rem;
+    border-radius: 0;
+    display: flex;
+    justify-content: center; /* Center content */
+  }
+
+  .welcomeContent {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center all children */
+  }
+
+  .rightSection {
+    flex: 1;
+    padding: 3rem 2rem;
+    box-shadow: none;
+  }
+
+  .title {
+    font-size: 2rem;
+    text-align: center; /* Center text */
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    text-align: center; /* Center text */
+  }
+
+  .illustrationWrapper {
+    max-width: 400px;
+    height: auto; /* Auto height to prevent overlapping */
+    min-height: 320px; /* Minimum height for shopping bag */
+    margin: 0 auto 1.5rem auto; /* Center illustration */
+  }
+
+  .shoppingBag {
+    width: 160px;
+    height: 180px;
+  }
+
+  .bagHandle {
+    width: 90px;
+    height: 28px;
+    border-width: 7px;
+    top: -13px;
+  }
+
+  .bagBody {
+    height: 160px;
+    top: 18px;
+  }
+
+  .bagItem {
+    height: 22px;
+  }
+
+  .floatingCart {
+    width: 100px;
+    height: 85px;
+  }
+
+  .cartBody {
+    width: 70px;
+    height: 52px;
+  }
+
+  .cartBody::before {
+    width: 45px;
+    height: 22px;
+    border-width: 5px;
+    top: -18px;
+  }
+
+  .cartWheel {
+    width: 18px;
+    height: 18px;
+    bottom: -13px;
+  }
+
+  .priceTag {
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
+  }
+
+  .signupPrompt {
+    margin-top: 1rem;
+  }
+
+  .topBarLinks {
+    gap: 1rem;
+  }
+
+  .navRight {
+    gap: 1rem;
+  }
+
+  .navIconLink span {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .loginContainer {
+    background: white;
+  }
+
+  .navigationBar {
+    padding: 1rem 1.5rem 0.5rem 1.5rem;
+    max-width: 100%;
+  }
+
+  .contentWrapper {
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .leftSection {
+    min-height: 50vh;
+    padding: 0.5rem 1.5rem 2.5rem 1.5rem;
+    overflow-x: hidden;
+    display: flex;
+    justify-content: center; /* Center content */
+  }
+
+  .rightSection {
+    padding: 0.5rem 1.5rem 2.5rem 1.5rem;
+    border-left: none;
+  }
+
+  .backButton {
+    font-size: 0.875rem;
+    padding: 0;
+  }
+
+  .backIconCircle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .shareButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .welcomeContent {
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center all children */
+  }
+
+  .title {
+    font-size: 1.75rem;
+    text-align: center; /* Center text */
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    text-align: center; /* Center text */
+  }
+
+  .signupPrompt {
+    font-size: 0.9375rem;
+    margin-top: 1rem; /* Add spacing after illustration */
+  }
+
+  .illustrationWrapper {
+    max-width: 350px;
+    height: auto; /* Auto height to prevent overlapping */
+    min-height: 280px; /* Minimum height for shopping bag */
+    margin: 0 auto 1rem auto; /* Center illustration with consistent margin */
+  }
+
+  .shoppingBag {
+    width: 140px;
+    height: 160px;
+  }
+
+  .bagHandle {
+    width: 80px;
+    height: 25px;
+    border-width: 6px;
+    top: -12px;
+  }
+
+  .bagBody {
+    height: 140px;
+    top: 16px;
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .bagItem {
+    height: 20px;
+  }
+
+  .floatingCart {
+    width: 90px;
+    height: 75px;
+    top: -25px;
+    right: -35px;
+  }
+
+  .cartBody {
+    width: 60px;
+    height: 45px;
+  }
+
+  .cartBody::before {
+    width: 40px;
+    height: 20px;
+    border-width: 5px;
+    top: -16px;
+  }
+
+  .cartWheel {
+    width: 16px;
+    height: 16px;
+    bottom: -12px;
+  }
+
+  .priceTag {
+    width: 60px;
+    height: 60px;
+    font-size: 1.75rem;
+    bottom: -15px;
+    left: -40px;
+  }
+
+  .floatingCircle:nth-child(6) {
+    width: 50px;
+    height: 50px;
+  }
+
+  .floatingCircle:nth-child(7) {
+    width: 40px;
+    height: 40px;
+  }
+
+  .floatingCircle:nth-child(8) {
+    width: 55px;
+    height: 55px;
+  }
+
+  .formWrapper {
+    max-width: 100%;
+  }
+
+  .loginForm {
+    gap: 1.25rem;
+  }
+
+  .input {
+    padding: 1rem 1.25rem;
+  }
+
+  .loginButton,
+  .socialButton,
+  .socialButtonFacebook {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  .mainNav {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .searchBar {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .categoryMenu {
+    padding: 0.75rem 0;
+  }
+
+  .categoryBtn {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.875rem;
+  }
+
+  .topBar {
+    font-size: 0.75rem;
+  }
+
+  .topBarLinks {
+    gap: 0.75rem;
+  }
+
+  .footerContent {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navigationBar {
+    padding: 0.75rem 1rem 0.5rem 1rem;
+  }
+
+  .leftSection {
+    min-height: auto;
+    padding: 0.5rem 1rem 1.5rem 1rem;
+    display: flex;
+    justify-content: center; /* Center content */
+  }
+
+  .rightSection {
+    padding: 0.5rem 1rem 1.5rem 1rem;
+  }
+
+  .backButton {
+    padding: 0;
+    font-size: 0.875rem;
+  }
+
+  .backIconCircle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .shareButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .shareButton svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .welcomeContent {
+    gap: 1rem;
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center all children */
+  }
+
+  .title {
+    font-size: 1.5rem;
+    text-align: center; /* Center text */
+  }
+
+  .subtitle {
+    font-size: 0.9375rem;
+    text-align: center; /* Center text */
+  }
+
+  .signupPrompt {
+    font-size: 0.875rem;
+    margin-top: 1rem; /* Add spacing after illustration */
+  }
+
+  .illustrationWrapper {
+    max-width: 280px;
+    height: auto; /* Auto height to prevent overlapping */
+    min-height: 240px; /* Minimum height for shopping bag */
+    margin: 0 auto 0.5rem auto; /* Center illustration with reduced bottom margin */
+  }
+
+  .shoppingBag {
+    width: 120px;
+    height: 140px;
+  }
+
+  .bagHandle {
+    width: 70px;
+    height: 22px;
+    border-width: 5px;
+    top: -10px;
+  }
+
+  .bagBody {
+    height: 120px;
+    top: 15px;
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .bagItem {
+    height: 18px;
+  }
+
+  .floatingCart {
+    width: 80px;
+    height: 65px;
+    top: -20px;
+    right: -30px;
+  }
+
+  .cartBody {
+    width: 55px;
+    height: 40px;
+  }
+
+  .cartBody::before {
+    width: 35px;
+    height: 18px;
+    border-width: 4px;
+    top: -15px;
+    left: 8px;
+  }
+
+  .cartWheel {
+    width: 14px;
+    height: 14px;
+    bottom: -10px;
+  }
+
+  .cartWheel:nth-child(2) {
+    left: 10px;
+  }
+
+  .cartWheel:nth-child(3) {
+    right: 10px;
+  }
+
+  .priceTag {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    bottom: -12px;
+    left: -35px;
+  }
+
+  .floatingCircle:nth-child(6) {
+    width: 40px;
+    height: 40px;
+  }
+
+  .floatingCircle:nth-child(7) {
+    width: 35px;
+    height: 35px;
+  }
+
+  .floatingCircle:nth-child(8) {
+    width: 45px;
+    height: 45px;
+  }
+
+  .loginForm {
+    gap: 1rem;
+  }
+
+  .label {
+    font-size: 0.75rem;
+  }
+
+  .input {
+    padding: 0.875rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .loginButton,
+  .socialButton,
+  .socialButtonFacebook {
+    font-size: 0.9375rem;
+    padding: 0.875rem;
+  }
+
+  .divider {
+    margin: 0.75rem 0;
+  }
+
+  .divider span {
+    font-size: 0.75rem;
+  }
+
+  .logo {
+    font-size: 1.125rem;
+  }
+
+  .flashBadge {
+    font-size: 0.625rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .topBarContent {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .topBarLinks {
+    font-size: 0.75rem;
+  }
+}
+
+/* ==================== OTP Verification Styles ==================== */
+
+.otpHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.otpTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.phoneNumberDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.phoneText {
+  font-size: 0.9375rem;
+  color: #666;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.editButton {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.editButton:hover {
+  background: #f0f3ff;
+  color: #5568d3;
+}
+
+.otpInputGroup {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.otpInput {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid #e8e8e8;
+  border-radius: 12px;
+  background: white;
+  color: #1a1a1a;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  caret-color: #667eea;
+}
+
+.otpInput:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #f8f9ff;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: scale(1.05);
+}
+
+.otpInput:not(:placeholder-shown) {
+  border-color: #4CAF50;
+  background: #f1f9f1;
+}
+
+.resendSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.resendText {
+  font-size: 0.9375rem;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.resendButton {
+  background: none;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.resendButton.active {
+  color: #667eea;
+}
+
+.resendButton.active:hover {
+  background: #f0f3ff;
+  color: #5568d3;
+}
+
+.resendButton.disabled {
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.timerBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-left: 0.5rem;
+}
+
+.loginButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.2) !important;
+}
+
+.loginButton:disabled:hover {
+  transform: none !important;
+  background: #1a1a1a !important;
+}
+
+/* Responsive for OTP Form Inputs */
+@media (max-width: 768px) {
+  .otpTitle {
+    font-size: 1.5rem;
+  }
+
+  .phoneNumberDisplay {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .otpInputGroup {
+    gap: 0.5rem;
+  }
+
+  .otpInput {
+    font-size: 1.25rem;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .otpTitle {
+    font-size: 1.25rem;
+  }
+
+  .phoneText {
+    font-size: 0.875rem;
+  }
+
+  .otpInputGroup {
+    gap: 0.375rem;
+  }
+
+  .otpInput {
+    font-size: 1.125rem;
+    border-radius: 8px;
+  }
+
+  .resendSection {
+    font-size: 0.875rem;
+  }
+
+  .timerBadge {
+    font-size: 0.8125rem;
+    padding: 0.2rem 0.6rem;
+  }
+}
+
+/* ========================================
+   OTP Verification Illustration Styles
+   ======================================== */
+
+/* Background circles for OTP */
+.otpBgCircle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  animation: pulse 6s ease-in-out infinite;
+}
+
+.otpBgCircle:nth-child(1) {
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  top: 5%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.otpBgCircle:nth-child(2) {
+  width: 140px;
+  height: 140px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  bottom: 10%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.otpBgCircle:nth-child(3) {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  top: 45%;
+  right: 8%;
+  animation-delay: 4s;
+}
+
+/* OTP Container - Compact Design */
+.otpPhoneContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Message Icon */
+.otpMessageIcon {
+  font-size: 3rem;
+  animation: bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 5px 15px rgba(102, 126, 234, 0.3));
+}
+
+/* OTP Digits Display - Main Focus */
+.otpScreenDisplay {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+.otpDigit {
+  width: 48px;
+  height: 60px;
+  background: white;
+  border: 3px solid #667eea;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  font-weight: 700;
+  font-size: 1.5rem;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+  animation: digitPulse 1.5s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+.otpDigit:nth-child(1) { animation-delay: 0s; }
+.otpDigit:nth-child(2) { animation-delay: 0.1s; }
+.otpDigit:nth-child(3) { animation-delay: 0.2s; }
+.otpDigit:nth-child(4) { animation-delay: 0.3s; }
+.otpDigit:nth-child(5) { animation-delay: 0.4s; }
+.otpDigit:nth-child(6) { animation-delay: 0.5s; }
+
+/* Floating decorative numbers */
+.otpFloatingNumber {
+  position: absolute;
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0.15;
+  animation: floatNumber 4s ease-in-out infinite;
+  z-index: 1;
+}
+
+.otpFloatingNumber:nth-child(3) {
+  top: 5%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.otpFloatingNumber:nth-child(4) {
+  bottom: 15%;
+  left: 5%;
+  animation-delay: 1s;
+  font-size: 2rem;
+}
+
+.otpFloatingNumber:nth-child(5) {
+  top: 40%;
+  left: -5%;
+  animation-delay: 2s;
+  font-size: 2.8rem;
+}
+
+.otpFloatingNumber:nth-child(6) {
+  bottom: 30%;
+  right: -3%;
+  animation-delay: 3s;
+  font-size: 2.2rem;
+}
+
+/* Lock icon */
+.otpLockIcon {
+  position: absolute;
+  bottom: 5%;
+  right: 8%;
+  font-size: 2rem;
+  opacity: 0.6;
+  animation: float 4s ease-in-out infinite;
+  animation-delay: 0.5s;
+  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
+  z-index: 1;
+}
+
+/* Remove unused phone styles */
+.otpPhoneBody,
+.otpPhoneScreen {
+  display: none;
+}
+
+/* Animations for OTP */
+@keyframes digitPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.35);
+    border-color: #764ba2;
+  }
+}
+
+@keyframes floatNumber {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+    opacity: 0.4;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Responsive for OTP illustration */
+@media (max-width: 768px) {
+  .otpBgCircle:nth-child(1) {
+    width: 140px;
+    height: 140px;
+  }
+
+  .otpBgCircle:nth-child(2) {
+    width: 110px;
+    height: 110px;
+  }
+
+  .otpBgCircle:nth-child(3) {
+    width: 80px;
+    height: 80px;
+  }
+
+  .otpMessageIcon {
+    font-size: 2.5rem;
+  }
+
+  .otpScreenDisplay {
+    gap: 10px;
+  }
+
+  .otpDigit {
+    width: 42px;
+    height: 54px;
+    font-size: 1.3rem;
+    border-radius: 10px;
+  }
+
+  .otpFloatingNumber {
+    font-size: 2rem;
+  }
+
+  .otpLockIcon {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .otpBgCircle:nth-child(1) {
+    width: 100px;
+    height: 100px;
+  }
+
+  .otpBgCircle:nth-child(2) {
+    width: 75px;
+    height: 75px;
+  }
+
+  .otpBgCircle:nth-child(3) {
+    width: 55px;
+    height: 55px;
+  }
+
+  .otpMessageIcon {
+    font-size: 2rem;
+  }
+
+  .otpScreenDisplay {
+    gap: 6px;
+  }
+
+  .otpDigit {
+    width: 36px;
+    height: 48px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    border-width: 2px;
+  }
+
+  .otpFloatingNumber {
+    font-size: 1.5rem;
+  }
+
+  .otpLockIcon {
+    font-size: 1.5rem;
+  }
+}
+
