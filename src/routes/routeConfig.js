@@ -9,6 +9,7 @@ const CartPage = lazy(() => import('@pages/buyer/CartPage'));
 const CheckoutPage = lazy(() => import('@pages/buyer/CheckoutPage'));
 const LoginPage = lazy(() => import('@pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
+const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
 
 // Buyer Pages
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
@@ -70,6 +71,13 @@ export const routeConfig = [
     restricted: true,
     layout: 'none',
   },
+  {
+    path: '/otp-verification',
+    element: OTPVerificationPage,
+    public: true,
+    restricted: true,
+    layout: 'none',
+  },
 
   // Buyer Routes
   {
@@ -103,9 +111,10 @@ export const routeConfig = [
   {
     path: '/buyer/profile',
     element: ProfilePage,
-    protected: true,
-    allowedRoles: [USER_ROLES.BUYER],
-    layout: 'main',
+    public: true,
+    // protected: true,
+    // allowedRoles: [USER_ROLES.BUYER],
+    layout: 'none',
   },
 
   // Seller Routes (ERP)
