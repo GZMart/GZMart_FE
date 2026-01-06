@@ -6,6 +6,10 @@
 export const PUBLIC_ROUTES = {
   HOME: '/',
   SHOP: '/shop',
+  CATEGORIES: '/categories',
+  CATEGORY_PRODUCTS: '/categories/:categoryId/products',
+  PRODUCTS: '/products',
+  DEALS: '/deals',
   PRODUCT_DETAILS: '/product/:id',
   SEARCH: '/search',
   LOGIN: '/login',

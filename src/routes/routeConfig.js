@@ -3,7 +3,9 @@ import { USER_ROLES } from '@constants';
 
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@pages/buyer/HomePage'));
-const ShopPage = lazy(() => import('@pages/buyer/ShopPage'));
+const CategoriesPage = lazy(() => import('@pages/buyer/CategoriesPage'));
+const ProductsPage = lazy(() => import('@pages/buyer/ProductsPage'));
+const FlashDealsPage = lazy(() => import('@pages/buyer/FlashDealsPage'));
 const ProductDetailsPage = lazy(() => import('@pages/buyer/ProductDetailsPage'));
 const CartPage = lazy(() => import('@pages/buyer/CartPage'));
 const CheckoutPage = lazy(() => import('@pages/buyer/CheckoutPage'));
@@ -55,8 +57,20 @@ export const routeConfig = [
     layout: 'main',
   },
   {
-    path: '/shop',
-    element: ShopPage,
+    path: '/categories',
+    element: CategoriesPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/products',
+    element: ProductsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/deals',
+    element: FlashDealsPage,
     public: true,
     layout: 'main',
   },

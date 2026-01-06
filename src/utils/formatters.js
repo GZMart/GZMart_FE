@@ -50,12 +50,22 @@ export const getRelativeTime = (date) => {
 /**
  * Format currency value
  * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: 'USD')
+ * @param {string} currency - Currency code (default: 'VND')
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (amount, currency = 'USD') => {
+export const formatCurrency = (amount, currency = 'VND') => {
   if (amount === null || amount === undefined || isNaN(amount)) {
-    return '$0.00';
+    return '0₫';
+  }
+
+  if (currency === 'VND') {
+    return (
+      `${new Intl.NumberFormat('vi-VN', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount)  }₫`
+    );
   }
 
   return new Intl.NumberFormat('en-US', {
