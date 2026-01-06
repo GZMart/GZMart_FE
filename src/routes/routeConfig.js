@@ -33,6 +33,16 @@ const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
 const UnauthorizedPage = lazy(() => import('@pages/errors/UnauthorizedPage'));
 const ForbiddenPage = lazy(() => import('@pages/errors/ForbiddenPage'));
 
+//Footer Pages
+const TermsOfServicePage = lazy(() => import('@pages/footerLink/TermsOfService'));
+const PrivacyPolicyPage = lazy(() => import('@pages/footerLink/PrivacyPolicy'));
+const RefundPolicyPage = lazy(() => import('@pages/footerLink/RefundPolicy'));
+const ShippingPolicyPage = lazy(() => import('@pages/footerLink/ShippingPolicy'));
+const FrequentlyAskedQuestionsPage = lazy(
+  () => import('@pages/footerLink/FrequentlyAskedQuestions')
+);
+const HowWeCanHelpYouPage = lazy(() => import('@pages/footerLink/HowWeCanHelpYou'));
+
 /**
  * Route Configuration
  */
@@ -193,6 +203,44 @@ export const routeConfig = [
     element: NotFoundPage,
     public: true,
     layout: 'none',
+  },
+
+  // Footer Routes
+  {
+    path: '/terms-of-service',
+    element: TermsOfServicePage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/privacy-policy',
+    element: PrivacyPolicyPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/refund-policy',
+    element: RefundPolicyPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/shipping-policy',
+    element: ShippingPolicyPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/frequently-asked-questions',
+    element: FrequentlyAskedQuestionsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/how-we-can-help-you',
+    element: HowWeCanHelpYouPage,
+    public: true,
+    layout: 'main',
   },
 ];
 
