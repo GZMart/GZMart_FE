@@ -3,7 +3,9 @@ import { USER_ROLES } from '@constants';
 
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@pages/buyer/HomePage'));
-const ShopPage = lazy(() => import('@pages/buyer/ShopPage'));
+const CategoriesPage = lazy(() => import('@pages/buyer/CategoriesPage'));
+const ProductsPage = lazy(() => import('@pages/buyer/ProductsPage'));
+const FlashDealsPage = lazy(() => import('@pages/buyer/FlashDealsPage'));
 const ProductDetailsPage = lazy(() => import('@pages/buyer/ProductDetailsPage'));
 const CartPage = lazy(() => import('@pages/buyer/CartPage'));
 const CheckoutPage = lazy(() => import('@pages/buyer/CheckoutPage'));
@@ -34,6 +36,16 @@ const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
 const UnauthorizedPage = lazy(() => import('@pages/errors/UnauthorizedPage'));
 const ForbiddenPage = lazy(() => import('@pages/errors/ForbiddenPage'));
 
+//Footer Pages
+const TermsOfServicePage = lazy(() => import('@pages/footerLink/TermsOfService'));
+const PrivacyPolicyPage = lazy(() => import('@pages/footerLink/PrivacyPolicy'));
+const RefundPolicyPage = lazy(() => import('@pages/footerLink/RefundPolicy'));
+const ShippingPolicyPage = lazy(() => import('@pages/footerLink/ShippingPolicy'));
+const FrequentlyAskedQuestionsPage = lazy(
+  () => import('@pages/footerLink/FrequentlyAskedQuestions')
+);
+const HowWeCanHelpYouPage = lazy(() => import('@pages/footerLink/HowWeCanHelpYou'));
+
 /**
  * Route Configuration
  */
@@ -46,8 +58,20 @@ export const routeConfig = [
     layout: 'main',
   },
   {
-    path: '/shop',
-    element: ShopPage,
+    path: '/categories',
+    element: CategoriesPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/products',
+    element: ProductsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/deals',
+    element: FlashDealsPage,
     public: true,
     layout: 'main',
   },
@@ -202,6 +226,44 @@ export const routeConfig = [
     element: NotFoundPage,
     public: true,
     layout: 'none',
+  },
+
+  // Footer Routes
+  {
+    path: '/terms-of-service',
+    element: TermsOfServicePage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/privacy-policy',
+    element: PrivacyPolicyPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/refund-policy',
+    element: RefundPolicyPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/shipping-policy',
+    element: ShippingPolicyPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/frequently-asked-questions',
+    element: FrequentlyAskedQuestionsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/how-we-can-help-you',
+    element: HowWeCanHelpYouPage,
+    public: true,
+    layout: 'main',
   },
 ];
 
