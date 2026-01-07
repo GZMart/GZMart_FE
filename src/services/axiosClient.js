@@ -1,7 +1,39 @@
 import axios from 'axios';
-import { getAuthToken, setAuthToken, clearAuthData } from '@utils/storage';
+import { getAuthToken, getRefreshToken, setAuthToken, clearAuthData } from '@utils/storage';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+// Validate và set API_BASE_URL
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  // Nếu có VITE_API_BASE_URL và hợp lệ
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    const trimmedUrl = envUrl.trim();
+    if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+      // Remove trailing slash
+      return trimmedUrl.replace(/\/+$/, '');
+    }
+  }
+  
+  // Fallback về localhost với port mặc định của backend
+  // Backend chạy trên port 3000 (theo server.js line 133)
+  return 'http://localhost:3000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Validate URL trước khi sử dụng
+try {
+  new URL(API_BASE_URL);
+} catch (error) {
+  console.error('❌ Invalid API_BASE_URL:', API_BASE_URL, error);
+  throw new Error(`Invalid API_BASE_URL: ${API_BASE_URL}. Please check your .env file.`);
+}
+
+// Log để debug
+if (import.meta.env.DEV) {
+  console.log('🔧 API Base URL:', API_BASE_URL);
+  console.log('🔧 VITE_API_BASE_URL from env:', import.meta.env.VITE_API_BASE_URL);
+}
 
 /**
  * Axios instance with interceptors for authentication and error handling
@@ -73,24 +105,30 @@ axiosClient.interceptors.response.use(
 
       try {
         // Attempt to refresh token
-        const refreshToken = localStorage.getItem('gzmart_refresh_token');
+        const refreshToken = getRefreshToken();
 
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
             refreshToken,
           });
 
-          const { token } = response.data;
-          setAuthToken(token);
+          const newToken = response.data?.token || response.data?.data?.token;
+          
+          if (newToken) {
+            setAuthToken(newToken);
 
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosClient(originalRequest);
+            // Retry original request with new token
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return axiosClient(originalRequest);
+          }
         }
       } catch (refreshError) {
         // Refresh failed - logout user
         clearAuthData();
-        window.location.href = '/login';
+        // Only redirect if not already on login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }
