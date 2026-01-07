@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Nav } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import { ADMIN_ROUTES } from '@constants/routes';
@@ -7,6 +7,7 @@ import { ADMIN_ROUTES } from '@constants/routes';
  * Admin Layout - For Admin pages
  */
 const AdminLayout = ({ children }) => {
+  const location = useLocation();
   return (
     <div className="admin-layout d-flex flex-column" style={{ minHeight: '100vh' }}>
       {/* Top Navigation Bar */}
@@ -51,9 +52,7 @@ const AdminLayout = ({ children }) => {
                     <hr className="dropdown-divider" />
                   </li>
                   <li>
-                    <button className="dropdown-item" onClick={() => console.log('Logout')}>
-                      Logout
-                    </button>
+                    <button className="dropdown-item">Logout</button>
                   </li>
                 </ul>
               </div>
@@ -67,50 +66,245 @@ const AdminLayout = ({ children }) => {
         <Container fluid>
           <Row>
             {/* Sidebar */}
-            <Col md={2} className="admin-sidebar bg-light border-end p-0">
-              <Nav className="flex-column p-3">
-                <Nav.Link as={Link} to={ADMIN_ROUTES.DASHBOARD} className="py-2">
-                  <i className="bi bi-speedometer2 me-2"></i>
+            <Col
+              md={2}
+              className="admin-sidebar bg-white border-end p-0"
+              style={{ borderColor: '#e5e7eb' }}
+            >
+              <Nav className="flex-column py-3" style={{ fontSize: '14px' }}>
+                {/* Dashboard */}
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.DASHBOARD}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.DASHBOARD ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.DASHBOARD ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-speedometer2"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
                   Dashboard
                 </Nav.Link>
-                <hr />
-                <small className="text-muted px-2">USER MANAGEMENT</small>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.USERS} className="py-2">
-                  <i className="bi bi-people me-2"></i>
+
+                {/* User Management Section */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  USER MANAGEMENT
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.USERS}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.USERS ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.USERS ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-people" style={{ fontSize: '18px', marginRight: '12px' }}></i>
                   Users
                 </Nav.Link>
-                <hr />
-                <small className="text-muted px-2">SYSTEM</small>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.SYSTEM_CONFIG} className="py-2">
-                  <i className="bi bi-gear me-2"></i>
+
+                {/* Catalog Section */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  CATALOG
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.CATEGORIES}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.CATEGORIES ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.CATEGORIES ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-folder" style={{ fontSize: '18px', marginRight: '12px' }}></i>
+                  Categories
+                </Nav.Link>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.ATTRIBUTES}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.ATTRIBUTES ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.ATTRIBUTES ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-tags" style={{ fontSize: '18px', marginRight: '12px' }}></i>
+                  Attributes
+                </Nav.Link>
+
+                {/* System Section */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  SYSTEM
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.SYSTEM_CONFIG}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.SYSTEM_CONFIG ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.SYSTEM_CONFIG ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-gear" style={{ fontSize: '18px', marginRight: '12px' }}></i>
                   Configuration
                 </Nav.Link>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.SITE_SETTINGS} className="py-2">
-                  <i className="bi bi-globe me-2"></i>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.SITE_SETTINGS}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.SITE_SETTINGS ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.SITE_SETTINGS ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-globe" style={{ fontSize: '18px', marginRight: '12px' }}></i>
                   Site Settings
                 </Nav.Link>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.PAYMENT_SETTINGS} className="py-2">
-                  <i className="bi bi-credit-card me-2"></i>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.PAYMENT_SETTINGS}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color:
+                      location.pathname === ADMIN_ROUTES.PAYMENT_SETTINGS ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.PAYMENT_SETTINGS ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-credit-card"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
                   Payment Settings
                 </Nav.Link>
-                <hr />
-                <small className="text-muted px-2">CONTENT</small>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.PAGES} className="py-2">
-                  <i className="bi bi-file-earmark me-2"></i>
+
+                {/* Content Section */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  CONTENT
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.PAGES}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.PAGES ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.PAGES ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-file-earmark"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
                   Pages
                 </Nav.Link>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.BANNERS} className="py-2">
-                  <i className="bi bi-image me-2"></i>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.BANNERS}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.BANNERS ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.BANNERS ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-image" style={{ fontSize: '18px', marginRight: '12px' }}></i>
                   Banners
                 </Nav.Link>
-                <hr />
-                <small className="text-muted px-2">MONITORING</small>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.ACTIVITY_LOGS} className="py-2">
-                  <i className="bi bi-activity me-2"></i>
+
+                {/* Monitoring Section */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  MONITORING
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.ACTIVITY_LOGS}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.ACTIVITY_LOGS ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.ACTIVITY_LOGS ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-activity"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
                   Activity Logs
                 </Nav.Link>
-                <Nav.Link as={Link} to={ADMIN_ROUTES.SYSTEM_HEALTH} className="py-2">
-                  <i className="bi bi-heart-pulse me-2"></i>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.SYSTEM_HEALTH}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === ADMIN_ROUTES.SYSTEM_HEALTH ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === ADMIN_ROUTES.SYSTEM_HEALTH ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-heart-pulse"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
                   System Health
                 </Nav.Link>
               </Nav>
