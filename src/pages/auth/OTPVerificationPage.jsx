@@ -1,21 +1,46 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Container } from 'react-bootstrap';
-import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { toast } from 'react-toastify';
+import { PUBLIC_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
+import authService from '@services/api/authService';
+import { loginSuccess } from '@store/slices/authSlice';
 
 const OTPVerificationPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const location = useLocation();
-  // Get email from location state or default to a placeholder
-  const email = location.state?.email || 'user@example.com';
-  
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [timer, setTimer] = useState(45);
+  // Get email and OTP (if in development) from location state
+  const email = location.state?.email;
+  const devOTP = location.state?.otp; // OTP from registration (development only)
+
+  const [otp, setOtp] = useState(['', '', '', '']); // 4 digits
+  const [timer, setTimer] = useState(60); // 60 seconds
   const [canResend, setCanResend] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const inputRefs = useRef([]);
+
+  // Redirect if no email
+  useEffect(() => {
+    if (!email) {
+      toast.error('Email không hợp lệ. Vui lòng đăng ký lại.');
+      navigate(PUBLIC_ROUTES.REGISTER);
+    }
+  }, [email, navigate]);
+
+  // In development, show OTP if available
+  useEffect(() => {
+    if (devOTP && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('🔐 OTP from registration:', devOTP);
+      // Auto-fill OTP in development (optional - you can remove this if you want user to type)
+      // setOtp(devOTP.split(''));
+    }
+  }, [devOTP]);
 
   // Helper function to format time
   const formatTime = (seconds) => {
@@ -38,14 +63,16 @@ const OTPVerificationPage = () => {
 
   const handleChange = (index, value) => {
     // Only allow numbers
-    if (!/^\d*$/.test(value)) return;
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value && index < 5) {
+    if (value && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -59,46 +86,113 @@ const OTPVerificationPage = () => {
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 6);
-    if (!/^\d+$/.test(pastedData)) return;
+    const pastedData = e.clipboardData.getData('text').slice(0, 4); // 4 digits
+    if (!/^\d+$/.test(pastedData)) {
+      return;
+    }
 
-    const newOtp = [...otp];
+    const newOtp = ['', '', '', ''];
     pastedData.split('').forEach((char, idx) => {
-      if (idx < 6) newOtp[idx] = char;
+      if (idx < 4) {
+        newOtp[idx] = char;
+      }
     });
     setOtp(newOtp);
 
     // Focus last filled input
-    const lastIndex = Math.min(pastedData.length, 5);
+    const lastIndex = Math.min(pastedData.length - 1, 3);
     inputRefs.current[lastIndex]?.focus();
   };
 
-  const handleVerify = (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
     const otpCode = otp.join('');
-    if (otpCode.length === 6) { // Changed to check 6 digits if that's the intention, though input map suggested 4 earlier. Using 4 for now to match UI text.
-      // Actually the slice below says 4 digits. Let's stick to 4.
-      // Wait, the input mapping has .slice(0, 4).
-      // So I should check for length 4.
-      console.log('OTP:', otpCode);
-      // TODO: Implement OTP verification logic
-    }
-  };
 
-  const handleResend = () => {
-    if (canResend) {
-      setTimer(45);
-      setCanResend(false);
-      setOtp(['', '', '', '', '', '']);
+    if (otpCode.length !== 4) {
+      toast.error('Vui lòng nhập đủ 4 chữ số');
+      return;
+    }
+
+    if (!email) {
+      toast.error('Email không hợp lệ');
+      return;
+    }
+
+    setVerifying(true);
+
+    try {
+      const response = await authService.verifyOTP({ email, otp: otpCode });
+
+      // OTP verified successfully
+      if (response.data && response.data.user && response.data.tokens) {
+        // Dispatch login success to update Redux state
+        dispatch(
+          loginSuccess({
+            user: response.data.user,
+            token: response.data.tokens.accessToken,
+            refreshToken: response.data.tokens.refreshToken,
+          })
+        );
+
+        toast.success('Xác thực thành công!');
+
+        // Navigate based on user role
+        const user = response.data.user;
+        setTimeout(() => {
+          if (user.role === 'seller') {
+            navigate('/seller/dashboard');
+          } else if (user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate(PUBLIC_ROUTES.HOME);
+          }
+        }, 1000);
+      } else {
+        toast.error('Xác thực thất bại. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      const errorMessage = error.message || error.response?.data?.error || 'Xác thực OTP thất bại';
+      toast.error(errorMessage);
+      // Clear OTP on error
+      setOtp(['', '', '', '']);
       inputRefs.current[0]?.focus();
-      // TODO: Implement resend OTP logic
-      console.log('Resending OTP...');
+    } finally {
+      setVerifying(false);
     }
   };
 
-  const handleEdit = () => {
-    // TODO: Navigate back to phone number input or show edit modal
-    console.log('Edit phone number');
+  const handleResend = async () => {
+    if (!canResend || !email) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await authService.sendOTP(email);
+
+      let message = 'OTP đã được gửi lại vào email của bạn';
+
+      // In development, show OTP if available
+      if (response?.otp && import.meta.env.DEV) {
+        message += `\n\n🔐 Mã OTP (Development): ${response.otp}`;
+        // eslint-disable-next-line no-console
+        console.log('🔐 Resend OTP:', response.otp);
+      }
+
+      toast.success(message, {
+        autoClose: response?.otp ? 10000 : 3000,
+      });
+
+      setTimer(60);
+      setCanResend(false);
+      setOtp(['', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } catch (error) {
+      const errorMessage = error.message || error.response?.data?.error || 'Gửi lại OTP thất bại';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -113,7 +207,13 @@ const OTPVerificationPage = () => {
           <button className={styles.backButton} onClick={() => navigate(-1)}>
             <div className={styles.backIconCircle}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M15 18L9 12L15 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <span>Back</span>
@@ -122,10 +222,14 @@ const OTPVerificationPage = () => {
           {/* Share Button */}
           <button className={styles.shareButton}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2"/>
-              <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-              <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2"/>
-              <path d="M8.59 13.51L15.42 17.49M15.41 6.51L8.59 10.49" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2" />
+              <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+              <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M8.59 13.51L15.42 17.49M15.41 6.51L8.59 10.49"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
             </svg>
           </button>
         </div>
@@ -136,7 +240,7 @@ const OTPVerificationPage = () => {
           <div className={styles.leftSection}>
             <div className={styles.welcomeContent}>
               <div className={styles.titleGroup}>
-                <h1 className={styles.title}>Forgot Password</h1>
+                <h1 className={styles.title}>Verify Your Email</h1>
                 <p className={styles.subtitle}>Enter 4 Digits Code</p>
               </div>
 
@@ -174,7 +278,7 @@ const OTPVerificationPage = () => {
                   <div className={styles.floatingCircle}></div>
                 </div>
               </div>
-              
+
               <div className={styles.signupPrompt}>
                 <span className={styles.signupText}>{email}</span>
               </div>
@@ -188,35 +292,57 @@ const OTPVerificationPage = () => {
                 <p className={styles.instructionText}>
                   Enter the 4-digit code that you received on your email.
                 </p>
+                {devOTP && import.meta.env.DEV && (
+                  <div
+                    style={{
+                      marginTop: '10px',
+                      padding: '10px',
+                      backgroundColor: '#fff3cd',
+                      borderRadius: '5px',
+                      fontSize: '14px',
+                      color: '#856404',
+                    }}
+                  >
+                    <strong>Development Mode:</strong> OTP: <code>{devOTP}</code>
+                    <br />
+                    <small>(Check backend console for OTP if not shown here)</small>
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleVerify} className={styles.loginForm}>
                 <div className={styles.otpInputGroup}>
-                  {otp.slice(0, 4).map((digit, index) => ( // Changed to 4 digits
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      ref={(el) => (inputRefs.current[index] = el)}
-                      type="text"
-                      maxLength="1"
-                      className={styles.otpInput}
-                      value={digit}
-                      onChange={(e) => handleChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      onPaste={handlePaste}
-                      autoFocus={index === 0}
-                    />
-                  ))}
+                  {otp.slice(0, 4).map(
+                    (
+                      digit,
+                      index // Changed to 4 digits
+                    ) => (
+                      <input
+                        key={index}
+                        id={`otp-${index}`}
+                        ref={(el) => (inputRefs.current[index] = el)}
+                        type="text"
+                        maxLength="1"
+                        className={styles.otpInput}
+                        value={digit}
+                        onChange={(e) => handleChange(index, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(index, e)}
+                        onPaste={handlePaste}
+                        autoFocus={index === 0}
+                      />
+                    )
+                  )}
                 </div>
 
                 <div className={styles.resendContainer}>
                   {canResend ? (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={styles.resendButton}
                       onClick={handleResend}
+                      disabled={loading}
                     >
-                      Resend Code
+                      {loading ? 'Đang gửi...' : 'Resend Code'}
                     </button>
                   ) : (
                     <span className={styles.timerText}>
@@ -225,8 +351,8 @@ const OTPVerificationPage = () => {
                   )}
                 </div>
 
-                <button type="submit" className={styles.loginButton}>
-                  Continue
+                <button type="submit" className={styles.loginButton} disabled={verifying}>
+                  {verifying ? 'Đang xác thực...' : 'Continue'}
                 </button>
               </form>
             </div>

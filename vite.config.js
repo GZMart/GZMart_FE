@@ -22,16 +22,16 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173, // Vite default port (tránh conflict với backend port 3000)
     open: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:5000',
+        target: process.env.VITE_API_BASE_URL || 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       '/socket.io': {
-        target: process.env.VITE_SOCKET_URL || 'http://localhost:5000',
+        target: process.env.VITE_SOCKET_URL || 'http://localhost:3000',
         changeOrigin: true,
         ws: true,
       },

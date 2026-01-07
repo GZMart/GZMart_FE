@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
+import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
 import {
   MapPin,
   Truck,
@@ -11,13 +13,47 @@ import {
   ChevronDown,
   Heart,
   AlignLeft,
+  LogOut,
+  UserCircle,
+  LayoutDashboard,
 } from 'lucide-react';
 
-// Example user (change to null or '' to test the Sign In state)
-const userName = 'Suprava Saha';
-
 const Header = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [activeCategory, setActiveCategory] = useState('New Arrivals');
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      navigate(PUBLIC_ROUTES.HOME);
+      setShowProfileDropdown(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Get user display name and avatar
+  const userDisplayName = user?.fullName || user?.email?.split('@')[0] || 'User';
+  const userAvatar = user?.avatar || user?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDisplayName)}&background=random`;
 
   // Categories tailored for a Fashion/Clothing website
   const categories = [
@@ -129,13 +165,101 @@ const Header = () => {
               <span className="mx-3 text-secondary opacity-25">|</span>
 
               {/* User Logic */}
-              <Link
-                to={userName ? '/profile' : BUYER_ROUTES.DASHBOARD}
-                className="d-flex align-items-center gap-2 text-decoration-none text-dark"
-              >
-                <User size={24} />
-                <span>{userName ? userName : 'Sign In / Sign Up'}</span>
-              </Link>
+              {isAuthenticated && user ? (
+                <div className="position-relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent p-0"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src={userAvatar}
+                      alt={userDisplayName}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #e0e0e0',
+                      }}
+                    />
+                    <span>{userDisplayName}</span>
+                    <ChevronDown
+                      size={16}
+                      style={{
+                        transform: showProfileDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s',
+                      }}
+                    />
+                  </button>
+
+                  {/* Profile Dropdown */}
+                  {showProfileDropdown && (
+                    <div
+                      className="position-absolute bg-white border rounded shadow-lg"
+                      style={{
+                        top: '100%',
+                        right: 0,
+                        marginTop: '8px',
+                        minWidth: '200px',
+                        zIndex: 1000,
+                        padding: '8px 0',
+                      }}
+                    >
+                      <Link
+                        to={BUYER_ROUTES.DASHBOARD}
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <LayoutDashboard size={18} />
+                        <span>Dashboard</span>
+                      </Link>
+                      <div className="border-top my-1"></div>
+                      <Link
+                        to={BUYER_ROUTES.PROFILE}
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <UserCircle size={18} />
+                        <span>Profile</span>
+                      </Link>
+                      <div className="border-top my-1"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent w-100 px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                      >
+                        <LogOut size={18} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to={PUBLIC_ROUTES.LOGIN}
+                  className="d-flex align-items-center gap-2 text-decoration-none text-dark"
+                >
+                  <User size={24} />
+                  <span>Login</span>
+                </Link>
+              )}
 
               <span className="mx-3 text-secondary opacity-25">|</span>
               <Link
