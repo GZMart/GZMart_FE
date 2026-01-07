@@ -1,28 +1,28 @@
-.track-order-details-page {
+.trackOrderDetailsPage {
   min-height: 100vh;
   padding: 32px 0;
   background-color: #fff;
 }
 
-.track-order-details-container {
+.trackOrderDetailsContainer {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
 /* Header Section */
-.track-order-header {
+.trackOrderHeader {
   margin-bottom: 32px;
 }
 
-.back-button-group {
+.backButtonGroup {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
 }
 
-.back-button {
+.backButton {
   color: #333 !important;
   font-size: 18px;
   padding: 0 !important;
@@ -39,13 +39,13 @@
   flex-shrink: 0;
 }
 
-.back-button:hover {
+.backButton:hover {
   color: #1890ff !important;
   border-color: #1890ff;
   background-color: #f5f5f5 !important;
 }
 
-.back-text {
+.backText {
   font-size: 16px;
   font-weight: 500;
   color: #333;
@@ -53,7 +53,7 @@
   pointer-events: none;
 }
 
-.page-title {
+.pageTitle {
   margin: 0 !important;
   font-weight: 700 !important;
   color: #000;
@@ -62,7 +62,7 @@
 }
 
 /* Order Info Card */
-.order-info-card {
+.orderInfoCard {
   border: none;
   background-color: #fffbe6;
   border-radius: 8px;
@@ -70,42 +70,42 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-.order-info-card .ant-card-body {
+.orderInfoCard .ant-card-body {
   padding: 20px !important;
 }
 
-.order-info-left {
+.orderInfoLeft {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.order-id {
+.orderId {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
   color: #000;
 }
 
-.order-meta {
+.orderMeta {
   margin: 0;
   font-size: 13px;
   color: #666;
   line-height: 1.6;
 }
 
-.order-info-right {
+.orderInfoRight {
   text-align: right;
 }
 
-.order-price {
+.orderPrice {
   font-size: 20px;
   font-weight: 700;
   color: #1890ff;
 }
 
 /* Expected Arrival */
-.expected-arrival {
+.expectedArrival {
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -114,19 +114,19 @@
   gap: 5px;
 }
 
-.arrival-label {
+.arrivalLabel {
   font-size: 14px;
   color: #666;
 }
 
-.arrival-date {
+.arrivalDate {
   font-size: 14px;
   font-weight: 600;
   color: #333;
 }
 
 /* Progress Card */
-.progress-card {
+.progressCard {
   border: none;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   border-radius: 8px;
@@ -134,23 +134,23 @@
   background-color: #fafafa;
 }
 
-.progress-card .ant-card-body {
+.progressCard .ant-card-body {
   padding: 40px 24px 20px 24px !important;
 }
 
-.progress-section {
+.progressSection {
   display: flex;
   justify-content: center;
 }
 
-.custom-progress-bar {
+.customProgressBar {
   position: relative;
   height: 90px;
   width: 80%;
   max-width: 100%;
 }
 
-.progress-track {
+.progressTrack {
   position: absolute;
   top: 20px;
   left: 0;
@@ -161,21 +161,21 @@
   overflow: hidden;
 }
 
-.progress-fill {
+.progressFill {
   height: 100%;
   background-color: #1890ff;
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
-.progress-points {
+.progressPoints {
   position: relative;
   height: 100%;
   display: flex;
   justify-content: space-between;
 }
 
-.progress-point {
+.progressPoint {
   position: absolute;
   width: 1px;
   height: 100%;
@@ -185,23 +185,23 @@
   transform: translateX(-50%);
 }
 
-.progress-point:nth-child(1) {
+.progressPoint:nth-child(1) {
   left: 0;
 }
 
-.progress-point:nth-child(2) {
+.progressPoint:nth-child(2) {
   left: 33.33%;
 }
 
-.progress-point:nth-child(3) {
+.progressPoint:nth-child(3) {
   left: 66.66%;
 }
 
-.progress-point:nth-child(4) {
+.progressPoint:nth-child(4) {
   left: 100%;
 }
 
-.point-circle {
+.pointCircle {
   position: relative;
   width: 42px;
   height: 42px;
@@ -218,14 +218,14 @@
   flex-shrink: 0;
 }
 
-.point-circle.active {
+.pointCircle.active {
   background-color: #1890ff;
   border-color: #1890ff;
   color: #fff;
   box-shadow: 0 3px 8px rgba(24, 144, 255, 0.4);
 }
 
-.point-label {
+.pointLabel {
   position: absolute;
   top: 50px;
   font-size: 15px;
@@ -238,23 +238,23 @@
 }
 
 /* Order Activity Section */
-.order-activity-section {
+.orderActivitySection {
   margin-top: 40px;
 }
 
-.activity-title {
+.activityTitle {
   margin-bottom: 24px !important;
   font-weight: 600 !important;
   color: #000 !important;
 }
 
-.activity-timeline {
+.activityTimeline {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.activity-item {
+.activityItem {
   display: flex;
   gap: 16px;
   padding: 16px 16px;
@@ -263,22 +263,22 @@
   align-items: flex-start;
 }
 
-.activity-item.activity-success {
+.activityItem.activitySuccess {
   background-color: #f6ffed;
   border-left: 3px solid #52c41a;
 }
 
-.activity-item.activity-primary {
+.activityItem.activityPrimary {
   background-color: #f5f7fa;
   border-left: 3px solid #1890ff;
 }
 
-.activity-item.activity-default {
+.activityItem.activityDefault {
   background-color: #fafafa;
   border-left: 3px solid #d9d9d9;
 }
 
-.activity-icon-wrapper {
+.activityIconWrapper {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
@@ -290,26 +290,26 @@
   min-width: 44px;
 }
 
-.activity-item.activity-success .activity-icon-wrapper {
+.activityItem.activitySuccess .activityIconWrapper {
   background-color: #f0fce3;
   color: #52c41a;
 }
 
-.activity-item.activity-primary .activity-icon-wrapper {
+.activityItem.activityPrimary .activityIconWrapper {
   background-color: #e6f7ff;
   color: #1890ff;
 }
 
-.activity-item.activity-default .activity-icon-wrapper {
+.activityItem.activityDefault .activityIconWrapper {
   background-color: #f0f0f0;
   color: #8c8c8c;
 }
 
-.activity-content {
+.activityContent {
   flex: 1;
 }
 
-.activity-message {
+.activityMessage {
   margin: 0 0 6px 0;
   font-size: 13px;
   color: #262626;
@@ -317,7 +317,7 @@
   font-weight: 400;
 }
 
-.activity-timestamp {
+.activityTimestamp {
   font-size: 12px;
   color: #8c8c8c;
   display: block;
@@ -325,52 +325,52 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .track-order-details-container {
+  .trackOrderDetailsContainer {
     padding: 0 15px;
   }
 
-  .page-title {
+  .pageTitle {
     font-size: 24px;
   }
 
-  .order-info-right {
+  .orderInfoRight {
     text-align: left;
   }
 
-  .order-price {
+  .orderPrice {
     font-size: 18px;
   }
 
-  .progress-card .ant-card-body {
+  .progressCard .ant-card-body {
     padding: 36px 20px !important;
   }
 
-  .custom-progress-bar {
+  .customProgressBar {
     height: 80px;
     width: 88%;
   }
 
-  .point-circle {
+  .pointCircle {
     width: 38px;
     height: 38px;
     font-size: 16px;
   }
 
-  .point-label {
+  .pointLabel {
     top: 42px;
     font-size: 11px;
   }
 
-  .activity-item {
+  .activityItem {
     padding: 14px;
     gap: 14px;
   }
 
-  .activity-message {
+  .activityMessage {
     font-size: 12px;
   }
 
-  .activity-icon-wrapper {
+  .activityIconWrapper {
     width: 40px;
     height: 40px;
     min-width: 40px;
@@ -379,80 +379,80 @@
 }
 
 @media (max-width: 480px) {
-  .track-order-details-page {
+  .trackOrderDetailsPage {
     padding: 20px 0;
   }
 
-  .track-order-details-container {
+  .trackOrderDetailsContainer {
     padding: 0 12px;
   }
 
-  .track-order-header {
+  .trackOrderHeader {
     margin-bottom: 24px;
   }
 
-  .back-button {
+  .backButton {
     width: 44px;
     height: 44px;
     min-width: 44px !important;
     font-size: 16px;
   }
 
-  .back-text {
+  .backText {
     font-size: 14px;
   }
 
-  .page-title {
+  .pageTitle {
     font-size: 20px;
   }
 
-  .order-id {
+  .orderId {
     font-size: 16px;
   }
 
-  .order-meta {
+  .orderMeta {
     font-size: 12px;
   }
 
-  .order-price {
+  .orderPrice {
     font-size: 16px;
   }
 
-  .arrival-label,
-  .arrival-date {
+  .arrivalLabel,
+  .arrivalDate {
     font-size: 13px;
   }
 
-  .progress-card .ant-card-body {
+  .progressCard .ant-card-body {
     padding: 32px 16px !important;
   }
 
-  .custom-progress-bar {
+  .customProgressBar {
     height: 85px;
     width: 85%;
   }
 
-  .progress-track {
+  .progressTrack {
     top: 16px;
   }
 
-  .point-circle {
+  .pointCircle {
     width: 36px;
     height: 36px;
     font-size: 15px;
   }
 
-  .point-label {
+  .pointLabel {
     top: 42px;
     font-size: 10px;
   }
 
-  .activity-item {
+  .activityItem {
     padding: 12px;
     gap: 12px;
   }
 
-  .activity-icon-wrapper {
+  .activityIconWrapper {
     width: 36px;
     height: 36px;
     min-width: 36px;
@@ -460,11 +460,11 @@
     border-radius: 6px;
   }
 
-  .activity-message {
+  .activityMessage {
     font-size: 12px;
   }
 
-  .activity-timestamp {
+  .activityTimestamp {
     font-size: 11px;
   }
 }

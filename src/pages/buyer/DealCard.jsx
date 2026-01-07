@@ -1,7 +1,7 @@
 import { Button, Badge, Typography } from 'antd';
 import { ShareAltOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import '../../assets/styles/buyer/DealCard.css';
+import styles from '@assets/styles/buyer/DealCard.module.css';
 
 const { Text } = Typography;
 
@@ -19,50 +19,50 @@ const DealCard = ({ deal, type = 'pending' }) => {
   };
 
   return (
-    <div className={`deal-card deal-card-${type}`} onClick={handleDealClick} style={{ cursor: 'pointer' }}>
-      <div className="deal-card-top-section">
+    <div className={`${styles.dealCard} ${styles[`dealCard${type.charAt(0).toUpperCase() + type.slice(1)}`]}`} onClick={handleDealClick} style={{ cursor: 'pointer' }}>
+      <div className={styles.dealCardTopSection}>
         {/* Product Image - Left Side */}
-        <div className="deal-card-image">
+        <div className={styles.dealCardImage}>
           <img alt={deal.name} src={deal.image} />
         </div>
 
         {/* Content - Right Side */}
-        <div className="deal-card-content">
+        <div className={styles.dealCardContent}>
           {/* Product Name */}
-          <h3 className="deal-product-name">{deal.name}</h3>
+          <h3 className={styles.dealProductName}>{deal.name}</h3>
 
           {/* Seller */}
-          <Text className="deal-seller-text">by {deal.seller}</Text>
+          <Text className={styles.dealSellerText}>by {deal.seller}</Text>
 
           {/* Price and Items - Same Row */}
-          <div className="deal-price-items">
-            <span className="deal-price">
+          <div className={styles.dealPriceItems}>
+            <span className={styles.dealPrice}>
               {deal.currency}
               {deal.price}
             </span>
-            <span className="deal-item-count">{deal.items} Item</span>
+            <span className={styles.dealItemCount}>{deal.items} Item</span>
           </div>
 
           {/* Buyers Badge */}
-          <div className="deal-buyers-section">
+          <div className={styles.dealBuyersSection}>
             <Badge
               count={`No. of Buyers : ${deal.totalBuyers} / ${deal.maxBuyers}`}
               color={type === 'pending' ? '#FFC069' : '#95DE64'}
-              className={`custom-badge custom-badge-${type}`}
+              className={`${styles.customBadge} ${styles[`customBadge${type.charAt(0).toUpperCase() + type.slice(1)}`]}`}
             />
           </div>
         </div>
       </div>
 
       {/* Bottom Section - Full Width */}
-      <div className={`deal-bottom-bar deal-bottom-${type}`}>
-        <div className="deal-time-left">
-          <span className="deal-time-label">Deal Ending in</span>
-          <span className="deal-time-value">
+      <div className={`${styles.dealBottomBar} ${styles[`dealBottom${type.charAt(0).toUpperCase() + type.slice(1)}`]}`}>
+        <div className={styles.dealTimeLeft}>
+          <span className={styles.dealTimeLabel}>Deal Ending in</span>
+          <span className={styles.dealTimeValue}>
             {type === 'pending' ? formatTimeLeft(deal.timeLeft) : '0h : 00m : 00s'}
           </span>
         </div>
-        <Button type="text" icon={<ShareAltOutlined />} className="share-link-btn">
+        <Button type="text" icon={<ShareAltOutlined />} className={styles.shareLinkBtn}>
           SHARE LINK
         </Button>
       </div>

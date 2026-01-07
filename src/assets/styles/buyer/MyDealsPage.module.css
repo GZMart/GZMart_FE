@@ -1,17 +1,17 @@
-.my-deals-page {
+.myDealsPage {
   min-height: 100vh;
   background-color: #fff;
   padding: 32px 0;
 }
 
-.my-deals-container {
+.myDealsContainer {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
 /* Header Section */
-.my-deals-header {
+.myDealsHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -19,14 +19,14 @@
   gap: 20px;
 }
 
-.header-left {
+.headerLeft {
   display: flex;
   align-items: flex-start;
   gap: 16px;
   flex: 1;
 }
 
-.back-button {
+.backButton {
   color: #333 !important;
   font-size: 16px;
   padding: 0 !important;
@@ -43,20 +43,20 @@
   flex-shrink: 0;
 }
 
-.back-button:hover {
+.backButton:hover {
   color: #1890ff !important;
   border-color: #1890ff;
   background-color: #f5f5f5 !important;
 }
 
-.header-title-section {
+.headerTitleSection {
   display: flex;
   flex-direction: column;
   gap: 4px;
   justify-content: center;
 }
 
-.page-title {
+.pageTitle {
   margin: 0 !important;
   font-weight: 700 !important;
   color: #000;
@@ -65,21 +65,21 @@
   line-height: 1.2;
 }
 
-.page-subtitle {
+.pageSubtitle {
   font-size: 13px;
   color: #999;
   font-weight: 400;
   line-height: 1.4;
 }
 
-.header-right {
+.headerRight {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
 }
 
-.past-deals-btn {
+.pastDealsBtn {
   background-color: #1890ff !important;
   border-color: #1890ff !important;
   color: #fff !important;
@@ -95,12 +95,12 @@
   white-space: nowrap;
 }
 
-.past-deals-btn:hover {
+.pastDealsBtn:hover {
   background-color: #40a9ff !important;
   border-color: #40a9ff !important;
 }
 
-.wallet-btn {
+.walletBtn {
   background-color: #1890ff !important;
   border-color: #1890ff !important;
   color: #fff !important;
@@ -113,12 +113,12 @@
   font-size: 14px;
 }
 
-.wallet-btn:hover {
+.walletBtn:hover {
   background-color: #40a9ff !important;
   border-color: #40a9ff !important;
 }
 
-.share-btn {
+.shareBtn {
   color: #333 !important;
   font-size: 18px;
   padding: 0 !important;
@@ -132,26 +132,26 @@
   border-radius: 50%;
 }
 
-.share-btn:hover {
+.shareBtn:hover {
   color: #1890ff !important;
   background-color: #f5f5f5 !important;
 }
 
 /* Deals Section */
-.deals-section {
+.dealsSection {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   margin-bottom: 32px;
 }
 
-.deals-column {
+.dealsColumn {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.section-header {
+.sectionHeader {
   padding: 20px;
   background-color: #f0f0f0;
   border-radius: 6px;
@@ -161,12 +161,12 @@
   gap: 12px;
 }
 
-.header-icon-text {
+.headerIconText {
   display: flex;
   flex-direction: row;
 }
 
-.deals-grid {
+.dealsGrid {
   padding: 20px;
   background-color: #f0f0f0;
   border-radius: 10px;
@@ -175,183 +175,195 @@
   gap: 16px;
 }
 
+.bellIcon {
+  /* Icon styling */
+}
+
+.checkIcon {
+  /* Icon styling */
+}
+
+.sectionDescription {
+  /* Description styling */
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .my-deals-header {
+  .myDealsHeader {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
   }
 
-  .header-right {
+  .headerRight {
     width: 100%;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .wallet-btn {
+  .walletBtn {
     flex: 1;
     min-width: 140px;
   }
 
-  .deals-section {
+  .dealsSection {
     grid-template-columns: 1fr;
     gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
-  .my-deals-container {
+  .myDealsContainer {
     padding: 0 15px;
   }
 
-  .my-deals-header {
+  .myDealsHeader {
     margin-bottom: 24px;
   }
 
-  .page-title {
+  .pageTitle {
     font-size: 26px;
   }
 
-  .page-subtitle {
+  .pageSubtitle {
     font-size: 12px;
   }
 
-  .back-button {
+  .backButton {
     width: 40px;
     height: 40px;
     font-size: 15px;
   }
 
-  .header-right {
+  .headerRight {
     gap: 6px;
     width: 100%;
   }
 
-  .past-deals-btn,
-  .wallet-btn {
+  .pastDealsBtn,
+  .walletBtn {
     flex: 1;
     height: 36px;
     font-size: 13px;
     padding: 0 12px;
   }
 
-  .share-btn {
+  .shareBtn {
     width: 36px;
     height: 36px;
     font-size: 16px;
   }
 
-  .section-header {
+  .sectionHeader {
     padding: 10px;
     gap: 8px;
   }
 
-  .section-header h2 {
+  .sectionHeader h2 {
     font-size: 13px;
   }
 
-  .section-description {
+  .sectionDescription {
     font-size: 10px;
   }
 
-  .bell-icon,
-  .check-icon {
+  .bellIcon,
+  .checkIcon {
     font-size: 18px;
     width: 24px;
   }
 
-  .deals-grid {
+  .dealsGrid {
     gap: 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .my-deals-page {
+  .myDealsPage {
     padding: 20px 0;
   }
 
-  .my-deals-container {
+  .myDealsContainer {
     padding: 0 12px;
   }
 
-  .my-deals-header {
+  .myDealsHeader {
     margin-bottom: 20px;
     gap: 10px;
   }
 
-  .back-button {
+  .backButton {
     width: 38px;
     height: 38px;
     font-size: 14px;
   }
 
-  .header-title-section {
+  .headerTitleSection {
     gap: 2px;
   }
 
-  .page-title {
+  .pageTitle {
     font-size: 20px;
   }
 
-  .page-subtitle {
+  .pageSubtitle {
     font-size: 11px;
   }
 
-  .header-right {
+  .headerRight {
     flex-direction: column;
     width: 100%;
     gap: 6px;
   }
 
-  .past-deals-btn,
-  .wallet-btn {
+  .pastDealsBtn,
+  .walletBtn {
     width: 100%;
     height: 34px;
     font-size: 12px;
     padding: 0 10px;
   }
 
-  .share-btn {
+  .shareBtn {
     width: 34px;
     height: 34px;
     font-size: 15px;
   }
 
-  .deals-section {
+  .dealsSection {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  .section-header {
+  .sectionHeader {
     padding: 8px;
     gap: 6px;
   }
 
-  .section-header h2 {
+  .sectionHeader h2 {
     font-size: 12px;
   }
 
-  .section-description {
+  .sectionDescription {
     font-size: 9px;
   }
 
-  .bell-icon,
-  .check-icon {
+  .bellIcon,
+  .checkIcon {
     font-size: 16px;
     width: 20px;
   }
 
-  .deals-grid {
+  .dealsGrid {
     gap: 8px;
     padding: 2px 6px;
   }
 
-  .time-text {
+  .timeText {
     font-size: 9px;
   }
 
-  .select-item-btn {
+  .selectItemBtn {
     font-size: 10px;
     height: 24px;
   }

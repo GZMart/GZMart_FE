@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Card, Typography, Row, Col } from 'antd';
 import { LeftOutlined, CheckCircleOutlined, ShoppingOutlined, TruckOutlined, HomeOutlined, CheckOutlined, UserOutlined, EnvironmentOutlined, AppstoreOutlined, CalendarOutlined } from '@ant-design/icons';
-import '../../assets/styles/buyer/TrackOrderDetailsPage.css';
+import styles from '@assets/styles/buyer/TrackOrderDetailsPage.module.css';
 
 const TrackOrderDetailsPage = () => {
   const { orderId } = useParams();
@@ -109,81 +109,81 @@ const TrackOrderDetailsPage = () => {
   };
 
   return (
-    <div className="track-order-details-page">
-      <div className="track-order-details-container">
+    <div className={styles.trackOrderDetailsPage}>
+      <div className={styles.trackOrderDetailsContainer}>
         {/* Header Section */}
-        <div className="track-order-header">
-          <div className="back-button-group">
+        <div className={styles.trackOrderHeader}>
+          <div className={styles.backButtonGroup}>
             <Button 
               type="text" 
               icon={<LeftOutlined />}
               onClick={() => navigate(-1)}
-              className="back-button"
+              className={styles.backButton}
             />
-            <span className="back-text">Back</span>
+            <span className={styles.backText}>Back</span>
           </div>
-          <Title level={1} className="page-title">
+          <Title level={1} className={styles.pageTitle}>
             Track Order
           </Title>
         </div>
 
         {/* Order Info Card */}
-        <Card className="order-info-card">
+        <Card className={styles.orderInfoCard}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} md={12}>
-              <div className="order-info-left">
-                <h3 className="order-id">#{mockOrderData.id}</h3>
-                <p className="order-meta">
+              <div className={styles.orderInfoLeft}>
+                <h3 className={styles.orderId}>#{mockOrderData.id}</h3>
+                <p className={styles.orderMeta}>
                   {mockOrderData.products} Products • Order Placed in {mockOrderData.placedDate} at {mockOrderData.placedTime}
                 </p>
               </div>
             </Col>
-            <Col xs={24} md={12} className="order-info-right">
-              <Text className="order-price">{mockOrderData.currency} {mockOrderData.totalPrice.toFixed(2)}</Text>
+            <Col xs={24} md={12} className={styles.orderInfoRight}>
+              <Text className={styles.orderPrice}>{mockOrderData.currency} {mockOrderData.totalPrice.toFixed(2)}</Text>
             </Col>
           </Row>
         </Card>
 
         {/* Expected Arrival */}
-        <div className="expected-arrival">
-          <Text className="arrival-label">Order expected arrival</Text>
-          <Text className="arrival-date">{mockOrderData.expectedArrival}</Text>
+        <div className={styles.expectedArrival}>
+          <Text className={styles.arrivalLabel}>Order expected arrival</Text>
+          <Text className={styles.arrivalDate}>{mockOrderData.expectedArrival}</Text>
         </div>
 
         {/* Progress Bar */}
-        <Card className="progress-card">
-          <div className="progress-section">
-            <div className="custom-progress-bar">
-              <div className="progress-track">
+        <Card className={styles.progressCard}>
+          <div className={styles.progressSection}>
+            <div className={styles.customProgressBar}>
+              <div className={styles.progressTrack}>
                 <div 
-                  className="progress-fill" 
+                  className={styles.progressFill} 
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
-              <div className="progress-points">
-                <div className="progress-point" style={{ left: '0%' }}>
-                  <div className={`point-circle ${progress >= 0 ? 'active' : ''}`}>
+              <div className={styles.progressPoints}>
+                <div className={styles.progressPoint} style={{ left: '0%' }}>
+                  <div className={`${styles.pointCircle} ${progress >= 0 ? styles.active : ''}`}>
                     <CheckOutlined />
                   </div>
-                  <div className="point-label">Order Placed</div>
+                  <div className={styles.pointLabel}>Order Placed</div>
                 </div>
-                <div className="progress-point" style={{ left: '33.33%' }}>
-                  <div className={`point-circle ${progress >= 33 ? 'active' : ''}`}>
+                <div className={styles.progressPoint} style={{ left: '33.33%' }}>
+                  <div className={`${styles.pointCircle} ${progress >= 33 ? styles.active : ''}`}>
                     <ShoppingOutlined />
                   </div>
-                  <div className="point-label">Packaging</div>
+                  <div className={styles.pointLabel}>Packaging</div>
                 </div>
-                <div className="progress-point" style={{ left: '66.66%' }}>
-                  <div className={`point-circle ${progress >= 67 ? 'active' : ''}`}>
+                <div className={styles.progressPoint} style={{ left: '66.66%' }}>
+                  <div className={`${styles.pointCircle} ${progress >= 67 ? styles.active : ''}`}>
                     <TruckOutlined />
                   </div>
-                  <div className="point-label">On The Road</div>
+                  <div className={styles.pointLabel}>On The Road</div>
                 </div>
-                <div className="progress-point" style={{ left: '100%' }}>
-                  <div className={`point-circle ${progress >= 100 ? 'active' : ''}`}>
+                <div className={styles.progressPoint} style={{ left: '100%' }}>
+                  <div className={`${styles.pointCircle} ${progress >= 100 ? styles.active : ''}`}>
                     <HomeOutlined />
                   </div>
-                  <div className="point-label">Delivered</div>
+                  <div className={styles.pointLabel}>Delivered</div>
                 </div>
               </div>
             </div>
@@ -191,18 +191,18 @@ const TrackOrderDetailsPage = () => {
         </Card>
 
         {/* Order Activity */}
-        <div className="order-activity-section">
-          <Title level={4} className="activity-title">Order Activity</Title>
+        <div className={styles.orderActivitySection}>
+          <Title level={4} className={styles.activityTitle}>Order Activity</Title>
           
-          <div className="activity-timeline">
+          <div className={styles.activityTimeline}>
             {mockOrderActivity.map((activity) => (
-              <div key={activity.id} className={`activity-item activity-${activity.color}`}>
-                <div className="activity-icon-wrapper">
+              <div key={activity.id} className={`${styles.activityItem} ${styles[`activity${activity.color.charAt(0).toUpperCase() + activity.color.slice(1)}`]}`}>
+                <div className={styles.activityIconWrapper}>
                   {getActivityIcon(activity.icon)}
                 </div>
-                <div className="activity-content">
-                  <p className="activity-message">{activity.title}</p>
-                  <Text className="activity-timestamp">{activity.timestamp}</Text>
+                <div className={styles.activityContent}>
+                  <p className={styles.activityMessage}>{activity.title}</p>
+                  <Text className={styles.activityTimestamp}>{activity.timestamp}</Text>
                 </div>
               </div>
             ))}

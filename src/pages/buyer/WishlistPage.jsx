@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Empty, Card, Row, Col, Badge, Typography, Tooltip } from 'antd';
 import { DeleteOutlined, ShoppingCartOutlined, LeftOutlined } from '@ant-design/icons';
 import { BUYER_ROUTES } from '@constants/routes';
-import '../../assets/styles/buyer/WishlistPage.css';
+import styles from '@assets/styles/buyer/WishlistPage.module.css';
 
 // Mock data for wishlist
 const mockWishlistData = [
@@ -75,16 +75,16 @@ const WishlistPage = () => {
       key: 'name',
       width: '50%',
       render: (text, record) => (
-        <div className="product-row">
-          <div className="product-image">
+        <div className={styles.productRow}>
+          <div className={styles.productImage}>
             {record.image.startsWith('http') ? (
-              <img src={record.image} alt={text} className="product-img" />
+              <img src={record.image} alt={text} className={styles.productImg} />
             ) : (
-              <span className="image-emoji">{record.image}</span>
+              <span className={styles.imageEmoji}>{record.image}</span>
             )}
           </div>
-          <div className="product-info">
-            <h6 className="product-name">{text}</h6>
+          <div className={styles.productInfo}>
+            <h6 className={styles.productName}>{text}</h6>
           </div>
         </div>
       ),
@@ -95,11 +95,11 @@ const WishlistPage = () => {
       key: 'price',
       width: '15%',
       render: (price, record) => (
-        <div className="price-column">
+        <div className={styles.priceColumn}>
           {record.originalPrice && (
-            <span className="original-price">${record.originalPrice}</span>
+            <span className={styles.originalPrice}>${record.originalPrice}</span>
           )}
-          <span className="current-price">${price.toFixed(2)}</span>
+          <span className={styles.currentPrice}>${price.toFixed(2)}</span>
         </div>
       ),
     },
@@ -111,7 +111,7 @@ const WishlistPage = () => {
       render: (status, record) => (
         <Badge 
           status={record.inStock ? 'success' : 'error'} 
-          text={<span className={record.inStock ? 'text-success' : 'text-danger'}>{status}</span>}
+          text={<span className={record.inStock ? styles.textSuccess : styles.textDanger}>{status}</span>}
         />
       ),
     },
@@ -127,7 +127,7 @@ const WishlistPage = () => {
               icon={<ShoppingCartOutlined />}
               onClick={() => handleAddToCart(record.id)}
               disabled={!record.inStock}
-              className="add-to-cart-btn"
+              className={styles.addToCartBtn}
             >
               ADD TO CART
             </Button>
@@ -137,7 +137,7 @@ const WishlistPage = () => {
               danger
               icon={<DeleteOutlined />}
               onClick={() => handleRemoveFromWishlist(record.id)}
-              className="remove-btn"
+              className={styles.removeBtn}
             />
           </Tooltip>
         </Space>
@@ -146,27 +146,27 @@ const WishlistPage = () => {
   ];
 
   return (
-    <div className="wishlist-page">
-      <div className="wishlist-container">
+    <div className={styles.wishlistPage}>
+      <div className={styles.wishlistContainer}>
         {/* Header Section */}
-        <div className="wishlist-header">
-          <div className="back-button-group">
+        <div className={styles.wishlistHeader}>
+          <div className={styles.backButtonGroup}>
             <Button 
               type="text" 
               icon={<LeftOutlined />}
               onClick={() => navigate(-1)}
-              className="back-button"
+              className={styles.backButton}
             />
-            <span className="back-text">Back</span>
+            <span className={styles.backText}>Back</span>
           </div>
-          <Title level={1} className="wishlist-title">
+          <Title level={1} className={styles.wishlistTitle}>
             Wishlist
           </Title>
         </div>
 
         {/* Wishlist Content */}
         {mockWishlistData.length > 0 ? (
-          <Card className="wishlist-card">
+          <Card className={styles.wishlistCard}>
             <Table
               columns={columns}
               dataSource={mockWishlistData.map(item => ({...item, key: item.id}))}
@@ -177,11 +177,11 @@ const WishlistPage = () => {
                 style: { marginTop: '20px' }
               }}
               scroll={{ x: 1000 }}
-              className="wishlist-table"
+              className={styles.wishlistTable}
             />
           </Card>
         ) : (
-          <Card className="empty-card">
+          <Card className={styles.emptyCard}>
             <Empty
               description="Your Wishlist is Empty"
               style={{ paddingTop: '40px', paddingBottom: '40px' }}

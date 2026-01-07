@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Typography } from 'antd';
 import { LeftOutlined, ShareAltOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import DealCard from '@/pages/buyer/DealCard';
-import '../../assets/styles/buyer/MyDealsPage.css';
+import styles from '@assets/styles/buyer/MyDealsPage.module.css';
 
 const MyDealsPage = () => {
   const navigate = useNavigate();
@@ -99,60 +99,60 @@ const MyDealsPage = () => {
   };
 
   return (
-    <div className="my-deals-page">
-      <div className="my-deals-container">
+    <div className={styles.myDealsPage}>
+      <div className={styles.myDealsContainer}>
         {/* Header Section */}
-        <div className="my-deals-header">
-          <div className="header-left">
+        <div className={styles.myDealsHeader}>
+          <div className={styles.headerLeft}>
             <Button 
               type="text" 
               icon={<LeftOutlined />}
               onClick={() => navigate(-1)}
-              className="back-button"
+              className={styles.backButton}
             />
-            <div className="header-title-section">
-              <Title level={1} className="page-title">My Deals</Title>
-              <Text className="page-subtitle">Lets create your account</Text>
+            <div className={styles.headerTitleSection}>
+              <Title level={1} className={styles.pageTitle}>My Deals</Title>
+              <Text className={styles.pageSubtitle}>Lets create your account</Text>
             </div>
           </div>
           
-          <div className="header-right">
+          <div className={styles.headerRight}>
             <Button 
               type="primary" 
               icon={<ShoppingCartOutlined />}
-              className="past-deals-btn"
+              className={styles.pastDealsBtn}
             >
               Past Deals
             </Button>
             <Button 
               type="primary" 
-              className="wallet-btn"
+              className={styles.walletBtn}
             >
               💳 Add Money to UD wallet
             </Button>
             <Button 
               type="text" 
               icon={<ShareAltOutlined />}
-              className="share-btn"
+              className={styles.shareBtn}
             />
           </div>
         </div>
 
         {/* Deals Section */}
-        <div className="deals-section">
+        <div className={styles.dealsSection}>
           {/* Pending Deals */}
-          <div className="deals-column pending-deals-column">
-            <div className="section-header pending">
-              <div className="header-icon-text">
-                <span className="bell-icon">🔔</span>
+          <div className={styles.dealsColumn}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.headerIconText}>
+                <span className={styles.bellIcon}>🔔</span>
                 <div>
                   <h2>Pending Deals</h2>
-                  <p className="section-description">Please choose a payment method</p>
+                  <p className={styles.sectionDescription}>Please choose a payment method</p>
                 </div>
               </div>
             </div>
             
-            <div className="deals-grid pending">
+            <div className={styles.dealsGrid}>
               {pendingDeals.map((deal) => (
                 <DealCard key={deal.id} deal={deal} type="pending" />
               ))}
@@ -160,18 +160,18 @@ const MyDealsPage = () => {
           </div>
 
           {/* Approved Deals */}
-          <div className="deals-column approved-deals-column">
-            <div className="section-header approved">
-              <div className="header-icon-text">
-                <span className="check-icon">✓</span>
+          <div className={styles.dealsColumn}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.headerIconText}>
+                <span className={styles.checkIcon}>✓</span>
                 <div>
                   <h2>Approved Deals</h2>
-                  <p className="section-description">Please choose a shipping company based on your region</p>
+                  <p className={styles.sectionDescription}>Please choose a shipping company based on your region</p>
                 </div>
               </div>
             </div>
             
-            <div className="deals-grid approved">
+            <div className={styles.dealsGrid}>
               {approvedDeals.map((deal) => (
                 <DealCard key={deal.id} deal={deal} type="approved" />
               ))}
