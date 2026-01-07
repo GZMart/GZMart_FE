@@ -15,6 +15,8 @@ export const PUBLIC_ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   OTP_VERIFICATION: '/otp-verification',
+  WISHLIST: '/wishlist',
+  TRACK_ORDER: '/track-order',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password/:token',
   ABOUT: '/about',

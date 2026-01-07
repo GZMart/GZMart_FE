@@ -18,6 +18,11 @@ const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
 const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage'));
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
+const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
+const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
+const TrackOrderDetailsPage = lazy(() => import('@pages/buyer/TrackOrderDetailsPage'));
+const MyDealsPage = lazy(() => import('@pages/buyer/MyDealsPage'));
+const DealDetailsPage = lazy(() => import('@pages/buyer/DealDetailsPage'));
 
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
@@ -106,6 +111,36 @@ export const routeConfig = [
     public: true,
     restricted: true,
     layout: 'none',
+  },
+  {
+    path: '/wishlist',
+    element: WishlistPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/track-order',
+    element: TrackOrderPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/track-order-details/:orderId',
+    element: TrackOrderDetailsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/my-deals',
+    element: MyDealsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/deal/:dealId',
+    element: DealDetailsPage,
+    public: true,
+    layout: 'main',
   },
 
   // Buyer Routes

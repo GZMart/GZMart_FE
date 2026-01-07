@@ -1,0 +1,470 @@
+.trackOrderDetailsPage {
+  min-height: 100vh;
+  padding: 32px 0;
+  background-color: #fff;
+}
+
+.trackOrderDetailsContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header Section */
+.trackOrderHeader {
+  margin-bottom: 32px;
+}
+
+.backButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.backButton {
+  color: #333 !important;
+  font-size: 18px;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 48px;
+  height: 48px;
+  min-width: 48px !important;
+  border: 2px solid #e8e8e8;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  color: #1890ff !important;
+  border-color: #1890ff;
+  background-color: #f5f5f5 !important;
+}
+
+.backText {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pageTitle {
+  margin: 0 !important;
+  font-weight: 700 !important;
+  color: #000;
+  font-size: 32px;
+  letter-spacing: -0.5px;
+}
+
+/* Order Info Card */
+.orderInfoCard {
+  border: none;
+  background-color: #fffbe6;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.orderInfoCard .ant-card-body {
+  padding: 20px !important;
+}
+
+.orderInfoLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.orderId {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+
+.orderMeta {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.orderInfoRight {
+  text-align: right;
+}
+
+.orderPrice {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1890ff;
+}
+
+/* Expected Arrival */
+.expectedArrival {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 12px 0;
+  gap: 5px;
+}
+
+.arrivalLabel {
+  font-size: 14px;
+  color: #666;
+}
+
+.arrivalDate {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Progress Card */
+.progressCard {
+  border: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  margin-bottom: 32px;
+  background-color: #fafafa;
+}
+
+.progressCard .ant-card-body {
+  padding: 40px 24px 20px 24px !important;
+}
+
+.progressSection {
+  display: flex;
+  justify-content: center;
+}
+
+.customProgressBar {
+  position: relative;
+  height: 90px;
+  width: 80%;
+  max-width: 100%;
+}
+
+.progressTrack {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #d9d9d9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #1890ff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progressPoints {
+  position: relative;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progressPoint {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.progressPoint:nth-child(1) {
+  left: 0;
+}
+
+.progressPoint:nth-child(2) {
+  left: 33.33%;
+}
+
+.progressPoint:nth-child(3) {
+  left: 66.66%;
+}
+
+.progressPoint:nth-child(4) {
+  left: 100%;
+}
+
+.pointCircle {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 3px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #bfbfbf;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.pointCircle.active {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(24, 144, 255, 0.4);
+}
+
+.pointLabel {
+  position: absolute;
+  top: 50px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  left: 50%;
+  width: max-content;
+}
+
+/* Order Activity Section */
+.orderActivitySection {
+  margin-top: 40px;
+}
+
+.activityTitle {
+  margin-bottom: 24px !important;
+  font-weight: 600 !important;
+  color: #000 !important;
+}
+
+.activityTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activityItem {
+  display: flex;
+  gap: 16px;
+  padding: 16px 16px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  align-items: flex-start;
+}
+
+.activityItem.activitySuccess {
+  background-color: #f6ffed;
+  border-left: 3px solid #52c41a;
+}
+
+.activityItem.activityPrimary {
+  background-color: #f5f7fa;
+  border-left: 3px solid #1890ff;
+}
+
+.activityItem.activityDefault {
+  background-color: #fafafa;
+  border-left: 3px solid #d9d9d9;
+}
+
+.activityIconWrapper {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 20px;
+  min-width: 44px;
+}
+
+.activityItem.activitySuccess .activityIconWrapper {
+  background-color: #f0fce3;
+  color: #52c41a;
+}
+
+.activityItem.activityPrimary .activityIconWrapper {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.activityItem.activityDefault .activityIconWrapper {
+  background-color: #f0f0f0;
+  color: #8c8c8c;
+}
+
+.activityContent {
+  flex: 1;
+}
+
+.activityMessage {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #262626;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.activityTimestamp {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .trackOrderDetailsContainer {
+    padding: 0 15px;
+  }
+
+  .pageTitle {
+    font-size: 24px;
+  }
+
+  .orderInfoRight {
+    text-align: left;
+  }
+
+  .orderPrice {
+    font-size: 18px;
+  }
+
+  .progressCard .ant-card-body {
+    padding: 36px 20px !important;
+  }
+
+  .customProgressBar {
+    height: 80px;
+    width: 88%;
+  }
+
+  .pointCircle {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+
+  .pointLabel {
+    top: 42px;
+    font-size: 11px;
+  }
+
+  .activityItem {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .activityMessage {
+    font-size: 12px;
+  }
+
+  .activityIconWrapper {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trackOrderDetailsPage {
+    padding: 20px 0;
+  }
+
+  .trackOrderDetailsContainer {
+    padding: 0 12px;
+  }
+
+  .trackOrderHeader {
+    margin-bottom: 24px;
+  }
+
+  .backButton {
+    width: 44px;
+    height: 44px;
+    min-width: 44px !important;
+    font-size: 16px;
+  }
+
+  .backText {
+    font-size: 14px;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+  }
+
+  .orderId {
+    font-size: 16px;
+  }
+
+  .orderMeta {
+    font-size: 12px;
+  }
+
+  .orderPrice {
+    font-size: 16px;
+  }
+
+  .arrivalLabel,
+  .arrivalDate {
+    font-size: 13px;
+  }
+
+  .progressCard .ant-card-body {
+    padding: 32px 16px !important;
+  }
+
+  .customProgressBar {
+    height: 85px;
+    width: 85%;
+  }
+
+  .progressTrack {
+    top: 16px;
+  }
+
+  .pointCircle {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .pointLabel {
+    top: 42px;
+    font-size: 10px;
+  }
+
+  .activityItem {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .activityIconWrapper {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+
+  .activityMessage {
+    font-size: 12px;
+  }
+
+  .activityTimestamp {
+    font-size: 11px;
+  }
+}

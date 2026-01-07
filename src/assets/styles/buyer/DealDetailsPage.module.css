@@ -1,0 +1,618 @@
+/* Deal Details Page Styles */
+.dealDetailsPage {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.dealDetailsContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Header */
+.dealDetailsHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+
+.dealDetailsHeader .backButton {
+  font-size: 18px;
+}
+
+.dealDetailsHeader .headerTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+}
+
+/* Alert */
+.dealAlert {
+  padding: 12px 24px;
+  font-size: 14px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dealAlert.pendingAlert {
+  background-color: #fffbe6;
+  border-left: 4px solid #faad14;
+  color: #8b5f00;
+}
+
+.dealAlert a {
+  color: #faad14;
+  text-decoration: underline;
+  margin-left: 8px;
+}
+
+/* Main Content */
+.dealDetailsContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 32px 24px;
+}
+
+/* Left Section - Images */
+.dealDetailsLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dealMainImage {
+  width: 100%;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dealMainImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.dealThumbnailGallery {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.dealThumbnailGallery .thumbnail {
+  min-width: 80px;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dealThumbnailGallery .thumbnail:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dealThumbnailGallery .thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Right Section - Details */
+.dealDetailsRight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Rating Section */
+.dealRatingSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ratingStars {
+  font-size: 14px;
+  color: #faad14;
+  font-weight: 500;
+}
+
+.ratingCount {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+/* Product Name */
+.dealName {
+  font-size: 20px;
+  line-height: 1.5;
+  margin: 0 !important;
+  color: #262626;
+}
+
+/* Deal Info Row - Inline format */
+.dealInfoRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.infoItemInline {
+  font-size: 13px;
+  color: #262626;
+}
+
+.infoItemInline .label {
+  color: #8c8c8c;
+  margin-right: 4px;
+}
+
+.infoItemInline .value {
+  color: #262626;
+  font-weight: 500;
+}
+
+.infoItemInline .value.inStock {
+  color: #52c41a;
+}
+
+/* Price Section */
+.dealPriceSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.priceMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.priceMain .currency {
+  font-size: 14px;
+  color: #262626;
+  font-weight: 600;
+}
+
+.priceMain .priceValue {
+  font-size: 36px;
+  color: #52c41a;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.priceMain .originalPrice {
+  font-size: 13px;
+  color: #8c8c8c;
+  text-decoration: line-through;
+}
+
+.priceMain .discount {
+  background-color: #ffeaa7;
+  color: #d4780b;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.priceInstallment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.priceInstallment .installmentLabel {
+  color: #262626;
+}
+
+.priceInstallment .installmentText {
+  color: #262626;
+}
+
+.priceInstallment .installmentPrice {
+  color: #52c41a;
+  font-weight: 700;
+}
+
+/* Options */
+.dealOptionsWrapper {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dealOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Price and Quantity Row */
+.dealPriceAndQuantity {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  align-items: flex-end !important;
+}
+
+.dealPriceAndQuantity .ant-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.optionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.optionLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.colorOptions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.colorBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #d9d9d9;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.colorBox:hover {
+  transform: scale(1.1);
+}
+
+.colorBox.selected {
+  border-color: #1890ff;
+  box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
+}
+
+.optionSelect {
+  width: 100%;
+}
+
+.optionSelect .ant-select-selector {
+  border-radius: 4px;
+}
+
+/* Deal Info Stats */
+.dealInfoStats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background-color: #f0faf6;
+  border-radius: 8px;
+  border: 1px solid #e6f7f0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 500;
+}
+
+.statValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.progressSection {
+  margin: 8px 0;
+}
+
+.timerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e6f7f0;
+}
+
+.timerLabel {
+  font-size: 12px;
+  color: #52c41a;
+  font-weight: 700;
+}
+
+.timerProgressBar {
+  width: 100%;
+  height: 6px;
+  background-color: #e6f7f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.timerProgress {
+  height: 100%;
+  background-color: #1890ff;
+  transition: width 0.1s linear;
+}
+
+/* Quantity Section */
+.quantitySection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quantityLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.quantityControl {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  overflow: hidden;
+  height: 32px;
+  width: fit-content;
+}
+
+.quantityControl .qtyBtn {
+  border: none !important;
+  background-color: white !important;
+  color: #262626 !important;
+  padding: 0 8px !important;
+  width: 32px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1 !important;
+}
+
+.quantityControl .qtyBtn:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.quantityControl .qtyBtn:active {
+  background-color: #e6e6e6 !important;
+}
+
+.quantityControl .qtyValue {
+  width: 50px;
+  height: 100%;
+  text-align: center;
+  border-left: 1px solid #d9d9d9;
+  border-right: 1px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  background-color: white;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.getDealBtn {
+  background-color: #2c3e50 !important;
+  border-color: #2c3e50 !important;
+  color: white !important;
+  flex: 1;
+  height: 42px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.getDealBtn:hover {
+  background-color: #1a252f !important;
+  border-color: #1a252f !important;
+}
+
+.addToCartBtn {
+  border-color: #1890ff;
+  color: #1890ff;
+  background-color: white;
+  flex: 1;
+  height: 42px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.addToCartBtn:hover {
+  color: #0050b3;
+  border-color: #0050b3;
+}
+
+.buyNowBtn {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+  color: white !important;
+  flex: 1;
+  height: 42px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.buyNowBtn:hover {
+  background-color: #0050b3 !important;
+  border-color: #0050b3 !important;
+}
+
+/* Secondary Actions */
+.secondaryActions {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  padding: 12px 0;
+}
+
+.secondaryActions .actionLink {
+  justify-content: center;
+  color: #262626;
+  font-size: 12px;
+  padding: 0;
+  flex: 1;
+}
+
+.secondaryActions .actionLink:hover {
+  color: #1890ff;
+}
+
+.secondaryActions .actionLink:where(.ant-btn-text) {
+  height: auto;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .dealDetailsContent {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  .dealInfoRow {
+    grid-template-columns: 1fr;
+  }
+
+  .statRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dealDetailsPage {
+    padding: 0;
+  }
+
+  .dealDetailsContainer {
+    border-radius: 0;
+  }
+
+  .dealDetailsContent {
+    padding: 16px 12px;
+  }
+
+  .dealMainImage {
+    aspect-ratio: 1;
+  }
+
+  .dealName {
+    font-size: 16px;
+  }
+
+  .priceItem .priceValue {
+    font-size: 24px;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .actionButtons button {
+    width: 100%;
+  }
+
+  .quantitySection {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quantityControl {
+    width: 100%;
+  }
+
+  .quantityControl .qtyInput {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .dealDetailsRight {
+    gap: 16px;
+  }
+
+  .dealRatingSection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dealName {
+    font-size: 14px;
+  }
+
+  .dealInfoRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .priceItem .priceValue {
+    font-size: 20px;
+  }
+
+  .optionLabel {
+    font-size: 13px;
+  }
+
+  .actionButtons button {
+    height: 40px;
+    font-size: 13px;
+  }
+}
