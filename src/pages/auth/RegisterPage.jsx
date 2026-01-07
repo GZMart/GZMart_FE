@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { PUBLIC_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
@@ -11,52 +13,69 @@ import { registerUser } from '@store/slices/authSlice';
 const RegisterPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-  });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const formik = useFormik({
+    initialValues: {
+      fullName: '',
+      email: '',
+      password: '',
+    },
+    validationSchema: Yup.object({
+      fullName: Yup.string()
+        .min(2, 'Họ tên phải có ít nhất 2 ký tự')
+        .required('Vui lòng nhập họ và tên'),
+      email: Yup.string()
+        .email('Email không hợp lệ')
+        .required('Vui lòng nhập email'),
+      password: Yup.string()
+        .min(6, 'Mật khẩu phải có ít nhất 6 ký tự')
+        .required('Vui lòng nhập mật khẩu'),
+    }),
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        const result = await dispatch(
+          registerUser({
+            fullName: values.fullName,
+            email: values.email,
+            password: values.password,
+          })
+        ).unwrap();
 
-    try {
-      const result = await dispatch(registerUser(formData)).unwrap();
+        // Đăng ký thành công - OTP đã được gửi
+        let message = 'Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.';
 
-      // Đăng ký thành công - OTP đã được gửi
-      let message = 'Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.';
+        // In development, show OTP if available
+        if (result?.otp && import.meta.env.DEV) {
+          message += `\n\n🔐 Mã OTP (Development): ${result.otp}`;
+          // eslint-disable-next-line no-console
+          console.log('🔐 Registration OTP:', result.otp);
+        }
 
-      // In development, show OTP if available
-      if (result?.otp && import.meta.env.DEV) {
-        message += `\n\n🔐 Mã OTP (Development): ${result.otp}`;
-        // eslint-disable-next-line no-console
-        console.log('🔐 Registration OTP:', result.otp);
-      }
-
-      toast.success(message, {
-        autoClose: result?.otp ? 10000 : 3000, // Show longer if OTP is included
-      });
-
-      // Navigate to OTP verification page
-      setTimeout(() => {
-        navigate(PUBLIC_ROUTES.OTP_VERIFICATION, {
-          state: {
-            email: formData.email,
-            fullName: formData.fullName,
-            otp: result?.otp, // Pass OTP in development
-          },
+        toast.success(message, {
+          autoClose: result?.otp ? 10000 : 3000, // Show longer if OTP is included
         });
-      }, 1000);
-    } catch (error) {
-      // Hiển thị lỗi - error đã được format từ authSlice
-      const errorMessage = error || 'Đăng ký thất bại. Vui lòng thử lại.';
-      toast.error(errorMessage);
-      setLoading(false);
-    }
-  };
+
+        // Navigate to OTP verification page
+        setTimeout(() => {
+          navigate(PUBLIC_ROUTES.OTP_VERIFICATION, {
+            state: {
+              email: values.email,
+              fullName: values.fullName,
+              otp: result?.otp, // Pass OTP in development
+            },
+          });
+        }, 1000);
+      } catch (error) {
+        // Hiển thị lỗi - error đã được format từ authSlice
+        const errorMessage = error || 'Đăng ký thất bại. Vui lòng thử lại.';
+        toast.error(errorMessage);
+        setLoading(false);
+      }
+    },
+  });
 
   const handleGoogleSignup = async () => {
     try {
@@ -178,29 +197,45 @@ const RegisterPage = () => {
           {/* Right Side - Form */}
           <div className={styles.rightSection}>
             <div className={styles.formWrapper}>
-              <form onSubmit={handleSubmit} className={styles.loginForm}>
+              <form onSubmit={formik.handleSubmit} className={styles.loginForm}>
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Full Name</label>
                   <input
                     type="text"
-                    className={styles.input}
+                    name="fullName"
+                    className={`${styles.input} ${
+                      formik.touched.fullName && formik.errors.fullName ? 'is-invalid' : ''
+                    }`}
                     placeholder="Enter your full name"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
+                    value={formik.values.fullName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.fullName && formik.errors.fullName && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {formik.errors.fullName}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Email</label>
                   <input
                     type="email"
-                    className={styles.input}
+                    name="email"
+                    className={`${styles.input} ${
+                      formik.touched.email && formik.errors.email ? 'is-invalid' : ''
+                    }`}
                     placeholder="Enter your email address"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.email && formik.errors.email && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {formik.errors.email}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
@@ -208,11 +243,14 @@ const RegisterPage = () => {
                   <div className={styles.passwordWrapper}>
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      className={styles.input}
+                      name="password"
+                      className={`${styles.input} ${
+                        formik.touched.password && formik.errors.password ? 'is-invalid' : ''
+                      }`}
                       placeholder="Enter your password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
+                      value={formik.values.password}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
                     />
                     <button
                       type="button"
@@ -246,6 +284,11 @@ const RegisterPage = () => {
                       )}
                     </button>
                   </div>
+                  {formik.touched.password && formik.errors.password && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {formik.errors.password}
+                    </div>
+                  )}
                 </div>
 
                 <button type="submit" className={styles.loginButton} disabled={loading}>
