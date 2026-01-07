@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Container } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { PUBLIC_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
@@ -13,11 +14,6 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false,
-  });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,42 +24,52 @@ const LoginPage = () => {
       // Clear state để không hiển thị lại khi refresh
       window.history.replaceState({}, document.title);
     }
-    if (location.state?.email) {
-      setFormData((prev) => ({ ...prev, email: location.state.email }));
-    }
   }, [location.state]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const formik = useFormik({
+    initialValues: {
+      email: location.state?.email || '',
+      password: '',
+      rememberMe: false,
+    },
+    enableReinitialize: true, // Allow updating initialValues from location.state
+    validationSchema: Yup.object({
+      email: Yup.string()
+        .email('Email không hợp lệ')
+        .required('Vui lòng nhập email'),
+      password: Yup.string()
+        .required('Vui lòng nhập mật khẩu'),
+    }),
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        const result = await dispatch(
+          loginUser({
+            email: values.email,
+            password: values.password,
+            rememberMe: values.rememberMe,
+          })
+        ).unwrap();
 
-    try {
-      const result = await dispatch(
-        loginUser({
-          email: formData.email,
-          password: formData.password,
-          rememberMe: formData.rememberMe,
-        })
-      ).unwrap();
+        // Login thành công
+        toast.success('Đăng nhập thành công!');
 
-      // Login thành công
-      toast.success('Đăng nhập thành công!');
-
-      // Redirect dựa trên role
-      const user = result.user;
-      if (user?.role === 'seller') {
-        navigate('/seller/dashboard');
-      } else if (user?.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate(PUBLIC_ROUTES.HOME);
+        // Redirect dựa trên role
+        const user = result.user;
+        if (user?.role === 'seller') {
+          navigate('/seller/dashboard');
+        } else if (user?.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate(PUBLIC_ROUTES.HOME);
+        }
+      } catch (error) {
+        // Hiển thị lỗi
+        toast.error(error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.');
+        setLoading(false);
       }
-    } catch (error) {
-      // Hiển thị lỗi
-      toast.error(error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.');
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   const handleGoogleLogin = async () => {
     try {
@@ -189,17 +195,25 @@ const LoginPage = () => {
           {/* Right Side - Form */}
           <div className={styles.rightSection}>
             <div className={styles.formWrapper}>
-              <form onSubmit={handleSubmit} className={styles.loginForm}>
+              <form onSubmit={formik.handleSubmit} className={styles.loginForm}>
                 <div className={styles.formGroup}>
                   <label className={styles.label}>Email</label>
                   <input
                     type="email"
-                    className={styles.input}
+                    name="email"
+                    className={`${styles.input} ${
+                      formik.touched.email && formik.errors.email ? 'is-invalid' : ''
+                    }`}
                     placeholder="Enter your email address"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                   />
+                  {formik.touched.email && formik.errors.email && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {formik.errors.email}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
@@ -207,11 +221,14 @@ const LoginPage = () => {
                   <div className={styles.passwordWrapper}>
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      className={styles.input}
+                      name="password"
+                      className={`${styles.input} ${
+                        formik.touched.password && formik.errors.password ? 'is-invalid' : ''
+                      }`}
                       placeholder="Enter your password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
+                      value={formik.values.password}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
                     />
                     <button
                       type="button"
@@ -245,14 +262,20 @@ const LoginPage = () => {
                       )}
                     </button>
                   </div>
+                  {formik.touched.password && formik.errors.password && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {formik.errors.password}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
                   <label className={styles.checkboxLabel}>
                     <input
                       type="checkbox"
-                      checked={formData.rememberMe}
-                      onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                      name="rememberMe"
+                      checked={formik.values.rememberMe}
+                      onChange={formik.handleChange}
                     />
                     <span style={{ marginLeft: '7px' }}>Remember me</span>
                   </label>

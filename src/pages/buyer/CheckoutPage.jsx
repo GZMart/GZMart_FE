@@ -1,10 +1,11 @@
 import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
+import { orderService } from '@services/order.service';
 import { formatCurrency } from '@utils/formatters';
-import { PUBLIC_ROUTES } from '@constants/routes';
+import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 
 /**
  * Checkout Page Component
@@ -31,32 +32,54 @@ const CheckoutPage = () => {
     phone: '',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('paypal');
+  // Fetch customer info on mount
+  useEffect(() => {
+    const fetchCustomerInfo = async () => {
+      try {
+        const response = await orderService.getCheckoutInfo();
+        if (response.success) {
+          setCustomerInfo((prev) => ({
+            ...prev,
+            ...response.data,
+            // Ensure controlled inputs don't become uncontrolled
+            firstName: response.data.firstName || '',
+            lastName: response.data.lastName || '',
+            email: response.data.email || '',
+            phone: response.data.phone || '',
+            address: response.data.address || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch customer info:', error);
+      }
+    };
+
+    fetchCustomerInfo();
+  }, []);
+
+  const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
   const [shippingCompany, setShippingCompany] = useState('racecouriers');
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
 
   // Payment methods data
   const paymentMethods = [
     {
-      id: 'paypal',
-      name: 'Paypal',
-      logo: 'https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg',
-      description:
-        'PayPal is a trusted online payment platform that allows individuals and businesses to securely send and receive money electronically.',
+      id: 'cash_on_delivery',
+      name: 'Cash on Delivery (COD)',
+      logo: 'https://cdn-icons-png.flaticon.com/512/2331/2331941.png', // Generic COD icon
+      description: 'Pay cash when you receive your order.',
     },
     {
-      id: 'mastercard',
-      name: 'Mastercard',
-      logo: 'https://www.mastercard.com/content/dam/public/mastercardcom/na/global/en/consumers/find-a-card/images/mastercard-logo.svg',
-      description:
-        'Mastercard is a trusted online payment platform that allows individuals and businesses to securely send and receive money electronically.',
+      id: 'vnpay',
+      name: 'VNPay',
+      logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png',
+      description: 'Pay securely using VNPay QR or ATM card.',
     },
     {
-      id: 'bitcoin',
-      name: 'Bitcoin',
-      logo: 'https://bitcoin.org/img/icons/opengraph.png',
-      description:
-        'Bitcoin is a trusted online payment platform that allows individuals and businesses to securely send and receive money electronically.',
+      id: 'payos',
+      name: 'PayOS',
+      logo: 'https://payos.vn/wp-content/uploads/sites/13/2023/07/Logo-PayOS-Purple.svg', 
+      description: 'Pay via PayOS payment gateway.',
     },
   ];
 
@@ -88,17 +111,53 @@ const CheckoutPage = () => {
     },
   ];
 
-  // Calculate order totals
-  const subtotal = cartItems.reduce(
+  // Order summary state
+  const [orderSummary, setOrderSummary] = useState({
+    subtotal: 0,
+    shippingCost: 0,
+    tax: 0,
+    discount: 0,
+    total: 0
+  });
+
+  // Calculate local subtotal for initial render/fallback
+  const localSubtotal = cartItems.reduce(
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
     0
   );
-  const selectedShipping = shippingCompanies.find((s) => s.id === shippingCompany);
-  const shippingCost = selectedShipping?.shippingCost || 0;
-  const tax = 0;
-  const discount = subtotal > 100 ? subtotal * 0.2 : 0;
+
+  // Fetch order preview when city/state changes or cart items change
+  useEffect(() => {
+    const fetchPreview = async () => {
+      // Use state/region as 'city' for backend logic (HCM vs Others)
+      const city = customerInfo.state;
+      try {
+        const response = await orderService.previewOrder({ city });
+        if (response.success) {
+          setOrderSummary(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch order preview:', error);
+        // Fallback to local calculation
+        setOrderSummary({
+           subtotal: localSubtotal,
+           shippingCost: 0,
+           tax: 0,
+           discount: 0,
+           total: localSubtotal
+        });
+      }
+    };
+
+    if (cartItems.length > 0) {
+      fetchPreview();
+    }
+  }, [customerInfo.state, cartItems, localSubtotal]); // Re-run when address (city) or cart changes
+
+  // Values for display (prioritize backend response)
+  const { subtotal, shippingCost, tax, discount, total } = orderSummary;
   const giftBoxPrice = includeGiftBox ? 10.9 : 0;
-  const total = Math.max(0, subtotal + shippingCost + tax - discount + giftBoxPrice);
+  const finalTotal = total + giftBoxPrice;
 
   // Handle form input changes
   const handleCustomerInfoChange = (field, value) => {
@@ -121,25 +180,30 @@ const CheckoutPage = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (currentStep === 1) {
       handleNext();
     } else if (currentStep === 2) {
       handleNext();
     } else if (currentStep === 3) {
-      // TODO: Submit order to backend
-      // eslint-disable-next-line no-console
-      console.log('Order submitted:', {
-        customerInfo,
-        paymentMethod,
-        shippingCompany,
-        includeGiftBox,
-        cartItems,
-        total,
-      });
-      // Navigate to order confirmation page
-      // navigate(BUYER_ROUTES.ORDER_CONFIRMATION);
+      const orderData = {
+          shippingAddress: `${customerInfo.address}, ${customerInfo.state}, ${customerInfo.country}`,
+          city: customerInfo.state, 
+          paymentMethod,
+          notes: '' 
+      };
+
+      try {
+        const response = await orderService.createOrder(orderData);
+        if (response.success) {
+           const orderId = response.data._id;
+           navigate(BUYER_ROUTES.ORDER_CONFIRMATION.replace(':orderId', orderId));
+        }
+      } catch (error) {
+        console.error('Failed to create order', error);
+        alert(error.message || 'Failed to create order');
+      }
     }
   };
 
@@ -506,7 +570,7 @@ const CheckoutPage = () => {
 
         <div className="d-flex justify-content-between mb-4">
           <span className="fw-bold fs-5">Total Price</span>
-          <span className="fw-bold fs-5 text-primary">{formatCurrency(total)}</span>
+          <span className="fw-bold fs-5 text-primary">{formatCurrency(finalTotal)}</span>
         </div>
 
         <div className="d-flex gap-2">

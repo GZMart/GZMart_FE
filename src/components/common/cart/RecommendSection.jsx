@@ -70,7 +70,12 @@ const RecommendSection = ({ limit = 4 }) => {
         sku: product.id,
         brand: product.brand,
       };
-      dispatch(addToCart({ product: cartItem, quantity: 1 }));
+      dispatch(addToCart({ 
+        product: cartItem, 
+        quantity: 1,
+        color: cartItem.color,
+        size: cartItem.size
+      }));
     }
   };
 

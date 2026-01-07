@@ -2,8 +2,7 @@ import { Container, Row, Col, Button } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useState } from 'react';
-import { selectCartItems } from '@store/slices/cartSlice';
-import { addToCart } from '@store/slices/cartSlice';
+import { selectCartItems, fetchCart } from '@store/slices/cartSlice';
 import { products } from '@utils/data/mockData';
 import { PUBLIC_ROUTES } from '@constants/routes';
 import CartSection from '@components/common/cart/CartSection';
@@ -66,17 +65,10 @@ const CartPage = () => {
   const cartItems = useSelector(selectCartItems);
   const [selectedItems, setSelectedItems] = useState(new Set());
 
-  // Load mock data into cart if cart is empty (for demo purposes)
+  // Fetch cart data on mount
   useEffect(() => {
-    if (cartItems.length === 0) {
-      // Load first 3 products with different variants as sample cart items
-      const sampleProducts = products.slice(0, 3);
-      sampleProducts.forEach((product, index) => {
-        const cartItem = convertProductToCartItem(product, index);
-        dispatch(addToCart({ product: cartItem, quantity: 1 }));
-      });
-    }
-  }, [cartItems.length, dispatch]);
+    dispatch(fetchCart());
+  }, [dispatch]);
 
   // Auto-select all items when cart items change
   useEffect(() => {
