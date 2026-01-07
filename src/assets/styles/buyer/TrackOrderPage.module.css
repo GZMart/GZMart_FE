@@ -1,0 +1,310 @@
+.trackOrderPage {
+  min-height: 100vh;
+  padding: 32px 0;
+  background-color: #fff;
+}
+
+.trackOrderContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header Section */
+.trackOrderHeader {
+  margin-bottom: 40px;
+}
+
+.backButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.backButton {
+  color: #333 !important;
+  font-size: 18px;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 48px;
+  height: 48px;
+  min-width: 48px !important;
+  border: 2px solid #e8e8e8;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  color: #1890ff !important;
+  border-color: #1890ff;
+  background-color: #f5f5f5 !important;
+}
+
+.backText {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pageTitle {
+  margin: 0 !important;
+  font-weight: 700 !important;
+  color: #000;
+  font-size: 32px;
+  letter-spacing: -0.5px;
+}
+
+/* Card Styling */
+.trackOrderCard {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  background: #fff;
+  padding: 40px !important;
+}
+
+/* Description */
+.trackOrderDescription {
+  margin-bottom: 32px;
+}
+
+.trackOrderDescription .ant-typography {
+  color: #666;
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* Form Section */
+.trackOrderForm {
+  margin-bottom: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.formInput {
+  height: 40px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.formInput:hover {
+  border-color: #1890ff;
+}
+
+.formInput:focus,
+.formInput:focus-visible {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.formInput.ant-input-status-error {
+  border-color: #ff4d4f;
+}
+
+.formInput.ant-input-status-error:focus {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
+}
+
+.errorMessage {
+  font-size: 12px;
+  color: #ff4d4f;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Info Message */
+.infoMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.infoIcon {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #666;
+  font-weight: 600;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.infoText {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Button Group */
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.trackButton {
+  background-color: #1890ff !important;
+  border: none !important;
+  height: 44px;
+  padding: 0 24px !important;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trackButton:not(:disabled):hover {
+  background-color: #0050b3 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.trackButton:disabled {
+  background-color: #d9d9d9 !important;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .trackOrderContainer {
+    padding: 0 15px;
+  }
+
+  .trackOrderCard {
+    padding: 24px !important;
+  }
+
+  .pageTitle {
+    font-size: 24px;
+  }
+
+  .trackOrderDescription .ant-typography {
+    font-size: 14px;
+  }
+
+  .formLabel {
+    font-size: 13px;
+  }
+
+  .formInput {
+    height: 36px;
+    font-size: 13px;
+  }
+
+  .trackButton {
+    height: 40px;
+    padding: 0 16px !important;
+    font-size: 12px;
+  }
+
+  .infoMessage {
+    padding: 10px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+
+  .infoText {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trackOrderPage {
+    padding: 20px 0;
+  }
+
+  .trackOrderContainer {
+    padding: 0 12px;
+  }
+
+  .trackOrderHeader {
+    margin-bottom: 24px;
+  }
+
+  .backButton {
+    width: 44px;
+    height: 44px;
+    min-width: 44px !important;
+    font-size: 16px;
+  }
+
+  .backText {
+    font-size: 14px;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+  }
+
+  .trackOrderCard {
+    padding: 20px !important;
+    border-radius: 6px;
+  }
+
+  .formLabel {
+    font-size: 12px;
+  }
+
+  .formInput {
+    height: 32px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .trackButton {
+    width: 100%;
+    height: 36px;
+    padding: 0 12px !important;
+    font-size: 11px;
+  }
+
+  .infoMessage {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .infoIcon {
+    font-size: 16px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .infoText {
+    font-size: 11px;
+  }
+}

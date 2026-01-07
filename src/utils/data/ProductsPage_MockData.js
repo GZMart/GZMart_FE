@@ -765,8 +765,8 @@ export const products = [
  */
 export const getModelName = (product, tier_index) => {
   if (!product.tier_variations || !tier_index) {
-return '';
-}
+    return '';
+  }
 
   return tier_index.map((index, tier) => product.tier_variations[tier].options[index]).join(' - ');
 };
@@ -776,8 +776,8 @@ return '';
  */
 export const getModelImage = (product, tier_index) => {
   if (!product.tier_variations || !tier_index) {
-return null;
-}
+    return null;
+  }
 
   // Lấy ảnh từ tier đầu tiên (thường là Color)
   const firstTierIndex = tier_index[0];
@@ -795,8 +795,8 @@ return null;
  */
 export const getProductImages = (product) => {
   if (!product.tier_variations) {
-return [];
-}
+    return [];
+  }
 
   const images = [];
   product.tier_variations.forEach((tier) => {
@@ -813,8 +813,8 @@ return [];
  */
 export const findModel = (product, tier_index) => {
   if (!product.models || !tier_index) {
-return null;
-}
+    return null;
+  }
 
   return product.models.find(
     (model) => JSON.stringify(model.tier_index) === JSON.stringify(tier_index)
@@ -826,8 +826,8 @@ return null;
  */
 export const getTotalStock = (product) => {
   if (!product.models) {
-return 0;
-}
+    return 0;
+  }
   return product.models.reduce((sum, model) => sum + model.stock, 0);
 };
 
@@ -851,8 +851,8 @@ export const getPriceRange = (product) => {
  */
 export const isInStock = (product) => {
   if (!product.models) {
-return product.inStock;
-}
+    return product.inStock;
+  }
   return product.models.some((model) => model.stock > 0);
 };
 
@@ -866,13 +866,13 @@ export const getDealById = (dealId) => deals.find((deal) => deal.id === dealId);
  */
 export const getProductWithDeal = (product) => {
   if (!product.dealId) {
-return product;
-}
+    return product;
+  }
 
   const deal = getDealById(product.dealId);
   if (!deal) {
-return product;
-}
+    return product;
+  }
 
   // Generate badge based on deal type and status
   let badge = '';
