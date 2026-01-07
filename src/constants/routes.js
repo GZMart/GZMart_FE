@@ -6,10 +6,15 @@
 export const PUBLIC_ROUTES = {
   HOME: '/',
   SHOP: '/shop',
+  CATEGORIES: '/categories',
+  CATEGORY_PRODUCTS: '/categories/:categoryId/products',
+  PRODUCTS: '/products',
+  DEALS: '/deals',
   PRODUCT_DETAILS: '/product/:id',
   SEARCH: '/search',
   LOGIN: '/login',
   REGISTER: '/register',
+  OTP_VERIFICATION: '/otp-verification',
   WISHLIST: '/wishlist',
   TRACK_ORDER: '/track-order',
   FORGOT_PASSWORD: '/forgot-password',
@@ -34,6 +39,7 @@ export const BUYER_ROUTES = {
   ORDER_CONFIRMATION: '/buyer/order-confirmation/:orderId',
   ADDRESSES: '/buyer/addresses',
   PAYMENT_METHODS: '/buyer/payment-methods',
+  WALLET: '/buyer/wallet',
   NOTIFICATIONS: '/buyer/notifications',
 };
 
