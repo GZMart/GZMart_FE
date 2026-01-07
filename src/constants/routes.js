@@ -72,6 +72,9 @@ export const SELLER_ROUTES = {
   ORDERS: '/seller/orders',
   ORDER_DETAILS: '/seller/orders/:id',
 
+  // Returns
+  RETURNS: '/seller/returns',
+
   // Suppliers
   SUPPLIERS: '/seller/suppliers',
   SUPPLIER_CREATE: '/seller/suppliers/create',
@@ -98,6 +101,10 @@ export const ADMIN_ROUTES = {
   USERS: '/admin/users',
   USER_CREATE: '/admin/users/create',
   USER_EDIT: '/admin/users/:id/edit',
+
+  // Catalog Management
+  CATEGORIES: '/admin/categories',
+  ATTRIBUTES: '/admin/attributes',
   USER_DETAILS: '/admin/users/:id',
 
   // System Configuration

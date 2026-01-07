@@ -1,7 +1,6 @@
-import { api } from '../axiosClient';
-import { API_VERSION } from '@constants';
+import axiosClient from '../axiosClient';
 
-const BASE_URL = `${API_VERSION}/products`;
+const BASE_URL = '/api/products';
 
 /**
  * Product API Service
@@ -9,17 +8,52 @@ const BASE_URL = `${API_VERSION}/products`;
 export const productService = {
   /**
    * Get all products with filters and pagination
-   * @param {object} params - Query parameters (page, limit, category, search, etc.)
-   * @returns {Promise} Products list
+   * @param {object} params - Query parameters (page, limit, status, condition, minPrice, maxPrice, sort, tags)
+   * @returns {Promise} Products list with pagination
    */
-  getProducts: async (params = {}) => api.get(BASE_URL, { params }),
+  getAll: async (params = {}) => {
+    return await axiosClient.get(BASE_URL, { params });
+  },
+
+  /**
+   * Legacy method - alias for getAll
+   */
+  getProducts: async (params = {}) => {
+    return await axiosClient.get(BASE_URL, { params });
+  },
 
   /**
    * Get single product by ID
    * @param {string} id - Product ID
    * @returns {Promise} Product details
    */
-  getProductById: async (id) => api.get(`${BASE_URL}/${id}`),
+  getById: async (id) => {
+    return await axiosClient.get(`${BASE_URL}/${id}`);
+  },
+
+  /**
+   * Legacy method - alias for getById
+   */
+  getProductById: async (id) => {
+    return await axiosClient.get(`${BASE_URL}/${id}`);
+  },
+
+  /**
+   * Get products by category
+   * @param {string} categoryId - Category ID
+   * @param {object} params - Query parameters
+   * @returns {Promise} Products in category
+   */
+  getByCategory: async (categoryId, params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/category/${categoryId}`, { params });
+  },
+
+  /**
+   * Legacy method - alias for getByCategory
+   */
+  getProductsByCategory: async (categoryId, params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/category/${categoryId}`, { params });
+  },
 
   /**
    * Search products
@@ -27,24 +61,20 @@ export const productService = {
    * @param {object} filters - Additional filters
    * @returns {Promise} Search results
    */
-  searchProducts: async (query, filters = {}) => api.get(`${BASE_URL}/search`, {
+  searchProducts: async (query, filters = {}) => {
+    return await axiosClient.get(`${BASE_URL}/search`, {
       params: { q: query, ...filters },
-    }),
-
-  /**
-   * Get products by category
-   * @param {string} category - Category slug
-   * @param {object} params - Query parameters
-   * @returns {Promise} Products in category
-   */
-  getProductsByCategory: async (category, params = {}) => api.get(`${BASE_URL}/category/${category}`, { params }),
+    });
+  },
 
   /**
    * Get featured products
    * @param {number} limit - Number of products to fetch
    * @returns {Promise} Featured products
    */
-  getFeaturedProducts: async (limit = 10) => api.get(`${BASE_URL}/featured`, { params: { limit } }),
+  getFeaturedProducts: async (limit = 10) => {
+    return await axiosClient.get(`${BASE_URL}/featured`, { params: { limit } });
+  },
 
   /**
    * Get related products
@@ -52,14 +82,28 @@ export const productService = {
    * @param {number} limit - Number of products to fetch
    * @returns {Promise} Related products
    */
-  getRelatedProducts: async (productId, limit = 6) => api.get(`${BASE_URL}/${productId}/related`, { params: { limit } }),
+  getRelatedProducts: async (productId, limit = 10) => {
+    const response = await axiosClient.get(`${BASE_URL}/${productId}/related`, {
+      params: { limit },
+    });
+    return response.data;
+  },
 
   /**
    * Create new product (Seller/Admin)
    * @param {object} productData - Product data
    * @returns {Promise} Created product
    */
-  createProduct: async (productData) => api.post(BASE_URL, productData),
+  create: async (productData) => {
+    return await axiosClient.post(BASE_URL, productData);
+  },
+
+  /**
+   * Legacy method - alias for create
+   */
+  createProduct: async (productData) => {
+    return await axiosClient.post(BASE_URL, productData);
+  },
 
   /**
    * Update product (Seller/Admin)
@@ -67,14 +111,32 @@ export const productService = {
    * @param {object} productData - Updated product data
    * @returns {Promise} Updated product
    */
-  updateProduct: async (id, productData) => api.put(`${BASE_URL}/${id}`, productData),
+  update: async (id, productData) => {
+    return await axiosClient.put(`${BASE_URL}/${id}`, productData);
+  },
+
+  /**
+   * Legacy method - alias for update
+   */
+  updateProduct: async (id, productData) => {
+    return await axiosClient.put(`${BASE_URL}/${id}`, productData);
+  },
 
   /**
    * Delete product (Seller/Admin)
    * @param {string} id - Product ID
    * @returns {Promise} Deletion response
    */
-  deleteProduct: async (id) => api.delete(`${BASE_URL}/${id}`),
+  delete: async (id) => {
+    return await axiosClient.delete(`${BASE_URL}/${id}`);
+  },
+
+  /**
+   * Legacy method - alias for delete
+   */
+  deleteProduct: async (id) => {
+    return await axiosClient.delete(`${BASE_URL}/${id}`);
+  },
 
   /**
    * Upload product images
@@ -82,9 +144,11 @@ export const productService = {
    * @param {FormData} formData - Form data with images
    * @returns {Promise} Upload response
    */
-  uploadImages: async (productId, formData) => api.post(`${BASE_URL}/${productId}/images`, formData, {
+  uploadImages: async (productId, formData) => {
+    return await axiosClient.post(`${BASE_URL}/${productId}/images`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+    });
+  },
 
   /**
    * Get product reviews
@@ -92,7 +156,9 @@ export const productService = {
    * @param {object} params - Query parameters
    * @returns {Promise} Product reviews
    */
-  getProductReviews: async (productId, params = {}) => api.get(`${BASE_URL}/${productId}/reviews`, { params }),
+  getProductReviews: async (productId, params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/${productId}/reviews`, { params });
+  },
 
   /**
    * Add product review
@@ -100,7 +166,9 @@ export const productService = {
    * @param {object} reviewData - Review data
    * @returns {Promise} Created review
    */
-  addProductReview: async (productId, reviewData) => api.post(`${BASE_URL}/${productId}/reviews`, reviewData),
+  addProductReview: async (productId, reviewData) => {
+    return await axiosClient.post(`${BASE_URL}/${productId}/reviews`, reviewData);
+  },
 };
 
 export default productService;
