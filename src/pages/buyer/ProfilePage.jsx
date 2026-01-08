@@ -5,8 +5,7 @@ import { Container } from 'react-bootstrap';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
-import Header from '@components/common/Header';
-import Footer from '@components/common/Footer';
+
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -504,7 +503,7 @@ const ProfilePage = () => {
 
   return (
     <div className={styles.pageLayout}>
-      <Header />
+
 
       <div className={styles.mainContent}>
         <div className={styles.profileContainer}>
@@ -644,7 +643,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <Footer />
+
     </div>
   );
 };
