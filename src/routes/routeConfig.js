@@ -35,6 +35,9 @@ const InventoryPage = lazy(() => import('@pages/seller/Inventory/InventoryPage')
 const LandedCostPage = lazy(() => import('@pages/seller/LandedCost/LandedCostPage'));
 const ListingsPage = lazy(() => import('@pages/seller/ListingsPage'));
 const ReturnsPage = lazy(() => import('@pages/seller/ReturnsPage'));
+const SellerOrdersPage = lazy(() => import('@pages/seller/OrdersPage'));
+const OrderDetailsPage = lazy(() => import('@pages/seller/OrderDetailsPage'));
+const FlashSalesPage = lazy(() => import('@pages/seller/FlashSalesPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -249,6 +252,27 @@ export const routeConfig = [
   {
     path: '/seller/returns',
     element: ReturnsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/orders',
+    element: SellerOrdersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/orders/:id',
+    element: OrderDetailsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/flash-sales',
+    element: FlashSalesPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
