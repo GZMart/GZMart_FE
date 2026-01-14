@@ -157,6 +157,23 @@ const ERPLayout = ({ children }) => {
 
                 <Nav.Link
                   as={Link}
+                  to="/seller/flash-sales"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === '/seller/flash-sales' ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === '/seller/flash-sales' ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-lightning-fill"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
+                  Flash Sales
+                </Nav.Link>
+
+                <Nav.Link
+                  as={Link}
                   to="/seller/invoices"
                   className="px-4 py-2 d-flex align-items-center"
                   style={{
