@@ -71,15 +71,17 @@ const ProductCard = ({ product }) => {
 
 ProductCard.propTypes = {
   product: PropTypes.shape({
-    id: PropTypes.number.isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
     image: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
-    originalPrice: PropTypes.number.isRequired,
-    rating: PropTypes.number.isRequired,
-    reviews: PropTypes.number.isRequired,
+    originalPrice: PropTypes.number,
+    rating: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    reviews: PropTypes.number,
+    sold: PropTypes.number,
     badge: PropTypes.string,
     badgeColor: PropTypes.string,
+    tier_variations: PropTypes.array,
   }).isRequired,
 };
 

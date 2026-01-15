@@ -2,66 +2,243 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
-import {
-  products,
-  getProductWithDeal,
-  generateAllProducts,
-  shippingMethods,
-  getProductImages,
-  findModel,
-  getPriceRange,
-  isInStock,
-} from '../../utils/data/ProductsPage_MockData';
+import { productService } from '../../services/api';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
+
+const shippingMethods = [
+  {
+    name: 'Free Shipping',
+    description: 'Delivery 5-7 business days',
+    icon: 'bi-truck',
+  },
+  {
+    name: 'Express Shipping',
+    description: 'Delivery 2-3 business days',
+    icon: 'bi-lightning',
+  },
+  {
+    name: 'Store Pickup',
+    description: 'Available at select locations',
+    icon: 'bi-shop',
+  },
+];
+
+const isInStock = (product) => product && product.stock > 0;
+
+const getPriceRange = (product) => {
+  if (!product || !product.models || product.models.length === 0) {
+    return { min: product?.price || 0, max: product?.price || 0 };
+  }
+  const prices = product.models.map((m) => m.price);
+  return { min: Math.min(...prices), max: Math.max(...prices) };
+};
+
+const findModel = (product, tierIndex) => {
+  if (!product || !product.models || !tierIndex || tierIndex.length === 0) return null;
+  return product.models.find((m) => JSON.stringify(m.tier_index) === JSON.stringify(tierIndex));
+};
+
+const getProductImages = (product) => {
+  if (!product) return [];
+  if (product.tier_variations && product.tier_variations.length > 0) {
+    const firstTier = product.tier_variations[0];
+    if (firstTier.images && firstTier.images.length > 0) {
+      return firstTier.images;
+    }
+  }
+  return product.images || (product.image ? [product.image] : []);
+};
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]); // Shopee-style: [colorIndex, sizeIndex]
+  const [hoveredTierIndex, setHoveredTierIndex] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [frequentlyBought, setFrequentlyBought] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Get product details
-  const product = useMemo(() => {
-    const foundProduct = products.find((p) => p.id === parseInt(id));
-    return foundProduct ? getProductWithDeal(foundProduct) : null;
+  // Fetch product details, related products, and frequently bought together
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch all data in parallel for better performance
+        const [productResponse, relatedResponse, frequentlyBoughtResponse] = await Promise.all([
+          productService.getById(id),
+          productService.getRelatedProducts(id, 8).catch(() => ({ data: [] })),
+          productService.getFeaturedProducts(4).catch(() => ({ data: [] })),
+        ]);
+
+        if (!isMounted) return;
+
+        console.log('📦 Product Detail Response:', productResponse);
+
+        // Backend returns data directly, not nested
+        const productData = productResponse.data || productResponse;
+
+        if (!productData || !productData._id) {
+          setError('Product not found');
+          return;
+        }
+
+        console.log('✅ Product Data:', productData);
+
+        // Get price from models array (first active model)
+        const activeModel =
+          productData.models?.find((m) => m.isActive) || productData.models?.[0] || {};
+
+        // Transform backend data to component format
+        const transformed = {
+          id: productData._id,
+          name: productData.name,
+          description: productData.description,
+          descriptionText: productData.description?.split('\n') || [],
+          price: activeModel.price || productData.price || 0,
+          originalPrice: activeModel.originalPrice || productData.originalPrice || 0,
+          discount: productData.discount || 0,
+          rating: productData.rating || 5,
+          reviews: productData.reviewCount || productData.sold || 0,
+          stock: activeModel.stock || productData.stock || 0,
+          category:
+            typeof productData.category === 'object'
+              ? productData.category?.name
+              : productData.category || 'Unknown Category',
+          categoryId:
+            typeof productData.category === 'object'
+              ? productData.category?._id
+              : productData.categoryId,
+          brand:
+            typeof productData.brand === 'object'
+              ? productData.brand?.name
+              : productData.brand || 'Unknown Brand',
+          brandId:
+            typeof productData.brand === 'object' ? productData.brand?._id : productData.brandId,
+          images: productData.images || [],
+          image: productData.images?.[0] || productData.image,
+          tier_variations: productData.tier_variations,
+          models: productData.models,
+          attributes: productData.attributes,
+          features: productData.features || [],
+          sizeChart: productData.sizeChart,
+          materialComposition: productData.materialComposition,
+          modelInfo: productData.modelInfo,
+          shipping_info: productData.shipping_info,
+          productReviews: productData.reviews || [],
+          dealId: productData.dealId,
+          dealStatus: productData.dealStatus,
+          dealSoldCount: productData.dealSoldCount,
+          dealQuantityLimit: productData.dealQuantityLimit,
+          badge: productData.badge,
+          badgeColor: productData.badgeColor,
+          isFeatured: productData.isFeatured,
+          isHot: productData.isHot,
+        };
+
+        setProduct(transformed);
+
+        // Transform related products
+        const relatedData = Array.isArray(relatedResponse.data)
+          ? relatedResponse.data
+          : relatedResponse.data?.data || [];
+
+        const transformedRelated = relatedData.map((p) => {
+          const activeModel = p.models?.find((m) => m.isActive) || p.models?.[0] || {};
+          return {
+            id: p._id,
+            name: p.name,
+            image:
+              p.images?.[0] ||
+              activeModel.image ||
+              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+            price: activeModel.price || p.price || 0,
+            originalPrice: activeModel.originalPrice || p.originalPrice || 0,
+            discount: p.discount || 0,
+            rating: p.rating || 5,
+            reviews: p.sold || 0,
+            sold: p.sold || 0,
+            stock: activeModel.stock || p.stock || 0,
+          };
+        });
+
+        setRelatedProducts(transformedRelated);
+
+        // Transform frequently bought products
+        const frequentlyBoughtData = Array.isArray(frequentlyBoughtResponse.data)
+          ? frequentlyBoughtResponse.data
+          : frequentlyBoughtResponse.data?.data || [];
+
+        const transformedFrequentlyBought = frequentlyBoughtData.map((p) => {
+          const activeModel = p.models?.find((m) => m.isActive) || p.models?.[0] || {};
+          return {
+            id: p._id,
+            name: p.name,
+            image:
+              p.images?.[0] ||
+              activeModel.image ||
+              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+            price: activeModel.price || p.price || 0,
+            originalPrice: activeModel.originalPrice || p.originalPrice || 0,
+            discount: p.discount || 0,
+            rating: p.rating || 5,
+            reviews: p.sold || 0,
+            sold: p.sold || 0,
+          };
+        });
+
+        setFrequentlyBought(transformedFrequentlyBought);
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching product:', err);
+          setError(err.response?.data?.message || 'Failed to load product');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (id) {
+      fetchAllData();
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  // Generate related products (same category)
-  const relatedProducts = useMemo(() => {
-    if (!product) {
-      return [];
-    }
-    const allProducts = generateAllProducts();
-    return allProducts
-      .filter((p) => p.category === product.category && p.id !== product.id)
-      .slice(0, 8);
-  }, [product]);
+  // Get all images from tier_variations or fallback
+  const productImages =
+    product && product.tier_variations
+      ? getProductImages(product)
+      : product?.image
+        ? [product.image]
+        : [];
 
-  // Generate frequently bought together products
-  const frequentlyBought = useMemo(() => {
-    const allProducts = generateAllProducts();
-    return allProducts.slice(0, 4);
-  }, []);
-
-  // Get all images from tier_variations (Shopee-style)
-  const productImages = useMemo(() => {
-    if (product && product.tier_variations) {
-      return getProductImages(product);
-    }
-    // Fallback for products without tier_variations
-    return product?.image ? [product.image] : [];
-  }, [product]);
-
-  const breadcrumbItems = useMemo(() => [
-    { label: 'Home', path: '/', icon: 'bi-house' },
-    { label: 'Shop', path: '/products' },
-    { label: product?.category || 'Category', path: `/products?category=${product?.category}` },
-    { label: product?.name || '' },
-  ], [product]);
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'Home', path: '/', icon: 'bi-house' },
+      { label: 'Shop', path: '/products' },
+      {
+        label: product?.category || 'Category',
+        path: `/products?category=${product?.categoryId}`,
+      },
+      { label: product?.name || '' },
+    ],
+    [product]
+  );
 
   useEffect(() => {
     if (product && product.tier_variations) {
@@ -71,19 +248,7 @@ const ProductDetailsPage = () => {
     }
   }, [product]);
 
-  if (!product) {
-    return (
-      <div className={styles.notFound}>
-        <h2>Product Not Found</h2>
-        <button onClick={() => navigate('/products')}>Back to Products</button>
-      </div>
-    );
-  }
-
-  const handleQuantityChange = (delta) => {
-    setQuantity((prev) => Math.max(1, prev + delta));
-  };
-
+  // Handle tier selection - find model locally instead of API call
   const handleTierChange = (tierLevel, optionIndex) => {
     const newIndex = [...selectedTierIndex];
     newIndex[tierLevel] = optionIndex;
@@ -93,6 +258,45 @@ const ProductDetailsPage = () => {
     if (tierLevel === 0) {
       setSelectedImage(optionIndex);
     }
+
+    // Find matching model from local data (no API call needed)
+    const matchingModel = findModel(product, newIndex);
+
+    if (matchingModel && product) {
+      // Update product with model-specific data (price, stock, etc.)
+      setProduct((prev) => ({
+        ...prev,
+        price: matchingModel.price || prev.price,
+        originalPrice: matchingModel.originalPrice || prev.originalPrice,
+        stock: matchingModel.stock !== undefined ? matchingModel.stock : prev.stock,
+        sku: matchingModel.sku,
+      }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.productDetailsPage}>
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className={styles.notFound}>
+        <h2>{error || 'Product Not Found'}</h2>
+        <button onClick={() => navigate('/products')}>Back to Products</button>
+      </div>
+    );
+  }
+
+  const handleQuantityChange = (delta) => {
+    setQuantity((prev) => Math.max(1, prev + delta));
   };
 
   const handleTierHover = (tierLevel, optionIndex) => {

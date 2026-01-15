@@ -77,6 +77,52 @@ export const productService = {
   },
 
   /**
+   * Get trending products (bestsellers)
+   * @param {number} limit - Number of products to fetch
+   * @returns {Promise} Trending products
+   */
+  getTrendingProducts: async (limit = 10) => {
+    return await axiosClient.get(`${BASE_URL}/trending`, { params: { limit } });
+  },
+
+  /**
+   * Get new arrival products
+   * @param {number} limit - Number of products to fetch
+   * @returns {Promise} New arrival products
+   */
+  getNewArrivals: async (limit = 10) => {
+    return await axiosClient.get(`${BASE_URL}/new-arrivals`, { params: { limit } });
+  },
+
+  /**
+   * Get best offers
+   * @param {number} limit - Number of products to fetch
+   * @returns {Promise} Products with best offers
+   */
+  getBestOffers: async (limit = 10) => {
+    return await axiosClient.get(`${BASE_URL}/best-offers`, { params: { limit } });
+  },
+
+  /**
+   * Get products with advanced filters
+   * @param {object} filters - Advanced filters
+   * @returns {Promise} Filtered products
+   */
+  getProductsAdvanced: async (filters = {}) => {
+    return await axiosClient.get(`${BASE_URL}/advanced`, { params: filters });
+  },
+
+  /**
+   * Get available filters for products
+   * @param {string} categoryId - Category ID (optional)
+   * @returns {Promise} Available filters
+   */
+  getAvailableFilters: async (categoryId = null) => {
+    const params = categoryId ? { categoryId } : {};
+    return await axiosClient.get(`${BASE_URL}/filters`, { params });
+  },
+
+  /**
    * Get related products
    * @param {string} productId - Product ID
    * @param {number} limit - Number of products to fetch
@@ -87,6 +133,26 @@ export const productService = {
       params: { limit },
     });
     return response.data;
+  },
+
+  /**
+   * Get variant by tier index (Shopee-style tier selection)
+   * @param {string} productId - Product ID
+   * @param {array} tierIndex - Array of tier indices [colorIndex, sizeIndex]
+   * @returns {Promise} Variant details (sku, price, stock, image)
+   */
+  getVariantByTier: async (productId, tierIndex) => {
+    return await axiosClient.post(`${BASE_URL}/${productId}/variant`, { tierIndex });
+  },
+
+  /**
+   * Get available options for tier selection
+   * @param {string} productId - Product ID
+   * @param {object} selection - Current tier selection {0: 0} means tier 0 option 0 selected
+   * @returns {Promise} Available options for remaining tiers
+   */
+  getAvailableOptions: async (productId, selection) => {
+    return await axiosClient.post(`${BASE_URL}/${productId}/available-options`, { selection });
   },
 
   /**

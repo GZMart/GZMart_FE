@@ -1,301 +1,175 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
-import { productService } from '../../services/api';
+import { dealService } from '../../services/api';
 
-const sizes = ['S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
-const locations = [
-  { id: 'hanoi', name: 'Hà Nội' },
-  { id: 'hcm', name: 'Hồ Chí Minh' },
-  { id: 'danang', name: 'Đà Nẵng' },
-  { id: 'cantho', name: 'Cần Thơ' },
-  { id: 'haiphong', name: 'Hải Phòng' },
-];
-const shippingUnits = [
-  { id: 'ghn', name: 'Giao Hàng Nhanh' },
-  { id: 'ghtk', name: 'Giao Hàng Tiết Kiệm' },
-  { id: 'vnpost', name: 'VNPost' },
-];
-const shopTypes = [
-  { id: 'mall', name: 'GZMart Mall' },
-  { id: 'preferred', name: 'Preferred Seller' },
-];
-const conditions = [
-  { id: 'new', name: 'New' },
-  { id: 'used', name: 'Used' },
-];
-const paymentOptions = [
-  { id: 'cod', name: 'Cash on Delivery' },
-  { id: 'credit', name: 'Credit Card' },
-];
-const ratings = [
-  { id: '5star', value: 5 },
-  { id: '4star', value: 4 },
-  { id: '3star', value: 3 },
-];
-const services = [
-  { id: 'freeship', name: 'Free Shipping' },
-  { id: 'voucher', name: 'Shop Voucher' },
-];
-const priceRanges = [
-  { id: 'range1', min: 0, max: 100000 },
-  { id: 'range2', min: 100000, max: 500000 },
-  { id: 'range3', min: 500000, max: 1000000 },
-  { id: 'range4', min: 1000000, max: 10000000 },
-];
-const discounts = ['10', '20', '30', '50'];
-const availabilityOptions = ['inStock', 'outOfStock'];
-
-const ProductsPage = () => {
+const FlashDealsPage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const searchQuery = searchParams.get('q');
-
-  // Dynamic breadcrumb based on search query
-  const breadcrumbItems = useMemo(() => {
-    const items = [{ label: 'Home', path: '/' }];
-
-    if (searchQuery) {
-      items.push(
-        { label: 'Products', path: '/products' },
-        { label: `Search: "${searchQuery}"`, path: `/products?q=${searchQuery}`, isActive: true }
-      );
-    } else {
-      items.push({ label: 'Products', path: '/products', isActive: true });
-    }
-
-    return items;
-  }, [searchQuery]);
-
   const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(9);
-  const [sortBy, setSortBy] = useState('position');
-  const [selectedLocations, setSelectedLocations] = useState([]);
-  const [selectedShippingUnits, setSelectedShippingUnits] = useState([]);
-  const [selectedBrands, setSelectedBrands] = useState([]);
-  const [selectedSizes, setSelectedSizes] = useState([]);
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000000 });
-  const [selectedShopTypes, setSelectedShopTypes] = useState([]);
-  const [selectedConditions, setSelectedConditions] = useState([]);
-  const [selectedPaymentOptions, setSelectedPaymentOptions] = useState([]);
-  const [selectedRatings, setSelectedRatings] = useState([]);
-  const [selectedServices, setSelectedServices] = useState([]);
-  const [selectedDiscounts, setSelectedDiscounts] = useState([]);
-  const [selectedAvailability, setSelectedAvailability] = useState([]);
-  const [openSections, setOpenSections] = useState({});
-  const [products, setProducts] = useState([]);
-  const [brands, setBrands] = useState([]);
+  const [itemsToShow, setItemsToShow] = useState(12);
+  const [sortBy, setSortBy] = useState('discount');
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-
-  // Temporary filter states (before Apply)
+  const [deals, setDeals] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000000 });
+  const [selectedDiscounts, setSelectedDiscounts] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [openSections, setOpenSections] = useState({});
+  const [selectedDealTypes, setSelectedDealTypes] = useState([]);
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
-  // Memoize filters to prevent unnecessary API calls
-  const apiFilters = useMemo(() => {
-    const categoryId = searchParams.get('category');
-    const searchQuery = searchParams.get('q');
-    const filters = {
-      page: 1,
-      limit: 100,
-      search: searchQuery || undefined, // Add search query from URL
-      category: categoryId || undefined,
-      brand: selectedBrands.length > 0 ? selectedBrands.join(',') : undefined,
-      minPrice: priceRange.min > 0 ? priceRange.min : undefined,
-      maxPrice: priceRange.max < 10000000 ? priceRange.max : undefined,
-      minDiscount:
-        selectedDiscounts.length > 0
-          ? Math.max(...selectedDiscounts.map((d) => parseInt(d)))
-          : undefined,
-      minRating:
-        selectedRatings.length > 0 ? Math.max(...selectedRatings.map((r) => r.value)) : undefined,
-      inStock: selectedAvailability.includes('inStock') ? 'true' : undefined,
-      sort:
-        sortBy === 'price-asc'
-          ? 'price'
-          : sortBy === 'price-desc'
-            ? '-price'
-            : sortBy === 'name'
-              ? 'name'
-              : undefined,
-    };
-    // Remove undefined values
-    Object.keys(filters).forEach((key) => filters[key] === undefined && delete filters[key]);
-    return filters;
-  }, [
-    searchParams,
-    selectedBrands,
-    priceRange.min,
-    priceRange.max,
-    selectedDiscounts,
-    selectedRatings,
-    selectedAvailability,
-    sortBy,
-  ]);
-
-  // Fetch products with filters
+  // Fetch deals from API
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchProducts = async () => {
+    const fetchDeals = async () => {
       try {
         setLoading(true);
-        const categoryId = searchParams.get('category');
+        const response = await dealService.getAllDeals();
+        console.log('📦 Deals API Response:', response);
 
-        console.log('🔍 Calling API with filters:', apiFilters);
+        const dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        console.log('✅ Deals Data:', dealsData);
 
-        const response = await productService.getAll(apiFilters);
-
-        if (!isMounted) return;
-
-        console.log('📦 Full API Response:', response);
-        console.log('📦 Response.data:', response.data);
-
-        // Backend returns data directly, not nested in data.data
-        const productsData = Array.isArray(response.data)
-          ? response.data
-          : response.data?.data || [];
-
-        console.log('✅ ProductsPage API Response:', {
-          success: response.success,
-          dataCount: productsData.length,
-          total: response.count || response.pagination?.total,
-          filters: apiFilters,
-        });
-
-        console.log('📦 Sample Product from Backend:', productsData[0]);
-
-        // Transform backend data to component format
-        const transformed = productsData.map((product) => {
-          // Get price from models array (first active model)
+        // Transform deals data to products format
+        const productsFromDeals = dealsData.map((deal) => {
+          const product = deal.productId || {};
           const activeModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
 
           return {
             id: product._id,
             name: product.name,
+            description: product.description,
             image:
               product.images?.[0] ||
               activeModel.image ||
               'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
-            price: activeModel.price || product.price || 0,
-            originalPrice: activeModel.originalPrice || product.originalPrice || 0,
-            discount: product.discount || 0,
+            images: product.images || [],
+            price: deal.dealPrice || activeModel.price || 0,
+            originalPrice: product.originalPrice || activeModel.originalPrice || 0,
+            discount: deal.discountPercent || product.discount || 0,
             rating: product.rating || 5,
+            reviews: product.reviewCount || product.sold || 0,
             sold: product.sold || 0,
-            reviews: product.sold || 0,
-            stock: activeModel.stock || product.stock || 0,
-            brand: product.brand?._id || product.brandId,
+            stock: activeModel.stock || 0,
+            brand: typeof product.brand === 'object' ? product.brand?.name : product.brand,
+            category:
+              typeof product.category === 'object' ? product.category?.name : product.category,
+            categoryId:
+              typeof product.category === 'object' ? product.category?._id : product.categoryId,
             tier_variations: product.tier_variations,
-            isFeatured: product.isFeatured,
-            isHot: product.isHot,
+            // Deal specific fields
+            dealId: deal._id,
+            dealType: deal.type || 'flash',
+            dealStatus: deal.status,
+            dealStartDate: deal.startDate,
+            dealEndDate: deal.endDate,
+            dealSoldCount: deal.soldCount || 0,
+            dealQuantityLimit: deal.quantityLimit,
           };
         });
 
-        setProducts(transformed);
-        setTotalCount(response.count || response.pagination?.total || transformed.length);
-
-        // If no products and no filters applied, use fallback
-        if (transformed.length === 0 && !categoryId && selectedBrands.length === 0) {
-          console.log('⚠️ No products found, using fallback data');
-          const fallbackProducts = Array.from({ length: 15 }, (_, i) => ({
-            id: `fallback-${i + 1}`,
-            name: `Sample Product ${i + 1}`,
-            image: `https://images.unsplash.com/photo-${1595777457583 + i}?auto=format&fit=crop&w=300&q=80`,
-            price: Math.floor(Math.random() * 500000) + 100000,
-            originalPrice: Math.floor(Math.random() * 700000) + 200000,
-            discount: Math.floor(Math.random() * 50) + 10,
-            rating: (Math.random() * 2 + 3).toFixed(1),
-            sold: Math.floor(Math.random() * 1000),
-            stock: Math.floor(Math.random() * 100) + 10,
-            brand: 'fallback-brand',
-          }));
-          setProducts(fallbackProducts);
-          setTotalCount(15);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error('❌ Error fetching products:', err);
-          console.error('Error details:', err.response?.data || err.message);
-        }
+        setDeals(dealsData);
+        setProducts(productsFromDeals);
+        console.log('📊 Transformed Products:', productsFromDeals.length);
+      } catch (error) {
+        console.error('❌ Error fetching deals:', error);
+        setProducts([]);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-    fetchProducts();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [apiFilters, searchParams, selectedBrands]);
-
-  // Fetch available brands for filter
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchBrands = async () => {
-      try {
-        const response = await productService.getAvailableFilters();
-
-        if (!isMounted) return;
-
-        const brandsData = response.data?.data?.brands || [];
-        setBrands(brandsData.map((b) => ({ id: b._id, name: b.name })));
-      } catch (err) {
-        if (isMounted) {
-          console.error('Error fetching brands:', err);
-        }
-      }
-    };
-    fetchBrands();
-
-    return () => {
-      isMounted = false;
-    };
+    fetchDeals();
   }, []);
 
-  // Only apply client-side filters that are NOT handled by API
-  const filteredProducts = useMemo(() => {
-    if (!products.length) return [];
+  // Breadcrumb for All Deals
+  const breadcrumbItems = [
+    { label: 'Home', path: '/' },
+    { label: 'All Deals', path: '/deals' },
+  ];
 
+  // Deal type options
+  const dealTypes = [
+    { id: 'flash_sale', name: 'Flash Sale', icon: 'lightning-fill' },
+    { id: 'daily_deal', name: 'Daily Deal', icon: 'calendar-day' },
+    { id: 'limited_time', name: 'Limited Time', icon: 'clock' },
+    { id: 'clearance', name: 'Clearance', icon: 'tag' },
+  ];
+
+  // Discount options
+  const discounts = [
+    { id: '50', name: '50% or more' },
+    { id: '40', name: '40% or more' },
+    { id: '30', name: '30% or more' },
+    { id: '20', name: '20% or more' },
+    { id: '10', name: '10% or more' },
+  ];
+
+  // Get unique brands and categories from products
+  const availableBrands = useMemo(() => {
+    const brands = [...new Set(products.map((p) => p.brand).filter(Boolean))];
+    return brands.sort();
+  }, [products]);
+
+  const availableCategories = useMemo(() => {
+    const categories = [...new Set(products.map((p) => p.category).filter(Boolean))];
+    return categories.sort();
+  }, [products]);
+
+  // Filter products
+  const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      // Size filter (not in API, needs client-side filtering)
-      if (selectedSizes.length > 0) {
-        if (product.tier_variations && product.tier_variations.length > 1) {
-          const sizeTier = product.tier_variations[1];
-          const hasMatchingSize = selectedSizes.some((size) =>
-            sizeTier.options.some(
-              (opt) =>
-                opt.toLowerCase().includes(size.toLowerCase()) ||
-                size.toLowerCase().includes(opt.toLowerCase())
-            )
-          );
-          if (!hasMatchingSize) return false;
-        } else {
-          // No tier variations, skip this product
+      // Deal Type filter
+      if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
+        return false;
+      }
+
+      // Only show active deals
+      if (product.dealStatus !== 'active') {
+        return false;
+      }
+
+      // Brand filter
+      if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
+        return false;
+      }
+
+      // Category filter
+      if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
+        return false;
+      }
+
+      // Price range filter
+      if (priceRange.min > 0 || priceRange.max < 10000000) {
+        if (product.price < priceRange.min || product.price > priceRange.max) {
+          return false;
+        }
+      }
+
+      // Discount filter
+      if (selectedDiscounts.length > 0) {
+        const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
+        if (product.discount < minDiscount) {
           return false;
         }
       }
 
       return true;
     });
-  }, [products, selectedSizes]);
+  }, [
+    products,
+    selectedDealTypes,
+    selectedBrands,
+    selectedCategories,
+    priceRange,
+    selectedDiscounts,
+  ]);
 
-  // Only re-sort if needed (API already sorts, but we may need to sort filtered results)
+  // Sort products
   const sortedProducts = useMemo(() => {
-    if (!filteredProducts.length) return [];
-
-    // If no client-side filters applied, return as-is (API already sorted)
-    if (selectedSizes.length === 0) {
-      return filteredProducts;
-    }
-
-    // If client-side filtered, need to re-sort
     const sorted = [...filteredProducts];
 
     switch (sortBy) {
@@ -305,47 +179,36 @@ const ProductsPage = () => {
         return sorted.sort((a, b) => a.price - b.price);
       case 'price-desc':
         return sorted.sort((a, b) => b.price - a.price);
+      case 'discount':
+        return sorted.sort((a, b) => b.discount - a.discount);
+      case 'priority':
+        return sorted.sort((a, b) => (b.dealPriority || 0) - (a.dealPriority || 0));
+      case 'ending-soon':
+        return sorted.sort((a, b) => {
+          const aEnd = new Date(a.dealEndDate).getTime();
+          const bEnd = new Date(b.dealEndDate).getTime();
+          return aEnd - bEnd;
+        });
       default:
         return sorted;
     }
-  }, [filteredProducts, sortBy, selectedSizes]);
+  }, [filteredProducts, sortBy]);
 
-  const totalProducts = totalCount || filteredProducts.length;
+  const totalProducts = filteredProducts.length;
   const displayedProducts = sortedProducts.slice(0, itemsToShow);
-
-  if (loading) {
-    return (
-      <div className={styles.productsPage}>
-        <Breadcrumb items={breadcrumbItems} />
-        <div className={styles.container}>
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const toggleFilter = (filterType, value) => {
     const setters = {
-      location: setSelectedLocations,
-      shippingUnit: setSelectedShippingUnits,
       brand: setSelectedBrands,
-      size: setSelectedSizes,
-      priceRange: setSelectedPriceRanges,
-      shopType: setSelectedShopTypes,
-      condition: setSelectedConditions,
-      payment: setSelectedPaymentOptions,
-      rating: setSelectedRatings,
-      service: setSelectedServices,
+      category: setSelectedCategories,
       discount: setSelectedDiscounts,
-      availability: setSelectedAvailability,
+      dealType: setSelectedDealTypes,
     };
 
     const setter = setters[filterType];
-    setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+    if (setter) {
+      setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+    }
   };
 
   const toggleSection = (section) => {
@@ -374,8 +237,86 @@ const ProductsPage = () => {
           {/* Sidebar Filters */}
           <aside className={styles.sidebar}>
             <div className={styles.filterHeader}>
-              <i className="bi bi-funnel"></i>
-              <span className={styles.filterMainTitle}>Search Filters</span>
+              <i className="bi bi-lightning-fill" style={{ color: '#f59e0b' }}></i>
+              <span className={styles.filterMainTitle}>Deal Filters</span>
+            </div>
+
+            {/* Deal Type Filter */}
+            <div className={styles.filterSection}>
+              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('dealType')}>
+                <span className={styles.filterTitle}>Deal Type</span>
+                <i className={`bi bi-chevron-${openSections.dealType ? 'up' : 'down'}`}></i>
+              </button>
+              {openSections.dealType && (
+                <div className={styles.filterContent}>
+                  {dealTypes.map((type) => (
+                    <label key={type.id} className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDealTypes.includes(type.id)}
+                        onChange={() => toggleFilter('dealType', type.id)}
+                        className={styles.checkbox}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className={`bi bi-${type.icon}`} style={{ color: '#f59e0b' }}></i>
+                        <span className={styles.brandName}>{type.name}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Deal Duration Filter */}
+            <div className={styles.filterSection}>
+              <button
+                className={styles.filterHeaderBtn}
+                onClick={() => toggleSection('dealDuration')}
+              >
+                <span className={styles.filterTitle}>Time Remaining</span>
+                <i className={`bi bi-chevron-${openSections.dealDuration ? 'up' : 'down'}`}></i>
+              </button>
+              {openSections.dealDuration && (
+                <div className={styles.filterContent}>
+                  {dealDurations.map((duration) => (
+                    <label key={duration.id} className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDealDurations.includes(duration.id)}
+                        onChange={() => toggleFilter('dealDuration', duration.id)}
+                        className={styles.checkbox}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="bi bi-clock" style={{ color: '#ef4444' }}></i>
+                        <span className={styles.brandName}>{duration.name}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Discount Filter */}
+            <div className={styles.filterSection}>
+              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('discount')}>
+                <span className={styles.filterTitle}>Discount Amount</span>
+                <i className={`bi bi-chevron-${openSections.discount ? 'up' : 'down'}`}></i>
+              </button>
+              {openSections.discount && (
+                <div className={styles.filterContent}>
+                  {discounts.map((discount) => (
+                    <label key={discount.id} className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDiscounts.includes(discount.id)}
+                        onChange={() => toggleFilter('discount', discount.id)}
+                        className={styles.checkbox}
+                      />
+                      <span className={styles.brandName}>{discount.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Location Filter */}
@@ -527,52 +468,6 @@ const ProductsPage = () => {
               )}
             </div>
 
-            {/* Condition Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('condition')}>
-                <span className={styles.filterTitle}>Condition</span>
-                <i className={`bi bi-chevron-${openSections.condition ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.condition && (
-                <div className={styles.filterContent}>
-                  {conditions.map((condition) => (
-                    <label key={condition.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedConditions.includes(condition.id)}
-                        onChange={() => toggleFilter('condition', condition.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{condition.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Payment Options Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('payment')}>
-                <span className={styles.filterTitle}>Payment Options</span>
-                <i className={`bi bi-chevron-${openSections.payment ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.payment && (
-                <div className={styles.filterContent}>
-                  {paymentOptions.map((option) => (
-                    <label key={option.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedPaymentOptions.includes(option.id)}
-                        onChange={() => toggleFilter('payment', option.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{option.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Rating Filter */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('rating')}>
@@ -604,29 +499,6 @@ const ProductsPage = () => {
                 </div>
               )}
             </div>
-
-            {/* Services Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('services')}>
-                <span className={styles.filterTitle}>Services & Promotions</span>
-                <i className={`bi bi-chevron-${openSections.services ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.services && (
-                <div className={styles.filterContent}>
-                  {services.map((service) => (
-                    <label key={service.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedServices.includes(service.id)}
-                        onChange={() => toggleFilter('service', service.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{service.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
           </aside>
 
           {/* Main Content */}
@@ -638,7 +510,11 @@ const ProductsPage = () => {
               </button>
 
               <h1 className={styles.pageTitle}>
-                {searchQuery ? `Search Results for "${searchQuery}"` : 'All Products'}
+                <i
+                  className="bi bi-lightning-fill"
+                  style={{ color: '#f59e0b', marginRight: '8px' }}
+                ></i>
+                All Deals
               </h1>
 
               <div className={styles.productsControls}>
@@ -660,7 +536,7 @@ const ProductsPage = () => {
                 </div>
 
                 <div className={styles.infoText}>
-                  Showing 1 - {displayedProducts.length} of {totalProducts} items
+                  Showing 1 - {displayedProducts.length} of {totalProducts} deals
                 </div>
 
                 <div className={styles.filterGroup}>
@@ -683,7 +559,9 @@ const ProductsPage = () => {
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
-                    <option value="position">Position</option>
+                    <option value="priority">Priority</option>
+                    <option value="ending-soon">Ending Soon</option>
+                    <option value="discount">Discount: High to Low</option>
                     <option value="name">Name</option>
                     <option value="price-asc">Price: Low to High</option>
                     <option value="price-desc">Price: High to Low</option>
@@ -706,6 +584,13 @@ const ProductsPage = () => {
                 ))}
               </div>
             )}
+
+            {displayedProducts.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '48px', color: '#6b7280' }}>
+                <i className="bi bi-inbox" style={{ fontSize: '48px', marginBottom: '16px' }}></i>
+                <p>No deals available at the moment</p>
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -713,4 +598,4 @@ const ProductsPage = () => {
   );
 };
 
-export default ProductsPage;
+export default FlashDealsPage;

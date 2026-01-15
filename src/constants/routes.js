@@ -22,8 +22,11 @@ export const PUBLIC_ROUTES = {
   ABOUT: '/about',
   CONTACT: '/contact',
   PRIVACY_POLICY: '/privacy-policy',
-  TERMS_CONDITIONS: '/terms-conditions',
-  FAQ: '/faq',
+  TERMS_OF_SERVICE: '/terms-of-service',
+  REFUND_POLICY: '/refund-policy',
+  SHIPPING_POLICY: '/shipping-policy',
+  FAQ: '/frequently-asked-questions',
+  HOW_WE_CAN_HELP: '/how-we-can-help-you',
 };
 
 // Buyer Protected Routes

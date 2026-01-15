@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
+import { searchService } from '@services/api';
 import {
   MapPin,
   Truck,
@@ -16,6 +17,7 @@ import {
   LogOut,
   UserCircle,
   LayoutDashboard,
+  Loader2,
 } from 'lucide-react';
 
 const Header = () => {
@@ -25,19 +27,37 @@ const Header = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const [activeCategory, setActiveCategory] = useState('New Arrivals');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const dropdownRef = useRef(null);
+  const searchDropdownRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowProfileDropdown(false);
+      }
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target)) {
+        setShowSearchDropdown(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -51,9 +71,84 @@ const Header = () => {
     }
   };
 
+  // Handle search input change with debounce
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Don't fetch suggestions for empty or very short queries
+    if (value.trim().length < 2) {
+      setSearchSuggestions([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    // Set loading state
+    setSearchLoading(true);
+
+    // Debounce API call (wait 300ms after user stops typing)
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await searchService.getAutocomplete(value.trim());
+        if (response.data?.data) {
+          setSearchSuggestions(response.data.data);
+          setShowSearchDropdown(true);
+        }
+      } catch (error) {
+        console.error('Error fetching search suggestions:', error);
+        setSearchSuggestions([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  };
+
+  // Handle search submit (Enter key or Search button click)
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+
+    const trimmedQuery = searchQuery.trim();
+    // Navigate to products page (with or without search query)
+    if (trimmedQuery) {
+      navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(trimmedQuery)}`);
+    } else {
+      // No query - show all products
+      navigate(PUBLIC_ROUTES.PRODUCTS);
+    }
+    setShowSearchDropdown(false);
+    setSearchQuery(''); // Clear search input after submit
+    setSearchLoading(false); // Reset loading state
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion) => {
+    if (suggestion.type === 'product' && suggestion._id) {
+      navigate(`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', suggestion._id)}`);
+    } else if (suggestion.type === 'category' && suggestion._id) {
+      navigate(`${PUBLIC_ROUTES.CATEGORY_PRODUCTS.replace(':categoryId', suggestion._id)}`);
+    } else if (suggestion.name) {
+      setSearchQuery(suggestion.name);
+      navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(suggestion.name)}`);
+    }
+    setShowSearchDropdown(false);
+  };
+
+  // Handle search icon click
+  const handleSearchIconClick = () => {
+    handleSearchSubmit();
+  };
+
   // Get user display name and avatar
   const userDisplayName = user?.fullName || user?.email?.split('@')[0] || 'User';
-  const userAvatar = user?.avatar || user?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDisplayName)}&background=random`;
+  const userAvatar =
+    user?.avatar ||
+    user?.profileImage ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(userDisplayName)}&background=random`;
 
   // Categories tailored for a Fashion/Clothing website
   const categories = [
@@ -133,23 +228,170 @@ const Header = () => {
             <div className="col-12 col-lg-5">
               <div className="d-flex align-items-center gap-3">
                 <div className="d-none d-xl-block"></div>
-                <div className="input-group flex-grow-1">
-                  <span
-                    className="input-group-text border-0 pe-0 rounded-start"
-                    style={{ backgroundColor: '#F3F4F6' }}
-                  >
-                    <Search size={20} className="text-secondary" />
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control border-0 ps-3 text-dark py-2"
-                    style={{
-                      backgroundColor: '#F3F4F6',
-                      boxShadow: 'none',
-                      outline: 'none',
-                    }}
-                    placeholder="Search trending styles, dresses, coats..."
-                  />
+                <div className="position-relative flex-grow-1" ref={searchDropdownRef}>
+                  <form onSubmit={handleSearchSubmit} className="input-group">
+                    <span
+                      className="input-group-text border-0 pe-0 rounded-start"
+                      style={{ backgroundColor: '#F3F4F6', cursor: 'pointer' }}
+                      onClick={handleSearchIconClick}
+                    >
+                      {searchLoading ? (
+                        <Loader2
+                          size={20}
+                          className="text-secondary"
+                          style={{ animation: 'spin 1s linear infinite' }}
+                        />
+                      ) : (
+                        <Search size={20} className="text-secondary" />
+                      )}
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control border-0 ps-3 text-dark py-2"
+                      style={{
+                        backgroundColor: '#F3F4F6',
+                        boxShadow: 'none',
+                        outline: 'none',
+                      }}
+                      placeholder="Search trending styles, dresses, coats..."
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onFocus={() =>
+                        searchQuery.trim().length >= 2 &&
+                        searchSuggestions.length > 0 &&
+                        setShowSearchDropdown(true)
+                      }
+                    />
+                  </form>
+
+                  {/* Search Suggestions Dropdown */}
+                  {showSearchDropdown && searchSuggestions.length > 0 && (
+                    <div
+                      className="position-absolute bg-white border rounded shadow-lg w-100"
+                      style={{
+                        top: '100%',
+                        left: 0,
+                        marginTop: '8px',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        zIndex: 1000,
+                      }}
+                    >
+                      {/* Products Section */}
+                      {searchSuggestions.products && searchSuggestions.products.length > 0 && (
+                        <div className="py-2">
+                          <div className="px-3 py-1 text-muted small fw-bold">PRODUCTS</div>
+                          {searchSuggestions.products.slice(0, 5).map((product) => (
+                            <div
+                              key={product._id}
+                              className="px-3 py-2 d-flex align-items-center gap-3"
+                              style={{
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = 'transparent')
+                              }
+                              onClick={() => handleSuggestionClick({ ...product, type: 'product' })}
+                            >
+                              {product.images && product.images[0] && (
+                                <img
+                                  src={product.images[0]}
+                                  alt={product.name}
+                                  style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    objectFit: 'cover',
+                                    borderRadius: '4px',
+                                  }}
+                                />
+                              )}
+                              <div className="flex-grow-1">
+                                <div className="text-dark small">{product.name}</div>
+                                {product.price && (
+                                  <div className="text-primary small fw-bold">
+                                    {new Intl.NumberFormat('vi-VN', {
+                                      style: 'currency',
+                                      currency: 'VND',
+                                    }).format(product.price)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Categories Section */}
+                      {searchSuggestions.categories && searchSuggestions.categories.length > 0 && (
+                        <div className="py-2 border-top">
+                          <div className="px-3 py-1 text-muted small fw-bold">CATEGORIES</div>
+                          {searchSuggestions.categories.slice(0, 3).map((category) => (
+                            <div
+                              key={category._id}
+                              className="px-3 py-2 d-flex align-items-center gap-2"
+                              style={{
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = 'transparent')
+                              }
+                              onClick={() =>
+                                handleSuggestionClick({ ...category, type: 'category' })
+                              }
+                            >
+                              <Tag size={16} className="text-secondary" />
+                              <span className="text-dark small">{category.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Brands Section */}
+                      {searchSuggestions.brands && searchSuggestions.brands.length > 0 && (
+                        <div className="py-2 border-top">
+                          <div className="px-3 py-1 text-muted small fw-bold">BRANDS</div>
+                          {searchSuggestions.brands.slice(0, 3).map((brand) => (
+                            <div
+                              key={brand._id}
+                              className="px-3 py-2 d-flex align-items-center gap-2"
+                              style={{
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s',
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = 'transparent')
+                              }
+                              onClick={() => handleSuggestionClick({ ...brand, type: 'brand' })}
+                            >
+                              {brand.logo && (
+                                <img
+                                  src={brand.logo}
+                                  alt={brand.name}
+                                  style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    objectFit: 'contain',
+                                  }}
+                                />
+                              )}
+                              <span className="text-dark small">{brand.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

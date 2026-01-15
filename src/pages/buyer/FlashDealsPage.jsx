@@ -1,55 +1,92 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
+import LoadingSpinner from '@components/common/LoadingSpinner';
 import styles from '@assets/styles/ProductsPage.module.css';
-import {
-  generateAllProducts,
-  sizes,
-  locations,
-  shippingUnits,
-  brands,
-  shopTypes,
-  conditions,
-  paymentOptions,
-  ratings,
-  services,
-  priceRanges,
-  discounts,
-  availabilityOptions,
-  isInStock,
-  getPriceRange,
-} from '@utils/data/ProductsPage_MockData';
+import { dealService } from '../../services/api';
 
 const FlashDealsPage = () => {
-  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(9);
-  const [sortBy, setSortBy] = useState('position');
-  const [selectedLocations, setSelectedLocations] = useState([]);
-  const [selectedShippingUnits, setSelectedShippingUnits] = useState([]);
+  const [itemsToShow, setItemsToShow] = useState(12);
+  const [sortBy, setSortBy] = useState('discount');
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
-  const [selectedSizes, setSelectedSizes] = useState([]);
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000000 });
-  const [selectedShopTypes, setSelectedShopTypes] = useState([]);
-  const [selectedConditions, setSelectedConditions] = useState([]);
-  const [selectedPaymentOptions, setSelectedPaymentOptions] = useState([]);
-  const [selectedRatings, setSelectedRatings] = useState([]);
-  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
-  const [selectedAvailability, setSelectedAvailability] = useState([]);
-  const [openSections, setOpenSections] = useState({});
   const [selectedDealTypes, setSelectedDealTypes] = useState([]);
-  const [selectedDealDurations, setSelectedDealDurations] = useState([]);
-
-  // Temporary filter states (before Apply)
+  const [openSections, setOpenSections] = useState({});
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
-  const allProducts = generateAllProducts();
+  // Fetch deals from API
+  useEffect(() => {
+    const fetchDeals = async () => {
+      try {
+        setLoading(true);
+        const response = await dealService.getAllDeals();
+        console.log('📦 Deals API Response:', response);
 
-  // Breadcrumb for All Deals
+        const dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        console.log('✅ Deals Data:', dealsData);
+
+        // Transform deals data to products format
+        const productsFromDeals = dealsData
+          .filter((deal) => deal.status === 'active' && deal.productId)
+          .map((deal) => {
+            const product = deal.productId;
+            const activeModel =
+              product.models?.find((m) => m.isActive) || product.models?.[0] || {};
+
+            return {
+              id: product._id,
+              name: product.name,
+              description: product.description,
+              image:
+                product.images?.[0] ||
+                activeModel.image ||
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+              images: product.images || [],
+              price: deal.dealPrice || activeModel.price || 0,
+              originalPrice: product.originalPrice || activeModel.originalPrice || 0,
+              discount: deal.discountPercent || product.discount || 0,
+              rating: product.rating || 5,
+              reviews: product.reviewCount || product.sold || 0,
+              sold: product.sold || 0,
+              stock: activeModel.stock || 0,
+              brand: typeof product.brand === 'object' ? product.brand?.name : product.brand,
+              category:
+                typeof product.category === 'object' ? product.category?.name : product.category,
+              categoryId:
+                typeof product.category === 'object' ? product.category?._id : product.categoryId,
+              tier_variations: product.tier_variations,
+              // Deal specific fields
+              dealId: deal._id,
+              dealType: deal.type || 'flash_sale',
+              dealStatus: deal.status,
+              dealStartDate: deal.startDate,
+              dealEndDate: deal.endDate,
+              dealSoldCount: deal.soldCount || 0,
+              dealQuantityLimit: deal.quantityLimit,
+            };
+          });
+
+        setProducts(productsFromDeals);
+        console.log('📊 Transformed Products:', productsFromDeals.length);
+      } catch (error) {
+        console.error('❌ Error fetching deals:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDeals();
+  }, []);
+
+  // Breadcrumb
   const breadcrumbItems = [
     { label: 'Home', path: '/' },
     { label: 'All Deals', path: '/deals' },
@@ -57,58 +94,38 @@ const FlashDealsPage = () => {
 
   // Deal type options
   const dealTypes = [
-    { id: 'flash', name: 'Flash Sale', icon: 'lightning-fill' },
-    { id: 'daily', name: 'Daily Deal', icon: 'calendar-day' },
-    { id: 'weekend', name: 'Weekend Special', icon: 'calendar-week' },
+    { id: 'flash_sale', name: 'Flash Sale', icon: 'lightning-fill' },
+    { id: 'daily_deal', name: 'Daily Deal', icon: 'calendar-day' },
+    { id: 'limited_time', name: 'Limited Time', icon: 'clock' },
     { id: 'clearance', name: 'Clearance', icon: 'tag' },
   ];
 
-  // Deal duration options
-  const dealDurations = [
-    { id: 'ending-soon', name: 'Ending Soon (< 6h)', hours: 6 },
-    { id: 'today', name: 'Ends Today', hours: 24 },
-    { id: 'this-week', name: 'This Week', hours: 168 },
+  // Discount options
+  const discounts = [
+    { id: '50', name: '50% or more' },
+    { id: '40', name: '40% or more' },
+    { id: '30', name: '30% or more' },
+    { id: '20', name: '20% or more' },
+    { id: '10', name: '10% or more' },
   ];
 
-  // Filter products - only show products with active deals
-  const filteredProducts = useMemo(() => allProducts.filter((product) => {
-      // Only show products with dealId (products that have deals)
-      if (!product.dealId) {
-        return false;
-      }
+  // Get unique brands and categories from products
+  const availableBrands = useMemo(() => {
+    const brands = [...new Set(products.map((p) => p.brand).filter(Boolean))];
+    return brands.sort();
+  }, [products]);
 
+  const availableCategories = useMemo(() => {
+    const categories = [...new Set(products.map((p) => p.category).filter(Boolean))];
+    return categories.sort();
+  }, [products]);
+
+  // Filter products
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
       // Deal Type filter
       if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
         return false;
-      }
-
-      // Deal Status filter - only show active deals by default
-      if (product.dealStatus !== 'active') {
-        return false;
-      }
-
-      // Deal Duration filter (Time Remaining)
-      if (selectedDealDurations.length > 0) {
-        const now = new Date();
-        const endDate = new Date(product.dealEndDate);
-        const hoursRemaining = (endDate - now) / (1000 * 60 * 60);
-
-        const matchesDuration = selectedDealDurations.some((durationId) => {
-          switch (durationId) {
-            case 'ending-soon':
-              return hoursRemaining > 0 && hoursRemaining <= 6;
-            case 'today':
-              return hoursRemaining > 0 && hoursRemaining <= 24;
-            case 'this-week':
-              return hoursRemaining > 0 && hoursRemaining <= 168;
-            default:
-              return false;
-          }
-        });
-
-        if (!matchesDuration) {
-return false;
-}
       }
 
       // Brand filter
@@ -116,74 +133,35 @@ return false;
         return false;
       }
 
-      // Size filter (check in tier_variations)
-      if (selectedSizes.length > 0) {
-        if (product.tier_variations && product.tier_variations.length > 1) {
-          const sizeTier = product.tier_variations[1];
-          const hasMatchingSize = selectedSizes.some((size) =>
-            sizeTier.options.some(
-              (opt) =>
-                opt.toLowerCase().includes(size.toLowerCase()) ||
-                size.toLowerCase().includes(opt.toLowerCase())
-            )
-          );
-          if (!hasMatchingSize) {
-return false;
-}
-        } else if (product.size) {
-          const hasMatchingSize = selectedSizes.some((size) => product.size.includes(size));
-          if (!hasMatchingSize) {
-return false;
-}
-        }
+      // Category filter
+      if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
+        return false;
       }
 
-      // Price range filter (checkbox or slider)
-      if (selectedPriceRanges.length > 0) {
-        const inPriceRange = selectedPriceRanges.some((rangeId) => {
-          const range = priceRanges.find((r) => r.id === rangeId);
-          return product.price >= range.min && product.price <= range.max;
-        });
-        if (!inPriceRange) {
-return false;
-}
-      } else if (priceRange.min > 0 || priceRange.max < 10000000) {
-        // Use slider values if no checkbox selected
+      // Price range filter
+      if (priceRange.min > 0 || priceRange.max < 10000000) {
         if (product.price < priceRange.min || product.price > priceRange.max) {
-return false;
-}
+          return false;
+        }
       }
 
       // Discount filter
       if (selectedDiscounts.length > 0) {
-        const maxDiscount = Math.max(...selectedDiscounts.map((d) => parseInt(d)));
-        if (product.discount < maxDiscount) {
-return false;
-}
-      }
-
-      // Availability filter (use helper function)
-      if (selectedAvailability.length > 0) {
-        const productInStock = isInStock(product);
-        if (selectedAvailability.includes('inStock') && !productInStock) {
-return false;
-}
-        if (selectedAvailability.includes('outOfStock') && productInStock) {
-return false;
-}
+        const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
+        if (product.discount < minDiscount) {
+          return false;
+        }
       }
 
       return true;
-    }), [
-    allProducts,
+    });
+  }, [
+    products,
     selectedDealTypes,
-    selectedDealDurations,
     selectedBrands,
-    selectedSizes,
-    selectedPriceRanges,
-    selectedDiscounts,
-    selectedAvailability,
+    selectedCategories,
     priceRange,
+    selectedDiscounts,
   ]);
 
   // Sort products
@@ -199,8 +177,6 @@ return false;
         return sorted.sort((a, b) => b.price - a.price);
       case 'discount':
         return sorted.sort((a, b) => b.discount - a.discount);
-      case 'priority':
-        return sorted.sort((a, b) => (b.dealPriority || 0) - (a.dealPriority || 0));
       case 'ending-soon':
         return sorted.sort((a, b) => {
           const aEnd = new Date(a.dealEndDate).getTime();
@@ -215,26 +191,19 @@ return false;
   const totalProducts = filteredProducts.length;
   const displayedProducts = sortedProducts.slice(0, itemsToShow);
 
+  // Toggle filter
   const toggleFilter = (filterType, value) => {
     const setters = {
-      location: setSelectedLocations,
-      shippingUnit: setSelectedShippingUnits,
       brand: setSelectedBrands,
-      size: setSelectedSizes,
-      priceRange: setSelectedPriceRanges,
-      shopType: setSelectedShopTypes,
-      condition: setSelectedConditions,
-      payment: setSelectedPaymentOptions,
-      rating: setSelectedRatings,
-      service: setSelectedServices,
+      category: setSelectedCategories,
       discount: setSelectedDiscounts,
-      availability: setSelectedAvailability,
       dealType: setSelectedDealTypes,
-      dealDuration: setSelectedDealDurations,
     };
 
     const setter = setters[filterType];
-    setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+    if (setter) {
+      setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+    }
   };
 
   const toggleSection = (section) => {
@@ -253,6 +222,10 @@ return false;
     setTempPriceRange(defaultRange);
     setPriceRange(defaultRange);
   };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className={styles.productsPage}>
@@ -293,35 +266,6 @@ return false;
               )}
             </div>
 
-            {/* Deal Duration Filter */}
-            <div className={styles.filterSection}>
-              <button
-                className={styles.filterHeaderBtn}
-                onClick={() => toggleSection('dealDuration')}
-              >
-                <span className={styles.filterTitle}>Time Remaining</span>
-                <i className={`bi bi-chevron-${openSections.dealDuration ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.dealDuration && (
-                <div className={styles.filterContent}>
-                  {dealDurations.map((duration) => (
-                    <label key={duration.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedDealDurations.includes(duration.id)}
-                        onChange={() => toggleFilter('dealDuration', duration.id)}
-                        className={styles.checkbox}
-                      />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <i className="bi bi-clock" style={{ color: '#ef4444' }}></i>
-                        <span className={styles.brandName}>{duration.name}</span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Discount Filter */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('discount')}>
@@ -345,76 +289,58 @@ return false;
               )}
             </div>
 
-            {/* Location Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('location')}>
-                <span className={styles.filterTitle}>Seller Location</span>
-                <i className={`bi bi-chevron-${openSections.location ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.location && (
-                <div className={styles.filterContent}>
-                  {locations.slice(0, 5).map((location) => (
-                    <label key={location.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedLocations.includes(location.id)}
-                        onChange={() => toggleFilter('location', location.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{location.name}</span>
-                    </label>
-                  ))}
-                  {locations.length > 5 && <button className={styles.showMoreBtn}>More</button>}
-                </div>
-              )}
-            </div>
-
-            {/* Shipping Unit Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shipping')}>
-                <span className={styles.filterTitle}>Shipping Unit</span>
-                <i className={`bi bi-chevron-${openSections.shipping ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.shipping && (
-                <div className={styles.filterContent}>
-                  {shippingUnits.map((unit) => (
-                    <label key={unit.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShippingUnits.includes(unit.id)}
-                        onChange={() => toggleFilter('shippingUnit', unit.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{unit.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Brand Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('brand')}>
-                <span className={styles.filterTitle}>Brand</span>
-                <i className={`bi bi-chevron-${openSections.brand ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.brand && (
-                <div className={styles.filterContent}>
-                  {brands.map((brand) => (
-                    <label key={brand.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand.id)}
-                        onChange={() => toggleFilter('brand', brand.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{brand.name}</span>
-                    </label>
-                  ))}
-                  <button className={styles.showMoreBtn}>More</button>
-                </div>
-              )}
-            </div>
+            {availableBrands.length > 0 && (
+              <div className={styles.filterSection}>
+                <button className={styles.filterHeaderBtn} onClick={() => toggleSection('brand')}>
+                  <span className={styles.filterTitle}>Brand</span>
+                  <i className={`bi bi-chevron-${openSections.brand ? 'up' : 'down'}`}></i>
+                </button>
+                {openSections.brand && (
+                  <div className={styles.filterContent}>
+                    {availableBrands.map((brand) => (
+                      <label key={brand} className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={selectedBrands.includes(brand)}
+                          onChange={() => toggleFilter('brand', brand)}
+                          className={styles.checkbox}
+                        />
+                        <span className={styles.brandName}>{brand}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Category Filter */}
+            {availableCategories.length > 0 && (
+              <div className={styles.filterSection}>
+                <button
+                  className={styles.filterHeaderBtn}
+                  onClick={() => toggleSection('category')}
+                >
+                  <span className={styles.filterTitle}>Category</span>
+                  <i className={`bi bi-chevron-${openSections.category ? 'up' : 'down'}`}></i>
+                </button>
+                {openSections.category && (
+                  <div className={styles.filterContent}>
+                    {availableCategories.map((category) => (
+                      <label key={category} className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => toggleFilter('category', category)}
+                          className={styles.checkbox}
+                        />
+                        <span className={styles.brandName}>{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Price Range Filter */}
             <div className={styles.filterSection}>
@@ -438,11 +364,9 @@ return false;
                             setTempPriceRange({ ...tempPriceRange, min: Number(e.target.value) })
                           }
                           className={styles.priceInput}
-                          min="0"
-                          max={tempPriceRange.max}
                         />
                       </div>
-                      <span className={styles.priceSeparator}>-</span>
+                      <div className={styles.priceSeparator}>-</div>
                       <div className={styles.priceInputGroup}>
                         <input
                           type="number"
@@ -452,76 +376,18 @@ return false;
                             setTempPriceRange({ ...tempPriceRange, max: Number(e.target.value) })
                           }
                           className={styles.priceInput}
-                          min={tempPriceRange.min}
-                          max="100000000"
                         />
                       </div>
                     </div>
                     <div className={styles.priceActions}>
-                      <button className={styles.resetBtn} onClick={handleResetPriceFilter}>
-                        Reset
-                      </button>
-                      <button className={styles.applyBtn} onClick={handleApplyPriceFilter}>
+                      <button onClick={handleApplyPriceFilter} className={styles.applyBtn}>
                         Apply
+                      </button>
+                      <button onClick={handleResetPriceFilter} className={styles.resetBtn}>
+                        Reset
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Shop Type Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shopType')}>
-                <span className={styles.filterTitle}>Shop Type</span>
-                <i className={`bi bi-chevron-${openSections.shopType ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.shopType && (
-                <div className={styles.filterContent}>
-                  {shopTypes.map((type) => (
-                    <label key={type.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShopTypes.includes(type.id)}
-                        onChange={() => toggleFilter('shopType', type.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{type.name}</span>
-                    </label>
-                  ))}
-                  <button className={styles.showMoreBtn}>More</button>
-                </div>
-              )}
-            </div>
-
-            {/* Rating Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('rating')}>
-                <span className={styles.filterTitle}>Rating</span>
-                <i className={`bi bi-chevron-${openSections.rating ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.rating && (
-                <div className={styles.filterContent}>
-                  {ratings.map((rating) => (
-                    <label key={rating.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRatings.includes(rating.id)}
-                        onChange={() => toggleFilter('rating', rating.id)}
-                        className={styles.checkbox}
-                      />
-                      <div className={styles.ratingRow}>
-                        {[...Array(5)].map((_, i) => (
-                          <i
-                            key={i}
-                            className={`bi bi-star-fill ${i < rating.value ? styles.starActive : styles.starInactive}`}
-                          ></i>
-                        ))}
-                        <span className={styles.brandName}>and up</span>
-                      </div>
-                    </label>
-                  ))}
-                  <button className={styles.showMoreBtn}>More</button>
                 </div>
               )}
             </div>
@@ -529,12 +395,7 @@ return false;
 
           {/* Main Content */}
           <main className={styles.mainContent}>
-            {/* Header Controls */}
             <div className={styles.productsHeader}>
-              <button className={styles.backButton} onClick={() => navigate(-1)}>
-                <i className="bi bi-arrow-left"></i>
-              </button>
-
               <h1 className={styles.pageTitle}>
                 <i
                   className="bi bi-lightning-fill"
@@ -566,28 +427,28 @@ return false;
                 </div>
 
                 <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>To Show:</label>
+                  <label className={styles.filterLabel}>Show:</label>
                   <select
                     className={styles.filterSelect}
                     value={itemsToShow}
                     onChange={(e) => setItemsToShow(Number(e.target.value))}
                   >
-                    <option value={9}>9</option>
                     <option value={12}>12</option>
                     <option value={24}>24</option>
                     <option value={48}>48</option>
+                    <option value={96}>96</option>
                   </select>
                 </div>
 
                 <div className={styles.filterGroup}>
+                  <label className={styles.filterLabel}>Sort by:</label>
                   <select
                     className={styles.filterSelect}
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
-                    <option value="priority">Priority</option>
-                    <option value="ending-soon">Ending Soon</option>
                     <option value="discount">Discount: High to Low</option>
+                    <option value="ending-soon">Ending Soon</option>
                     <option value="name">Name</option>
                     <option value="price-asc">Price: Low to High</option>
                     <option value="price-desc">Price: High to Low</option>
@@ -600,21 +461,37 @@ return false;
             {viewMode === 'grid' ? (
               <div className={styles.productGrid}>
                 {displayedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <ProductCard product={product} />
+                  </Link>
                 ))}
               </div>
             ) : (
               <div className={styles.productList}>
                 {displayedProducts.map((product) => (
-                  <ProductListItem key={product.id} product={product} />
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <ProductListItem product={product} />
+                  </Link>
                 ))}
               </div>
             )}
 
-            {displayedProducts.length === 0 && (
+            {displayedProducts.length === 0 && !loading && (
               <div style={{ textAlign: 'center', padding: '48px', color: '#6b7280' }}>
-                <i className="bi bi-inbox" style={{ fontSize: '48px', marginBottom: '16px' }}></i>
-                <p>No deals available at the moment</p>
+                <i
+                  className="bi bi-inbox"
+                  style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}
+                ></i>
+                <p style={{ fontSize: '18px', marginBottom: '8px' }}>No deals available</p>
+                <p style={{ fontSize: '14px' }}>Try adjusting your filters or check back later</p>
               </div>
             )}
           </main>
