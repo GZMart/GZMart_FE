@@ -1,18 +1,91 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import CategoryCard from '@components/common/CategoryCard';
 import CategoryListItem from '@components/common/CategoryListItem';
 import styles from '@assets/styles/CategoriesPage.module.css';
-import { breadcrumbItems, categories } from '@utils/data/CategoriesPage_MockData';
+import { categoryService } from '../../services/api';
+
+const breadcrumbItems = [
+  { label: 'Home', path: '/' },
+  { label: 'Categories', path: '/categories', isActive: true },
+];
 
 const CategoriesPage = () => {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [itemsToShow, setItemsToShow] = useState(12);
   const [sortBy, setSortBy] = useState('position');
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await categoryService.getCategoriesWithCounts();
+
+        if (!isMounted) return;
+
+        const categoriesData = response.data?.data || [];
+
+        // Transform backend data to component format
+        const transformed = categoriesData.map((cat) => ({
+          id: cat._id,
+          name: cat.name,
+          image: cat.image || cat.imageUrl || 'https://via.placeholder.com/300',
+          productCount: cat.productCount || 0,
+        }));
+
+        setCategories(transformed);
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching categories:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sort categories
+  const sortedCategories = [...categories].sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'popular':
+        return (b.productCount || 0) - (a.productCount || 0);
+      default:
+        return 0;
+    }
+  });
 
   // Calculate displayed categories
-  const totalCategories = categories.length;
-  const displayedCategories = categories.slice(0, itemsToShow);
+  const totalCategories = sortedCategories.length;
+  const displayedCategories = sortedCategories.slice(0, itemsToShow);
+
+  if (loading) {
+    return (
+      <div className={styles.categoriesPage}>
+        <Breadcrumb items={breadcrumbItems} />
+        <div className={styles.container}>
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.categoriesPage}>
@@ -21,7 +94,7 @@ const CategoriesPage = () => {
       <div className={styles.container}>
         {/* Header Controls */}
         <div className={styles.categoriesHeader}>
-          <button className={styles.backButton}>
+          <button className={styles.backButton} onClick={() => navigate(-1)} aria-label="Go back">
             <i className="bi bi-arrow-left"></i>
           </button>
 

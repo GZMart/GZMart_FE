@@ -4,7 +4,7 @@ import { getAuthToken, getRefreshToken, setAuthToken, clearAuthData } from '@uti
 // Validate và set API_BASE_URL
 const getApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
-  
+
   // Nếu có VITE_API_BASE_URL và hợp lệ
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
     const trimmedUrl = envUrl.trim();
@@ -13,7 +13,7 @@ const getApiBaseUrl = () => {
       return trimmedUrl.replace(/\/+$/, '');
     }
   }
-  
+
   // Fallback về localhost với port mặc định của backend
   // Backend chạy trên port 3000 (theo server.js line 133)
   return 'http://localhost:3000';
@@ -57,11 +57,11 @@ axiosClient.interceptors.request.use(
 
     // Log request in development
     if (import.meta.env.DEV) {
-      console.log('🚀 Request:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        data: config.data,
-      });
+      // console.log('🚀 Request:', {
+      //   method: config.method?.toUpperCase(),
+      //   url: config.url,
+      //   data: config.data,
+      // });
     }
 
     return config;
@@ -77,11 +77,11 @@ axiosClient.interceptors.response.use(
   (response) => {
     // Log response in development
     if (import.meta.env.DEV) {
-      console.log('✅ Response:', {
-        status: response.status,
-        url: response.config.url,
-        data: response.data,
-      });
+      // console.log('✅ Response:', {
+      //   status: response.status,
+      //   url: response.config.url,
+      //   data: response.data,
+      // });
     }
 
     return response.data;
@@ -113,7 +113,7 @@ axiosClient.interceptors.response.use(
           });
 
           const newToken = response.data?.token || response.data?.data?.token;
-          
+
           if (newToken) {
             setAuthToken(newToken);
 

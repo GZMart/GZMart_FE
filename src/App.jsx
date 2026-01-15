@@ -39,7 +39,12 @@ function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={<LoadingSpinner />} persistor={persistor}>
-        <Router>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {routeConfig.map((route, index) => {

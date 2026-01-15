@@ -1,47 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-
-const CATEGORIES = [
-  {
-    id: 1,
-    name: 'Dresses',
-    image:
-      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 2,
-    name: 'Tops & Tees',
-    image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 3,
-    name: 'Pants & Jeans',
-    image:
-      'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 4,
-    name: 'Outerwear',
-    image:
-      'https://images.unsplash.com/photo-1544923246-77307dd654cb?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 5,
-    name: 'Skirts',
-    image:
-      'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 6,
-    name: 'Matching Sets',
-    image:
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80',
-  },
-];
+import { categoryService } from '../../services/api';
+import { PUBLIC_ROUTES } from '../../constants/routes';
 
 const TopCategories = () => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await categoryService.getTopCategories(8);
+        const apiData = Array.isArray(response) ? response : response.data || [];
+        setCategories(apiData);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+        setCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-5">
+        <div className="container text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-5">
       <div className="container">
@@ -53,60 +49,76 @@ const TopCategories = () => {
             </h3>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="btn fw-bold d-flex align-items-center gap-2 px-4 rounded-1"
-            style={{ backgroundColor: '#FFC107', border: 'none', color: '#000' }}
-          >
-            VIEW ALL
-          </motion.button>
+          <Link to={PUBLIC_ROUTES.CATEGORIES} style={{ textDecoration: 'none' }}>
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+              whileTap={{ scale: 0.95 }}
+              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
+              style={{
+                backgroundColor: '#FCBD01',
+                border: 'none',
+              }}
+            >
+              VIEW ALL
+            </motion.button>
+          </Link>
         </div>
 
         <hr className="my-4 text-secondary opacity-25" />
 
-        <div className="d-flex flex-wrap justify-content-center justify-content-lg-between gap-4">
-          {CATEGORIES.map((cat, index) => (
-            <motion.div
-              key={cat.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="d-flex flex-column align-items-center"
-              style={{ cursor: 'pointer', width: '120px' }}
-            >
-              <motion.div
-                whileHover={{
-                  scale: 1.1,
-                  borderColor: '#0D6EFD',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-                }}
-                className="rounded-circle d-flex align-items-center justify-content-center mb-3 bg-light position-relative"
-                style={{
-                  width: '120px',
-                  height: '120px',
-                  border: '2px solid transparent',
-                  transition: 'border-color 0.3s ease',
-                  overflow: 'hidden',
-                }}
+        {categories.length === 0 ? (
+          <div className="text-center py-5">
+            <p className="text-muted fs-5">No categories available at the moment</p>
+          </div>
+        ) : (
+          <div className="d-flex flex-wrap justify-content-center justify-content-lg-between gap-4">
+            {categories.map((cat, index) => (
+              <Link
+                key={cat._id || cat.id || index}
+                to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat._id || cat.id}`}
+                style={{ textDecoration: 'none' }}
               >
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="img-fluid"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="d-flex flex-column align-items-center"
+                  style={{ cursor: 'pointer', width: '120px' }}
+                >
+                  <motion.div
+                    whileHover={{
+                      scale: 1.1,
+                      borderColor: '#0D6EFD',
+                      boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                    }}
+                    className="rounded-circle d-flex align-items-center justify-content-center mb-3 bg-light position-relative"
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      border: '2px solid transparent',
+                      transition: 'border-color 0.3s ease',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <img
+                      src={cat.image || cat.imageUrl || 'https://via.placeholder.com/120'}
+                      alt={cat.name}
+                      className="img-fluid"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  </motion.div>
 
-              <span className="fw-semibold text-dark text-center">{cat.name}</span>
-            </motion.div>
-          ))}
-        </div>
+                  <span className="fw-semibold text-dark text-center">{cat.name}</span>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

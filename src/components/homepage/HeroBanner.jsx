@@ -1,171 +1,359 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { homeService } from '../../services/api';
+import { PUBLIC_ROUTES } from '../../constants/routes';
 
-// --- Custom Styles (Có thể tách ra file CSS riêng) ---
 const styles = {
   bannerContainer: {
-    backgroundColor: '#0a58ca', // Màu nền xanh chủ đạo
     position: 'relative',
     overflow: 'hidden',
-    minHeight: '400px', // Chiều cao tối thiểu
+    minHeight: '500px',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   },
-  // Tạo họa tiết nền màu vàng bằng CSS (đơn giản hóa)
-  bgDecoration: {
+  gradientOverlay: {
     position: 'absolute',
-    top: '-30%',
-    right: '-20%',
-    width: '70%',
-    paddingBottom: '70%', // Tạo hình vuông để bo tròn
-    backgroundColor: '#fca311', // Màu vàng cam
-    borderRadius: '50%',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background:
+      'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)',
     zIndex: 0,
+    pointerEvents: 'none',
+  },
+  decorativeShape1: {
+    position: 'absolute',
+    top: '-10%',
+    right: '-5%',
+    width: '40%',
+    height: '40%',
+    background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
+    borderRadius: '50%',
+    filter: 'blur(40px)',
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  decorativeShape2: {
+    position: 'absolute',
+    bottom: '-15%',
+    left: '-10%',
+    width: '50%',
+    height: '50%',
+    background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)',
+    borderRadius: '50%',
+    filter: 'blur(60px)',
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  decorativeCircles: {
+    position: 'absolute',
+    top: '20%',
+    right: '15%',
+    width: '300px',
+    height: '300px',
+    border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: '50%',
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  decorativeCircles2: {
+    position: 'absolute',
+    top: '25%',
+    right: '12%',
+    width: '250px',
+    height: '250px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '50%',
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  contentWrapper: {
+    position: 'relative',
+    zIndex: 2,
+    minHeight: '500px',
+  },
+  textContent: {
+    animation: 'fadeInLeft 0.8s ease-out',
+  },
+  subtitle: {
+    fontSize: '1rem',
+    fontWeight: '500',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    marginBottom: '1rem',
     opacity: 0.9,
   },
-  bgDecorationLine: {
-    position: 'absolute',
-    top: '10%',
-    right: '30%',
-    width: '400px',
-    height: '400px',
-    border: '2px solid rgba(255,255,255,0.2)',
-    borderRadius: '50%',
-    zIndex: 0,
+  title: {
+    fontSize: '4rem',
+    fontWeight: '800',
+    lineHeight: '1.1',
+    marginBottom: '1.5rem',
+    textShadow: '0 2px 20px rgba(0,0,0,0.1)',
   },
-  // Style cho nút điều hướng tròn màu trắng
+  description: {
+    fontSize: '1.25rem',
+    fontWeight: '400',
+    opacity: 0.95,
+    marginBottom: '2rem',
+    lineHeight: '1.6',
+  },
+  ctaButton: {
+    padding: '15px 40px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    borderRadius: '50px',
+    border: 'none',
+    background: 'white',
+    color: '#667eea',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+    transition: 'all 0.3s ease',
+    textDecoration: 'none',
+    display: 'inline-block',
+  },
+  imageWrapper: {
+    position: 'relative',
+    animation: 'fadeInRight 0.8s ease-out',
+  },
+  productImage: {
+    maxHeight: '450px',
+    width: '100%',
+    objectFit: 'contain',
+    filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.3))',
+    transition: 'transform 0.3s ease',
+  },
   controlBtn: {
-    width: '50px',
-    height: '50px',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    width: '55px',
+    height: '55px',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#000',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  productImage: {
-    maxHeight: '500px',
-    objectFit: 'contain',
-    transform: 'rotate(-15deg) translateX(20px)', // Xoay nhẹ để tạo hiệu ứng động
-    zIndex: 2,
-    position: 'relative',
+    color: '#667eea',
+    boxShadow: '0 5px 15px rgba(0,0,0,0.2)',
+    transition: 'all 0.3s ease',
+    border: 'none',
   },
 };
-// ----------------------------------------------------
 
 const HeroBanner = () => {
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        setLoading(true);
+        const response = await homeService.getBanners();
+        const apiData = Array.isArray(response) ? response : response.data || [];
+        setBanners(apiData);
+      } catch (err) {
+        console.error('Error fetching banners:', err);
+        setError(err.message);
+        setBanners([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBanners();
+  }, []);
+
+  const handleBannerClick = async (bannerId) => {
+    try {
+      await homeService.incrementBannerClick(bannerId);
+    } catch (err) {
+      console.error('Error tracking banner click:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section style={styles.bannerContainer}>
+        <div
+          className="container h-100 d-flex align-items-center justify-content-center"
+          style={{ minHeight: '400px' }}
+        >
+          <div className="spinner-border text-white" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!banners.length) {
+    return (
+      <section style={styles.bannerContainer}>
+        <div
+          className="container h-100 d-flex align-items-center justify-content-center text-white"
+          style={{ minHeight: '400px' }}
+        >
+          <p className="fs-5">No banners available at the moment</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
-      <div id="heroBannerCarousel" className="carousel slide" data-bs-ride="carousel">
-        {/* --- 1. Carousel Indicators (Các chấm tròn bên dưới) --- */}
-        <div
-          className="carousel-indicators justify-content-start container ms-auto mb-4"
-          style={{
-            zIndex: 2,
-            position: 'absolute',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-          }}
-        >
-          {/* Custom CSS cho indicators để tạo thanh dài và chấm tròn */}
-          <style>
-            {`
-              .banner-indicator {
-                width: 8px !important;
-                height: 8px !important;
-                border-radius: 50%;
-                background-color: rgba(255,255,255,0.5) !important;
-                border: none !important;
-                margin: 0 4px !important;
-                transition: all 0.3s ease;
-              }
-              .banner-indicator.active {
-                width: 25px !important;
-                border-radius: 4px;
-                background-color: #fff !important;
-              }
-            `}
-          </style>
-          <button
-            type="button"
-            data-bs-target="#heroBannerCarousel"
-            data-bs-slide-to="0"
-            className="active banner-indicator"
-            aria-current="true"
-            aria-label="Slide 1"
-          ></button>
-          <button
-            type="button"
-            data-bs-target="#heroBannerCarousel"
-            data-bs-slide-to="1"
-            className="banner-indicator"
-            aria-label="Slide 2"
-          ></button>
-          <button
-            type="button"
-            data-bs-target="#heroBannerCarousel"
-            data-bs-slide-to="2"
-            className="banner-indicator"
-            aria-label="Slide 3"
-          ></button>
-          {/* Thêm các chấm khác nếu cần */}
-        </div>
+      <style>
+        {`
+          @keyframes fadeInLeft {
+            from {
+              opacity: 0;
+              transform: translateX(-30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          @keyframes fadeInRight {
+            from {
+              opacity: 0;
+              transform: translateX(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          .banner-indicator {
+            width: 10px !important;
+            height: 10px !important;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.4) !important;
+            border: none !important;
+            margin: 0 5px !important;
+            transition: all 0.4s ease;
+            cursor: pointer;
+          }
+          .banner-indicator.active {
+            width: 35px !important;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.95) !important;
+            box-shadow: 0 2px 8px rgba(255,255,255,0.3);
+          }
+          .banner-indicator:hover {
+            background-color: rgba(255,255,255,0.6) !important;
+            transform: scale(1.2);
+          }
+          .hero-cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+          }
+          .hero-control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            background-color: #fff !important;
+          }
+          .hero-product-image:hover {
+            transform: scale(1.05);
+          }
+          .carousel-item {
+            transition: transform 0.8s ease-in-out;
+          }
+        `}
+      </style>
 
-        {/* --- 2. Carousel Inner (Nội dung chính) --- */}
+      <div
+        id="heroBannerCarousel"
+        className="carousel slide"
+        data-bs-ride="carousel"
+        data-bs-interval="5000"
+      >
         <div className="carousel-inner">
-          {/* --- Slide 1 (Active) --- */}
-          <div className="carousel-item active" style={styles.bannerContainer}>
-            {/* Họa tiết trang trí nền */}
-            <div style={styles.bgDecoration}></div>
-            <div style={styles.bgDecorationLine}></div>
+          {banners.map((banner, index) => (
+            <div
+              key={banner._id}
+              className={`carousel-item ${index === 0 ? 'active' : ''}`}
+              data-bs-interval="5000"
+            >
+              <div style={styles.bannerContainer}>
+                <div style={styles.gradientOverlay}></div>
+                <div style={styles.decorativeShape1}></div>
+                <div style={styles.decorativeShape2}></div>
+                <div style={styles.decorativeCircles}></div>
+                <div style={styles.decorativeCircles2}></div>
 
-            <div className="container h-100 position-relative" style={{ zIndex: 1 }}>
-              <div className="row align-items-center h-100 py-5">
-                {/* Left Content: Text */}
-                <div className="col-md-6 col-lg-6 text-white py-5">
-                  <h5 className="fw-light mb-3 fs-4">Best Deal Online on smart watches</h5>
-                  <h1
-                    className="display-3 fw-bolder text-uppercase mb-3"
-                    style={{ letterSpacing: '-1px' }}
-                  >
-                    LATEST NIKE SHOES
-                  </h1>
-                  <p className="fs-3 fw-light mb-4">
-                    UP to <span className="fw-bold">80% OFF</span>
-                  </p>
-                  {/* Nút bấm (Tùy chọn thêm) */}
-                  {/* <button className="btn btn-light btn-lg rounded-pill px-4 fw-bold">Shop Now</button> */}
-                </div>
+                <div
+                  className="container"
+                  style={{ ...styles.contentWrapper, pointerEvents: 'none' }}
+                >
+                  <div className="row align-items-center h-100 py-5">
+                    <div
+                      className="col-lg-6 text-white"
+                      style={{ ...styles.textContent, pointerEvents: 'auto' }}
+                    >
+                      <div style={styles.subtitle}>{banner.subtitle || 'Best Deal Online'}</div>
+                      <h1 style={styles.title}>{banner.title}</h1>
+                      <p style={styles.description}>{banner.description}</p>
+                      {banner.buttonText && banner.buttonLink && (
+                        <a
+                          href={banner.buttonLink}
+                          className="hero-cta-button"
+                          style={styles.ctaButton}
+                          onClick={() => handleBannerClick(banner._id)}
+                        >
+                          {banner.buttonText} →
+                        </a>
+                      )}
+                    </div>
 
-                {/* Right Content: Image */}
-                <div className="col-md-6 col-lg-6 text-center text-md-end">
-                  <img
-                    src="/nike-shoes-banner.png" // <-- Đảm bảo bạn có ảnh này trong folder public
-                    alt="Nike Shoes"
-                    className="img-fluid"
-                    style={styles.productImage}
-                  />
+                    <div
+                      className="col-lg-6"
+                      style={{ ...styles.imageWrapper, pointerEvents: 'auto' }}
+                    >
+                      <img
+                        src={banner.imageUrl}
+                        alt={banner.title}
+                        className="hero-product-image"
+                        style={styles.productImage}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* --- Slide 2 (Ví dụ để test carousel) --- */}
-          {/* Bạn có thể copy structure Slide 1 xuống đây và thay đổi nội dung/màu sắc */}
-          {/* <div className="carousel-item" style={{...styles.bannerContainer, backgroundColor: '#5a0000'}}> ... </div> */}
+          ))}
         </div>
 
-        {/* --- 3. Carousel Controls (Nút mũi tên) --- */}
+        <div
+          className="carousel-indicators"
+          style={{
+            bottom: '30px',
+            margin: '0',
+            zIndex: 10,
+          }}
+        >
+          {banners.map((banner, index) => (
+            <button
+              key={banner._id}
+              type="button"
+              data-bs-target="#heroBannerCarousel"
+              data-bs-slide-to={index}
+              className={`banner-indicator ${index === 0 ? 'active' : ''}`}
+              aria-current={index === 0 ? 'true' : undefined}
+              aria-label={`Slide ${index + 1}`}
+            ></button>
+          ))}
+        </div>
+
         <button
           className="carousel-control-prev"
           type="button"
           data-bs-target="#heroBannerCarousel"
           data-bs-slide="prev"
-          style={{ width: '8%', zIndex: 3 }}
+          style={{ width: '10%', zIndex: 10, border: 'none', background: 'transparent' }}
         >
-          <span style={styles.controlBtn}>
-            <ChevronLeft size={28} />
+          <span
+            className="hero-control-btn"
+            style={{ ...styles.controlBtn, pointerEvents: 'none' }}
+          >
+            <ChevronLeft size={24} strokeWidth={2.5} />
           </span>
           <span className="visually-hidden">Previous</span>
         </button>
@@ -174,10 +362,13 @@ const HeroBanner = () => {
           type="button"
           data-bs-target="#heroBannerCarousel"
           data-bs-slide="next"
-          style={{ width: '8%', zIndex: 3 }}
+          style={{ width: '10%', zIndex: 10, border: 'none', background: 'transparent' }}
         >
-          <span style={styles.controlBtn}>
-            <ChevronRight size={28} />
+          <span
+            className="hero-control-btn"
+            style={{ ...styles.controlBtn, pointerEvents: 'none' }}
+          >
+            <ChevronRight size={24} strokeWidth={2.5} />
           </span>
           <span className="visually-hidden">Next</span>
         </button>
