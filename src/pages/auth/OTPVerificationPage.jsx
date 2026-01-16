@@ -32,14 +32,14 @@ const OTPVerificationPage = () => {
     }
   }, [email, navigate]);
 
-  // In development, show OTP if available
+  // In development, show OTP if available (Disabled)
   useEffect(() => {
+    /*
     if (devOTP && import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.log('🔐 OTP from registration:', devOTP);
-      // Auto-fill OTP in development (optional - you can remove this if you want user to type)
       // setOtp(devOTP.split(''));
     }
+    */
   }, [devOTP]);
 
   // Helper function to format time
@@ -172,12 +172,13 @@ const OTPVerificationPage = () => {
 
       let message = 'OTP đã được gửi lại vào email của bạn';
 
-      // In development, show OTP if available
+      // In development, show OTP if available (Disabled)
+      /*
       if (response?.otp && import.meta.env.DEV) {
         message += `\n\n🔐 Mã OTP (Development): ${response.otp}`;
-        // eslint-disable-next-line no-console
-        console.log('🔐 Resend OTP:', response.otp);
+         console.log('🔐 Resend OTP:', response.otp);
       }
+      */
 
       toast.success(message, {
         autoClose: response?.otp ? 10000 : 3000,
@@ -292,22 +293,6 @@ const OTPVerificationPage = () => {
                 <p className={styles.instructionText}>
                   Enter the 4-digit code that you received on your email.
                 </p>
-                {devOTP && import.meta.env.DEV && (
-                  <div
-                    style={{
-                      marginTop: '10px',
-                      padding: '10px',
-                      backgroundColor: '#fff3cd',
-                      borderRadius: '5px',
-                      fontSize: '14px',
-                      color: '#856404',
-                    }}
-                  >
-                    <strong>Development Mode:</strong> OTP: <code>{devOTP}</code>
-                    <br />
-                    <small>(Check backend console for OTP if not shown here)</small>
-                  </div>
-                )}
               </div>
 
               <form onSubmit={handleVerify} className={styles.loginForm}>
