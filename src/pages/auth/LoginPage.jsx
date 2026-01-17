@@ -8,7 +8,11 @@ import { PUBLIC_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
-import { loginUser } from '@store/slices/authSlice';
+import { loginUser, loginWithGoogle, loginWithFacebook } from '@store/slices/authSlice';
+import { useGoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
+import FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props';
+import { notification } from 'antd'; // Ensure notification is imported if used, otherwise stick to toast
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -71,33 +75,118 @@ const LoginPage = () => {
     },
   });
 
-  const handleGoogleLogin = async () => {
+  const loginGoogle = useGoogleLogin({
+    scope: 'openid email profile',
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        // Lấy thông tin user từ Google
+        const { data } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+
+        console.log('Google user data:', data); // Debug log
+
+        if (!data?.email) {
+          setLoading(false);
+          return toast.error('Cannot get email from Google');
+        }
+
+        // Dispatch action loginWithGoogle
+        const resultAction = await dispatch(
+          loginWithGoogle({
+            email: data.email,
+            name: data.name,
+            picture: data.picture,
+            rememberMe: true, // Social logins are always "remember me"
+          })
+        );
+
+        if (loginWithGoogle.fulfilled.match(resultAction)) {
+          const result = resultAction.payload;
+          
+          // Login thành công
+          toast.success('Login with Google successful!');
+          
+          // Force page reload to ensure avatar is displayed specific for social login if needed
+          // But Redux state update should be enough usually. 
+          // Keeping the reload logic if it was requested or beneficial for avatar sync
+          
+          if (result.isNewUser) {
+             navigate('/set-password');
+          } else {
+             const user = result.user;
+             if (user?.role === 'seller') {
+                navigate('/seller/dashboard');
+              } else if (user?.role === 'admin') {
+                navigate('/admin/dashboard');
+              } else {
+                navigate(PUBLIC_ROUTES.HOME);
+              }
+          }
+        } else {
+           toast.error(resultAction.payload || 'Login Google failed');
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error('Google login error:', err);
+        toast.error('Google login error');
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      toast.error('Google Login Failed');
+      setLoading(false);
+    }
+  });
+
+  const responseFacebook = async (response) => {
     try {
+      if (!response.email) {
+        return toast.error('Cannot get email from Facebook');
+      }
+
       setLoading(true);
-      // TODO: Implement Google OAuth - cần lấy thông tin từ Google OAuth
-      // Tạm thời chỉ log
-      console.log('Login with Google');
-      toast.info('Tính năng đăng nhập bằng Google đang được phát triển');
+      const resultAction = await dispatch(
+        loginWithFacebook({
+          email: response.email,
+          name: response.name,
+          picture: response.picture?.data?.url,
+          rememberMe: true,
+        })
+      );
+
+      if (loginWithFacebook.fulfilled.match(resultAction)) {
+         const result = resultAction.payload;
+         toast.success('Login with Facebook successful!');
+         
+         // Direct navigation for Facebook login, skipping set-password
+         const user = result.user;
+         if (user?.role === 'seller') {
+            navigate('/seller/dashboard');
+          } else if (user?.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate(PUBLIC_ROUTES.HOME);
+          }
+      } else {
+        toast.error(resultAction.payload || 'Login Facebook failed');
+      }
       setLoading(false);
     } catch (error) {
-      toast.error('Đăng nhập Google thất bại');
-      setLoading(false);
+       console.error('Facebook login error:', error);
+       toast.error('Login Facebook error');
+       setLoading(false);
     }
   };
 
-  const handleFacebookLogin = async () => {
-    try {
-      setLoading(true);
-      // TODO: Implement Facebook OAuth - cần lấy thông tin từ Facebook OAuth
-      // Tạm thời chỉ log
-      console.log('Login with Facebook');
-      toast.info('Tính năng đăng nhập bằng Facebook đang được phát triển');
-      setLoading(false);
-    } catch (error) {
-      toast.error('Đăng nhập Facebook thất bại');
-      setLoading(false);
-    }
+  const handleGoogleLogin = () => {
+    loginGoogle();
   };
+
+  // Removed handleFacebookLogin as it's replaced by responseFacebook used in the component
 
   return (
     <div className="login-page-wrapper">
@@ -311,16 +400,24 @@ const LoginPage = () => {
                   <span>Login with Google</span>
                 </button>
 
-                <button
-                  type="button"
-                  className={styles.socialButtonFacebook}
-                  onClick={handleFacebookLogin}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
-                  <span>Login with Facebook</span>
-                </button>
+                <FacebookLogin
+                  appId={import.meta.env.VITE_FACEBOOK_APP_ID}
+                  autoLoad={false}
+                  fields="name,email,picture"
+                  callback={responseFacebook}
+                  render={(renderProps) => (
+                    <button
+                      type="button"
+                      className={styles.socialButtonFacebook}
+                      onClick={renderProps.onClick}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                      </svg>
+                      <span>Login with Facebook</span>
+                    </button>
+                  )}
+                />
               </form>
             </div>
           </div>
