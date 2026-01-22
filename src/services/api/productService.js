@@ -235,6 +235,18 @@ export const productService = {
   addProductReview: async (productId, reviewData) => {
     return await axiosClient.post(`${BASE_URL}/${productId}/reviews`, reviewData);
   },
+  /**
+   * Check stock availability for a specific model
+   * @param {string} productId - Product ID
+   * @param {string} modelId - Model ID
+   * @param {number} quantity - Quantity to check
+   * @returns {Promise} Stock availability details
+   */
+  checkStockAvailability: async (productId, modelId, quantity = 1) => {
+    return await axiosClient.get(`${BASE_URL}/model/${modelId}/stock`, {
+      params: { productId, quantity },
+    });
+  },
 };
 
 export default productService;
