@@ -1,4 +1,4 @@
-import { api } from './axiosClient';
+import { api } from '../axiosClient';
 
 export const orderService = {
   // Create a new order
@@ -6,9 +6,9 @@ export const orderService = {
     return await api.post('/api/orders', orderData);
   },
 
-  // Get current user's orders
-  getMyOrders: async (params) => {
-    return await api.get('/api/orders', { params });
+  // Get current user's orders with pagination
+  getMyOrders: async (page = 1, limit = 10) => {
+    return await api.get('/api/orders', { params: { page, limit } });
   },
 
   // Get specific order details
@@ -30,4 +30,9 @@ export const orderService = {
   previewOrder: async (data) => {
     return await api.post('/api/orders/preview', data);
   },
+  
+  // Get invoice
+  getInvoice: async (id) => {
+     return await api.get(`/api/orders/${id}/invoice`);
+  }
 };
