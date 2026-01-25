@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { ArrowRight } from 'lucide-react';
 
@@ -21,11 +21,13 @@ const topCategories = [
 const quickLinks = [
   { label: 'Shop Product', path: PUBLIC_ROUTES.SHOP },
   { label: 'Shopping Cart', path: BUYER_ROUTES.CART },
-  { label: 'Wishlist', path: PUBLIC_ROUTES.FAQ || '#' },
-  { label: 'Refund Policy', path: PUBLIC_ROUTES.FAQ || '#' },
-  { label: 'Shipping Policy', path: PUBLIC_ROUTES.FAQ || '#' },
-  { label: 'Privacy Policy', path: PUBLIC_ROUTES.FAQ || '#' },
-  { label: 'Terms of Service', path: PUBLIC_ROUTES.FAQ || '#' },
+  { label: 'Wishlist', path: BUYER_ROUTES.WISHLIST },
+  { label: 'Refund Policy', path: PUBLIC_ROUTES.REFUND_POLICY },
+  { label: 'Shipping Policy', path: PUBLIC_ROUTES.SHIPPING_POLICY },
+  { label: 'Privacy Policy', path: PUBLIC_ROUTES.PRIVACY_POLICY },
+  { label: 'Terms of Service', path: PUBLIC_ROUTES.TERMS_OF_SERVICE },
+  { label: 'FAQ', path: PUBLIC_ROUTES.FAQ },
+  { label: 'How We Can Help You', path: PUBLIC_ROUTES.HOW_WE_CAN_HELP },
 ];
 
 const popularTags = [
@@ -45,6 +47,16 @@ const popularTags = [
 ];
 
 const Footer = () => {
+  const location = useLocation();
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const isActivePath = (path) => {
+    return location.pathname === path;
+  };
+
   return (
     <footer style={styles.bgDark} className="text-secondary pt-5 pb-5 mt-auto">
       <div className="container">
@@ -88,7 +100,12 @@ const Footer = () => {
                 <li key={index}>
                   <Link
                     to={item.path}
-                    className="text-decoration-none text-secondary hover-text-white transition-all"
+                    onClick={scrollToTop}
+                    className="text-decoration-none transition-all"
+                    style={{
+                      color: isActivePath(item.path) ? '#ffffff' : '#6c757d',
+                      fontWeight: isActivePath(item.path) ? '600' : '400',
+                    }}
                   >
                     {item.label}
                   </Link>
@@ -97,6 +114,7 @@ const Footer = () => {
               <li>
                 <Link
                   to={PUBLIC_ROUTES.SHOP}
+                  onClick={scrollToTop}
                   style={styles.textYellow}
                   className="text-decoration-none d-flex align-items-center gap-1 mt-2"
                 >
@@ -114,7 +132,12 @@ const Footer = () => {
                 <li key={index}>
                   <Link
                     to={item.path}
-                    className="text-decoration-none text-secondary hover-text-white transition-all"
+                    onClick={scrollToTop}
+                    className="text-decoration-none transition-all"
+                    style={{
+                      color: isActivePath(item.path) ? '#ffffff' : '#6c757d',
+                      fontWeight: isActivePath(item.path) ? '600' : '400',
+                    }}
                   >
                     {item.label}
                   </Link>

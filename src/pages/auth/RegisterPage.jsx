@@ -30,8 +30,12 @@ const RegisterPage = () => {
         .email('Email không hợp lệ')
         .required('Vui lòng nhập email'),
       password: Yup.string()
-        .min(6, 'Mật khẩu phải có ít nhất 6 ký tự')
-        .required('Vui lòng nhập mật khẩu'),
+        .required('Please input your password!')
+        .min(8, 'Password must be at least 8 characters!')
+        .matches(/[A-Z]/, 'Password must contain at least one uppercase letter!')
+        .matches(/[a-z]/, 'Password must contain at least one lowercase letter!')
+        .matches(/[0-9]/, 'Password must contain at least one number!')
+        .matches(/[@$!%*?&#]/, 'Password must contain at least one special character (@$!%*?&#)!'),
     }),
     onSubmit: async (values) => {
       setLoading(true);
@@ -47,12 +51,13 @@ const RegisterPage = () => {
         // Đăng ký thành công - OTP đã được gửi
         let message = 'Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.';
 
-        // In development, show OTP if available
+        // Commented out dev mode OTP display as requested
+        /*
         if (result?.otp && import.meta.env.DEV) {
           message += `\n\n🔐 Mã OTP (Development): ${result.otp}`;
-          // eslint-disable-next-line no-console
           console.log('🔐 Registration OTP:', result.otp);
         }
+        */
 
         toast.success(message, {
           autoClose: result?.otp ? 10000 : 3000, // Show longer if OTP is included

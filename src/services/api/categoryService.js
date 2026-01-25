@@ -24,6 +24,41 @@ export const categoryService = {
   },
 
   /**
+   * Get top categories (most products)
+   * @param {number} limit - Number of categories to fetch
+   * @returns {Promise} Top categories
+   */
+  getTopCategories: async (limit = 10) => {
+    return await axiosClient.get(`${BASE_URL}/top`, { params: { limit } });
+  },
+
+  /**
+   * Get featured categories
+   * @returns {Promise} Featured categories
+   */
+  getFeaturedCategories: async () => {
+    return await axiosClient.get(`${BASE_URL}/featured`);
+  },
+
+  /**
+   * Get categories with product counts
+   * @returns {Promise} Categories with product counts
+   */
+  getCategoriesWithCounts: async () => {
+    return await axiosClient.get(`${BASE_URL}/with-counts`);
+  },
+
+  /**
+   * Get products by category
+   * @param {string} categoryId - Category ID
+   * @param {object} params - Query parameters
+   * @returns {Promise} Products in category
+   */
+  getProductsByCategory: async (categoryId, params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/${categoryId}/products`, { params });
+  },
+
+  /**
    * Get single category by ID
    * @param {string} id - Category ID
    * @returns {Promise} Category details

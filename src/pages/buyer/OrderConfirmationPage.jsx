@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Spinner, Alert, Row, Col } from 'react-bootstrap';
-import { orderService } from '@services/order.service';
+import { orderService } from '@services/api/orderService';
 import { selectCartItems, fetchCart } from '@store/slices/cartSlice'; // To clear cart if needed or just redirect
 import { useDispatch } from 'react-redux';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';

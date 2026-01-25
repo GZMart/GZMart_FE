@@ -22,8 +22,11 @@ export const PUBLIC_ROUTES = {
   ABOUT: '/about',
   CONTACT: '/contact',
   PRIVACY_POLICY: '/privacy-policy',
-  TERMS_CONDITIONS: '/terms-conditions',
-  FAQ: '/faq',
+  TERMS_OF_SERVICE: '/terms-of-service',
+  REFUND_POLICY: '/refund-policy',
+  SHIPPING_POLICY: '/shipping-policy',
+  FAQ: '/frequently-asked-questions',
+  HOW_WE_CAN_HELP: '/how-we-can-help-you',
 };
 
 // Buyer Protected Routes
@@ -52,46 +55,18 @@ export const SELLER_ROUTES = {
   PO_LIST: '/seller/purchase-orders',
   PO_CREATE: '/seller/purchase-orders/create',
   PO_DETAILS: '/seller/purchase-orders/:id',
-  PO_EDIT: '/seller/purchase-orders/:id/edit',
 
   // Landed Cost
-  LANDED_COST_CALCULATOR: '/seller/landed-cost',
-  LANDED_COST_HISTORY: '/seller/landed-cost/history',
+  LANDED_COST: '/seller/landed-cost',
 
   // Inventory
   INVENTORY: '/seller/inventory',
-  INVENTORY_ADD: '/seller/inventory/add',
-  INVENTORY_EDIT: '/seller/inventory/:id/edit',
-  STOCK_MOVEMENTS: '/seller/inventory/movements',
-  LOW_STOCK_ALERTS: '/seller/inventory/alerts',
 
   // Products
-  PRODUCTS: '/seller/products',
-  PRODUCT_CREATE: '/seller/products/create',
-  PRODUCT_EDIT: '/seller/products/:id/edit',
-
-  // Orders
-  ORDERS: '/seller/orders',
-  ORDER_DETAILS: '/seller/orders/:id',
+  LISTINGS: '/seller/listings',
 
   // Returns
   RETURNS: '/seller/returns',
-
-  // Suppliers
-  SUPPLIERS: '/seller/suppliers',
-  SUPPLIER_CREATE: '/seller/suppliers/create',
-  SUPPLIER_EDIT: '/seller/suppliers/:id/edit',
-
-  // Reports & Analytics
-  REPORTS: '/seller/reports',
-  ANALYTICS: '/seller/analytics',
-  SALES_REPORT: '/seller/reports/sales',
-  INVENTORY_REPORT: '/seller/reports/inventory',
-  PO_REPORT: '/seller/reports/purchase-orders',
-
-  // Settings
-  SETTINGS: '/seller/settings',
-  NOTIFICATIONS: '/seller/notifications',
 };
 
 // Admin Routes
@@ -101,37 +76,16 @@ export const ADMIN_ROUTES = {
 
   // User Management
   USERS: '/admin/users',
+  USER_DETAILS: '/admin/users/:id',
   USER_CREATE: '/admin/users/create',
   USER_EDIT: '/admin/users/:id/edit',
 
   // Catalog Management
   CATEGORIES: '/admin/categories',
   ATTRIBUTES: '/admin/attributes',
-  USER_DETAILS: '/admin/users/:id',
 
   // System Configuration
   SYSTEM_CONFIG: '/admin/config',
-  SITE_SETTINGS: '/admin/settings/site',
-  EMAIL_SETTINGS: '/admin/settings/email',
-  PAYMENT_SETTINGS: '/admin/settings/payment',
-  SHIPPING_SETTINGS: '/admin/settings/shipping',
-
-  // Content Management
-  PAGES: '/admin/pages',
-  PAGE_EDIT: '/admin/pages/:id/edit',
-  BANNERS: '/admin/banners',
-  PROMOTIONS: '/admin/promotions',
-
-  // Logs & Monitoring
-  ACTIVITY_LOGS: '/admin/logs/activity',
-  ERROR_LOGS: '/admin/logs/errors',
-  SYSTEM_HEALTH: '/admin/system/health',
-
-  // Reports
-  REPORTS: '/admin/reports',
-  USER_REPORT: '/admin/reports/users',
-  SALES_REPORT: '/admin/reports/sales',
-  SYSTEM_REPORT: '/admin/reports/system',
 };
 
 // Error Routes
