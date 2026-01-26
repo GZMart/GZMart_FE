@@ -1,70 +1,84 @@
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Space, Empty, Card, Row, Col, Badge, Typography, Tooltip } from 'antd';
-import { DeleteOutlined, ShoppingCartOutlined, LeftOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Table, Button, Space, Empty, Card, Badge, Typography, Tooltip, message, Spin } from 'antd';
+import {
+  DeleteOutlined,
+  ShoppingCartOutlined,
+  LeftOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { BUYER_ROUTES } from '@constants/routes';
+import * as favouriteService from '@services/api/favouriteService';
+import * as cartService from '@services/api/cartService';
 import styles from '@assets/styles/buyer/WishlistPage.module.css';
-
-// Mock data for wishlist
-const mockWishlistData = [
-  {
-    id: 1,
-    name: 'Bose Sport Earbuds - Wireless Earphones',
-    image: 'https://th.bing.com/th/id/R.70d4bc8f6ca0ccc05ea690a86c1ae0cd?rik=MMNgedBhzflP6w&pid=ImgRaw&r=0',
-    originalPrice: 1299,
-    price: 999,
-    stockStatus: 'IN STOCK',
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: 'Simple Mobile 5G LTE Galaxy 12 Mini 512GB Gaming Phone',
-    image: 'https://buketomnisportpweb.s3.us-east-2.amazonaws.com/products-images/8XMSx4CdEAmT7tyXCZtVljXUlCkB5cY4mf3K9yDI.jpeg',
-    originalPrice: null,
-    price: 2300.0,
-    stockStatus: 'IN STOCK',
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: 'Portable Washing Machine, 11lbs capacity Model 18NMFIAM',
-    image: 'https://www.caterkwik.ie/wp-content/uploads/2017/05/Large-Capacity-Washing-Machine.jpg',
-    originalPrice: null,
-    price: 70.0,
-    stockStatus: 'IN STOCK',
-    inStock: true,
-  },
-  {
-    id: 4,
-    name: 'TOZO T6 True Wireless Earbuds Bluetooth Headphones',
-    image: 'https://ueeshop.ly200-cdn.com/u_file/UPAX/UPAX632/2304/products/20/b7f6b16b9e.jpg',
-    originalPrice: 250.0,
-    price: 220.0,
-    stockStatus: 'OUT OF STOCK',
-    inStock: false,
-  },
-  {
-    id: 5,
-    name: 'Wyze Cam Pan v2 1080p Pan/Tilt/Zoom Wi-Fi Indoor Smart Home Camera',
-    image: 'https://tse4.mm.bing.net/th/id/OIP.jtlEvbXGoHKEGsTDHS3ewwHaG7?cb=ucfimg2&ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3',
-    originalPrice: null,
-    price: 1499.99,
-    stockStatus: 'IN STOCK',
-    inStock: true,
-  },
-];
 
 const WishlistPage = () => {
   const navigate = useNavigate();
   const { Title } = Typography;
+  const [favourites, setFavourites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
 
-  const handleAddToCart = (productId) => {
-    console.log('Added to cart:', productId);
-    // TODO: Implement add to cart functionality
+  // Fetch favourites on component mount
+  useEffect(() => {
+    fetchFavourites();
+  }, []);
+
+  const fetchFavourites = async () => {
+    try {
+      setLoading(true);
+      const response = await favouriteService.getFavourites();
+      console.log('Favourites response:', response);
+
+      // axiosClient đã unwrap response.data rồi, nên:
+      // - response.success = backend response.data.success
+      // - response.data = backend response.data.data
+      if (response.success) {
+        const products = response.data?.products || [];
+        console.log('Favourites products:', products);
+        setFavourites(products);
+      } else {
+        // Fallback: nếu response là data object trực tiếp
+        const products = response.products || [];
+        console.log('Favourites products (direct):', products);
+        setFavourites(products);
+      }
+    } catch (error) {
+      console.error('Error fetching favourites:', error);
+      message.error(error.response?.data?.message || 'Failed to load favourites');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemoveFromWishlist = (productId) => {
-    console.log('Removed from wishlist:', productId);
-    // TODO: Implement remove from wishlist functionality
+  const handleAddToCart = async (productId) => {
+    try {
+      setActionLoading(productId);
+      await cartService.addToCart(productId, 1);
+      message.success('Product added to cart successfully!');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      message.error(error.response?.data?.message || 'Failed to add to cart');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveFromWishlist = async (productId) => {
+    try {
+      setActionLoading(productId);
+      const response = await favouriteService.removeFromFavourites(productId);
+      if (response.success) {
+        message.success('Removed from favourites');
+        // Update local state
+        setFavourites((prev) => prev.filter((item) => item._id !== productId));
+      }
+    } catch (error) {
+      console.error('Error removing from favourites:', error);
+      message.error(error.response?.data?.message || 'Failed to remove from favourites');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   // Table columns configuration
@@ -77,11 +91,14 @@ const WishlistPage = () => {
       render: (text, record) => (
         <div className={styles.productRow}>
           <div className={styles.productImage}>
-            {record.image.startsWith('http') ? (
-              <img src={record.image} alt={text} className={styles.productImg} />
-            ) : (
-              <span className={styles.imageEmoji}>{record.image}</span>
-            )}
+            <img
+              src={record.images?.[0] || record.image || 'https://via.placeholder.com/100'}
+              alt={text}
+              className={styles.productImg}
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/100';
+              }}
+            />
           </div>
           <div className={styles.productInfo}>
             <h6 className={styles.productName}>{text}</h6>
@@ -96,52 +113,66 @@ const WishlistPage = () => {
       width: '15%',
       render: (price, record) => (
         <div className={styles.priceColumn}>
-          {record.originalPrice && (
-            <span className={styles.originalPrice}>${record.originalPrice}</span>
+          {record.originalPrice && record.originalPrice > price && (
+            <span className={styles.originalPrice}>${record.originalPrice.toFixed(2)}</span>
           )}
-          <span className={styles.currentPrice}>${price.toFixed(2)}</span>
+          <span className={styles.currentPrice}>${price?.toFixed(2) || '0.00'}</span>
         </div>
       ),
     },
     {
       title: 'STOCK STATUS',
-      dataIndex: 'stockStatus',
-      key: 'stockStatus',
+      dataIndex: 'status',
+      key: 'status',
       width: '15%',
-      render: (status, record) => (
-        <Badge 
-          status={record.inStock ? 'success' : 'error'} 
-          text={<span className={record.inStock ? styles.textSuccess : styles.textDanger}>{status}</span>}
-        />
-      ),
+      render: (status, record) => {
+        const inStock = status === 'active' && (record.stock > 0 || record.quantity > 0);
+        return (
+          <Badge
+            status={inStock ? 'success' : 'error'}
+            text={
+              <span className={inStock ? styles.textSuccess : styles.textDanger}>
+                {inStock ? 'IN STOCK' : 'OUT OF STOCK'}
+              </span>
+            }
+          />
+        );
+      },
     },
     {
       title: 'ACTIONS',
       key: 'actions',
       width: '20%',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title={record.inStock ? 'Add to Cart' : 'Out of Stock'}>
-            <Button
-              type="primary"
-              icon={<ShoppingCartOutlined />}
-              onClick={() => handleAddToCart(record.id)}
-              disabled={!record.inStock}
-              className={styles.addToCartBtn}
-            >
-              ADD TO CART
-            </Button>
-          </Tooltip>
-          <Tooltip title="Remove from Wishlist">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleRemoveFromWishlist(record.id)}
-              className={styles.removeBtn}
-            />
-          </Tooltip>
-        </Space>
-      ),
+      render: (_, record) => {
+        const inStock = record.status === 'active' && (record.stock > 0 || record.quantity > 0);
+        const isLoading = actionLoading === record._id;
+
+        return (
+          <Space size="small">
+            <Tooltip title={inStock ? 'Add to Cart' : 'Out of Stock'}>
+              <Button
+                type="primary"
+                icon={isLoading ? <LoadingOutlined /> : <ShoppingCartOutlined />}
+                onClick={() => handleAddToCart(record._id)}
+                disabled={!inStock || isLoading}
+                loading={isLoading}
+                className={styles.addToCartBtn}
+              >
+                ADD TO CART
+              </Button>
+            </Tooltip>
+            <Tooltip title="Remove from Favourites">
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleRemoveFromWishlist(record._id)}
+                disabled={isLoading}
+                className={styles.removeBtn}
+              />
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -151,8 +182,8 @@ const WishlistPage = () => {
         {/* Header Section */}
         <div className={styles.wishlistHeader}>
           <div className={styles.backButtonGroup}>
-            <Button 
-              type="text" 
+            <Button
+              type="text"
               icon={<LeftOutlined />}
               onClick={() => navigate(-1)}
               className={styles.backButton}
@@ -160,21 +191,27 @@ const WishlistPage = () => {
             <span className={styles.backText}>Back</span>
           </div>
           <Title level={1} className={styles.wishlistTitle}>
-            Wishlist
+            Favourites
           </Title>
         </div>
 
-        {/* Wishlist Content */}
-        {mockWishlistData.length > 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <Card className={styles.wishlistCard}>
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <Spin size="large" tip="Loading favourites..." />
+            </div>
+          </Card>
+        ) : favourites.length > 0 ? (
           <Card className={styles.wishlistCard}>
             <Table
               columns={columns}
-              dataSource={mockWishlistData.map(item => ({...item, key: item.id}))}
+              dataSource={favourites.map((item) => ({ ...item, key: item._id }))}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
                 showTotal: (total) => `Total ${total} items`,
-                style: { marginTop: '20px' }
+                style: { marginTop: '20px' },
               }}
               scroll={{ x: 1000 }}
               className={styles.wishlistTable}
@@ -183,14 +220,10 @@ const WishlistPage = () => {
         ) : (
           <Card className={styles.emptyCard}>
             <Empty
-              description="Your Wishlist is Empty"
+              description="Your Favourites is Empty"
               style={{ paddingTop: '40px', paddingBottom: '40px' }}
             >
-              <Button 
-                type="primary"
-                size="large"
-                onClick={() => navigate('/shop')}
-              >
+              <Button type="primary" size="large" onClick={() => navigate('/shop')}>
                 Continue Shopping
               </Button>
             </Empty>

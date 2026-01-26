@@ -118,9 +118,9 @@ export const routeConfig = [
     layout: 'none',
   },
   {
-    path: '/wishlist',
+    path: '/buyer/favourites',
     element: WishlistPage,
-    public: true,
+    public: false,
     layout: 'main',
   },
   {

@@ -756,6 +756,38 @@
   box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
 }
 
+.favouriteBtn {
+  background-color: white;
+  color: #ff4757;
+  border: 2px solid #ff4757;
+  min-width: 120px !important;
+  flex: 0 0 auto;
+}
+
+.favouriteBtn:hover {
+  background-color: #fff5f6;
+  border-color: #ff2f43;
+  color: #ff2f43;
+}
+
+.favouriteBtn.isFavourite {
+  background-color: #ff4757;
+  color: white;
+}
+
+.favouriteBtn.isFavourite:hover {
+  background-color: #ff2f43;
+}
+
+.favouriteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.favouriteBtn i {
+  font-size: 18px;
+}
+
 /* Secondary Actions */
 .secondaryActions {
   display: flex;

@@ -25,6 +25,22 @@ const getTimeRemaining = (endDate) => {
   return `${days} Days`;
 };
 
+// Helper to format countdown timer
+const formatCountdown = (endDate) => {
+  const now = new Date();
+  const end = new Date(endDate);
+  const diff = end - now;
+
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  return { days, hours, minutes, seconds, expired: false };
+};
+
 const ProductCard = ({ product }) => {
   return (
     <Link
@@ -142,26 +158,59 @@ const ProductCard = ({ product }) => {
 const DealsOfTheDay = () => {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [nearestEndDate, setNearestEndDate] = useState(null);
 
   useEffect(() => {
     const fetchDeals = async () => {
       try {
         setLoading(true);
-        const response = await dealService.getDailyDeals();
+        const response = await dealService.getAllDeals();
+
+        console.log('🔍 DealsOfTheDay - Full API Response:', response);
+        console.log('🔍 DealsOfTheDay - Response.data:', response.data);
+
         const dealsData = Array.isArray(response) ? response : response.data || [];
 
-        const transformedDeals = dealsData.map((deal) => ({
-          id: deal._id,
-          name: deal.product?.name || 'Product',
-          image: deal.product?.images?.[0] || deal.product?.image || '',
-          price: formatPrice(deal.discountedPrice || deal.product?.price),
-          originalPrice: deal.product?.price,
-          discount: deal.discount,
-          dealEndsIn: getTimeRemaining(deal.endDate),
-          isNew: deal.product?.isNew || false,
-        }));
+        console.log('🔍 DealsOfTheDay - Deals Data:', dealsData);
+        console.log('🔍 DealsOfTheDay - First Deal:', dealsData[0]);
+
+        const transformedDeals = dealsData.map((deal) => {
+          // Backend populates 'productId' not 'product'
+          const product = deal.productId || deal.product;
+
+          console.log('🔍 Deal transform:', {
+            dealId: deal._id,
+            hasProductId: !!deal.productId,
+            hasProduct: !!deal.product,
+            productData: product,
+            discountedPrice: deal.discountedMinPrice || deal.discountedPrice,
+          });
+
+          return {
+            id: deal._id,
+            name: product?.name || 'Product',
+            image: product?.images?.[0] || product?.image || '',
+            price: formatPrice(
+              deal.discountedMinPrice || deal.discountedPrice || product?.price || 0
+            ),
+            originalPrice: product?.price,
+            discount: deal.discountPercent,
+            dealEndsIn: getTimeRemaining(deal.endDate),
+            endDate: deal.endDate,
+            isNew: product?.isNew || false,
+          };
+        });
 
         setDeals(transformedDeals.slice(0, 4));
+
+        // Find nearest end date
+        if (transformedDeals.length > 0) {
+          const sortedByEndDate = [...transformedDeals].sort(
+            (a, b) => new Date(a.endDate) - new Date(b.endDate)
+          );
+          setNearestEndDate(sortedByEndDate[0].endDate);
+        }
       } catch (err) {
         console.error('Error fetching deals:', err);
         setDeals([]);
@@ -172,6 +221,21 @@ const DealsOfTheDay = () => {
 
     fetchDeals();
   }, []);
+
+  // Update countdown every second
+  useEffect(() => {
+    if (!nearestEndDate) return;
+
+    const updateCountdown = () => {
+      const time = formatCountdown(nearestEndDate);
+      setCountdown(time);
+    };
+
+    updateCountdown(); // Initial update
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [nearestEndDate]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -205,20 +269,26 @@ const DealsOfTheDay = () => {
                 fontSize: '1rem',
               }}
             >
-              <span>16d : 21h : 57m : 23s</span>
+              <span>
+                {countdown.expired
+                  ? 'Expired'
+                  : `${countdown.days}d : ${countdown.hours}h : ${countdown.minutes}m : ${countdown.seconds}s`}
+              </span>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
-              whileTap={{ scale: 0.95 }}
-              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
-              style={{
-                backgroundColor: '#FCBD01',
-                border: 'none',
-              }}
-            >
-              VIEW ALL
-            </motion.button>
+            <Link to={PUBLIC_ROUTES.DEALS} style={{ textDecoration: 'none' }}>
+              <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+                whileTap={{ scale: 0.95 }}
+                className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
+                style={{
+                  backgroundColor: '#FCBD01',
+                  border: 'none',
+                }}
+              >
+                VIEW ALL
+              </motion.button>
+            </Link>
           </div>
         </div>
         <hr className="my-4 text-secondary opacity-25" />

@@ -1,379 +1,408 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { homeService } from '../../services/api';
-import { PUBLIC_ROUTES } from '../../constants/routes';
+
+// --- 1. CONSTANTS & STYLES ---
+const COLORS = {
+  bg: '#f8f9fa',
+  accent: '#f6c243',
+  textWhite: '#fff',
+  textDark: '#333',
+};
 
 const styles = {
-  bannerContainer: {
+  heroBannerWrapper: {
     position: 'relative',
-    overflow: 'hidden',
-    minHeight: '500px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    width: '100%',
+    maxWidth: '1300px',
+    height: '450px',
+    margin: '0 auto',
+    zIndex: 1,
+    fontFamily: "'Poppins', sans-serif",
   },
-  gradientOverlay: {
+
+  // Nút tròn trang trí (Notch)
+  heroBannerNotch: {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '100px',
+    height: '100px',
+    backgroundColor: COLORS.bg,
+    borderRadius: '50%',
+    pointerEvents: 'none',
+    zIndex: 10,
+  },
+  heroBannerNotchLeft: { left: '-50px' },
+  heroBannerNotchRight: { right: '-50px' },
+
+  // Nút điều hướng (Btn)
+  heroBannerBtn: {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '60px',
+    height: '60px',
+    backgroundColor: '#fff',
+    color: '#333',
+    border: '2px solid #eaeaea',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    zIndex: 20,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.3s ease',
+  },
+  heroBannerBtnPrev: { left: '-30px' },
+  heroBannerBtnNext: { right: '-30px' },
+
+  // Khung chứa slide
+  heroBannerCard: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    borderRadius: '20px',
+    zIndex: 5,
+    background: '#000',
+    overflow: 'hidden',
+  },
+  heroBannerInner: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  heroBannerTrack: {
+    display: 'flex',
+    height: '100%',
+    transition: 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)',
+  },
+
+  // Slide đơn lẻ
+  heroBannerSlide: {
+    minWidth: '100%',
+    height: '100%',
+    position: 'relative',
+    display: 'flex',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  },
+  heroBannerOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    background:
-      'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)',
-    zIndex: 0,
-    pointerEvents: 'none',
-  },
-  decorativeShape1: {
-    position: 'absolute',
-    top: '-10%',
-    right: '-5%',
-    width: '40%',
-    height: '40%',
-    background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
-    borderRadius: '50%',
-    filter: 'blur(40px)',
+    background: 'linear-gradient(120deg, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.3) 100%)',
     zIndex: 1,
-    pointerEvents: 'none',
   },
-  decorativeShape2: {
-    position: 'absolute',
-    bottom: '-15%',
-    left: '-10%',
-    width: '50%',
-    height: '50%',
-    background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)',
-    borderRadius: '50%',
-    filter: 'blur(60px)',
-    zIndex: 1,
-    pointerEvents: 'none',
-  },
-  decorativeCircles: {
-    position: 'absolute',
-    top: '20%',
-    right: '15%',
-    width: '300px',
-    height: '300px',
-    border: '1px solid rgba(255,255,255,0.15)',
-    borderRadius: '50%',
-    zIndex: 1,
-    pointerEvents: 'none',
-  },
-  decorativeCircles2: {
-    position: 'absolute',
-    top: '25%',
-    right: '12%',
-    width: '250px',
-    height: '250px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '50%',
-    zIndex: 1,
-    pointerEvents: 'none',
-  },
-  contentWrapper: {
+  heroBannerGrid: {
     position: 'relative',
     zIndex: 2,
-    minHeight: '500px',
-  },
-  textContent: {
-    animation: 'fadeInLeft 0.8s ease-out',
-  },
-  subtitle: {
-    fontSize: '1rem',
-    fontWeight: '500',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    marginBottom: '1rem',
-    opacity: 0.9,
-  },
-  title: {
-    fontSize: '4rem',
-    fontWeight: '800',
-    lineHeight: '1.1',
-    marginBottom: '1.5rem',
-    textShadow: '0 2px 20px rgba(0,0,0,0.1)',
-  },
-  description: {
-    fontSize: '1.25rem',
-    fontWeight: '400',
-    opacity: 0.95,
-    marginBottom: '2rem',
-    lineHeight: '1.6',
-  },
-  ctaButton: {
-    padding: '15px 40px',
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    borderRadius: '50px',
-    border: 'none',
-    background: 'white',
-    color: '#667eea',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-    transition: 'all 0.3s ease',
-    textDecoration: 'none',
-    display: 'inline-block',
-  },
-  imageWrapper: {
-    position: 'relative',
-    animation: 'fadeInRight 0.8s ease-out',
-  },
-  productImage: {
-    maxHeight: '450px',
     width: '100%',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.3))',
-    transition: 'transform 0.3s ease',
-  },
-  controlBtn: {
-    width: '55px',
-    height: '55px',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: '50%',
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
+    padding: '0 80px',
+  },
+
+  // Cột nội dung (Text)
+  heroBannerTextCol: {
+    flex: 1,
+    textAlign: 'left',
+    maxWidth: '55%',
+  },
+  heroBannerTopTag: {
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    color: COLORS.accent,
+    marginBottom: '8px',
+    display: 'block',
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+  heroBannerHeading: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '4rem',
+    lineHeight: 1,
+    marginBottom: '10px',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    whiteSpace: 'pre-line',
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+  heroBannerPromo: {
+    fontSize: '2.2rem',
+    fontWeight: 800,
+    color: '#fff',
+    display: 'block',
+    marginBottom: '10px',
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+  heroBannerDesc: {
+    fontSize: '0.95rem',
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: 300,
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+
+  // Cột ảnh (Image)
+  heroBannerImgCol: {
+    flex: 1,
+    height: '100%',
+    display: 'flex',
     justifyContent: 'center',
-    color: '#667eea',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.2)',
-    transition: 'all 0.3s ease',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  heroBannerTiltImg: {
+    width: '320px',
+    height: 'auto',
+    objectFit: 'contain',
+    transform: 'rotate(-15deg)',
+    filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))',
+    transition: 'transform 0.5s ease',
+    opacity: 0,
+  },
+
+  // Trạng thái Active (Animation state)
+  heroBannerActiveElem: {
+    opacity: 1,
+    transform: 'translateY(0)',
+  },
+  heroBannerActiveImg: {
+    opacity: 1,
+    transform: 'rotate(-15deg) translateX(0)',
+    transition: 'all 0.8s ease-out 0.2s',
+  },
+
+  // Dots Navigation
+  heroBannerNav: {
+    position: 'absolute',
+    bottom: '30px',
+    left: '80px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    zIndex: 10,
+  },
+  heroBannerIndicator: {
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.4)',
+    cursor: 'pointer',
     border: 'none',
+    padding: 0,
+    transition: 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+  },
+  heroBannerActiveIndicator: {
+    background: COLORS.accent,
+    width: '45px',
+    borderRadius: '10px',
   },
 };
 
+// --- 2. COMPONENT ---
 const HeroBanner = () => {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // DATA (Giả lập)
+  const fakeData = [
+    {
+      id: 1,
+      bgImage:
+        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop',
+      productImage:
+        'https://png.pngtree.com/png-vector/20240309/ourmid/pngtree-the-smartwatch-banner-png-image_11919210.png',
+      tag: 'Best Deal Online on',
+      title: 'Smart Watches',
+      promoPrefix: 'UP TO',
+      promoHighlight: '50% OFF',
+      desc: '*Applicable to Series 7 and above models.',
+    },
+    {
+      id: 2,
+      bgImage:
+        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=2070&auto=format&fit=crop',
+      productImage:
+        'https://png.pngtree.com/png-clipart/20241210/original/pngtree-nike-shoes-transparent-png-image_17778783.png',
+      tag: 'New Collection',
+      title: 'Latest Nike Shoes',
+      promoPrefix: 'FLAT',
+      promoHighlight: '30% OFF',
+      desc: 'Free shipping for orders placed today.',
+    },
+    {
+      id: 3,
+      bgImage:
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop',
+      productImage:
+        'https://www.gonoise.com/cdn/shop/files/3_f6efac49-e93c-4cf1-93db-313be862cab9.webp?v=1720759166',
+      tag: 'Premium Sound',
+      title: 'Wireless Headset',
+      promoPrefix: 'BUY 1',
+      promoHighlight: 'GET 1',
+      desc: 'Limited quantity gift combo.',
+    },
+  ];
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        setLoading(true);
-        const response = await homeService.getBanners();
-        const apiData = Array.isArray(response) ? response : response.data || [];
-        setBanners(apiData);
-      } catch (err) {
-        console.error('Error fetching banners:', err);
-        setError(err.message);
-        setBanners([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBanners();
+    setBanners(fakeData);
+    setLoading(false);
   }, []);
 
-  const handleBannerClick = async (bannerId) => {
-    try {
-      await homeService.incrementBannerClick(bannerId);
-    } catch (err) {
-      console.error('Error tracking banner click:', err);
-    }
-  };
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+  }, [banners.length]);
 
-  if (loading) {
-    return (
-      <section style={styles.bannerContainer}>
-        <div
-          className="container h-100 d-flex align-items-center justify-content-center"
-          style={{ minHeight: '400px' }}
-        >
-          <div className="spinner-border text-white" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
+  }, [banners.length]);
 
-  if (!banners.length) {
-    return (
-      <section style={styles.bannerContainer}>
-        <div
-          className="container h-100 d-flex align-items-center justify-content-center text-white"
-          style={{ minHeight: '400px' }}
-        >
-          <p className="fs-5">No banners available at the moment</p>
-        </div>
-      </section>
-    );
-  }
+  useEffect(() => {
+    if (loading || banners.length === 0) return;
+    const interval = setInterval(() => handleNext(), 5000);
+    return () => clearInterval(interval);
+  }, [currentIndex, loading, banners, handleNext]);
+
+  if (loading || !banners.length) return null;
 
   return (
-    <section>
-      <style>
-        {`
-          @keyframes fadeInLeft {
-            from {
-              opacity: 0;
-              transform: translateX(-30px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          @keyframes fadeInRight {
-            from {
-              opacity: 0;
-              transform: translateX(30px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          .banner-indicator {
-            width: 10px !important;
-            height: 10px !important;
-            border-radius: 50%;
-            background-color: rgba(255,255,255,0.4) !important;
-            border: none !important;
-            margin: 0 5px !important;
-            transition: all 0.4s ease;
-            cursor: pointer;
-          }
-          .banner-indicator.active {
-            width: 35px !important;
-            border-radius: 5px;
-            background-color: rgba(255,255,255,0.95) !important;
-            box-shadow: 0 2px 8px rgba(255,255,255,0.3);
-          }
-          .banner-indicator:hover {
-            background-color: rgba(255,255,255,0.6) !important;
-            transform: scale(1.2);
-          }
-          .hero-cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-          }
-          .hero-control-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            background-color: #fff !important;
-          }
-          .hero-product-image:hover {
-            transform: scale(1.05);
-          }
-          .carousel-item {
-            transition: transform 0.8s ease-in-out;
-          }
-        `}
-      </style>
+    <>
+      <div style={styles.heroBannerWrapper}>
+        {/* Notch */}
+        <div style={{ ...styles.heroBannerNotch, ...styles.heroBannerNotchLeft }}></div>
+        <div style={{ ...styles.heroBannerNotch, ...styles.heroBannerNotchRight }}></div>
 
-      <div
-        id="heroBannerCarousel"
-        className="carousel slide"
-        data-bs-ride="carousel"
-        data-bs-interval="5000"
-      >
-        <div className="carousel-inner">
-          {banners.map((banner, index) => (
+        {/* Buttons */}
+        <button
+          style={{ ...styles.heroBannerBtn, ...styles.heroBannerBtnPrev }}
+          onClick={handlePrev}
+          aria-label="Previous Slide"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <button
+          style={{ ...styles.heroBannerBtn, ...styles.heroBannerBtnNext }}
+          onClick={handleNext}
+          aria-label="Next Slide"
+        >
+          <ChevronRight size={24} />
+        </button>
+
+        {/* Main Card */}
+        <div style={styles.heroBannerCard}>
+          <div style={styles.heroBannerInner}>
             <div
-              key={banner._id}
-              className={`carousel-item ${index === 0 ? 'active' : ''}`}
-              data-bs-interval="5000"
+              style={{
+                ...styles.heroBannerTrack,
+                transform: `translateX(-${currentIndex * 100}%)`,
+              }}
             >
-              <div style={styles.bannerContainer}>
-                <div style={styles.gradientOverlay}></div>
-                <div style={styles.decorativeShape1}></div>
-                <div style={styles.decorativeShape2}></div>
-                <div style={styles.decorativeCircles}></div>
-                <div style={styles.decorativeCircles2}></div>
+              {banners.map((banner, index) => {
+                const isActive = index === currentIndex;
 
-                <div
-                  className="container"
-                  style={{ ...styles.contentWrapper, pointerEvents: 'none' }}
-                >
-                  <div className="row align-items-center h-100 py-5">
-                    <div
-                      className="col-lg-6 text-white"
-                      style={{ ...styles.textContent, pointerEvents: 'auto' }}
-                    >
-                      <div style={styles.subtitle}>{banner.subtitle || 'Best Deal Online'}</div>
-                      <h1 style={styles.title}>{banner.title}</h1>
-                      <p style={styles.description}>{banner.description}</p>
-                      {banner.buttonText && banner.buttonLink && (
-                        <a
-                          href={banner.buttonLink}
-                          className="hero-cta-button"
-                          style={styles.ctaButton}
-                          onClick={() => handleBannerClick(banner._id)}
+                return (
+                  <div
+                    key={banner.id}
+                    style={{
+                      ...styles.heroBannerSlide,
+                      backgroundImage: `url(${banner.bgImage})`,
+                    }}
+                  >
+                    <div style={styles.heroBannerOverlay}></div>
+                    <div style={styles.heroBannerGrid}>
+                      {/* Text Column */}
+                      <div style={styles.heroBannerTextCol}>
+                        <span
+                          style={{
+                            ...styles.heroBannerTopTag,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.1s',
+                          }}
                         >
-                          {banner.buttonText} →
-                        </a>
-                      )}
-                    </div>
+                          {banner.tag}
+                        </span>
 
-                    <div
-                      className="col-lg-6"
-                      style={{ ...styles.imageWrapper, pointerEvents: 'auto' }}
-                    >
-                      <img
-                        src={banner.imageUrl}
-                        alt={banner.title}
-                        className="hero-product-image"
-                        style={styles.productImage}
-                      />
+                        <h1
+                          style={{
+                            ...styles.heroBannerHeading,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.3s',
+                          }}
+                        >
+                          {banner.title}
+                        </h1>
+
+                        <div
+                          style={{
+                            ...styles.heroBannerPromo,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.5s',
+                          }}
+                        >
+                          {banner.promoPrefix}{' '}
+                          <span style={{ color: COLORS.accent }}>{banner.promoHighlight}</span>
+                        </div>
+
+                        <p
+                          style={{
+                            ...styles.heroBannerDesc,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.6s',
+                          }}
+                        >
+                          {banner.desc}
+                        </p>
+                      </div>
+
+                      {/* Image Column */}
+                      <div style={styles.heroBannerImgCol}>
+                        <img
+                          src={banner.productImage}
+                          alt={banner.title}
+                          style={{
+                            ...styles.heroBannerTiltImg,
+                            ...(isActive ? styles.heroBannerActiveImg : {}),
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </div>
 
-        <div
-          className="carousel-indicators"
-          style={{
-            bottom: '30px',
-            margin: '0',
-            zIndex: 10,
-          }}
-        >
-          {banners.map((banner, index) => (
-            <button
-              key={banner._id}
-              type="button"
-              data-bs-target="#heroBannerCarousel"
-              data-bs-slide-to={index}
-              className={`banner-indicator ${index === 0 ? 'active' : ''}`}
-              aria-current={index === 0 ? 'true' : undefined}
-              aria-label={`Slide ${index + 1}`}
-            ></button>
-          ))}
+          {/* Indicators / Dots */}
+          <div style={styles.heroBannerNav}>
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                style={{
+                  ...styles.heroBannerIndicator,
+                  ...(index === currentIndex ? styles.heroBannerActiveIndicator : {}),
+                }}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
-
-        <button
-          className="carousel-control-prev"
-          type="button"
-          data-bs-target="#heroBannerCarousel"
-          data-bs-slide="prev"
-          style={{ width: '10%', zIndex: 10, border: 'none', background: 'transparent' }}
-        >
-          <span
-            className="hero-control-btn"
-            style={{ ...styles.controlBtn, pointerEvents: 'none' }}
-          >
-            <ChevronLeft size={24} strokeWidth={2.5} />
-          </span>
-          <span className="visually-hidden">Previous</span>
-        </button>
-        <button
-          className="carousel-control-next"
-          type="button"
-          data-bs-target="#heroBannerCarousel"
-          data-bs-slide="next"
-          style={{ width: '10%', zIndex: 10, border: 'none', background: 'transparent' }}
-        >
-          <span
-            className="hero-control-btn"
-            style={{ ...styles.controlBtn, pointerEvents: 'none' }}
-          >
-            <ChevronRight size={24} strokeWidth={2.5} />
-          </span>
-          <span className="visually-hidden">Next</span>
-        </button>
       </div>
-    </section>
+    </>
   );
 };
 
