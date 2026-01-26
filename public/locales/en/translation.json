@@ -1,0 +1,54 @@
+{
+    "header": {
+        "welcome_msg": "Direct Wholesale & Retail Guangzhou Fashion!",
+        "deliver_to": "Deliver to",
+        "track_order": "Track your order",
+        "all_offers": "All Offers",
+        "search_placeholder": "Search trending styles, dresses, coats...",
+        "wishlist": "Wishlist",
+        "cart": "Cart",
+        "login": "Login",
+        "dashboard": "Dashboard",
+        "profile": "Profile",
+        "logout": "Logout",
+        "language": "Language",
+        "search_results": {
+            "products": "PRODUCTS",
+            "categories": "CATEGORIES",
+            "brands": "BRANDS"
+        }
+    },
+    "categories": {
+        "new_arrivals": "New Arrivals",
+        "womens_fashion": "Women's Fashion",
+        "mens_fashion": "Men's Fashion",
+        "dresses_gowns": "Dresses & Gowns",
+        "coord_sets": "Co-ord Sets",
+        "coats_blazers": "Coats & Blazers",
+        "bags_accessories": "Bags & Accessories",
+        "footwear": "Footwear"
+    },
+    "auth": {
+        "login_failed": "Login failed",
+        "google_login_failed": "Google login failed",
+        "facebook_login_failed": "Facebook login failed",
+        "register_failed": "Registration failed",
+        "refresh_token_failed": "Refresh token failed",
+        "get_user_failed": "Failed to get user info",
+        "update_profile_failed": "Update profile failed",
+        "change_password_failed": "Change password failed",
+        "set_password_failed": "Set password failed",
+        "forgot_password_failed": "Send reset password email failed",
+        "reset_password_failed": "Reset password failed",
+        "verify_email_failed": "Verify email failed",
+        "resend_verification_failed": "Resend verification email failed"
+    },
+    "common": {
+        "error": "Error",
+        "success": "Success",
+        "loading": "Loading...",
+        "email": "Email",
+        "password": "Password",
+        "submit": "Submit"
+    }
+}
