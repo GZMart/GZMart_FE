@@ -9,6 +9,7 @@ import {
   getRefreshToken,
 } from '@utils/storage';
 import authService from '@services/api/authService';
+import i18n from '../../i18n'; // Import i18n instance
 
 const initialState = {
   isAuthenticated: !!getAuthToken(),
@@ -45,7 +46,7 @@ export const loginUser = createAsyncThunk(
 
       return { user, token: accessToken, refreshToken };
     } catch (error) {
-      return rejectWithValue(error.message || 'Đăng nhập thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.login_failed'));
     }
   }
 );
@@ -74,7 +75,7 @@ export const registerUser = createAsyncThunk(
       return { user, token: null, refreshToken: null, otp };
     } catch (error) {
       // Extract error message from response
-      let errorMessage = 'Đăng ký thất bại';
+      let errorMessage = i18n.t('auth.register_failed');
       
       if (error.response?.data) {
         // Backend error format: { success: false, error: "message" }
@@ -106,7 +107,7 @@ export const loginWithGoogle = createAsyncThunk(
         isNewUser: response.isNewUser,
       };
     } catch (error) {
-      return rejectWithValue(error.message || 'Đăng nhập Google thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.google_login_failed'));
     }
   }
 );
@@ -124,7 +125,7 @@ export const loginWithFacebook = createAsyncThunk(
         isNewUser: response.isNewUser,
       };
     } catch (error) {
-      return rejectWithValue(error.message || 'Đăng nhập Facebook thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.facebook_login_failed'));
     }
   }
 );
@@ -153,7 +154,7 @@ export const refreshAuthToken = createAsyncThunk(
       
       return response.token || response.data?.token;
     } catch (error) {
-      return rejectWithValue(error.message || 'Refresh token thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.refresh_token_failed'));
     }
   }
 );
@@ -165,7 +166,7 @@ export const getCurrentUser = createAsyncThunk(
       const response = await authService.getCurrentUser();
       return response.data || response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Lấy thông tin người dùng thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.get_user_failed'));
     }
   }
 );
@@ -177,7 +178,7 @@ export const updateUserProfile = createAsyncThunk(
       const response = await authService.updateProfile(userData, formData);
       return response.data || response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Cập nhật profile thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.update_profile_failed'));
     }
   }
 );
@@ -189,7 +190,7 @@ export const changeUserPassword = createAsyncThunk(
       const response = await authService.changePassword(data);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Đổi mật khẩu thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.change_password_failed'));
     }
   }
 );
@@ -201,7 +202,7 @@ export const setUserPassword = createAsyncThunk(
       const response = await authService.setPassword(data);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Đặt mật khẩu thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.set_password_failed'));
     }
   }
 );
@@ -213,7 +214,7 @@ export const forgotPassword = createAsyncThunk(
       const response = await authService.forgotPassword(email);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Gửi email reset mật khẩu thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.forgot_password_failed'));
     }
   }
 );
@@ -225,7 +226,7 @@ export const resetPassword = createAsyncThunk(
       const response = await authService.resetPassword(data);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Reset mật khẩu thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.reset_password_failed'));
     }
   }
 );
@@ -237,7 +238,7 @@ export const verifyEmail = createAsyncThunk(
       const response = await authService.verifyEmail(token);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Xác thực email thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.verify_email_failed'));
     }
   }
 );
@@ -249,7 +250,7 @@ export const resendVerification = createAsyncThunk(
       const response = await authService.resendVerification(email);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Gửi lại email xác thực thất bại');
+      return rejectWithValue(error.message || i18n.t('auth.resend_verification_failed'));
     }
   }
 );

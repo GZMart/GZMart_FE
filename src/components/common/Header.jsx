@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
@@ -21,6 +22,9 @@ import {
   Loader2,
   ChevronRight,
 } from 'lucide-react';
+
+import enFlag from '../../assets/svg/language/en.svg';
+import viFlag from '../../assets/svg/language/vi.svg';
 
 // Fake data for Guangzhou fashion categories with subcategories and products
 const FAKE_CATEGORIES_DATA = [
@@ -266,21 +270,26 @@ const FAKE_CATEGORIES_DATA = [
 ];
 
 const Header = () => {
+  const { i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const cartTotalItems = useSelector(selectCartTotalItems);
-  const [activeCategory, setActiveCategory] = useState(null);
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [activeSubcategory, setActiveSubcategory] = useState(null);
+
+  const { t } = useTranslation();
+  const [activeCategory, setActiveCategory] = useState('new_arrivals');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const dropdownRef = useRef(null);
   const searchDropdownRef = useRef(null);
+  const languageDropdownRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const megaMenuRef = useRef(null);
 
@@ -292,6 +301,9 @@ const Header = () => {
       }
       if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target)) {
         setShowSearchDropdown(false);
+      }
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target)) {
+        setShowLanguageDropdown(false);
       }
       if (megaMenuRef.current && !megaMenuRef.current.contains(event.target)) {
         setHoveredCategory(null);
@@ -444,6 +456,17 @@ const Header = () => {
 
   // Get current category data
   const currentCategoryData = hoveredCategory || activeCategory;
+  // Categories tailored for a Fashion/Clothing website
+  const categories = [
+    'new_arrivals',
+    'womens_fashion',
+    'mens_fashion',
+    'dresses_gowns',
+    'coord_sets',
+    'coats_blazers',
+    'bags_accessories',
+    'footwear',
+  ];
 
   return (
     <header>
@@ -455,18 +478,18 @@ const Header = () => {
         <div className="container">
           <div className="d-flex justify-content-between align-items-center text-nowrap">
             {/* Theme specific welcome message */}
-            <div>Direct Wholesale & Retail Guangzhou Fashion!</div>
+            <div>{t('header.welcome_msg')}</div>
             <div className="d-flex align-items-center justify-content-end gap-3">
               <div className="d-flex align-items-center gap-1 cursor-pointer">
-                <MapPin size={14} /> <span>Deliver to: 423651</span>
+                <MapPin size={14} /> <span>{t('header.deliver_to')}: 423651</span>
               </div>
               <span className="text-secondary">|</span>
               <div className="d-flex align-items-center gap-1 cursor-pointer">
-                <Truck size={14} /> <span>Track your order</span>
+                <Truck size={14} /> <span>{t('header.track_order')}</span>
               </div>
               <span className="text-secondary">|</span>
               <div className="d-flex align-items-center gap-1 cursor-pointer">
-                <Tag size={14} /> <span>All Offers</span>
+                <Tag size={14} /> <span>{t('header.all_offers')}</span>
               </div>
             </div>
           </div>
@@ -510,7 +533,7 @@ const Header = () => {
             </div>
 
             {/* Search Bar */}
-            <div className="col-12 col-lg-5">
+            <div className="col-12 col-lg-4">
               <div className="d-flex align-items-center gap-3">
                 <div className="d-none d-xl-block"></div>
                 <div className="position-relative flex-grow-1" ref={searchDropdownRef}>
@@ -538,7 +561,7 @@ const Header = () => {
                         boxShadow: 'none',
                         outline: 'none',
                       }}
-                      placeholder="Search trending styles, dresses, coats..."
+                      placeholder={t('header.search_placeholder')}
                       value={searchQuery}
                       onChange={handleSearchChange}
                       onFocus={() =>
@@ -565,7 +588,7 @@ const Header = () => {
                       {/* Products Section */}
                       {searchSuggestions.products && searchSuggestions.products.length > 0 && (
                         <div className="py-2">
-                          <div className="px-3 py-1 text-muted small fw-bold">PRODUCTS</div>
+                          <div className="px-3 py-1 text-muted small fw-bold">{t('header.search_results.products')}</div>
                           {searchSuggestions.products.slice(0, 5).map((product) => (
                             <div
                               key={product._id}
@@ -613,7 +636,7 @@ const Header = () => {
                       {/* Categories Section */}
                       {searchSuggestions.categories && searchSuggestions.categories.length > 0 && (
                         <div className="py-2 border-top">
-                          <div className="px-3 py-1 text-muted small fw-bold">CATEGORIES</div>
+                          <div className="px-3 py-1 text-muted small fw-bold">{t('header.search_results.categories')}</div>
                           {searchSuggestions.categories.slice(0, 3).map((category) => (
                             <div
                               key={category._id}
@@ -642,7 +665,7 @@ const Header = () => {
                       {/* Brands Section */}
                       {searchSuggestions.brands && searchSuggestions.brands.length > 0 && (
                         <div className="py-2 border-top">
-                          <div className="px-3 py-1 text-muted small fw-bold">BRANDS</div>
+                          <div className="px-3 py-1 text-muted small fw-bold">{t('header.search_results.brands')}</div>
                           {searchSuggestions.brands.slice(0, 3).map((brand) => (
                             <div
                               key={brand._id}
@@ -682,12 +705,80 @@ const Header = () => {
             </div>
 
             {/* Desktop Actions */}
-            <div className="col-12 col-lg-4 d-none d-lg-flex justify-content-end align-items-center">
+            <div className="col-12 col-lg-5 d-none d-lg-flex justify-content-end align-items-center">
+              {/* Language Switcher */}
+              <div className="position-relative" ref={languageDropdownRef}>
+                <button
+                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                  className="d-flex align-items-center gap-2 border-0 bg-transparent p-0 text-dark"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <img
+                    src={i18n.language === 'vi' ? viFlag : enFlag}
+                    alt={i18n.language}
+                    style={{ width: '24px', height: '16px', objectFit: 'cover', borderRadius: '2px' }}
+                  />
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      transform: showLanguageDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s',
+                    }}
+                  />
+                </button>
+
+                {showLanguageDropdown && (
+                  <div
+                    className="position-absolute bg-white border rounded shadow-lg"
+                    style={{
+                      top: '100%',
+                      right: 0,
+                      marginTop: '12px',
+                      minWidth: '160px',
+                      zIndex: 1000,
+                      padding: '8px 0',
+                    }}
+                  >
+                     <div className="px-3 py-2 text-muted small fw-bold border-bottom mb-1">{t('header.language')}</div>
+                    <button
+                      className="d-flex align-items-center gap-2 border-0 bg-transparent w-100 px-3 py-2 text-dark"
+                      style={{ transition: 'background-color 0.2s', textAlign: 'left' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onClick={() => {
+                        i18n.changeLanguage('en');
+                        setShowLanguageDropdown(false);
+                      }}
+                    >
+                      <img src={enFlag} alt="English" style={{ width: '20px', height: '14px' }} />
+                      <span>English</span>
+                      {i18n.language === 'en' && <span className="ms-auto text-success">✓</span>}
+                    </button>
+                    <button
+                      className="d-flex align-items-center gap-2 border-0 bg-transparent w-100 px-3 py-2 text-dark"
+                      style={{ transition: 'background-color 0.2s', textAlign: 'left' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onClick={() => {
+                        i18n.changeLanguage('vi');
+                        setShowLanguageDropdown(false);
+                      }}
+                    >
+                      <img src={viFlag} alt="Tiếng Việt" style={{ width: '20px', height: '14px' }} />
+                      <span>Tiếng Việt</span>
+                      {i18n.language === 'vi' && <span className="ms-auto text-success">✓</span>}
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <span className="mx-3 text-secondary opacity-25">|</span>
+
               <Link
                 to={BUYER_ROUTES.FAVOURITES}
                 className="d-flex align-items-center gap-2 text-decoration-none text-dark"
               >
-                <Heart size={24} /> <span>Favourites</span>
+                <Heart size={24} /> <span>{t('header.wishlist')}</span>
               </Link>
               <span className="mx-3 text-secondary opacity-25">|</span>
 
@@ -744,7 +835,7 @@ const Header = () => {
                         onClick={() => setShowProfileDropdown(false)}
                       >
                         <LayoutDashboard size={18} />
-                        <span>Dashboard</span>
+                        <span>{t('header.dashboard')}</span>
                       </Link>
                       <div className="border-top my-1"></div>
                       <Link
@@ -758,7 +849,7 @@ const Header = () => {
                         onClick={() => setShowProfileDropdown(false)}
                       >
                         <UserCircle size={18} />
-                        <span>Profile</span>
+                        <span>{t('header.profile')}</span>
                       </Link>
                       <div className="border-top my-1"></div>
                       <button
@@ -773,7 +864,7 @@ const Header = () => {
                         onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
                       >
                         <LogOut size={18} />
-                        <span>Logout</span>
+                        <span>{t('header.logout')}</span>
                       </button>
                     </div>
                   )}
@@ -784,7 +875,7 @@ const Header = () => {
                   className="d-flex align-items-center gap-2 text-decoration-none text-dark"
                 >
                   <User size={24} />
-                  <span>Login</span>
+                  <span>{t('header.login')}</span>
                 </Link>
               )}
 
@@ -804,7 +895,7 @@ const Header = () => {
                     </span>
                   )}
                 </div>
-                <span>Cart</span>
+                <span>{t('header.cart')}</span>
               </Link>
             </div>
           </div>
@@ -835,7 +926,7 @@ const Header = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  <span className="fw-medium">{category.name}</span>
+                  <span className="fw-medium">{t(`categories.${item}`)}</span>
                   <ChevronDown
                     size={14}
                     style={{

@@ -1,0 +1,54 @@
+{
+    "header": {
+        "welcome_msg": "Bán buôn & Bán lẻ Trực tiếp Thời trang Quảng Châu!",
+        "deliver_to": "Giao đến",
+        "track_order": "Theo dõi đơn hàng",
+        "all_offers": "Tất cả ưu đãi",
+        "search_placeholder": "Tìm kiếm các kiểu dáng thịnh hành, váy, áo khoác...",
+        "wishlist": "Yêu thích",
+        "cart": "Giỏ hàng",
+        "login": "Đăng nhập",
+        "dashboard": "Bảng điều khiển",
+        "profile": "Hồ sơ",
+        "logout": "Đăng xuất",
+        "language": "Ngôn ngữ",
+        "search_results": {
+            "products": "SẢN PHẨM",
+            "categories": "DANH MỤC",
+            "brands": "THƯƠNG HIỆU"
+        }
+    },
+    "categories": {
+        "new_arrivals": "Hàng mới về",
+        "womens_fashion": "Thời trang nữ",
+        "mens_fashion": "Thời trang nam",
+        "dresses_gowns": "Váy & Đầm dạ hội",
+        "coord_sets": "Đồ bộ",
+        "coats_blazers": "Áo khoác & Blazer",
+        "bags_accessories": "Túi & Phụ kiện",
+        "footwear": "Giày dép"
+    },
+    "auth": {
+        "login_failed": "Đăng nhập thất bại",
+        "google_login_failed": "Đăng nhập Google thất bại",
+        "facebook_login_failed": "Đăng nhập Facebook thất bại",
+        "register_failed": "Đăng ký thất bại",
+        "refresh_token_failed": "Làm mới thất bại",
+        "get_user_failed": "Lấy thông tin người dùng thất bại",
+        "update_profile_failed": "Cập nhật hồ sơ thất bại",
+        "change_password_failed": "Đổi mật khẩu thất bại",
+        "set_password_failed": "Đặt mật khẩu thất bại",
+        "forgot_password_failed": "Gửi email khôi phục thất bại",
+        "reset_password_failed": "Đặt lại mật khẩu thất bại",
+        "verify_email_failed": "Xác thực email thất bại",
+        "resend_verification_failed": "Gửi lại email xác thực thất bại"
+    },
+    "common": {
+        "error": "Lỗi",
+        "success": "Thành công",
+        "loading": "Đang tải...",
+        "email": "Email",
+        "password": "Mật khẩu",
+        "submit": "Gửi"
+    }
+}
