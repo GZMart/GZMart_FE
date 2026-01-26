@@ -15,7 +15,7 @@ export const PUBLIC_ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   OTP_VERIFICATION: '/otp-verification',
-  WISHLIST: '/wishlist',
+  FAVOURITES: '/favourites',
   TRACK_ORDER: '/track-order',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password/:token',
@@ -35,7 +35,7 @@ export const BUYER_ROUTES = {
   PROFILE: '/buyer/profile',
   ORDERS: '/buyer/orders',
   ORDER_DETAILS: '/buyer/orders/:id',
-  WISHLIST: '/buyer/wishlist',
+  FAVOURITES: '/buyer/favourites',
   CART: '/buyer/cart',
   CHECKOUT: '/buyer/checkout',
   PAYMENT: '/buyer/payment',
@@ -50,6 +50,7 @@ export const BUYER_ROUTES = {
 export const SELLER_ROUTES = {
   DASHBOARD: '/seller/dashboard',
   PROFILE: '/seller/profile',
+  ORDERS: '/seller/orders',
 
   // Purchase Orders
   PO_LIST: '/seller/purchase-orders',

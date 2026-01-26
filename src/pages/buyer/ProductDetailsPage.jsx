@@ -6,6 +6,7 @@ import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
 import { productService } from '../../services/api';
+import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
 
@@ -45,10 +46,11 @@ const getPriceRange = (product) => {
 const findModel = (product, tierIndex) => {
   if (!product || !product.models || !tierIndex || tierIndex.length === 0) return null;
   // Backend models use 'tierIndex' (e.g., [0, 1])
-  return product.models.find((m) =>
-    m.tierIndex &&
-    m.tierIndex.length === tierIndex.length &&
-    m.tierIndex.every((val, i) => val === tierIndex[i])
+  return product.models.find(
+    (m) =>
+      m.tierIndex &&
+      m.tierIndex.length === tierIndex.length &&
+      m.tierIndex.every((val, i) => val === tierIndex[i])
   );
 };
 
@@ -86,6 +88,10 @@ const ProductDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [favouriteLoading, setFavouriteLoading] = useState(false);
+
+  const user = useSelector((state) => state.auth.user);
 
   // Fetch product details
   useEffect(() => {
@@ -116,7 +122,8 @@ const ProductDetailsPage = () => {
         const tiers = productData.tiers || [];
 
         // Find default active model (first one with stock, or just first one)
-        const defaultModel = productData.models?.find(m => m.stock > 0) || productData.models?.[0] || {};
+        const defaultModel =
+          productData.models?.find((m) => m.stock > 0) || productData.models?.[0] || {};
 
         // Initial selection: if tiers exist, select 0,0... or null if user must select
         // Usually better to select the first valid option or nothing.
@@ -146,17 +153,17 @@ const ProductDetailsPage = () => {
 
         // Transform related & freq bought ... (Use existing logic or simplify)
         const processRelated = (res) => {
-          const list = Array.isArray(res) ? res : (res.data || []);
-          return list.map(p => ({
+          const list = Array.isArray(res) ? res : res.data || [];
+          return list.map((p) => ({
             ...p,
             id: p._id,
-            image: p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+            image:
+              p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
           }));
         };
 
         setRelatedProducts(processRelated(relatedResponse));
         setFrequentlyBought(processRelated(frequentlyBoughtResponse));
-
       } catch (err) {
         if (isMounted) {
           console.error('Error fetching product:', err);
@@ -169,8 +176,34 @@ const ProductDetailsPage = () => {
 
     if (id) fetchAllData();
 
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
+
+  // Check if product is in favourites
+  useEffect(() => {
+    const checkFavouriteStatus = async () => {
+      if (user && product?._id) {
+        try {
+          const response = await favouriteService.checkInFavourites(product._id);
+          console.log('Check favourite response:', response);
+
+          // Backend: { success: true, data: { isInFavourites: true/false } }
+          // axiosClient unwraps to: { success: true, data: { isInFavourites: true/false } }
+          // But based on the screenshot, response is already the data object: { isInFavourites: true }
+          const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
+          console.log('Setting isFavourite to:', isInFav);
+          setIsFavourite(isInFav);
+        } catch (error) {
+          console.error('Error checking favourite status:', error);
+        }
+      } else {
+        console.log('Skipping favourite check:', { user: !!user, productId: product?._id });
+      }
+    };
+    checkFavouriteStatus();
+  }, [user, product?._id]);
 
   // Check if an option should be disabled based on *other* current selections
   const isOptionDisabled = (tierLevel, optionIndex) => {
@@ -227,12 +260,12 @@ const ProductDetailsPage = () => {
 
     // Validate Selection
     if (product.tier_variations?.length > 0) {
-      if (selectedTierIndex.some(idx => idx === null || idx === undefined)) {
-        toast.error("Please select all options");
+      if (selectedTierIndex.some((idx) => idx === null || idx === undefined)) {
+        toast.error('Please select all options');
         return;
       }
       if (!activeModel) {
-        toast.error("Selected variation is unavailable");
+        toast.error('Selected variation is unavailable');
         return;
       }
     }
@@ -251,15 +284,21 @@ const ProductDetailsPage = () => {
       }
 
       // Determine Color and Size strings for Cart
-      let color = "Default";
-      let size = "Default";
+      let color = 'Default';
+      let size = 'Default';
 
       if (product.tier_variations?.length > 0) {
         product.tier_variations.forEach((tier, idx) => {
           const selectedOption = tier.options[selectedTierIndex[idx]];
-          if (tier.name.toLowerCase().includes('color') || tier.name.toLowerCase().includes('màu')) {
+          if (
+            tier.name.toLowerCase().includes('color') ||
+            tier.name.toLowerCase().includes('màu')
+          ) {
             color = selectedOption;
-          } else if (tier.name.toLowerCase().includes('size') || tier.name.toLowerCase().includes('kích')) {
+          } else if (
+            tier.name.toLowerCase().includes('size') ||
+            tier.name.toLowerCase().includes('kích')
+          ) {
             size = selectedOption;
           } else {
             if (idx === 0) color = selectedOption;
@@ -269,18 +308,19 @@ const ProductDetailsPage = () => {
       }
 
       // Dispatch Add to Cart
-      await dispatch(addToCart({
-        product: product,
-        quantity: quantity,
-        color: color,
-        size: size
-      })).unwrap();
+      await dispatch(
+        addToCart({
+          product: product,
+          quantity: quantity,
+          color: color,
+          size: size,
+        })
+      ).unwrap();
 
-      toast.success("Added to cart successfully!");
-
+      toast.success('Added to cart successfully!');
     } catch (err) {
-      console.error("Add to cart error:", err);
-      toast.error(typeof err === 'string' ? err : "Failed to add to cart");
+      console.error('Add to cart error:', err);
+      toast.error(typeof err === 'string' ? err : 'Failed to add to cart');
     } finally {
       setAddingToCart(false);
     }
@@ -291,41 +331,87 @@ const ProductDetailsPage = () => {
     navigate('/cart');
   };
 
+  const handleToggleFavourite = async () => {
+    if (!user) {
+      toast.info('Please login to add favourites');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setFavouriteLoading(true);
+      if (isFavourite) {
+        const response = await favouriteService.removeFromFavourites(product._id);
+        console.log('Remove response:', response);
+        setIsFavourite(false);
+        toast.success('Removed from favourites');
+      } else {
+        const response = await favouriteService.addToFavourites(product._id);
+        console.log('Add response:', response);
+        setIsFavourite(true);
+        toast.success('Added to favourites');
+      }
+    } catch (error) {
+      console.error('Error toggling favourite:', error);
+      toast.error(error.response?.data?.message || 'Failed to update favourites');
+    } finally {
+      setFavouriteLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.productDetailsPage}>
-        <div className="text-center py-5"><div className="spinner-border text-primary" role="status"></div></div>
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
       </div>
     );
   }
 
   if (error || !product) {
-    return <div className={styles.notFound}><h2>{error || 'Product Not Found'}</h2><button onClick={() => navigate('/products')}>Back to Products</button></div>;
+    return (
+      <div className={styles.notFound}>
+        <h2>{error || 'Product Not Found'}</h2>
+        <button onClick={() => navigate('/products')}>Back to Products</button>
+      </div>
+    );
   }
 
   const productImages = getProductImages(product);
 
   return (
     <div className={styles.productDetailsPage}>
-      <Breadcrumb items={[
-        { label: 'Home', path: '/', icon: 'bi-house' },
-        { label: 'Shop', path: '/products' },
-        { label: typeof product.category === 'string' ? product.category : product.category?.name, path: `/products?category=${product.categoryId}` },
-        { label: product.name },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: 'Home', path: '/', icon: 'bi-house' },
+          { label: 'Shop', path: '/products' },
+          {
+            label: typeof product.category === 'string' ? product.category : product.category?.name,
+            path: `/products?category=${product.categoryId}`,
+          },
+          { label: product.name },
+        ]}
+      />
 
       <div className={styles.productContainer}>
         {/* Images */}
         <div className={styles.imageSection}>
           <div className={styles.mainImage}>
             <img src={productImages[selectedImage]} alt={product.name} />
-            {product.badge && <span className={`${styles.badge} ${styles[product.badgeColor]}`}>{product.badge}</span>}
+            {product.badge && (
+              <span className={`${styles.badge} ${styles[product.badgeColor]}`}>
+                {product.badge}
+              </span>
+            )}
           </div>
           <div className={styles.thumbnails}>
             {productImages.map((img, index) => (
-              <div key={index}
+              <div
+                key={index}
                 className={`${styles.thumbnail} ${selectedImage === index ? styles.active : ''}`}
-                onClick={() => setSelectedImage(index)}>
+                onClick={() => setSelectedImage(index)}
+              >
                 <img src={img} alt="" />
               </div>
             ))}
@@ -340,8 +426,12 @@ const ProductDetailsPage = () => {
             <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
             {product.originalPrice > currentPrice && (
               <>
-                <span className={styles.originalPrice}>{formatCurrency(product.originalPrice)}</span>
-                <span className={styles.discount}>{Math.round((1 - currentPrice / product.originalPrice) * 100)}% OFF</span>
+                <span className={styles.originalPrice}>
+                  {formatCurrency(product.originalPrice)}
+                </span>
+                <span className={styles.discount}>
+                  {Math.round((1 - currentPrice / product.originalPrice) * 100)}% OFF
+                </span>
               </>
             )}
           </div>
@@ -362,7 +452,8 @@ const ProductDetailsPage = () => {
                   const isColorTier = tierIdx === 0 && tier.images?.[optIdx];
 
                   return (
-                    <button key={optIdx}
+                    <button
+                      key={optIdx}
                       className={`
                         ${isColorTier ? styles.colorOption : styles.sizeButton} 
                         ${isSelected ? styles.active : ''}
@@ -374,10 +465,16 @@ const ProductDetailsPage = () => {
                     >
                       {isColorTier ? (
                         <>
-                          <img src={tier.images[optIdx]} alt={option} className={styles.colorImage} />
+                          <img
+                            src={tier.images[optIdx]}
+                            alt={option}
+                            className={styles.colorImage}
+                          />
                           {isSelected && <i className="bi bi-check" />}
                         </>
-                      ) : option}
+                      ) : (
+                        option
+                      )}
                     </button>
                   );
                 })}
@@ -388,28 +485,54 @@ const ProductDetailsPage = () => {
           {/* Quantity & Actions */}
           <div className={styles.actionsSection}>
             <div className={styles.quantitySelector}>
-              <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>-</button>
+              <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
+                -
+              </button>
               <input type="text" value={quantity} readOnly />
-              <button onClick={() => handleQuantityChange(1)} disabled={quantity >= currentStock}>+</button>
+              <button onClick={() => handleQuantityChange(1)} disabled={quantity >= currentStock}>
+                +
+              </button>
             </div>
             <div className={styles.actionButtons}>
-              <button className={styles.addBtn} onClick={handleAddToCart} disabled={addingToCart || currentStock <= 0}>
+              <button
+                className={styles.addBtn}
+                onClick={handleAddToCart}
+                disabled={addingToCart || currentStock <= 0}
+              >
                 {addingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
-              <button className={styles.buyBtn} onClick={handleBuyNow} disabled={addingToCart || currentStock <= 0}>
+              <button
+                className={styles.buyBtn}
+                onClick={handleBuyNow}
+                disabled={addingToCart || currentStock <= 0}
+              >
                 Buy Now
+              </button>
+              <button
+                className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
+                onClick={handleToggleFavourite}
+                disabled={favouriteLoading}
+                title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+              >
+                <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                {favouriteLoading ? 'Loading...' : isFavourite ? 'Saved' : 'Save'}
               </button>
             </div>
             {currentStock <= 0 && <div className="text-danger mt-2">Out of Stock</div>}
-            {currentStock > 0 && currentStock < 10 && <div className="text-warning mt-2">Only {currentStock} left!</div>}
+            {currentStock > 0 && currentStock < 10 && (
+              <div className="text-warning mt-2">Only {currentStock} left!</div>
+            )}
           </div>
 
           {/* Meta Info */}
           <div className={styles.metaInfo}>
-            <div className={styles.metaItem}><span>Stock:</span> {currentStock}</div>
-            <div className={styles.metaItem}><span>SKU:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}</div>
+            <div className={styles.metaItem}>
+              <span>Stock:</span> {currentStock}
+            </div>
+            <div className={styles.metaItem}>
+              <span>SKU:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
+            </div>
           </div>
-
         </div>
       </div>
 
