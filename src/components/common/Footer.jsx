@@ -113,7 +113,7 @@ const Footer = () => {
               ))}
               <li>
                 <Link
-                  to={PUBLIC_ROUTES.SHOP}
+                  to={PUBLIC_ROUTES.PRODUCTS}
                   onClick={scrollToTop}
                   style={styles.textYellow}
                   className="text-decoration-none d-flex align-items-center gap-1 mt-2"
