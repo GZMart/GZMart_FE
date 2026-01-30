@@ -14,6 +14,8 @@ const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
 const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
 
 const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
+const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'));
+const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPage'));
 
 // Buyer Pages
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
@@ -173,6 +175,20 @@ export const routeConfig = [
   {
     path: '/buyer/order-confirmation/:orderId',
     element: OrderConfirmationPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/payment/success',
+    element: PaymentSuccessPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/payment/cancelled',
+    element: PaymentCancelledPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',

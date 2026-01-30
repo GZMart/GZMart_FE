@@ -280,7 +280,7 @@ const Header = () => {
   const [activeSubcategory, setActiveSubcategory] = useState(null);
 
   const { t } = useTranslation();
-  const [activeCategory, setActiveCategory] = useState('new_arrivals');
+  const [activeCategory, setActiveCategory] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -588,7 +588,9 @@ const Header = () => {
                       {/* Products Section */}
                       {searchSuggestions.products && searchSuggestions.products.length > 0 && (
                         <div className="py-2">
-                          <div className="px-3 py-1 text-muted small fw-bold">{t('header.search_results.products')}</div>
+                          <div className="px-3 py-1 text-muted small fw-bold">
+                            {t('header.search_results.products')}
+                          </div>
                           {searchSuggestions.products.slice(0, 5).map((product) => (
                             <div
                               key={product._id}
@@ -636,7 +638,9 @@ const Header = () => {
                       {/* Categories Section */}
                       {searchSuggestions.categories && searchSuggestions.categories.length > 0 && (
                         <div className="py-2 border-top">
-                          <div className="px-3 py-1 text-muted small fw-bold">{t('header.search_results.categories')}</div>
+                          <div className="px-3 py-1 text-muted small fw-bold">
+                            {t('header.search_results.categories')}
+                          </div>
                           {searchSuggestions.categories.slice(0, 3).map((category) => (
                             <div
                               key={category._id}
@@ -665,7 +669,9 @@ const Header = () => {
                       {/* Brands Section */}
                       {searchSuggestions.brands && searchSuggestions.brands.length > 0 && (
                         <div className="py-2 border-top">
-                          <div className="px-3 py-1 text-muted small fw-bold">{t('header.search_results.brands')}</div>
+                          <div className="px-3 py-1 text-muted small fw-bold">
+                            {t('header.search_results.brands')}
+                          </div>
                           {searchSuggestions.brands.slice(0, 3).map((brand) => (
                             <div
                               key={brand._id}
@@ -716,7 +722,12 @@ const Header = () => {
                   <img
                     src={i18n.language === 'vi' ? viFlag : enFlag}
                     alt={i18n.language}
-                    style={{ width: '24px', height: '16px', objectFit: 'cover', borderRadius: '2px' }}
+                    style={{
+                      width: '24px',
+                      height: '16px',
+                      objectFit: 'cover',
+                      borderRadius: '2px',
+                    }}
                   />
                   <ChevronDown
                     size={14}
@@ -739,7 +750,9 @@ const Header = () => {
                       padding: '8px 0',
                     }}
                   >
-                     <div className="px-3 py-2 text-muted small fw-bold border-bottom mb-1">{t('header.language')}</div>
+                    <div className="px-3 py-2 text-muted small fw-bold border-bottom mb-1">
+                      {t('header.language')}
+                    </div>
                     <button
                       className="d-flex align-items-center gap-2 border-0 bg-transparent w-100 px-3 py-2 text-dark"
                       style={{ transition: 'background-color 0.2s', textAlign: 'left' }}
@@ -764,14 +777,18 @@ const Header = () => {
                         setShowLanguageDropdown(false);
                       }}
                     >
-                      <img src={viFlag} alt="Tiếng Việt" style={{ width: '20px', height: '14px' }} />
+                      <img
+                        src={viFlag}
+                        alt="Tiếng Việt"
+                        style={{ width: '20px', height: '14px' }}
+                      />
                       <span>Tiếng Việt</span>
                       {i18n.language === 'vi' && <span className="ms-auto text-success">✓</span>}
                     </button>
                   </div>
                 )}
               </div>
-              
+
               <span className="mx-3 text-secondary opacity-25">|</span>
 
               <Link
@@ -926,7 +943,7 @@ const Header = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  <span className="fw-medium">{t(`categories.${item}`)}</span>
+                  <span className="fw-medium">{category.name}</span>
                   <ChevronDown
                     size={14}
                     style={{

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Spinner } from 'react-bootstrap';
+import { Spinner, Button } from 'react-bootstrap';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
+import { paymentService } from '@services/api/paymentService';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 
@@ -14,6 +15,7 @@ const ProfilePage = () => {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -22,8 +24,8 @@ const ProfilePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // State for tab switching
-  const [activeTab, setActiveTab] = useState('account');
+  // State for tab switching - get from URL or default to 'account'
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'account');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailsTab, setDetailsTab] = useState('items');
 
@@ -33,6 +35,7 @@ const ProfilePage = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(null);
 
   // Initialize form data from user
   const [formData, setFormData] = useState({
@@ -72,6 +75,15 @@ const ProfilePage = () => {
     }
   }, [activeTab]);
 
+  // Update URL when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+    if (tab === 'orders') {
+      setSelectedOrder(null);
+    }
+  };
+
   const fetchOrders = async (page) => {
     setOrderLoading(true);
     try {
@@ -81,7 +93,7 @@ const ProfilePage = () => {
         setPagination(response.pagination);
       }
     } catch (error) {
-      console.error("Failed to fetch orders:", error);
+      console.error('Failed to fetch orders:', error);
     } finally {
       setOrderLoading(false);
     }
@@ -89,7 +101,7 @@ const ProfilePage = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
-      setPagination(prev => ({ ...prev, page: newPage }));
+      setPagination((prev) => ({ ...prev, page: newPage }));
       fetchOrders(newPage);
     }
   };
@@ -103,7 +115,7 @@ const ProfilePage = () => {
         setSelectedOrderDetails(response.data);
       }
     } catch (error) {
-      console.error("Failed to fetch order details:", error);
+      console.error('Failed to fetch order details:', error);
     } finally {
       setDetailsLoading(false);
     }
@@ -119,8 +131,8 @@ const ProfilePage = () => {
         newWindow.document.close();
       }
     } catch (error) {
-      console.error("Failed to get invoice:", error);
-      alert("Could not generate invoice. Please try again.");
+      console.error('Failed to get invoice:', error);
+      alert('Could not generate invoice. Please try again.');
     }
   };
 
@@ -143,6 +155,19 @@ const ProfilePage = () => {
       navigate(PUBLIC_ROUTES.HOME);
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  };
+
+  const handlePayNow = async (orderId) => {
+    setPaymentProcessing(orderId);
+    try {
+      const response = await paymentService.createPaymentLink(orderId);
+      if (response.success && response.data.checkoutUrl) {
+        window.location.href = response.data.checkoutUrl;
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to create payment link');
+      setPaymentProcessing(null);
     }
   };
 
@@ -299,39 +324,41 @@ const ProfilePage = () => {
       </div>
 
       <div className={styles.addressGrid}>
-        {[1].map((item) => ( // Kept static loop for address as API doesn't have address list yet, or just show user current address
-          <div key={item} className={styles.addressCard}>
-            <div className={styles.cardHeader}>
-              <span className={styles.cardType}>
-                Primary Address
-              </span>
-              <span className={styles.editLink}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                Edit
-              </span>
+        {[1].map(
+          (
+            item // Kept static loop for address as API doesn't have address list yet, or just show user current address
+          ) => (
+            <div key={item} className={styles.addressCard}>
+              <div className={styles.cardHeader}>
+                <span className={styles.cardType}>Primary Address</span>
+                <span className={styles.editLink}>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit
+                </span>
+              </div>
+              <div className={styles.cardBody}>
+                <span className={styles.cardName}>{user.fullName}</span>
+                <p style={{ margin: '0.5rem 0 0', lineHeight: '1.6' }}>
+                  {user.phone}
+                  <br />
+                  {user.address}
+                </p>
+              </div>
             </div>
-            <div className={styles.cardBody}>
-              <span className={styles.cardName}>{user.fullName}</span>
-              <p style={{ margin: '0.5rem 0 0', lineHeight: '1.6' }}>
-                {user.phone}
-                <br />
-                {user.address}
-              </p>
-            </div>
-          </div>
-        ))}
+          )
+        )}
       </div>
       <button className={styles.saveAddressBtn}>Save Address</button>
     </div>
@@ -355,11 +382,7 @@ const ProfilePage = () => {
         break;
     }
 
-    return (
-      <span className={`${styles.badge} ${badgeClass}`}>
-        {status}
-      </span>
-    );
+    return <span className={`${styles.badge} ${badgeClass}`}>{status}</span>;
   };
 
   const renderOrdersTab = () => (
@@ -368,8 +391,24 @@ const ProfilePage = () => {
         <>
           <div className={styles.addressHeader}>
             <h3 className={styles.addressTitle}>
-              <div style={{ background: '#FFF7ED', padding: '8px', borderRadius: '12px', display: 'flex' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div
+                style={{
+                  background: '#FFF7ED',
+                  padding: '8px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                }}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#F97316"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M21 8h-4l-3-4-3 4H7L4 8l-3 4v8h22v-8l-3-4z" />
                   <path d="M10 12h4" />
                 </svg>
@@ -397,10 +436,11 @@ const ProfilePage = () => {
                     <th>Date Placed</th>
                     <th>Status</th>
                     <th>Total Amount</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => (
+                  {orders.map((order) => (
                     <tr
                       key={order._id}
                       className={styles.orderRow}
@@ -408,9 +448,59 @@ const ProfilePage = () => {
                       style={{ cursor: 'pointer' }}
                     >
                       <td>#{order.orderNumber}</td>
-                      <td>{new Date(order.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                      <td>
+                        {new Date(order.createdAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </td>
                       <td>{getStatusBadge(order.status)}</td>
                       <td>{formatCurrency(order.totalPrice)}</td>
+                      <td>
+                        {order.paymentMethod === 'payos' && order.paymentStatus === 'pending' && (
+                          <button
+                            className={`${styles.badge} ${styles.badgeWarning}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePayNow(order._id);
+                            }}
+                            disabled={paymentProcessing === order._id}
+                            style={{
+                              cursor: paymentProcessing === order._id ? 'not-allowed' : 'pointer',
+                              opacity: paymentProcessing === order._id ? 0.6 : 1,
+                              border: 'none',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (paymentProcessing !== order._id) {
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow =
+                                  '0 2px 8px rgba(234, 179, 8, 0.3)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            {paymentProcessing === order._id ? (
+                              <>
+                                <Spinner
+                                  as="span"
+                                  animation="border"
+                                  size="sm"
+                                  role="status"
+                                  style={{ width: '12px', height: '12px', marginRight: '4px' }}
+                                />
+                                Processing...
+                              </>
+                            ) : (
+                              'Pay Now'
+                            )}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -426,17 +516,41 @@ const ProfilePage = () => {
                 disabled={pagination.page === 1}
                 onClick={() => handlePageChange(pagination.page - 1)}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
                 Previous
               </button>
-              <span className={styles.paginationInfo}>Page {pagination.page} of {pagination.pages}</span>
+              <span className={styles.paginationInfo}>
+                Page {pagination.page} of {pagination.pages}
+              </span>
               <button
                 className={styles.paginationBtn}
                 disabled={pagination.page === pagination.pages}
                 onClick={() => handlePageChange(pagination.page + 1)}
               >
                 Next
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </button>
             </div>
           )}
@@ -452,13 +566,27 @@ const ProfilePage = () => {
             style={{ marginBottom: '2rem' }}
           >
             <div className={styles.backIconCircle} style={{ width: '36px', height: '36px' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
             </div>
             Back to Orders List
           </button>
 
           {detailsLoading || !selectedOrderDetails ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>Loading details...</div>
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
+              Loading details...
+            </div>
           ) : (
             <>
               {/* Details Tabs */}
@@ -500,13 +628,19 @@ const ProfilePage = () => {
                           <td>
                             <div className={styles.productItem}>
                               <img
-                                src={item.productId?.images?.[0] || 'https://via.placeholder.com/60'}
+                                src={
+                                  item.productId?.images?.[0] || 'https://via.placeholder.com/60'
+                                }
                                 alt={item.productId?.name}
                                 className={styles.productImage}
                               />
                               <div className={styles.productInfo}>
                                 <h4>{item.productId?.name}</h4>
-                                <p>{item.tierSelections ? Object.values(item.tierSelections).join(' / ') : 'Standard'}</p>
+                                <p>
+                                  {item.tierSelections
+                                    ? Object.values(item.tierSelections).join(' / ')
+                                    : 'Standard'}
+                                </p>
                               </div>
                             </div>
                           </td>
@@ -521,12 +655,39 @@ const ProfilePage = () => {
               )}
 
               {detailsTab === 'invoices' && (
-                <div style={{ padding: '4rem', textAlign: 'center', background: 'white', borderRadius: '16px', border: '1px solid #f3f4f6' }}>
+                <div
+                  style={{
+                    padding: '4rem',
+                    textAlign: 'center',
+                    background: 'white',
+                    borderRadius: '16px',
+                    border: '1px solid #f3f4f6',
+                  }}
+                >
                   <div style={{ marginBottom: '1rem' }}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#2563EB"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
                   </div>
-                  <h4 style={{ marginBottom: '0.5rem' }}>Invoice #{selectedOrderDetails.orderNumber}</h4>
-                  <p style={{ color: '#6B7280', marginBottom: '1.5rem' }}>Download or view the official invoice for this order.</p>
+                  <h4 style={{ marginBottom: '0.5rem' }}>
+                    Invoice #{selectedOrderDetails.orderNumber}
+                  </h4>
+                  <p style={{ color: '#6B7280', marginBottom: '1.5rem' }}>
+                    Download or view the official invoice for this order.
+                  </p>
                   <button
                     className={styles.reorderBtn}
                     onClick={(e) => handleViewInvoice(e, selectedOrderDetails._id)}
@@ -538,12 +699,35 @@ const ProfilePage = () => {
               )}
 
               {detailsTab === 'shipment' && (
-                <div style={{ padding: '4rem', textAlign: 'center', background: 'white', borderRadius: '16px', border: '1px solid #f3f4f6' }}>
+                <div
+                  style={{
+                    padding: '4rem',
+                    textAlign: 'center',
+                    background: 'white',
+                    borderRadius: '16px',
+                    border: '1px solid #f3f4f6',
+                  }}
+                >
                   <h4 style={{ marginBottom: '1rem' }}>Shipment Status</h4>
-                  <div style={{ display: 'inline-block', padding: '0.5rem 1rem', background: '#EFF6FF', color: '#2563EB', borderRadius: '99px', fontWeight: '600', marginBottom: '1rem' }}>
+                  <div
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.5rem 1rem',
+                      background: '#EFF6FF',
+                      color: '#2563EB',
+                      borderRadius: '99px',
+                      fontWeight: '600',
+                      marginBottom: '1rem',
+                    }}
+                  >
                     {selectedOrderDetails.status.toUpperCase()}
                   </div>
-                  <p style={{ color: '#6B7280' }}>Tracking Number: <span style={{ fontFamily: 'monospace', color: '#111827' }}>{selectedOrderDetails.trackingNumber || 'Pending Assignment'}</span></p>
+                  <p style={{ color: '#6B7280' }}>
+                    Tracking Number:{' '}
+                    <span style={{ fontFamily: 'monospace', color: '#111827' }}>
+                      {selectedOrderDetails.trackingNumber || 'Pending Assignment'}
+                    </span>
+                  </p>
                 </div>
               )}
 
@@ -553,24 +737,43 @@ const ProfilePage = () => {
                   <h4>Order Summary</h4>
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Subtotal</span>
-                    <span className={styles.infoValue}>{formatCurrency(selectedOrderDetails.subtotal)}</span>
+                    <span className={styles.infoValue}>
+                      {formatCurrency(selectedOrderDetails.subtotal)}
+                    </span>
                   </div>
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Shipping Fee</span>
-                    <span className={styles.infoValue}>{formatCurrency(selectedOrderDetails.shippingCost)}</span>
+                    <span className={styles.infoValue}>
+                      {formatCurrency(selectedOrderDetails.shippingCost)}
+                    </span>
                   </div>
                   {selectedOrderDetails.discount > 0 && (
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Discount</span>
-                      <span className={styles.infoValue} style={{ color: '#059669' }}>-{formatCurrency(selectedOrderDetails.discount)}</span>
+                      <span className={styles.infoValue} style={{ color: '#059669' }}>
+                        -{formatCurrency(selectedOrderDetails.discount)}
+                      </span>
                     </div>
                   )}
 
-                  <div className={styles.infoRow} style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed #E5E7EB' }}>
-                    <span className={styles.infoLabel} style={{ fontWeight: '700', color: '#111827' }}>
+                  <div
+                    className={styles.infoRow}
+                    style={{
+                      marginTop: '1rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px dashed #E5E7EB',
+                    }}
+                  >
+                    <span
+                      className={styles.infoLabel}
+                      style={{ fontWeight: '700', color: '#111827' }}
+                    >
                       Grand Total
                     </span>
-                    <span className={styles.infoValue} style={{ fontSize: '1.25rem', color: '#2563EB' }}>
+                    <span
+                      className={styles.infoValue}
+                      style={{ fontSize: '1.25rem', color: '#2563EB' }}
+                    >
                       {formatCurrency(selectedOrderDetails.totalPrice)}
                     </span>
                   </div>
@@ -579,8 +782,28 @@ const ProfilePage = () => {
                 <div className={styles.infoSection}>
                   <h4>Payment</h4>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoValue} style={{ textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    <span
+                      className={styles.infoValue}
+                      style={{
+                        textTransform: 'capitalize',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                      </svg>
                       {selectedOrderDetails.paymentMethod.replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -589,9 +812,13 @@ const ProfilePage = () => {
                 <div className={styles.infoSection}>
                   <h4>Shipping Details</h4>
                   <div className={styles.addressDetails}>
-                    <p style={{ fontWeight: '700', marginBottom: '0.25rem', color: '#111827' }}>{selectedOrderDetails.userId?.fullName || user.fullName}</p>
+                    <p style={{ fontWeight: '700', marginBottom: '0.25rem', color: '#111827' }}>
+                      {selectedOrderDetails.userId?.fullName || user.fullName}
+                    </p>
                     <p>{selectedOrderDetails.shippingAddress}</p>
-                    <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>Order #{selectedOrderDetails.orderNumber}</p>
+                    <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
+                      Order #{selectedOrderDetails.orderNumber}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -673,7 +900,7 @@ const ProfilePage = () => {
               <div className={styles.sidebarNavGrid}>
                 <div
                   className={`${styles.navCard} ${styles.navCardAccount} ${activeTab === 'account' ? styles.active : ''}`}
-                  onClick={() => setActiveTab('account')}
+                  onClick={() => handleTabChange('account')}
                 >
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
@@ -683,10 +910,7 @@ const ProfilePage = () => {
 
                 <div
                   className={`${styles.navCard} ${styles.navCardOrder} ${activeTab === 'orders' ? styles.active : ''}`}
-                  onClick={() => {
-                    setActiveTab('orders');
-                    setSelectedOrder(null);
-                  }}
+                  onClick={() => handleTabChange('orders')}
                 >
                   <svg
                     width="28"
@@ -704,7 +928,7 @@ const ProfilePage = () => {
 
                 <div
                   className={`${styles.navCard} ${styles.navCardAddress} ${activeTab === 'address' ? styles.active : ''}`}
-                  onClick={() => setActiveTab('address')}
+                  onClick={() => handleTabChange('address')}
                 >
                   <svg
                     width="28"
