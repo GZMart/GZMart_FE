@@ -99,6 +99,83 @@ export const dashboardService = {
   getComparison: async (params = {}) => {
     return await axiosClient.get(`${BASE_URL}/comparison`, { params });
   },
+
+  // ============= ADMIN DASHBOARD ENDPOINTS =============
+
+  /**
+   * Get overview statistics for admin dashboard
+   * @returns {Promise} Overview stats (revenue, orders, users, products with trends)
+   */
+  getOverviewStats: async () => {
+    return await axiosClient.get(`${BASE_URL}/overview-stats`);
+  },
+
+  /**
+   * Get top selling products (Admin only)
+   * @param {object} params - Query parameters
+   * @param {number} [params.limit=5] - Number of products to retrieve
+   * @returns {Promise} List of top products with sales data
+   */
+  getTopProducts: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/top-products`, { params });
+  },
+
+  /**
+   * Get recent orders (Admin only)
+   * @param {object} params - Query parameters
+   * @param {number} [params.limit=5] - Number of orders to retrieve
+   * @returns {Promise} List of recent orders
+   */
+  getRecentOrders: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/recent-orders`, { params });
+  },
+
+  /**
+   * Get category sales distribution (Admin only)
+   * @returns {Promise} Category sales with percentages
+   */
+  getCategorySales: async () => {
+    return await axiosClient.get(`${BASE_URL}/category-sales`);
+  },
+
+  /**
+   * Get revenue data by period (Admin only)
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='monthly'] - Period type: 'monthly' or 'yearly'
+   * @returns {Promise} Revenue data grouped by period
+   */
+  getRevenueData: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/revenue-data`, { params });
+  },
+
+  /**
+   * Get user growth data by period (Admin only)
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='monthly'] - Period type: 'monthly' or 'yearly'
+   * @returns {Promise} User growth data grouped by period
+   */
+  getUserGrowth: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/user-growth`, { params });
+  },
+
+  /**
+   * Get quick statistics (Admin only)
+   * @returns {Promise} Quick stats (pending orders, low stock items, new users today, customer satisfaction)
+   */
+  getQuickStats: async () => {
+    return await axiosClient.get(`${BASE_URL}/quick-stats`);
+  },
+
+  /**
+   * Get all dashboard data in one request (Admin only)
+   * @param {object} params - Query parameters
+   * @param {number} [params.topProductsLimit=5] - Number of top products
+   * @param {number} [params.recentOrdersLimit=5] - Number of recent orders
+   * @returns {Promise} All dashboard data including overview, products, orders, sales, revenue, users, quick stats
+   */
+  getAllDashboardData: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/admin/all`, { params });
+  },
 };
 
 export default dashboardService;
