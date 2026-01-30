@@ -158,6 +158,33 @@ const AdminLayout = ({ children }) => {
                   Attributes
                 </Nav.Link>
 
+                {/* Marketing Section */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  MARKETING
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to={ADMIN_ROUTES.SYSTEM_VOUCHERS}
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS) ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS) ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-gift" style={{ fontSize: '18px', marginRight: '12px' }}></i>
+                  System Vouchers
+                </Nav.Link>
+
                 {/* System Section */}
                 <div
                   className="px-4 mb-2 mt-4"
@@ -317,7 +344,7 @@ const AdminLayout = ({ children }) => {
           </Row>
         </Container>
       </div>
-    </div>
+    </div >
   );
 };
 

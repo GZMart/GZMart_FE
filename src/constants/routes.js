@@ -89,6 +89,11 @@ export const ADMIN_ROUTES = {
 
   // System Configuration
   SYSTEM_CONFIG: '/admin/config',
+
+  // Marketing
+  SYSTEM_VOUCHERS: '/admin/system-vouchers',
+  SYSTEM_VOUCHER_CREATE: '/admin/system-vouchers/create',
+  SYSTEM_VOUCHER_EDIT: '/admin/system-vouchers/:id/edit',
 };
 
 // Error Routes

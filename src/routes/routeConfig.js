@@ -40,6 +40,12 @@ const ReturnsPage = lazy(() => import('@pages/seller/ReturnsPage'));
 const SellerOrdersPage = lazy(() => import('@pages/seller/OrdersPage'));
 const OrderDetailsPage = lazy(() => import('@pages/seller/OrderDetailsPage'));
 const FlashSalesPage = lazy(() => import('@pages/seller/FlashSalesPage'));
+const VoucherDashboard = lazy(() => import('@pages/seller/vouchers/VoucherDashboard'));
+const VoucherCreatePage = lazy(() => import('@pages/seller/vouchers/VoucherCreatePage'));
+const ShopPromotionsPage = lazy(() => import('@pages/seller/promotions/ShopPromotionsPage'));
+const ShopProgramForm = lazy(() => import('@pages/seller/promotions/ShopProgramForm'));
+const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboPromotionForm'));
+const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -47,6 +53,8 @@ const UsersPage = lazy(() => import('@pages/admin/UsersPage'));
 const SystemConfigPage = lazy(() => import('@pages/admin/SystemConfigPage'));
 const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
+const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouchersPage'));
+const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
 
 // Error Pages
 const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
@@ -293,6 +301,104 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
+  {
+    path: '/seller/vouchers',
+    element: VoucherDashboard,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/vouchers/create/:type',
+    element: VoucherCreatePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/vouchers/edit/:id',
+    element: VoucherCreatePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/vouchers/view/:id',
+    element: VoucherCreatePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions',
+    element: ShopPromotionsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/create/shop',
+    element: ShopProgramForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/create/combo',
+    element: ComboPromotionForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/create/addon',
+    element: AddOnDealForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/view/shop/:id',
+    element: ShopProgramForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/view/combo/:id',
+    element: ComboPromotionForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/view/addon/:id',
+    element: AddOnDealForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/edit/shop/:id',
+    element: ShopProgramForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/edit/combo/:id',
+    element: ComboPromotionForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/promotions/edit/addon/:id',
+    element: AddOnDealForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
 
   // Admin Routes
   {
@@ -326,6 +432,27 @@ export const routeConfig = [
   {
     path: '/admin/config',
     element: SystemConfigPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/system-vouchers',
+    element: SystemVouchersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/system-vouchers/create',
+    element: SystemVoucherForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/system-vouchers/:id/edit',
+    element: SystemVoucherForm,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',

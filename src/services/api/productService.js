@@ -16,6 +16,14 @@ export const productService = {
   },
 
   /**
+   * Get products owned by current seller
+   * @param {object} params
+   */
+  getMyProducts: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/my-products`, { params });
+  },
+
+  /**
    * Legacy method - alias for getAll
    */
   getProducts: async (params = {}) => {
