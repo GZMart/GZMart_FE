@@ -43,6 +43,70 @@
         "verify_email_failed": "Verify email failed",
         "resend_verification_failed": "Resend verification email failed"
     },
+    "login_page": {
+        "welcome_title": "Welcome Back",
+        "welcome_subtitle": "Login to your account",
+        "email_placeholder": "Enter your email address",
+        "password_placeholder": "Enter your password",
+        "remember_me": "Remember me",
+        "forgot_password": "Forgot Password?",
+        "login_button": "Login",
+        "logging_in": "Logging in...",
+        "or_divider": "Or",
+        "login_google": "Login with Google",
+        "login_facebook": "Login with Facebook",
+        "first_time_question": "First time here?",
+        "signup_link": "Signup",
+        "back_button": "Back",
+        "success_login": "Login successful!",
+        "validation": {
+            "invalid_email": "Invalid email",
+            "required_email": "Email is required",
+            "required_password": "Password is required"
+        },
+        "errors": {
+            "default_login_failed": "Login failed. Please check your email and password.",
+            "google_no_email": "Cannot get email from Google",
+            "facebook_no_email": "Cannot get email from Facebook",
+            "google_login_error": "Google login error",
+            "facebook_login_error": "Facebook login error"
+        }
+    },
+    "forgot_password_page": {
+        "title": "Forgot Password",
+        "subtitle": "Enter your email to reset your password",
+        "email_placeholder": "Enter your email address",
+        "submit_button": "Send Reset Password Link",
+        "submitting": "Sending...",
+        "back_to_login": "Back to Login",
+        "success_title": "Check your email",
+        "success_message": "We have sent a password reset link to {{email}}.",
+        "error_message": "Failed to send reset link. Please try again.",
+        "validation": {
+            "invalid_email": "Invalid email",
+            "required_email": "Email is required"
+        }
+    },
+    "reset_password_page": {
+        "title": "Reset Password",
+        "subtitle": "Enter your new password below",
+        "password_placeholder": "New Password",
+        "confirm_password_placeholder": "Confirm New Password",
+        "submit_button": "Reset Password",
+        "submitting": "Resetting...",
+        "success_message": "Password has been reset successfully. Please login.",
+        "errors": {
+            "user_not_found": "Email address not found.",
+            "missing_token": "Reset token is missing.",
+            "default": "Failed to reset password. Token may be invalid or expired."
+        },
+        "validation": {
+            "password_min": "Password must be at least 6 characters",
+            "required_password": "Password is required",
+            "password_match": "Passwords must match",
+            "required_confirm_password": "Please confirm your password"
+        }
+    },
     "common": {
         "error": "Error",
         "success": "Success",
@@ -50,5 +114,68 @@
         "email": "Email",
         "password": "Password",
         "submit": "Submit"
+    },
+    "register_page": {
+        "title": "Create an Account",
+        "subtitle": "Join us today",
+        "already_have_account": "Already have an account?",
+        "login_link": "Login",
+        "full_name_label": "Full Name",
+        "full_name_placeholder": "Enter your full name",
+        "email_label": "Email",
+        "email_placeholder": "Enter your email address",
+        "password_label": "Password",
+        "password_placeholder": "Enter your password",
+        "confirm_password_label": "Confirm Password",
+        "confirm_password_placeholder": "Confirm your password",
+        "signup_button": "Sign Up",
+        "signing_up": "Signing Up...",
+        "or_divider": "Or",
+        "signup_google": "Sign Up with Google",
+        "signup_facebook": "Sign Up with Facebook",
+        "back": "Back",
+        "success_message": "Registration successful! Please check your email for the OTP.",
+        "validation": {
+            "invalid_email": "Invalid email",
+            "required_email": "Email is required",
+            "required_fullname": "Full name is required",
+            "min_fullname": "Full name must be at least 2 characters",
+            "required_password": "Password is required",
+            "min_password": "Password must be at least 8 characters!",
+            "uppercase": "Password must contain at least one uppercase letter!",
+            "lowercase": "Password must contain at least one lowercase letter!",
+            "number": "Password must contain at least one number!",
+            "special_char": "Password must contain at least one special character (@$!%*?&#)!",
+            "required_confirm_password": "Confirm password is required",
+            "password_match": "Passwords must match"
+        },
+        "errors": {
+            "default": "Registration failed. Please try again.",
+            "google_signup_failed": "Google signup failed",
+            "facebook_signup_failed": "Facebook signup failed",
+            "pending_feature": "feature is currently under development"
+        }
+    },
+    "otp_page": {
+        "title": "Verify Your Email",
+        "subtitle": "Enter 4 Digits Code",
+        "instruction": "Enter the 4-digit code that you received on your email.",
+        "resend_button": "Resend Code",
+        "sending": "Sending...",
+        "resend_timer": "Resend code in",
+        "submit_button": "Continue",
+        "verifying": "Verifying...",
+        "back": "Back",
+        "success_message": "Verification successful!",
+        "resend_success": "OTP has been resent to your email",
+        "validation": {
+            "required_otp": "Please enter 4 digits",
+            "invalid_email": "Invalid email"
+        },
+        "errors": {
+            "default": "OTP verification failed",
+            "resend_failed": "Failed to resend OTP",
+            "invalid_email_redirect": "Invalid email. Please register again."
+        }
     }
 }

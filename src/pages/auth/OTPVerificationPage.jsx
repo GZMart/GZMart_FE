@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { PUBLIC_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
@@ -13,6 +14,7 @@ const OTPVerificationPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
+  const { t } = useTranslation();
   // Get email and OTP (if in development) from location state
   const email = location.state?.email;
   const devOTP = location.state?.otp; // OTP from registration (development only)
@@ -27,10 +29,10 @@ const OTPVerificationPage = () => {
   // Redirect if no email
   useEffect(() => {
     if (!email) {
-      toast.error('Email không hợp lệ. Vui lòng đăng ký lại.');
+      toast.error(t('otp_page.errors.invalid_email_redirect'));
       navigate(PUBLIC_ROUTES.REGISTER);
     }
-  }, [email, navigate]);
+  }, [email, navigate, t]);
 
   // In development, show OTP if available (Disabled)
   useEffect(() => {
@@ -109,12 +111,12 @@ const OTPVerificationPage = () => {
     const otpCode = otp.join('');
 
     if (otpCode.length !== 4) {
-      toast.error('Vui lòng nhập đủ 4 chữ số');
+      toast.error(t('otp_page.validation.required_otp'));
       return;
     }
 
     if (!email) {
-      toast.error('Email không hợp lệ');
+      toast.error(t('otp_page.validation.invalid_email'));
       return;
     }
 
@@ -134,7 +136,7 @@ const OTPVerificationPage = () => {
           })
         );
 
-        toast.success('Xác thực thành công!');
+        toast.success(t('otp_page.success_message'));
 
         // Navigate based on user role
         const user = response.data.user;
@@ -148,10 +150,10 @@ const OTPVerificationPage = () => {
           }
         }, 1000);
       } else {
-        toast.error('Xác thực thất bại. Vui lòng thử lại.');
+        toast.error(t('otp_page.errors.default'));
       }
     } catch (error) {
-      const errorMessage = error.message || error.response?.data?.error || 'Xác thực OTP thất bại';
+      const errorMessage = error.message || error.response?.data?.error || t('otp_page.errors.default');
       toast.error(errorMessage);
       // Clear OTP on error
       setOtp(['', '', '', '']);
@@ -170,7 +172,7 @@ const OTPVerificationPage = () => {
     try {
       const response = await authService.sendOTP(email);
 
-      let message = 'OTP đã được gửi lại vào email của bạn';
+      let message = t('otp_page.resend_success');
 
       // In development, show OTP if available (Disabled)
       /*
@@ -189,7 +191,7 @@ const OTPVerificationPage = () => {
       setOtp(['', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (error) {
-      const errorMessage = error.message || error.response?.data?.error || 'Gửi lại OTP thất bại';
+      const errorMessage = error.message || error.response?.data?.error || t('otp_page.errors.resend_failed');
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -217,7 +219,7 @@ const OTPVerificationPage = () => {
                 />
               </svg>
             </div>
-            <span>Back</span>
+            <span>{t('otp_page.back')}</span>
           </button>
 
           {/* Share Button */}
@@ -241,8 +243,8 @@ const OTPVerificationPage = () => {
           <div className={styles.leftSection}>
             <div className={styles.welcomeContent}>
               <div className={styles.titleGroup}>
-                <h1 className={styles.title}>Verify Your Email</h1>
-                <p className={styles.subtitle}>Enter 4 Digits Code</p>
+                <h1 className={styles.title}>{t('otp_page.title')}</h1>
+                <p className={styles.subtitle}>{t('otp_page.subtitle')}</p>
               </div>
 
               <div className={styles.illustrationWrapper}>
@@ -291,7 +293,7 @@ const OTPVerificationPage = () => {
             <div className={`${styles.formWrapper} ${styles.otpWrapper}`}>
               <div className={styles.otpHeader}>
                 <p className={styles.instructionText}>
-                  Enter the 4-digit code that you received on your email.
+                  {t('otp_page.instruction')}
                 </p>
               </div>
 
@@ -327,17 +329,17 @@ const OTPVerificationPage = () => {
                       onClick={handleResend}
                       disabled={loading}
                     >
-                      {loading ? 'Đang gửi...' : 'Resend Code'}
+                      {loading ? t('otp_page.sending') : t('otp_page.resend_button')}
                     </button>
                   ) : (
                     <span className={styles.timerText}>
-                      Resend code in <span className={styles.timerCount}>{formatTime(timer)}</span>
+                      {t('otp_page.resend_timer')} <span className={styles.timerCount}>{formatTime(timer)}</span>
                     </span>
                   )}
                 </div>
 
                 <button type="submit" className={styles.loginButton} disabled={verifying}>
-                  {verifying ? 'Đang xác thực...' : 'Continue'}
+                  {verifying ? t('otp_page.verifying') : t('otp_page.submit_button')}
                 </button>
               </form>
             </div>
