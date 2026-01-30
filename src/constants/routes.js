@@ -32,13 +32,15 @@ export const PUBLIC_ROUTES = {
 // Buyer Protected Routes
 export const BUYER_ROUTES = {
   DASHBOARD: '/buyer/dashboard',
-  PROFILE: '/buyer/profile',
-  ORDERS: '/buyer/orders',
+  PROFILE: '/buyer/profile?tab=account',
+  ORDERS: '/buyer/profile?tab=orders',
   ORDER_DETAILS: '/buyer/orders/:id',
   FAVOURITES: '/buyer/favourites',
   CART: '/buyer/cart',
   CHECKOUT: '/buyer/checkout',
   PAYMENT: '/buyer/payment',
+  PAYMENT_SUCCESS: '/buyer/payment/success',
+  PAYMENT_CANCELLED: '/buyer/payment/cancelled',
   ORDER_CONFIRMATION: '/buyer/order-confirmation/:orderId',
   ADDRESSES: '/buyer/addresses',
   PAYMENT_METHODS: '/buyer/payment-methods',
@@ -87,6 +89,11 @@ export const ADMIN_ROUTES = {
 
   // System Configuration
   SYSTEM_CONFIG: '/admin/config',
+
+  // Marketing
+  SYSTEM_VOUCHERS: '/admin/system-vouchers',
+  SYSTEM_VOUCHER_CREATE: '/admin/system-vouchers/create',
+  SYSTEM_VOUCHER_EDIT: '/admin/system-vouchers/:id/edit',
 };
 
 // Error Routes

@@ -1,0 +1,580 @@
+/* VoucherCreate.module.css */
+
+/* Variables */
+:root {
+  --primary-blue: #1890ff;
+  --primary-blue-hover: #40a9ff;
+  --bg-blue-light: #f0f5ff;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+  --border-color: #d9d9d9;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Layout */
+.pageContainer {
+  background-color: #f5f7fa; /* Softer gray background */
+  min-height: 100vh;
+  padding-bottom: 60px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Form Sections */
+.formSection {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  padding: 32px;
+  border: 1px solid rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
+}
+
+.formSection:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+}
+
+/* Typography & Labels */
+.formLabel {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  padding-top: 6px; /* Align with input */
+}
+
+.required::after {
+  content: "*";
+  color: #ff4d4f;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+/* Custom Input Styles */
+.inputGroupText {
+  background-color: #fafafa;
+  color: var(--text-tertiary);
+  border-color: var(--border-color);
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
+}
+
+/* Helper Text Styling */
+.helperText {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* Radio & Checkbox */
+.radioCustom {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Preview */
+.previewWrapper {
+  position: sticky;
+  top: 24px;
+}
+
+.previewCard {
+  background: white;
+  border-radius: 20px; /* More rounded for phone feel */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 4px solid #333; /* REDUCED BORDER THICKNESS (was 8px) */
+  overflow: hidden;
+  height: 600px;
+  position: relative;
+}
+
+.previewHeader {
+  background-color: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  position: relative;
+}
+
+/* Fake Status Bar */
+.statusBar {
+  height: 24px;
+  background: #333;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  align-items: center;
+}
+
+.notch {
+  width: 100px;
+  height: 18px;
+  background: black;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  margin: 0 auto;
+}
+
+.previewBody {
+  background-color: #f5f5f5;
+  height: 100%;
+  padding: 16px;
+  padding-top: 20px;
+}
+
+/* Mock Voucher */
+.mockVoucher {
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 12px;
+  border-left: 4px solid var(--primary-blue);
+  min-height: 100px;
+  position: relative;
+}
+
+/* Dotted Line Effect */
+.mockVoucher::before {
+  content: "";
+  position: absolute;
+  left: 92px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  z-index: 2;
+}
+.mockVoucher::after {
+  content: "";
+  position: absolute;
+  left: 92px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  z-index: 2;
+}
+
+.mockVoucherLeft {
+  width: 98px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 8px;
+  border-right: 1px dashed #d9d9d9;
+}
+
+.mockVoucherRight {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mockLogo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  margin-bottom: 6px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.mockBtn {
+  background-color: var(--primary-blue);
+  color: white;
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  margin-top: auto;
+  align-self: flex-end;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+/* Footer Actions - Sticky & Merged */
+.footerActions {
+  position: sticky;
+  bottom: 0px;
+  z-index: 99;
+  
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  
+  /* Styling to look like a floating bar */
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 16px 24px;
+  
+  /* Visual separators */
+  border-top: 1px solid #ebebeb;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+  
+  /* Layout adjustments */
+  margin-top: 0;
+  margin-left: -12px; /* Slight pull to align with visuals */
+  margin-right: -12px;
+  border-radius: 12px 12px 0 0;
+  
+  transition: all 0.3s ease;
+}
+
+.footerActions:hover {
+  background-color: #fff;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Utilities */
+.textLink {
+  color: var(--primary-blue);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* Live Preview Styles */
+.livePreviewContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a1a1a 0%, #363636 100%); /* Placeholder for video stream */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pseudo Video Content */
+.livePreviewContainer::before {
+    content: "LIVE STREAM";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.1);
+    font-weight: 900;
+    font-size: 2rem;
+    pointer-events: none;
+}
+
+.liveHeader {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    /* Gradient overlay for text readability */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%);
+}
+
+.liveShopInfo {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.3);
+    padding: 4px 8px 4px 4px;
+    border-radius: 99px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.liveAvatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ff6b35;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+.liveShopName {
+    font-size: 11px;
+    color: white;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.liveFollowBtn {
+    background: #ee4d2d;
+    color: white;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.liveCloseBtn {
+    width: 24px;
+    height: 24px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Bottom Sheet Simulation */
+.liveBottomSheet {
+    background: white;
+    border-radius: 12px 12px 0 0;
+    margin-top: auto;
+    padding: 12px;
+    padding-bottom: 24px;
+    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.sheetHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.bagBadge {
+    position: relative;
+    font-size: 16px;
+    color: #ee4d2d;
+}
+.bagBadgeCount {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ee4d2d;
+    color: white;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 9px;
+    border: 1px solid white;
+}
+
+/* Compact Live Voucher */
+.liveVoucherCard {
+    background: #fff0f1; /* Light red bg */
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.liveVoucherLeft {
+    display: flex;
+    flex-direction: column;
+}
+
+.liveVoucherTitle {
+    color: #d0011b; /* Shopee Red key color */
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.liveVoucherSub {
+    font-size: 9px;
+    color: #757575;
+}
+
+.liveVoucherBtn {
+    background: #d0011b;
+    color: white;
+    border: none;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* Video Preview Styles (TikTok/Shopee Video Style) */
+.videoPreviewContainer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.videoPlaceholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.6;
+    background: linear-gradient(180deg, #2c3e50 0%, #000000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.2);
+    font-size: 2rem;
+    font-weight: 900;
+}
+
+.videoOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.videoRightSidebar {
+    position: absolute;
+    right: 16px;
+    bottom: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.videoActionBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    gap: 4px;
+}
+
+.videoIcon {
+    font-size: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.videoLabel {
+    font-size: 10px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.videoBottomInfo {
+    margin-bottom: 60px; /* Space for product anchor */
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.videoAccountName {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.videoCaption {
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 80%;
+}
+
+.videoProductAnchor {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(255, 87, 34, 0.9); /* Shopee Orange */
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    max-width: 200px;
+    backdrop-filter: blur(4px);
+}
+
+.videoProductThumb {
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 2px;
+}
+
+.videoAnchorText {
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Video Voucher Popup */
+.videoVoucherPopup {
+    position: absolute;
+    bottom: 80px; /* Above product anchor */
+    left: 16px;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from { transform: scale(0.8) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.videoVoucherIcon {
+    width: 32px;
+    height: 32px;
+    background: #ee4d2d;
+    color: white;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
