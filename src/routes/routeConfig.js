@@ -11,6 +11,8 @@ const CartPage = lazy(() => import('@pages/buyer/CartPage'));
 const CheckoutPage = lazy(() => import('@pages/buyer/CheckoutPage'));
 const LoginPage = lazy(() => import('@pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('@pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@pages/auth/ResetPasswordPage'));
 const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
 
 const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
@@ -113,6 +115,20 @@ export const routeConfig = [
   {
     path: '/otp-verification',
     element: OTPVerificationPage,
+    public: true,
+    restricted: true,
+    layout: 'none',
+  },
+  {
+    path: '/forgot-password',
+    element: ForgotPasswordPage,
+    public: true,
+    restricted: true,
+    layout: 'none',
+  },
+  {
+    path: '/reset-password',
+    element: ResetPasswordPage,
     public: true,
     restricted: true,
     layout: 'none',

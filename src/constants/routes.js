@@ -100,7 +100,7 @@ export const ERROR_ROUTES = {
 // Get role-based home route
 export const getRoleHomePath = (role) => {
   const roleRoutes = {
-    buyer: BUYER_ROUTES.DASHBOARD,
+    buyer: PUBLIC_ROUTES.HOME,
     seller: SELLER_ROUTES.DASHBOARD,
     admin: ADMIN_ROUTES.DASHBOARD,
     guest: PUBLIC_ROUTES.HOME,
