@@ -8,11 +8,11 @@ import { SELLER_ROUTES } from '@constants/routes';
  * ERP Layout - For Seller pages
  */
 const ERPLayout = ({ children }) => {
-  const [listingsOpen, setListingsOpen] = useState(true);
   const location = useLocation();
 
   return (
     <div className="erp-layout d-flex flex-column" style={{ minHeight: '100vh' }}>
+
       {/* Top Navigation Bar */}
       <header className="erp-header bg-primary text-white shadow-sm">
         <Container fluid>
@@ -204,6 +204,52 @@ const ERPLayout = ({ children }) => {
                     style={{ fontSize: '18px', marginRight: '12px' }}
                   ></i>
                   Messages
+                </Nav.Link>
+
+                <div
+                  className="px-4 mb-3 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  MARKETING CHANNEL
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to="/seller/vouchers"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname.includes('/seller/vouchers') ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname.includes('/seller/vouchers') ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-ticket-perforated"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
+                  Vouchers
+                </Nav.Link>
+
+                <Nav.Link
+                  as={Link}
+                  to="/seller/promotions"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname.includes('/seller/promotions') ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname.includes('/seller/promotions') ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-megaphone"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
+                  Promotions
                 </Nav.Link>
 
                 <hr className="my-3 mx-3" style={{ borderColor: '#e5e7eb', opacity: 1 }} />
