@@ -4,9 +4,10 @@ import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
+import Pagination from '@components/common/Pagination';
 import { productService } from '../../services/api';
 
-const sizes = ['S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
+
 const locations = [
   { id: 'hanoi', name: 'Hà Nội' },
   { id: 'hcm', name: 'Hồ Chí Minh' },
@@ -14,45 +15,27 @@ const locations = [
   { id: 'cantho', name: 'Cần Thơ' },
   { id: 'haiphong', name: 'Hải Phòng' },
 ];
-const shippingUnits = [
-  { id: 'ghn', name: 'Giao Hàng Nhanh' },
-  { id: 'ghtk', name: 'Giao Hàng Tiết Kiệm' },
-  { id: 'vnpost', name: 'VNPost' },
-];
-const shopTypes = [
-  { id: 'mall', name: 'GZMart Mall' },
-  { id: 'preferred', name: 'Preferred Seller' },
-];
-const conditions = [
-  { id: 'new', name: 'New' },
-  { id: 'used', name: 'Used' },
-];
-const paymentOptions = [
-  { id: 'cod', name: 'Cash on Delivery' },
-  { id: 'credit', name: 'Credit Card' },
-];
+
+
+
 const ratings = [
   { id: '5star', value: 5 },
   { id: '4star', value: 4 },
   { id: '3star', value: 3 },
 ];
-const services = [
-  { id: 'freeship', name: 'Free Shipping' },
-  { id: 'voucher', name: 'Shop Voucher' },
-];
-const priceRanges = [
-  { id: 'range1', min: 0, max: 100000 },
-  { id: 'range2', min: 100000, max: 500000 },
-  { id: 'range3', min: 500000, max: 1000000 },
-  { id: 'range4', min: 1000000, max: 10000000 },
-];
-const discounts = ['10', '20', '30', '50'];
-const availabilityOptions = ['inStock', 'outOfStock'];
 
 const ProductsPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q');
+
+  // ... breadcrumb logic (omitted for brevity in replacement if possible, but replace tool needs context)
+  // Re-inserting logic requires matching context. 
+  // Easier to just insert key blocks separately or careful replacement.
+
+  // Let's target the top of the file for ratings constant first
+  // And then the state variables.
+
 
   // Dynamic breadcrumb based on search query
   const breadcrumbItems = useMemo(() => {
@@ -71,19 +54,15 @@ const ProductsPage = () => {
   }, [searchQuery]);
 
   const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(9);
+  const [itemsToShow, setItemsToShow] = useState(12);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [sortBy, setSortBy] = useState('position');
   const [selectedLocations, setSelectedLocations] = useState([]);
-  const [selectedShippingUnits, setSelectedShippingUnits] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000000 });
-  const [selectedShopTypes, setSelectedShopTypes] = useState([]);
-  const [selectedConditions, setSelectedConditions] = useState([]);
-  const [selectedPaymentOptions, setSelectedPaymentOptions] = useState([]);
   const [selectedRatings, setSelectedRatings] = useState([]);
-  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedAvailability, setSelectedAvailability] = useState([]);
   const [openSections, setOpenSections] = useState({});
@@ -97,13 +76,11 @@ const ProductsPage = () => {
 
   // Memoize filters to prevent unnecessary API calls
   const apiFilters = useMemo(() => {
-    const categoryId = searchParams.get('category');
     const searchQuery = searchParams.get('q');
     const filters = {
-      page: 1,
-      limit: 100,
-      search: searchQuery || undefined, // Add search query from URL
-      category: categoryId || undefined,
+      page,
+      limit: itemsToShow,
+      search: searchQuery || undefined,
       brand: selectedBrands.length > 0 ? selectedBrands.join(',') : undefined,
       minPrice: priceRange.min > 0 ? priceRange.min : undefined,
       maxPrice: priceRange.max < 10000000 ? priceRange.max : undefined,
@@ -114,14 +91,16 @@ const ProductsPage = () => {
       minRating:
         selectedRatings.length > 0 ? Math.max(...selectedRatings.map((r) => r.value)) : undefined,
       inStock: selectedAvailability.includes('inStock') ? 'true' : undefined,
-      sort:
-        sortBy === 'price-asc'
-          ? 'price'
-          : sortBy === 'price-desc'
-            ? '-price'
-            : sortBy === 'name'
-              ? 'name'
-              : undefined,
+      location: selectedLocations.length > 0 ? selectedLocations.join(',') : undefined,
+      sortBy:
+        sortBy === 'price-asc' || sortBy === 'price-desc'
+          ? 'originalPrice' // Fixed: Map to backend field
+          : sortBy === 'name'
+            ? 'name'
+            : sortBy === 'position'
+              ? 'createdAt' // Map Position to Newest
+              : 'isFeatured',
+      sortOrder: sortBy === 'price-desc' || sortBy === 'position' ? 'desc' : 'asc',
     };
     // Remove undefined values
     Object.keys(filters).forEach((key) => filters[key] === undefined && delete filters[key]);
@@ -134,8 +113,12 @@ const ProductsPage = () => {
     selectedDiscounts,
     selectedRatings,
     selectedAvailability,
+    selectedLocations,
     sortBy,
+    page,
+    itemsToShow,
   ]);
+
 
   // Fetch products with filters
   useEffect(() => {
@@ -144,31 +127,14 @@ const ProductsPage = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const categoryId = searchParams.get('category');
-
-        console.log('🔍 Calling API with filters:', apiFilters);
-
-        const response = await productService.getAll(apiFilters);
+        const response = await productService.getProductsAdvanced(apiFilters);
 
         if (!isMounted) return;
-
-        console.log('📦 Full API Response:', response);
-        console.log('📦 Response.data:', response.data);
 
         // Backend returns data directly, not nested in data.data
         const productsData = Array.isArray(response.data)
           ? response.data
           : response.data?.data || [];
-
-        console.log('✅ ProductsPage API Response:', {
-          success: response.success,
-          dataCount: productsData.length,
-          total: response.count || response.pagination?.total,
-          filters: apiFilters,
-        });
-
-        console.log('📦 Sample Product from Backend:', productsData[0]);
-
         // Transform backend data to component format
         const transformed = productsData.map((product) => {
           // Get price from models array (first active model)
@@ -196,26 +162,9 @@ const ProductsPage = () => {
         });
 
         setProducts(transformed);
-        setTotalCount(response.count || response.pagination?.total || transformed.length);
-
-        // If no products and no filters applied, use fallback
-        if (transformed.length === 0 && !categoryId && selectedBrands.length === 0) {
-          console.log('⚠️ No products found, using fallback data');
-          const fallbackProducts = Array.from({ length: 15 }, (_, i) => ({
-            id: `fallback-${i + 1}`,
-            name: `Sample Product ${i + 1}`,
-            image: `https://images.unsplash.com/photo-${1595777457583 + i}?auto=format&fit=crop&w=300&q=80`,
-            price: Math.floor(Math.random() * 500000) + 100000,
-            originalPrice: Math.floor(Math.random() * 700000) + 200000,
-            discount: Math.floor(Math.random() * 50) + 10,
-            rating: (Math.random() * 2 + 3).toFixed(1),
-            sold: Math.floor(Math.random() * 1000),
-            stock: Math.floor(Math.random() * 100) + 10,
-            brand: 'fallback-brand',
-          }));
-          setProducts(fallbackProducts);
-          setTotalCount(15);
-        }
+        setTotalCount(response.count || response.pagination?.total || 0);
+        setTotalPages(response.pagination?.pages || Math.ceil((response.count || 0) / itemsToShow));
+        setLoading(false);
       } catch (err) {
         if (isMounted) {
           console.error('❌ Error fetching products:', err);
@@ -232,7 +181,7 @@ const ProductsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [apiFilters, searchParams, selectedBrands]);
+  }, [apiFilters, searchParams, selectedBrands, itemsToShow]);
 
   // Fetch available brands for filter
   useEffect(() => {
@@ -311,7 +260,7 @@ const ProductsPage = () => {
   }, [filteredProducts, sortBy, selectedSizes]);
 
   const totalProducts = totalCount || filteredProducts.length;
-  const displayedProducts = sortedProducts.slice(0, itemsToShow);
+  const displayedProducts = sortedProducts; // Already paginated from API
 
   if (loading) {
     return (
@@ -331,15 +280,10 @@ const ProductsPage = () => {
   const toggleFilter = (filterType, value) => {
     const setters = {
       location: setSelectedLocations,
-      shippingUnit: setSelectedShippingUnits,
       brand: setSelectedBrands,
       size: setSelectedSizes,
-      priceRange: setSelectedPriceRanges,
-      shopType: setSelectedShopTypes,
-      condition: setSelectedConditions,
-      payment: setSelectedPaymentOptions,
+      // priceRange handled separately via min/max state
       rating: setSelectedRatings,
-      service: setSelectedServices,
       discount: setSelectedDiscounts,
       availability: setSelectedAvailability,
     };
@@ -363,6 +307,11 @@ const ProductsPage = () => {
     const defaultRange = { min: 0, max: 10000000 };
     setTempPriceRange(defaultRange);
     setPriceRange(defaultRange);
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -402,7 +351,8 @@ const ProductsPage = () => {
               )}
             </div>
 
-            {/* Shipping Unit Filter */}
+            {/* Shipping Unit Filter - Hidden (Unsupported) */}
+            {/*
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shipping')}>
                 <span className={styles.filterTitle}>Shipping Unit</span>
@@ -410,20 +360,16 @@ const ProductsPage = () => {
               </button>
               {openSections.shipping && (
                 <div className={styles.filterContent}>
-                  {shippingUnits.map((unit) => (
-                    <label key={unit.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShippingUnits.includes(unit.id)}
-                        onChange={() => toggleFilter('shippingUnit', unit.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{unit.name}</span>
+                  {['Fast Delivery', 'Standard'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+            */}
 
             {/* Brand Filter */}
             <div className={styles.filterSection}>
@@ -503,7 +449,8 @@ const ProductsPage = () => {
               )}
             </div>
 
-            {/* Shop Type Filter */}
+            {/* Shop Type Filter - Hidden (Unsupported) */}
+            {/*
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shopType')}>
                 <span className={styles.filterTitle}>Shop Type</span>
@@ -511,23 +458,19 @@ const ProductsPage = () => {
               </button>
               {openSections.shopType && (
                 <div className={styles.filterContent}>
-                  {shopTypes.map((type) => (
-                    <label key={type.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShopTypes.includes(type.id)}
-                        onChange={() => toggleFilter('shopType', type.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{type.name}</span>
+                  {['Official Mall', 'Preferred', 'Local'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
-                  <button className={styles.showMoreBtn}>More</button>
                 </div>
               )}
             </div>
+            */}
 
-            {/* Condition Filter */}
+            {/* Condition Filter - Hidden (Unsupported) */}
+            {/*
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('condition')}>
                 <span className={styles.filterTitle}>Condition</span>
@@ -535,43 +478,36 @@ const ProductsPage = () => {
               </button>
               {openSections.condition && (
                 <div className={styles.filterContent}>
-                  {conditions.map((condition) => (
-                    <label key={condition.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedConditions.includes(condition.id)}
-                        onChange={() => toggleFilter('condition', condition.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{condition.name}</span>
+                   {['New', 'Used'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+            */}
 
-            {/* Payment Options Filter */}
-            <div className={styles.filterSection}>
+            {/* Payment Options Filter - Hidden (Unsupported) */}
+            {/*
+             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('payment')}>
                 <span className={styles.filterTitle}>Payment Options</span>
                 <i className={`bi bi-chevron-${openSections.payment ? 'up' : 'down'}`}></i>
               </button>
               {openSections.payment && (
                 <div className={styles.filterContent}>
-                  {paymentOptions.map((option) => (
-                    <label key={option.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedPaymentOptions.includes(option.id)}
-                        onChange={() => toggleFilter('payment', option.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{option.name}</span>
+                   {['COD', 'Credit Card'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+            */}
 
             {/* Rating Filter */}
             <div className={styles.filterSection}>
@@ -601,29 +537,6 @@ const ProductsPage = () => {
                     </label>
                   ))}
                   <button className={styles.showMoreBtn}>More</button>
-                </div>
-              )}
-            </div>
-
-            {/* Services Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('services')}>
-                <span className={styles.filterTitle}>Services & Promotions</span>
-                <i className={`bi bi-chevron-${openSections.services ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.services && (
-                <div className={styles.filterContent}>
-                  {services.map((service) => (
-                    <label key={service.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedServices.includes(service.id)}
-                        onChange={() => toggleFilter('service', service.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{service.name}</span>
-                    </label>
-                  ))}
                 </div>
               )}
             </div>
@@ -706,6 +619,12 @@ const ProductsPage = () => {
                 ))}
               </div>
             )}
+
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           </main>
         </div>
       </div>
