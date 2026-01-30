@@ -32,7 +32,7 @@ export const PUBLIC_ROUTES = {
 // Buyer Protected Routes
 export const BUYER_ROUTES = {
   DASHBOARD: '/buyer/dashboard',
-  PROFILE: '/buyer/profile',
+  PROFILE: '/buyer/profile?tab=account',
   ORDERS: '/buyer/profile?tab=orders',
   ORDER_DETAILS: '/buyer/orders/:id',
   FAVOURITES: '/buyer/favourites',
