@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Spinner } from 'react-bootstrap';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
-import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
+import { PUBLIC_ROUTES } from '@constants/routes';
 import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
+import addressService from '@services/api/addressService';
+import locationService from '@services/api/locationService';
+import { Modal, Form } from 'react-bootstrap';
+import toast, { Toaster } from 'react-hot-toast';
+
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -45,6 +50,90 @@ const ProfilePage = () => {
     repeatPassword: '',
   });
 
+  // Address State
+  const [addresses, setAddresses] = useState([]);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [addressForm, setAddressForm] = useState({
+    receiverName: '',
+    phone: '',
+    provinceCode: '', // Simplified for now, just text or code
+    provinceName: '',
+    wardCode: '',
+    wardName: '',
+    street: '',
+    details: '',
+    isDefault: false
+  });
+
+  // Location State
+  const [provinces, setProvinces] = useState([]);
+  // const [districts, setDistricts] = useState([]); // Removed for V2
+  const [wards, setWards] = useState([]);
+
+  // Fetch Provinces on Mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      const data = await locationService.getProvinces();
+      setProvinces(data);
+    };
+    fetchProvinces();
+  }, []);
+
+  // Fetch Wards when Province Changes (V2: Wards are under Province)
+  useEffect(() => {
+    if (addressForm.provinceCode) {
+      const fetchWards = async () => {
+        const data = await locationService.getWards(addressForm.provinceCode);
+        setWards(data);
+      };
+      fetchWards();
+    } else {
+      setWards([]);
+    }
+  }, [addressForm.provinceCode]);
+
+  // Fetch Wards when District Changes -> REMOVED
+  // useEffect(() => {
+  //   if (addressForm.districtCode) {
+  //     const fetchWards = async () => {
+  //       const data = await locationService.getWards(addressForm.districtCode);
+  //       setWards(data);
+  //     };
+  //     fetchWards();
+  //   } else {
+  //     setWards([]);
+  //   }
+  // }, [addressForm.districtCode]);
+
+  const handleProvinceChange = (e) => {
+    const code = e.target.value;
+    const province = provinces.find(p => p.code === Number(code));
+    setAddressForm(prev => ({
+      ...prev,
+      provinceCode: code,
+      provinceName: province ? province.name : '',
+      // districtCode: '', // Removed
+      // districtName: '', // Removed
+      wardCode: '',
+      wardName: ''
+    }));
+  };
+
+  // const handleDistrictChange = ... // Removed
+
+  const handleWardChange = (e) => {
+    const code = e.target.value;
+    const ward = wards.find(w => w.code === Number(code));
+    setAddressForm(prev => ({
+      ...prev,
+      wardCode: code,
+      wardName: ward ? ward.name : ''
+    }));
+  };
+
+
   // Update form data when user data is available
   useEffect(() => {
     if (user) {
@@ -70,7 +159,124 @@ const ProfilePage = () => {
     if (activeTab === 'orders') {
       fetchOrders(pagination.page);
     }
+    if (activeTab === 'address') {
+      fetchAddresses();
+    }
   }, [activeTab]);
+
+  const fetchAddresses = async () => {
+    setAddressLoading(true);
+    try {
+      const response = await addressService.getAddresses();
+      if (response && response.success) {
+        setAddresses(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error);
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const resetAddressForm = () => {
+    setAddressForm({
+      receiverName: user?.fullName || '',
+      phone: user?.phone || '',
+      provinceCode: '',
+      provinceName: '',
+      // districtCode: '',
+      // districtName: '',
+      wardCode: '',
+      wardName: '',
+      street: '',
+      details: '',
+      isDefault: false
+    });
+    setEditingAddress(null);
+  };
+
+  const handleAddAddressClick = () => {
+    resetAddressForm();
+    setShowAddressModal(true);
+  };
+
+  const handleEditAddressClick = (addr) => {
+    setEditingAddress(addr);
+    setAddressForm({
+      receiverName: addr.receiverName,
+      phone: addr.phone,
+      provinceCode: addr.provinceCode || '',
+      provinceName: addr.provinceName || '',
+      // districtCode: addr.districtCode || '',
+      // districtName: addr.districtName || '',
+      wardCode: addr.wardCode || '',
+      wardName: addr.wardName || '',
+      street: addr.street || '',
+      details: addr.details || '',
+      isDefault: addr.isDefault
+    });
+    setShowAddressModal(true);
+    // Trigger location fetches by setting codes (controlled by useEffects)
+    // Note: useEffects will run and fetch districts/wards based on these codes
+  };
+
+  const handleAddressFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setAddressForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSaveAddress = async () => {
+    try {
+      if (editingAddress) {
+        await addressService.updateAddress(editingAddress._id, addressForm);
+      } else {
+        await addressService.createAddress(addressForm);
+      }
+
+      setShowAddressModal(false);
+      fetchAddresses();
+      toast.success(editingAddress ? 'Address updated successfully' : 'Address added successfully');
+    } catch (error) {
+      console.error("Failed to save address:", error);
+      toast.error("Failed to save address. Please try again.");
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (window.confirm('Are you sure you want to delete this address?')) {
+      try {
+        await addressService.deleteAddress(id);
+        fetchAddresses();
+        toast.success('Address deleted successfully');
+      } catch (error) {
+        console.error("Failed to delete address:", error);
+        toast.error('Failed to delete address');
+      }
+    }
+  };
+
+  const handleSetDefaultAddress = async (id) => {
+    try {
+      await addressService.setDefaultAddress(id);
+      fetchAddresses();
+      toast.success('Default address updated');
+      // Optionally reload user profile to sync top-level user data
+      // dispatch(fetchUserProfile()); // if such action exists
+    } catch (error) {
+      console.error("Failed to set default address:", error);
+      toast.error('Failed to set default address');
+    }
+  };
+
+  const formatAddressString = (addr) => {
+    return [addr.details, addr.wardName, addr.provinceName]
+      .filter(part => part && part.trim() !== '')
+      .join(', ');
+  };
+
 
   const fetchOrders = async (page) => {
     setOrderLoading(true);
@@ -273,15 +479,10 @@ const ProfilePage = () => {
           >
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
             <circle cx="12" cy="10" r="3" />
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/854/854878.png"
-              style={{ display: 'none' }}
-              alt="map"
-            />
           </svg>
           Saved Addresses
         </h3>
-        <button className={styles.addAddressBtn} title="Add New Address">
+        <button className={styles.addAddressBtn} title="Add New Address" onClick={handleAddAddressClick}>
           <svg
             width="20"
             height="20"
@@ -299,43 +500,74 @@ const ProfilePage = () => {
       </div>
 
       <div className={styles.addressGrid}>
-        {[1].map((item) => ( // Kept static loop for address as API doesn't have address list yet, or just show user current address
-          <div key={item} className={styles.addressCard}>
+        {addresses.length === 0 && (
+          <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#666' }}>No addresses found. Add one now!</p>
+        )}
+        {addresses.map((addr) => (
+          <div key={addr._id} className={`${styles.addressCard} ${addr.isDefault ? styles.addressCardDefault : ''}`}>
             <div className={styles.cardHeader}>
               <span className={styles.cardType}>
-                Primary Address
+                {addr.isDefault ? 'Default Address' : 'Address'}
               </span>
-              <span className={styles.editLink}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                Edit
-              </span>
+              <div className={styles.cardActions} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {!addr.isDefault && (
+                  <span
+                    className={styles.setDefaultLink}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetDefaultAddress(addr._id);
+                    }}
+                    title="Set as Default"
+                  >
+                    Set Default
+                  </span>
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    className={styles.iconActionBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditAddressClick(addr);
+                    }}
+                    title="Edit Address"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={styles.iconActionBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAddress(addr._id);
+                    }}
+                    title="Delete Address"
+                    style={{ color: '#DC2626' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
             <div className={styles.cardBody}>
-              <span className={styles.cardName}>{user.fullName}</span>
-              <p style={{ margin: '0.5rem 0 0', lineHeight: '1.6' }}>
-                {user.phone}
-                <br />
-                {user.address}
+              <span className={styles.cardName}>{addr.receiverName}</span>
+              <p style={{ margin: '0.5rem 0 0', lineHeight: '1.6', color: '#4B5563' }}>
+                {addr.phone}
+              </p>
+              <p style={{ margin: '0.25rem 0 0', lineHeight: '1.6', color: '#6B7280' }}>
+                {formatAddressString(addr)}
               </p>
             </div>
           </div>
         ))}
       </div>
-      <button className={styles.saveAddressBtn}>Save Address</button>
     </div>
   );
+
 
   // Pro Max Badge Logic
   const getStatusBadge = (status) => {
@@ -610,6 +842,7 @@ const ProfilePage = () => {
 
   return (
     <div className={styles.pageLayout}>
+      <Toaster position="top-center" reverseOrder={false} />
       <div className={styles.mainContent}>
         <div className={styles.profileContainer}>
           {/* Mobile Navigation Bar */}
@@ -747,8 +980,123 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+      <Modal
+        show={showAddressModal}
+        onHide={() => setShowAddressModal(false)}
+        centered
+        contentClassName={styles.premiumModalContent}
+      >
+        <div className={styles.modalHeader}>
+          <h4 className={styles.modalTitle}>{editingAddress ? 'Edit Address' : 'Add New Address'}</h4>
+          <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div className={styles.modalBody}>
+          <Form>
+            <div className={styles.modalFormGroup}>
+              <label className={styles.modalLabel}>Receiver Name</label>
+              <input
+                type="text"
+                name="receiverName"
+                value={addressForm.receiverName}
+                onChange={handleAddressFormChange}
+                placeholder="Ex: John Doe"
+                className={styles.modalInput}
+              />
+            </div>
+            <div className={styles.modalFormGroup}>
+              <label className={styles.modalLabel}>Phone Number</label>
+              <input
+                type="text"
+                name="phone"
+                value={addressForm.phone}
+                onChange={handleAddressFormChange}
+                placeholder="Ex: 0912345678"
+                className={styles.modalInput}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className={styles.modalFormGroup}>
+                <label className={styles.modalLabel}>Province</label>
+                <select
+                  name="provinceCode"
+                  value={addressForm.provinceCode}
+                  onChange={handleProvinceChange}
+                  className={styles.modalSelect}
+                >
+                  <option value="">Select Province</option>
+                  {provinces.map((p) => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.modalFormGroup}>
+                <label className={styles.modalLabel}>Ward</label>
+                <select
+                  name="wardCode"
+                  value={addressForm.wardCode}
+                  onChange={handleWardChange}
+                  disabled={!addressForm.provinceCode}
+                  className={styles.modalSelect}
+                >
+                  <option value="">Select Ward</option>
+                  {wards.map((w) => (
+                    <option key={w.code} value={w.code}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className={styles.modalFormGroup}>
+              <label className={styles.modalLabel}>Street</label>
+              <input
+                type="text"
+                name="street"
+                value={addressForm.street}
+                onChange={handleAddressFormChange}
+                placeholder="Street name, number"
+                className={styles.modalInput}
+              />
+            </div>
+            <div className={styles.modalFormGroup}>
+              <label className={styles.modalLabel}>Specific Address</label>
+              <textarea
+                rows={2}
+                name="details"
+                value={addressForm.details}
+                onChange={handleAddressFormChange}
+                placeholder="Building, Floor, Unit etc."
+                className={styles.modalTextarea || styles.modalInput}
+              />
+            </div>
+            <div className={styles.modalFormGroup}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="isDefault"
+                  checked={addressForm.isDefault}
+                  onChange={handleAddressFormChange}
+                  style={{ width: '18px', height: '18px', accentColor: '#2563EB' }}
+                />
+                <span style={{ fontSize: '0.9375rem', color: '#374151', fontWeight: 500 }}>Set as default address</span>
+              </label>
+            </div>
+          </Form>
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button className={styles.modalCancelBtn} onClick={() => setShowAddressModal(false)}>
+            Cancel
+          </button>
+          <button className={styles.modalSaveBtn} onClick={handleSaveAddress}>
+            {editingAddress ? 'Update Address' : 'Save Address'}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };
+
 
 export default ProfilePage;
