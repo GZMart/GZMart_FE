@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Row, Col, Card, Button, Tag, Alert, Table, Spin, Divider, Space, Statistic, Modal } from 'antd';
-import { ArrowLeftOutlined, PrinterOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import PageHeader from '../../components/common/PageHeader';
+import { ArrowLeft, Printer, Trash2, Edit, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import OrderStatusTimeline from '../../components/seller/orders/OrderStatusTimeline';
 import { orderSellerService } from '../../services/api/orderSellerService';
 import { formatCurrency } from '../../utils/formatters';
+import styles from '../../assets/styles/seller/OrderDetailsPage.module.css';
 
 const OrderDetailsPage = () => {
   const { id: orderId } = useParams();
@@ -20,10 +19,36 @@ const OrderDetailsPage = () => {
 
   // Fetch order details
   useEffect(() => {
+    const fetchOrderDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [orderResponse, historyResponse] = await Promise.all([
+          orderSellerService.getById(orderId),
+          orderSellerService.getHistory(orderId),
+        ]);
+
+        if (orderResponse.success) {
+          setOrder(orderResponse.data);
+        } else {
+          setError('Failed to load order details');
+        }
+
+        if (historyResponse.success) {
+          setHistory(historyResponse.data?.history || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch order details:', err);
+        setError(err.message || 'Failed to load order details');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchOrderDetails();
   }, [orderId]);
 
-  const fetchOrderDetails = async () => {
+  const refetchOrderDetails = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -56,7 +81,7 @@ const OrderDetailsPage = () => {
 
   const handleStatusUpdateSuccess = () => {
     handleStatusModalClose();
-    fetchOrderDetails();
+    refetchOrderDetails();
   };
 
   const handleCancelOrder = async () => {
@@ -69,7 +94,7 @@ const OrderDetailsPage = () => {
 
         if (response.success) {
           alert('Order cancelled successfully');
-          fetchOrderDetails();
+          refetchOrderDetails();
         } else {
           alert('Failed to cancel order');
         }
@@ -104,33 +129,34 @@ const OrderDetailsPage = () => {
     }
   };
 
-  // Get status badge color
-  const getStatusTagColor = (status) => {
-    const colors = {
-      pending: 'gold',
-      processing: 'blue',
-      shipped: 'cyan',
-      delivered: 'green',
-      delivered_pending_confirmation: 'blue',
-      completed: 'green',
-      cancelled: 'red',
-      refunded: 'orange',
-      refund_pending: 'orange',
-      under_investigation: 'red',
+  // Get status badge info
+  const getStatusBadgeInfo = (status) => {
+    const statusInfo = {
+      pending: { bg: styles.statusPending, label: 'Pending', icon: Clock },
+      processing: { bg: styles.statusProcessing, label: 'Processing', icon: Clock },
+      shipped: { bg: styles.statusShipped, label: 'Shipped', icon: CheckCircle },
+      delivered: { bg: styles.statusDelivered, label: 'Delivered', icon: CheckCircle },
+      delivered_pending_confirmation: { bg: styles.statusPendingConfirmation, label: 'Pending Confirmation', icon: AlertCircle },
+      completed: { bg: styles.statusCompleted, label: 'Completed', icon: CheckCircle },
+      cancelled: { bg: styles.statusCancelled, label: 'Cancelled', icon: AlertCircle },
+      refunded: { bg: styles.statusRefunded, label: 'Refunded', icon: AlertCircle },
+      refund_pending: { bg: styles.statusPending, label: 'Refund Pending', icon: Clock },
+      under_investigation: { bg: styles.statusUnderInvestigation, label: 'Under Investigation', icon: AlertCircle },
     };
-    return colors[status] || 'default';
+    return statusInfo[status] || statusInfo.pending;
   };
 
-  // Get payment status badge color
-  const getPaymentStatusTagColor = (status) => {
-    const colors = {
-      pending: 'gold',
-      completed: 'green',
-      failed: 'red',
-      refunding: 'blue',
-      refunded: 'green',
+  // Get payment status badge info
+  const getPaymentStatusBadgeInfo = (status) => {
+    const paymentStatusInfo = {
+      pending: { bg: styles.paymentPending, label: 'Pending', icon: Clock },
+      paid: { bg: styles.paymentPaid, label: 'Paid', icon: CheckCircle },
+      completed: { bg: styles.paymentCompleted, label: 'Paid', icon: CheckCircle },
+      failed: { bg: styles.paymentFailed, label: 'Failed', icon: AlertCircle },
+      refunded: { bg: styles.paymentRefunded, label: 'Refunded', icon: AlertCircle },
+      refund_pending: { bg: styles.paymentPending, label: 'Refund Pending', icon: Clock },
     };
-    return colors[status] || 'default';
+    return paymentStatusInfo[status] || paymentStatusInfo.pending;
   };
 
   // Prepare items table data
@@ -144,64 +170,13 @@ const OrderDetailsPage = () => {
     tierSelections: item.tierSelections,
   })) || [];
 
-  const itemsColumns = [
-    {
-      title: 'Product',
-      dataIndex: 'productName',
-      key: 'productName',
-      width: 200,
-      render: (text, record) => (
-        <div>
-          <p style={{ marginBottom: 4 }}>{text}</p>
-          {record.tierSelections && (
-            <p style={{ marginBottom: 0, color: '#999', fontSize: '12px' }}>
-              {Object.entries(record.tierSelections)
-                .map(([key, value]) => `${key}: ${value}`)
-                .join(', ')}
-            </p>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'SKU',
-      dataIndex: 'sku',
-      key: 'sku',
-      width: 100,
-    },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
-      width: 80,
-      align: 'center',
-    },
-    {
-      title: 'Price',
-      dataIndex: 'price',
-      key: 'price',
-      width: 120,
-      render: (price) => formatCurrency(price),
-    },
-    {
-      title: 'Subtotal',
-      dataIndex: 'subtotal',
-      key: 'subtotal',
-      width: 120,
-      render: (subtotal) => <strong>{formatCurrency(subtotal)}</strong>,
-    },
-  ];
-
   // Show loading state
   if (loading) {
     return (
-      <div style={{ padding: '24px' }}>
-        <PageHeader title="Order Details" showButton={false} />
-        <Card style={{ marginTop: '24px' }}>
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <Spin size="large" />
-          </div>
-        </Card>
+      <div className={styles.container}>
+        <div className={styles.loadingState}>
+          <div className={styles.spinner}></div>
+        </div>
       </div>
     );
   }
@@ -209,196 +184,243 @@ const OrderDetailsPage = () => {
   // Show error state
   if (error || !order) {
     return (
-      <div style={{ padding: '24px' }}>
-        <PageHeader title="Order Details" showButton={false} />
-        <Card style={{ marginTop: '24px' }}>
-          <Alert
-            message="Error Loading Order"
-            description={error || 'Order not found'}
-            type="error"
-            showIcon
-            style={{ marginBottom: '16px' }}
-          />
-          <Button
-            type="primary"
-            icon={<ArrowLeftOutlined />}
+      <div className={styles.container}>
+        <button
+          className={styles.backButton}
+          onClick={() => (window.location.href = '/seller/orders')}
+          title="Back to Orders"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div className={styles.errorState}>
+          <div className={styles.errorIcon}>⚠️</div>
+          <div className={styles.errorTitle}>Error Loading Order</div>
+          <div className={styles.errorMessage}>{error || 'Order not found'}</div>
+          <button
+            className={styles.actionButtonPrimary}
+            style={{ margin: '0 auto' }}
             onClick={() => (window.location.href = '/seller/orders')}
           >
             Back to Orders
-          </Button>
-        </Card>
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Space style={{ marginBottom: '24px' }} direction="vertical" style={{ width: '100%' }}>
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => (window.location.href = '/seller/orders')}
-        >
-          Back to Orders
-        </Button>
-        <PageHeader
-          title={`Order #${order.orderNumber}`}
-          subtitle={`Created on ${new Date(order.createdAt).toLocaleDateString('vi-VN')}`}
-          showButton={false}
-        />
-      </Space>
+    <div className={styles.container}>
+      {/* Back Button */}
+      <button
+        className={styles.backButton}
+        onClick={() => (window.location.href = '/seller/orders')}
+        title="Back to Orders"
+      >
+        <ArrowLeft size={18} />
+      </button>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={16}>
-          {/* Order Summary */}
-          <Card
-            title="Order Summary"
-            extra={
-              <Space>
-                <Tag color={getStatusTagColor(order.status)}>
-                  {order.status.replace(/_/g, ' ').toUpperCase()}
-                </Tag>
-                <Tag color={getPaymentStatusTagColor(order.paymentStatus)}>
-                  {order.paymentStatus?.toUpperCase() || 'PENDING'}
-                </Tag>
-              </Space>
-            }
-            style={{ marginBottom: '24px' }}
-          >
-            <Row gutter={[24, 24]}>
-              <Col xs={24} sm={12}>
-                <div>
-                  <p style={{ color: '#999', marginBottom: '4px' }}>Customer</p>
-                  <h5 style={{ marginBottom: '4px' }}>{order.userId?.name || 'Unknown'}</h5>
-                  <p style={{ color: '#999' }}>{order.userId?.email || 'N/A'}</p>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div>
-                  <p style={{ color: '#999', marginBottom: '4px' }}>Order Date</p>
-                  <h5 style={{ marginBottom: '4px' }}>
-                    {new Date(order.createdAt).toLocaleDateString('vi-VN')}
-                  </h5>
-                  <p style={{ color: '#999' }}>
-                    {new Date(order.createdAt).toLocaleTimeString('vi-VN')}
-                  </p>
-                </div>
-              </Col>
-            </Row>
+      {/* Header */}
+      <div className={styles.header}>
+        <div>
+          <h1>Order #{order.orderNumber}</h1>
+          <p>Created on {new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
+        </div>
+      </div>
 
-            <Divider />
+      {/* Main Content */}
+      <div className={styles.content}>
+        {/* Left Column */}
+        <div>
+          {/* Order Summary Card */}
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Order Summary</h3>
+              <div className={styles.statusBadges}>
+                {(() => {
+                  const orderStatus = getStatusBadgeInfo(order.status);
+                  const OrderStatusIcon = orderStatus.icon;
+                  return (
+                    <div className={`${styles.badge} ${orderStatus.bg}`}>
+                      <OrderStatusIcon size={14} />
+                      Order: {orderStatus.label}
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  const paymentStatus = getPaymentStatusBadgeInfo(order.paymentStatus);
+                  const PaymentStatusIcon = paymentStatus.icon;
+                  return (
+                    <div className={`${styles.badge} ${paymentStatus.bg}`}>
+                      <PaymentStatusIcon size={14} />
+                      Payment: {paymentStatus.label}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
 
-            <Row gutter={[24, 24]}>
-              <Col xs={24} sm={12}>
-                <div>
-                  <p style={{ color: '#999', marginBottom: '4px' }}>Shipping Address</p>
-                  <h5>{order.shippingAddress}</h5>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div>
-                  <p style={{ color: '#999', marginBottom: '4px' }}>Shipping Method</p>
-                  <h5>{order.shippingMethod?.toUpperCase()}</h5>
-                </div>
-              </Col>
-            </Row>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Customer</span>
+                <span className={styles.infoValue}>{order.userId?.fullName || order.userId?.name || 'Unknown'}</span>
+              </div>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Email</span>
+                <span className={styles.infoValue}>{order.userId?.email || 'N/A'}</span>
+              </div>
+            </div>
 
-            <Divider />
+            <div className={styles.infoGrid}>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Order Date</span>
+                <span className={styles.infoValue}>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
+              </div>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Order Time</span>
+                <span className={styles.infoValue}>{new Date(order.createdAt).toLocaleTimeString('vi-VN')}</span>
+              </div>
+            </div>
 
-            <Row gutter={[24, 24]}>
-              <Col xs={24} sm={12}>
-                <div>
-                  <p style={{ color: '#999', marginBottom: '4px' }}>Payment Method</p>
-                  <h5>{order.paymentMethod?.toUpperCase().replace(/_/g, ' ')}</h5>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div>
-                  <p style={{ color: '#999', marginBottom: '4px' }}>Notes</p>
-                  <h5>{order.notes || 'No notes'}</h5>
-                </div>
-              </Col>
-            </Row>
-          </Card>
+            <div className={styles.infoDivider}></div>
 
-          {/* Order Items */}
-          <Card title={`Order Items (${order.items?.length || 0})`} style={{ marginBottom: '24px' }}>
-            <Table
-              columns={itemsColumns}
-              dataSource={itemsTableData}
-              pagination={false}
-              scroll={{ x: 500 }}
-              bordered
-            />
-          </Card>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Shipping Address</span>
+                <span className={styles.infoValue}>{order.shippingAddress}</span>
+              </div>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Shipping Method</span>
+                <span className={styles.infoValue}>{order.shippingMethod?.toUpperCase() || 'N/A'}</span>
+              </div>
+            </div>
 
-          {/* Status Timeline */}
+            <div className={styles.infoGrid}>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Payment Method</span>
+                <span className={styles.infoValue}>{order.paymentMethod?.toUpperCase().replace(/_/g, ' ') || 'N/A'}</span>
+              </div>
+              <div className={styles.infoGroup}>
+                <span className={styles.infoLabel}>Notes</span>
+                <span className={styles.infoValue}>{order.notes || 'No notes'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Order Items Card */}
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Order Items ({order.items?.length || 0})</h3>
+            </div>
+
+            <table className={styles.itemsTable}>
+              <thead className={styles.tableHeader}>
+                <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th style={{ textAlign: 'center' }}>Qty</th>
+                  <th style={{ textAlign: 'right' }}>Price</th>
+                  <th style={{ textAlign: 'right' }}>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody className={styles.tableBody}>
+                {itemsTableData.map((item) => (
+                  <tr key={item.key}>
+                    <td>
+                      <div className={styles.productCell}>
+                        <span className={styles.productName}>{item.productName}</span>
+                        {item.tierSelections && Object.keys(item.tierSelections).length > 0 && (
+                          <span className={styles.productTier}>
+                            {Object.entries(item.tierSelections)
+                              .map(([key, value]) => `${key}: ${value}`)
+                              .join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>{item.sku}</td>
+                    <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                    <td style={{ textAlign: 'right' }}>{formatCurrency(item.price)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <strong>{formatCurrency(item.subtotal)}</strong>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Status Timeline Card */}
           {history.length > 0 && (
-            <Card title="Status History">
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>Status History</h3>
+              </div>
               <OrderStatusTimeline history={history} />
-            </Card>
+            </div>
           )}
-        </Col>
+        </div>
 
-        {/* Sidebar */}
-        <Col xs={24} lg={8}>
+        {/* Right Column */}
+        <div>
           {/* Order Total Card */}
-          <Card title="Order Total" style={{ marginBottom: '24px' }}>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>Subtotal:</span>
-                <strong>{formatCurrency(order.subtotal)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>Shipping:</span>
-                <strong>{formatCurrency(order.shippingCost)}</strong>
-              </div>
-              {order.tax > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>Tax:</span>
-                  <strong>{formatCurrency(order.tax)}</strong>
-                </div>
-              )}
-              {order.discount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span>Discount:</span>
-                  <strong style={{ color: '#ff4d4f' }}>-{formatCurrency(order.discount)}</strong>
-                </div>
-              )}
+          <div className={styles.totalCard}>
+            <h3 className={styles.cardTitle} style={{ marginBottom: '16px' }}>Order Total</h3>
+
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>Subtotal:</span>
+              <span className={styles.totalValue}>{formatCurrency(order.subtotal || 0)}</span>
             </div>
-            <Divider />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px' }}>Total:</span>
-              <h3 style={{ color: '#1890ff', marginBottom: 0 }}>{formatCurrency(order.totalPrice)}</h3>
+
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>Shipping:</span>
+              <span className={styles.totalValue}>{formatCurrency(order.shippingCost || 0)}</span>
             </div>
-          </Card>
+
+            {order.tax > 0 && (
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Tax:</span>
+                <span className={styles.totalValue}>{formatCurrency(order.tax)}</span>
+              </div>
+            )}
+
+            {order.discount > 0 && (
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Discount:</span>
+                <span className={`${styles.totalValue} ${styles.discountValue}`}>-{formatCurrency(order.discount)}</span>
+              </div>
+            )}
+
+            <div className={styles.totalDivider}></div>
+
+            <div className={styles.totalFinal}>
+              <span className={styles.totalFinalLabel}>Total:</span>
+              <span className={styles.totalFinalValue}>{formatCurrency(order.totalPrice)}</span>
+            </div>
+          </div>
 
           {/* Actions Card */}
-          <Card title="Actions">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button
-                type="primary"
-                block
-                icon={<EditOutlined />}
+          <div className={styles.actionsCard}>
+            <div className={styles.actionsList}>
+              <button
+                className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
                 onClick={() => setShowStatusModal(true)}
                 disabled={order.status === 'completed' || order.status === 'cancelled'}
               >
+                <Edit size={16} />
                 Update Status
-              </Button>
-              <Button
-                type="default"
-                block
-                icon={<PrinterOutlined />}
+              </button>
+
+              <button
+                className={`${styles.actionButton} ${styles.actionButtonSecondary}`}
                 onClick={handlePrintDeliveryNote}
-                loading={actionLoading}
+                disabled={actionLoading}
               >
-                Print Delivery Note
-              </Button>
-              <Button
-                type="primary"
-                danger
-                block
-                icon={<DeleteOutlined />}
+                <Printer size={16} />
+                Print Delivery
+              </button>
+
+              <button
+                className={`${styles.actionButton} ${styles.actionButtonDanger}`}
                 onClick={handleCancelOrder}
                 disabled={
                   order.status === 'completed' ||
@@ -406,12 +428,13 @@ const OrderDetailsPage = () => {
                   actionLoading
                 }
               >
+                <Trash2 size={16} />
                 Cancel Order
-              </Button>
-            </Space>
-          </Card>
-        </Col>
-      </Row>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Status Update Modal */}
       {order && (
