@@ -16,6 +16,7 @@ import authReducer from './slices/authSlice';
 import cartReducer from './slices/cartSlice';
 import purchaseOrderReducer from './slices/purchaseOrderSlice';
 import inventoryReducer from './slices/inventorySlice';
+import erpReducer from './slices/erpSlice';
 
 // Persist configuration
 const persistConfig = {
@@ -50,6 +51,7 @@ export const store = configureStore({
     cart: persistedCartReducer,
     purchaseOrder: purchaseOrderReducer,
     inventory: inventoryReducer,
+    erp: erpReducer,
     // Add more reducers as needed:
     // products: productsReducer,
     // orders: ordersReducer,
