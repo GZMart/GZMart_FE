@@ -12,7 +12,6 @@ const ERPLayout = ({ children }) => {
 
   return (
     <div className="erp-layout d-flex flex-column" style={{ minHeight: '100vh' }}>
-
       {/* Top Navigation Bar */}
       <header className="erp-header bg-primary text-white shadow-sm">
         <Container fluid>
@@ -250,6 +249,71 @@ const ERPLayout = ({ children }) => {
                     style={{ fontSize: '18px', marginRight: '12px' }}
                   ></i>
                   Promotions
+                </Nav.Link>
+
+                <hr className="my-3 mx-3" style={{ borderColor: '#e5e7eb', opacity: 1 }} />
+
+                {/* ERP Section - Seller Back Office */}
+                <div
+                  className="px-4 mb-3 mt-2"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  ERP - BACK OFFICE
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to="/erp/dashboard"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname === '/erp/dashboard' ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname === '/erp/dashboard' ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-grid-3x3-gap"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
+                  ERP Dashboard
+                </Nav.Link>
+
+                <Nav.Link
+                  as={Link}
+                  to="/erp/suppliers"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname.includes('/erp/suppliers') ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname.includes('/erp/suppliers') ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-truck" style={{ fontSize: '18px', marginRight: '12px' }}></i>
+                  Suppliers
+                </Nav.Link>
+
+                <Nav.Link
+                  as={Link}
+                  to="/erp/purchase-orders"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname.includes('/erp/purchase-orders')
+                      ? '#0066cc'
+                      : '#6b7280',
+                    fontWeight: location.pathname.includes('/erp/purchase-orders') ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i
+                    className="bi bi-file-earmark-text"
+                    style={{ fontSize: '18px', marginRight: '12px' }}
+                  ></i>
+                  Purchase Orders
                 </Nav.Link>
 
                 <hr className="my-3 mx-3" style={{ borderColor: '#e5e7eb', opacity: 1 }} />

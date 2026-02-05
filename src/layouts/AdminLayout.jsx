@@ -176,8 +176,12 @@ const AdminLayout = ({ children }) => {
                   to={ADMIN_ROUTES.SYSTEM_VOUCHERS}
                   className="px-4 py-2 d-flex align-items-center"
                   style={{
-                    color: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS) ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS) ? '500' : '400',
+                    color: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS)
+                      ? '#0066cc'
+                      : '#6b7280',
+                    fontWeight: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS)
+                      ? '500'
+                      : '400',
                     textDecoration: 'none',
                   }}
                 >
@@ -288,6 +292,39 @@ const AdminLayout = ({ children }) => {
                   Banners
                 </Nav.Link>
 
+                {/* ERP Monitoring Section - Admin View Only */}
+                <div
+                  className="px-4 mb-2 mt-4"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#9ca3af',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  ERP MONITORING
+                </div>
+
+                <Nav.Link
+                  as={Link}
+                  to="/erp/dashboard"
+                  className="px-4 py-2 d-flex align-items-center"
+                  style={{
+                    color: location.pathname.includes('/erp') ? '#0066cc' : '#6b7280',
+                    fontWeight: location.pathname.includes('/erp') ? '500' : '400',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <i className="bi bi-eye" style={{ fontSize: '18px', marginRight: '12px' }}></i>
+                  ERP Overview
+                  <span
+                    className="badge bg-secondary ms-2"
+                    style={{ fontSize: '9px', padding: '2px 6px' }}
+                  >
+                    VIEW ONLY
+                  </span>
+                </Nav.Link>
+
                 {/* Monitoring Section */}
                 <div
                   className="px-4 mb-2 mt-4"
@@ -344,7 +381,7 @@ const AdminLayout = ({ children }) => {
           </Row>
         </Container>
       </div>
-    </div >
+    </div>
   );
 };
 

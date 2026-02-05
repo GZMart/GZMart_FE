@@ -30,6 +30,14 @@ const TrackOrderDetailsPage = lazy(() => import('@pages/buyer/TrackOrderDetailsP
 const MyDealsPage = lazy(() => import('@pages/buyer/MyDealsPage'));
 const DealDetailsPage = lazy(() => import('@pages/buyer/DealDetailsPage'));
 
+// ERP Pages (New Mini-ERP/Sourcing Module)
+const ERPDashboard = lazy(() => import('@pages/erp/ERPDashboard'));
+const SuppliersPage = lazy(() => import('@pages/erp/SuppliersPage'));
+const SupplierDetailPage = lazy(() => import('@pages/erp/SupplierDetailPage'));
+const PurchaseOrdersPage = lazy(() => import('@pages/erp/PurchaseOrdersPage'));
+const CreatePurchaseOrderPage = lazy(() => import('@pages/erp/CreatePurchaseOrderPage'));
+const PurchaseOrderDetailPage = lazy(() => import('@pages/erp/PurchaseOrderDetailPage'));
+
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
 const POListPage = lazy(() => import('@pages/seller/PurchaseOrders/POListPage'));
@@ -247,6 +255,51 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
+
+  // ERP Routes (Mini-ERP/Sourcing Module) - Admin & Seller only
+  {
+    path: '/erp/dashboard',
+    element: ERPDashboard,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/suppliers',
+    element: SuppliersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/suppliers/:id',
+    element: SupplierDetailPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/purchase-orders',
+    element: PurchaseOrdersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/purchase-orders/create',
+    element: CreatePurchaseOrderPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/purchase-orders/:id',
+    element: PurchaseOrderDetailPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+
   {
     path: '/seller/purchase-orders',
     element: POListPage,
