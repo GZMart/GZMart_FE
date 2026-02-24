@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
+import RequireLoginModal from '../../components/common/RequireLoginModal';
 import { productService } from '../../services/api';
 import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
@@ -44,7 +45,9 @@ const getPriceRange = (product) => {
 };
 
 const findModel = (product, tierIndex) => {
-  if (!product || !product.models || !tierIndex || tierIndex.length === 0) return null;
+  if (!product || !product.models || !tierIndex || tierIndex.length === 0) {
+    return null;
+  }
   // Backend models use 'tierIndex' (e.g., [0, 1])
   return product.models.find(
     (m) =>
@@ -55,7 +58,9 @@ const findModel = (product, tierIndex) => {
 };
 
 const getProductImages = (product) => {
-  if (!product) return [];
+  if (!product) {
+    return [];
+  }
   // Prefer images from the first tier (usually Color) if available and populated
   if (product.tier_variations && product.tier_variations.length > 0) {
     const firstTier = product.tier_variations[0];
@@ -90,6 +95,7 @@ const ProductDetailsPage = () => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [isFavourite, setIsFavourite] = useState(false);
   const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const user = useSelector((state) => state.auth.user);
 
@@ -137,6 +143,15 @@ const ProductDetailsPage = () => {
           // Ensure other fields are preserved
           models: productData.models || [],
           price: productData.originalPrice || 0, // Base price
+          // Add mock data for missing optional fields
+          flashSale: productData.flashSale || {
+            timeText: 'FLASH SALE STARTS IN 21:00, TODAY'
+          },
+          shopVouchers: productData.shopVouchers || [
+            { discount: 'Save 10k' }
+          ],
+          shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
+          warranty: productData.warranty || 'Free return within 15 days • Warranty included'
         };
 
         setProduct(transformed);
@@ -227,8 +242,9 @@ const ProductDetailsPage = () => {
     newIndex[tierLevel] = optionIndex;
     setSelectedTierIndex(newIndex);
 
-    // Update Image if first tier (Color) has images
-    if (tierLevel === 0) {
+    // Update Image if this tier has images (color tier)
+    const tier = product.tier_variations?.[tierLevel];
+    if (tier?.images && tier.images.length > optionIndex) {
       setSelectedImage(optionIndex);
     }
 
@@ -256,6 +272,11 @@ const ProductDetailsPage = () => {
   }, [activeModel, product]);
 
   const handleAddToCart = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
     if (!product) return;
 
     // Validate Selection
@@ -290,19 +311,20 @@ const ProductDetailsPage = () => {
       if (product.tier_variations?.length > 0) {
         product.tier_variations.forEach((tier, idx) => {
           const selectedOption = tier.options[selectedTierIndex[idx]];
+          const tierNameLower = tier.name.toLowerCase();
+          
           if (
-            tier.name.toLowerCase().includes('color') ||
-            tier.name.toLowerCase().includes('màu')
+            tierNameLower.includes('color') ||
+            tierNameLower.includes('màu') ||
+            tierNameLower.includes('mau')
           ) {
             color = selectedOption;
           } else if (
-            tier.name.toLowerCase().includes('size') ||
-            tier.name.toLowerCase().includes('kích')
+            tierNameLower.includes('size') ||
+            tierNameLower.includes('kích') ||
+            tierNameLower.includes('kich')
           ) {
             size = selectedOption;
-          } else {
-            if (idx === 0) color = selectedOption;
-            if (idx === 1) size = selectedOption;
           }
         });
       }
@@ -310,10 +332,10 @@ const ProductDetailsPage = () => {
       // Dispatch Add to Cart
       await dispatch(
         addToCart({
-          product: product,
-          quantity: quantity,
-          color: color,
-          size: size,
+          product,
+          quantity,
+          color,
+          size,
         })
       ).unwrap();
 
@@ -327,14 +349,17 @@ const ProductDetailsPage = () => {
   };
 
   const handleBuyNow = () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
     handleAddToCart();
     navigate('/cart');
   };
 
   const handleToggleFavourite = async () => {
     if (!user) {
-      toast.info('Please login to add favourites');
-      navigate('/login');
+      setShowLoginModal(true);
       return;
     }
 
@@ -422,59 +447,107 @@ const ProductDetailsPage = () => {
         <div className={styles.infoSection}>
           <h1 className={styles.productTitle}>{product.name}</h1>
 
-          <div className={styles.priceSection}>
-            <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
-            {product.originalPrice > currentPrice && (
-              <>
-                <span className={styles.originalPrice}>
-                  {formatCurrency(product.originalPrice)}
-                </span>
-                <span className={styles.discount}>
-                  {Math.round((1 - currentPrice / product.originalPrice) * 100)}% OFF
-                </span>
-              </>
-            )}
+          {/* Rating Section */}
+          <div className={styles.ratingSection}>
+            <div className={styles.ratingStars}>
+              {[...Array(5)].map((_, i) => (
+                <i key={i} className={`bi ${i < Math.floor(product.rating || 0) ? 'bi-star-fill' : 'bi-star'}`}></i>
+              ))}
+            </div>
+            <span className={styles.ratingValue}>{product.rating || 0}</span>
+            <span className={styles.reviewCount}>({product.reviewCount || 0} Reviews)</span>
           </div>
 
-          {/* Tiers / Variants Selection */}
-          {product.tier_variations?.map((tier, tierIdx) => (
-            <div key={tierIdx} className={tierIdx === 0 ? styles.colorSection : styles.sizeSection}>
-              <div className={tierIdx === 0 ? styles.colorHeader : styles.sizeHeader}>
-                <span className={styles.label}>{tier.name}:</span>
-                <span className={tierIdx === 0 ? styles.selectedValue : styles.sizeValue}>
-                  {tier.options[selectedTierIndex[tierIdx]]}
-                </span>
+          {/* Price & Discount Section */}
+          <div className={styles.priceSection}>
+            <div className={styles.priceRow}>
+              <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
+              {product.originalPrice > currentPrice && (
+                <>
+                  <span className={styles.originalPrice}>
+                    {formatCurrency(product.originalPrice)}
+                  </span>
+                  <span className={styles.discount}>
+                    -{Math.round((1 - currentPrice / product.originalPrice) * 100)}%
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Flash Sale Section */}
+          {product.flashSale && (
+            <div className={styles.flashSaleSection}>
+              <i className="bi bi-lightning-fill"></i>
+              <span className={styles.flashSaleLabel}>FLASH SALE</span>
+              <span className={styles.flashSaleTime}>{product.flashSale.timeText}</span>
+            </div>
+          )}
+
+          {/* Voucher Section */}
+          {product.shopVouchers && product.shopVouchers.length > 0 && (
+            <div className={styles.voucherSection}>
+              <div className={styles.voucherLabel}>Shop Vouchers</div>
+              <div className={styles.voucherItems}>
+                {product.shopVouchers.map((voucher, idx) => (
+                  <div key={idx} className={styles.voucherItem}>
+                    <span className={styles.voucherDiscount}>{voucher.discount}</span>
+                  </div>
+                ))}
               </div>
-              <div className={tierIdx === 0 ? styles.colorOptions : styles.sizeOptions}>
+            </div>
+          )}
+
+          {/* Shipping Info */}
+          <div className={styles.shippingInfoSection}>
+            <div className={styles.shippingInfoItem}>
+              <i className="bi bi-truck"></i>
+              <div>
+                <div className={styles.shippingTitle}>Shipping</div>
+                {product.shippingInfo ? (
+                  <div className={styles.shippingDetail}>{product.shippingInfo}</div>
+                ) : (
+                  <div className={styles.shippingDetail}>Delivery in 2-3 days • Free shipping</div>
+                )}
+              </div>
+            </div>
+            <div className={styles.shippingInfoItem}>
+              <i className="bi bi-shield-check"></i>
+              <div>
+                <div className={styles.shippingTitle}>Warranty</div>
+                <div className={styles.shippingDetail}>{product.warranty || 'Free return within 15 days'}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tiers / Variants Selection - Compact */}
+          {product.tier_variations?.map((tier, tierIdx) => (
+            <div key={tierIdx} className={styles.tierSection}>
+              <div className={styles.tierHeader}>
+                <span className={styles.tierLabel}>{tier.name}:</span>
+              </div>
+              <div className={styles.tierOptions}>
                 {tier.options.map((option, optIdx) => {
                   const isSelected = selectedTierIndex[tierIdx] === optIdx;
                   const isDisabled = isOptionDisabled(tierIdx, optIdx);
-                  const isColorTier = tierIdx === 0 && tier.images?.[optIdx];
 
                   return (
                     <button
                       key={optIdx}
                       className={`
-                        ${isColorTier ? styles.colorOption : styles.sizeButton} 
+                        ${styles.tierOption} 
                         ${isSelected ? styles.active : ''}
                         ${isDisabled ? styles.disabled : ''}
                       `}
-                      onClick={() => !isDisabled && handleTierChange(tierIdx, optIdx)}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          handleTierChange(tierIdx, optIdx);
+                        }
+                      }}
                       disabled={isDisabled}
                       title={isDisabled ? 'Out of Stock' : option}
                     >
-                      {isColorTier ? (
-                        <>
-                          <img
-                            src={tier.images[optIdx]}
-                            alt={option}
-                            className={styles.colorImage}
-                          />
-                          {isSelected && <i className="bi bi-check" />}
-                        </>
-                      ) : (
-                        option
-                      )}
+                      {option}
                     </button>
                   );
                 })}
@@ -721,6 +794,9 @@ const ProductDetailsPage = () => {
           ))}
         </div>
       </div>
+
+      {/* Login Required Modal */}
+      <RequireLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 };
