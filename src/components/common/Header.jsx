@@ -509,11 +509,13 @@ const Header = () => {
                 <h2 className="h3 fw-bolder mb-0 tracking-tight">GZMart</h2>
               </Link>
               <div className="d-none d-xl-block">
-                <img
-                  src="/flashsale.png"
-                  alt="Flash Sale"
-                  style={{ height: '45px', objectFit: 'contain' }}
-                />
+                <Link to={PUBLIC_ROUTES.DEALS}>
+                  <img
+                    src="/flashsale.png"
+                    alt="Flash Sale"
+                    style={{ height: '45px', objectFit: 'contain', cursor: 'pointer' }}
+                  />
+                </Link>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Form, Row, Col, Spinner, Nav } from 'react-bootstrap';
 import { productService } from '../../../services/api/productService';
 import { categoryService } from '../../../services/api/categoryService';
@@ -34,6 +34,8 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
   const [videoPreviews, setVideoPreviews] = useState([]);
 
   const isEditMode = !!editingProduct;
+  // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
+  const skipGenerateModelsRef = useRef(false);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -87,6 +89,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
           };
         });
 
+        skipGenerateModelsRef.current = true; // Don't regenerate models from backend data
         setTiers(transformedTiers);
         setModels(editingProduct.models || []);
       } else {
@@ -110,10 +113,9 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
         setVideoPreviews(editingProduct.videos);
       }
 
-      // Set attribute values
-      if (editingProduct.attributes) {
-        setAttributeValues(editingProduct.attributes);
-      }
+      // Set attribute values - will be properly merged in fetchAttributes
+      // Store raw backend attributes for merging after definitions are fetched
+      const rawAttributes = editingProduct.attributes || [];
 
       // Fetch attributes for the category
       const categoryId =
@@ -122,7 +124,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
           : editingProduct.categoryId;
 
       if (categoryId) {
-        fetchAttributes(categoryId);
+        fetchAttributes(categoryId, rawAttributes);
       }
     } else if (!show) {
       // Reset form when modal closes
@@ -150,9 +152,13 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
     }
   }, [editingProduct, show]);
 
-  // Generate models when tiers change
+  // Generate models when tiers change (but not during edit mode initialization)
   useEffect(() => {
     if (productType === 'variant' && tiers.length > 0) {
+      if (skipGenerateModelsRef.current) {
+        skipGenerateModelsRef.current = false; // Consume the flag
+        return;
+      }
       generateModels();
     }
   }, [tiers, productType]);
@@ -171,6 +177,15 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
       return;
     }
 
+    // Create a map of existing models by tierIndex for preservation
+    const existingModelsMap = new Map();
+    models.forEach((model) => {
+      if (model.tierIndex && Array.isArray(model.tierIndex)) {
+        const key = model.tierIndex.join('-');
+        existingModelsMap.set(key, model);
+      }
+    });
+
     // Generate cartesian product
     const cartesian = (...arrays) => {
       return arrays.reduce((acc, array) => acc.flatMap((x) => array.map((y) => [...x, y])), [[]]);
@@ -179,13 +194,27 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
     const tierIndices = validTiers.map((tier) => tier.options.map((_, index) => index));
     const combinations = cartesian(...tierIndices);
 
-    const newModels = combinations.map((tierIndex) => ({
-      tierIndex,
-      price: parseFloat(formData.originalPrice) || 0,
-      costPrice: parseFloat(formData.costPrice) || 0,
-      stock: 0,
-      sku: '',
-    }));
+    const newModels = combinations.map((tierIndex) => {
+      const key = tierIndex.join('-');
+      const existingModel = existingModelsMap.get(key);
+
+      // If model exists, preserve its values (stock, price, sku, etc.)
+      if (existingModel) {
+        return {
+          ...existingModel,
+          tierIndex, // Ensure tierIndex is correct
+        };
+      }
+
+      // Create new model with default values
+      return {
+        tierIndex,
+        price: parseFloat(formData.originalPrice) || 0,
+        costPrice: parseFloat(formData.costPrice) || 0,
+        stock: 0,
+        sku: '',
+      };
+    });
 
     setModels(newModels);
   };
@@ -310,7 +339,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
     setVideos((prev) => prev.filter((_, i) => i !== index));
     setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
-  const fetchAttributes = async (categoryId) => {
+  const fetchAttributes = async (categoryId, existingAttributes = []) => {
     try {
       const response = await attributeService.getByCategory(categoryId);
 
@@ -320,6 +349,36 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
           (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)
         );
         setAttributes(sortedAttrs);
+
+        // If we have existing attribute values (edit mode), merge them using the fetched definitions
+        if (existingAttributes.length > 0) {
+          const attrObj = {};
+          sortedAttrs.forEach((def) => {
+            // Try to match saved attribute by slug, then by label/name
+            const saved = existingAttributes.find(
+              (a) =>
+                a.slug === def.slug ||
+                a.key === def.slug ||
+                a.label === def.name ||
+                a.name === def.name
+            );
+            if (saved && saved.value !== undefined && saved.value !== null) {
+              attrObj[def.slug] = {
+                slug: def.slug,
+                label: def.name,
+                value: saved.value,
+                type: def.type,
+              };
+            }
+          });
+
+          if (import.meta.env.DEV) {
+            console.log('📋 Edit mode — raw attributes from backend:', existingAttributes);
+            console.log('📋 Edit mode — merged attributeValues:', attrObj);
+          }
+
+          setAttributeValues(attrObj);
+        }
       } else {
         setAttributes([]);
       }
@@ -332,7 +391,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
   const handleAttributeChange = (attributeSlug, value, attributeName, attributeType) => {
     setAttributeValues((prev) => ({
       ...prev,
-      [attributeSlug]: { label: attributeName, value, type: attributeType },
+      [attributeSlug]: { slug: attributeSlug, label: attributeName, value, type: attributeType },
     }));
   };
 
@@ -436,8 +495,13 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
     try {
       // Convert attribute values to array format
       const attributesArray = Object.values(attributeValues).filter(
-        (attr) => attr.value !== undefined && attr.value !== ''
+        (attr) => attr.value !== undefined && attr.value !== '' && attr.value !== null
       );
+
+      if (import.meta.env.DEV) {
+        console.log('📤 Submit — attributeValues state:', attributeValues);
+        console.log('📤 Submit — attributesArray to send:', attributesArray);
+      }
 
       // Prepare models based on product type
       let productModels;
@@ -455,36 +519,131 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
       } else {
         // Variant product - multiple models from tiers
         productModels = models.map((model) => ({
+          ...(model._id && { _id: model._id }),
           tierIndex: model.tierIndex,
           price: parseFloat(model.price),
           ...(model.costPrice && { costPrice: parseFloat(model.costPrice) }),
           stock: parseInt(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
+          // Preserve existing image URL if no new file is being uploaded
+          ...(!model.imageFile && model.image && { image: model.image }),
         }));
       }
 
-      // Prepare product data for API - convert tiers to backend format
-      const productData = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        categoryId: formData.categoryId,
-        originalPrice: parseFloat(formData.originalPrice),
-        tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()) : [],
-        attributes: attributesArray,
-        tiers:
-          productType === 'variant'
-            ? tiers.map((tier) => ({
-                name: tier.name,
-                options: tier.options.map((opt) => opt.value), // Extract value from {value, isCustom}
-              }))
-            : [],
-        models: productModels,
-        status: 'draft',
-      };
+      // Check if we have files to upload
+      const hasVariantImages = productType === 'variant' && models.some((m) => m.imageFile);
+      const hasFiles = sizeChart || images.length > 0 || hasVariantImages;
 
-      const response = isEditMode
-        ? await productService.update(editingProduct._id, productData)
-        : await productService.create(productData);
+      let response;
+
+      if (hasFiles) {
+        // Use FormData when uploading files
+        const formDataToSend = new FormData();
+
+        // Append text fields
+        formDataToSend.append('name', formData.name.trim());
+        formDataToSend.append('description', formData.description.trim());
+        formDataToSend.append('categoryId', formData.categoryId);
+        formDataToSend.append('originalPrice', parseFloat(formData.originalPrice));
+        formDataToSend.append('status', 'draft');
+
+        // Append tags
+        if (formData.tags) {
+          const tagsArray = formData.tags.split(',').map((tag) => tag.trim());
+          formDataToSend.append('tags', JSON.stringify(tagsArray));
+        }
+
+        // Append attributes
+        if (attributesArray.length > 0) {
+          formDataToSend.append('attributes', JSON.stringify(attributesArray));
+        }
+
+        // Append tiers (for variant products)
+        if (productType === 'variant') {
+          const tiersData = tiers.map((tier) => ({
+            name: tier.name,
+            options: tier.options.map((opt) => opt.value),
+          }));
+          formDataToSend.append('tiers', JSON.stringify(tiersData));
+        }
+
+        // Append models (without imageFile which is not serializable)
+        const modelsData = productModels.map((model) => {
+          const { imageFile, imagePreview, ...rest } = model;
+          return rest;
+        });
+        formDataToSend.append('models', JSON.stringify(modelsData));
+
+        // Append variant images with tierIndex mapping
+        if (hasVariantImages) {
+          models.forEach((model, index) => {
+            if (model.imageFile) {
+              // Use field name: variantImages[tierIndex]
+              const tierIndexKey = model.tierIndex.join('-');
+              formDataToSend.append(
+                `variantImages[${tierIndexKey}]`,
+                model.imageFile,
+                `variant-${tierIndexKey}.${model.imageFile.name.split('.').pop()}`
+              );
+            }
+          });
+        }
+
+        // Append sizeChart file if present
+        if (sizeChart) {
+          formDataToSend.append('sizeChart', sizeChart);
+        }
+
+        // Append images files if present
+        if (images.length > 0) {
+          images.forEach((image) => {
+            formDataToSend.append('images', image);
+          });
+        }
+
+        // Log FormData contents (for debugging)
+        if (import.meta.env.DEV) {
+          console.log('📤 Sending FormData with files:');
+          for (let [key, value] of formDataToSend.entries()) {
+            if (value instanceof File) {
+              console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
+            } else {
+              console.log(`  ${key}:`, value);
+            }
+          }
+        }
+
+        response = isEditMode
+          ? await productService.update(editingProduct._id, formDataToSend)
+          : await productService.create(formDataToSend);
+      } else {
+        // Use JSON when no files - easier for backend
+        const productData = {
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          categoryId: formData.categoryId,
+          originalPrice: parseFloat(formData.originalPrice),
+          tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()) : [],
+          attributes: attributesArray,
+          tiers:
+            productType === 'variant'
+              ? tiers.map((tier) => ({
+                  name: tier.name,
+                  options: tier.options.map((opt) => opt.value),
+                }))
+              : [],
+          models: productModels,
+          status: 'draft',
+        };
+
+        if (import.meta.env.DEV) {
+          console.log('📤 Sending JSON (no files):', productData);
+        }
+
+        response = isEditMode
+          ? await productService.update(editingProduct._id, productData)
+          : await productService.create(productData);
+      }
 
       if (response.success) {
         // Reset form
@@ -508,6 +667,10 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
         if (sizeChartPreview) URL.revokeObjectURL(sizeChartPreview);
         imagePreviews.forEach((url) => URL.revokeObjectURL(url));
         videoPreviews.forEach((url) => URL.revokeObjectURL(url));
+        // Clean up variant image previews
+        models.forEach((model) => {
+          if (model.imagePreview) URL.revokeObjectURL(model.imagePreview);
+        });
         setSizeChart(null);
         setSizeChartPreview(null);
         setImages([]);
@@ -553,6 +716,10 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
       setAttributeValues({});
       setProductType('simple');
       setTiers([]);
+      // Clean up variant image previews before clearing models
+      models.forEach((model) => {
+        if (model.imagePreview) URL.revokeObjectURL(model.imagePreview);
+      });
       setModels([]);
       setErrors({});
       // Clean up file previews
@@ -697,7 +864,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
   };
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg" centered>
+    <Modal show={show} onHide={handleClose} size="xl" centered scrollable>
       <Modal.Header closeButton>
         <Modal.Title>{isEditMode ? 'Edit Product' : 'Add New Product'}</Modal.Title>
       </Modal.Header>
@@ -709,8 +876,11 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
             </div>
           )}
 
-          <Row>
-            <Col md={12}>
+          {/* Two-column layout: Left = product info + variants, Right = attributes + media */}
+          <Row className="g-4">
+            {/* ── LEFT COLUMN ── */}
+            <Col xl={7} lg={12}>
+              {/* Product Name */}
               <Form.Group className="mb-3">
                 <Form.Label>
                   Product Name <span className="text-danger">*</span>
@@ -726,124 +896,125 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
                 />
                 <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
               </Form.Group>
-            </Col>
-          </Row>
 
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  Category <span className="text-danger">*</span>
-                </Form.Label>
-                <Form.Select
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleChange}
-                  isInvalid={!!errors.categoryId}
-                  disabled={loading}
-                >
-                  <option value="">Select category</option>
-                  {categories.map((category) => (
-                    <option key={category._id} value={category._id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </Form.Select>
-                <Form.Control.Feedback type="invalid">{errors.categoryId}</Form.Control.Feedback>
-              </Form.Group>
-            </Col>
-
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Product Type</Form.Label>
-                <Nav variant="pills" className="mb-2">
-                  <Nav.Item>
-                    <Nav.Link
-                      active={productType === 'simple'}
-                      onClick={() => setProductType('simple')}
+              {/* Category + Product Type */}
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      Category <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Select
+                      name="categoryId"
+                      value={formData.categoryId}
+                      onChange={handleChange}
+                      isInvalid={!!errors.categoryId}
                       disabled={loading}
                     >
-                      Simple Product
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link
-                      active={productType === 'variant'}
-                      onClick={() => setProductType('variant')}
+                      <option value="">Select category</option>
+                      {categories.map((category) => (
+                        <option key={category._id} value={category._id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.categoryId}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Product Type</Form.Label>
+                    <Nav variant="pills" className="mb-2">
+                      <Nav.Item>
+                        <Nav.Link
+                          active={productType === 'simple'}
+                          onClick={() => setProductType('simple')}
+                          disabled={loading}
+                        >
+                          Simple
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item>
+                        <Nav.Link
+                          active={productType === 'variant'}
+                          onClick={() => setProductType('variant')}
+                          disabled={loading}
+                        >
+                          With Variations
+                        </Nav.Link>
+                      </Nav.Item>
+                    </Nav>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* Price / Cost / Stock / SKU */}
+              <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>
+                      Price (₫) <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="number"
+                      name="originalPrice"
+                      value={formData.originalPrice}
+                      onChange={handleChange}
+                      isInvalid={!!errors.originalPrice}
+                      placeholder="150000"
+                      min="0"
                       disabled={loading}
-                    >
-                      Product with Variations
-                    </Nav.Link>
-                  </Nav.Item>
-                </Nav>
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  Price (₫) <span className="text-danger">*</span>
-                </Form.Label>
-                <Form.Control
-                  type="number"
-                  name="originalPrice"
-                  value={formData.originalPrice}
-                  onChange={handleChange}
-                  isInvalid={!!errors.originalPrice}
-                  placeholder="150000"
-                  min="0"
-                  disabled={loading}
-                />
-                <Form.Control.Feedback type="invalid">{errors.originalPrice}</Form.Control.Feedback>
-                {productType === 'variant' && (
-                  <Form.Text className="text-muted">Base price for variants</Form.Text>
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.originalPrice}
+                    </Form.Control.Feedback>
+                    {productType === 'variant' && (
+                      <Form.Text className="text-muted">Base price</Form.Text>
+                    )}
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Cost Price (₫)</Form.Label>
+                    <Form.Control
+                      type="number"
+                      name="costPrice"
+                      value={formData.costPrice}
+                      onChange={handleChange}
+                      placeholder="80000"
+                      min="0"
+                      disabled={loading}
+                    />
+                    {productType === 'variant' && (
+                      <Form.Text className="text-muted">Base cost</Form.Text>
+                    )}
+                  </Form.Group>
+                </Col>
+                {productType === 'simple' && (
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>
+                        Stock <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="stock"
+                        value={formData.stock}
+                        onChange={handleChange}
+                        isInvalid={!!errors.stock}
+                        placeholder="100"
+                        min="0"
+                        disabled={loading}
+                      />
+                      <Form.Control.Feedback type="invalid">{errors.stock}</Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
                 )}
-              </Form.Group>
-            </Col>
+              </Row>
 
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Cost Price (₫)</Form.Label>
-                <Form.Control
-                  type="number"
-                  name="costPrice"
-                  value={formData.costPrice}
-                  onChange={handleChange}
-                  placeholder="80000"
-                  min="0"
-                  disabled={loading}
-                />
-                {productType === 'variant' && (
-                  <Form.Text className="text-muted">Base cost price for variants</Form.Text>
-                )}
-              </Form.Group>
-            </Col>
-
-            {productType === 'simple' && (
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Stock <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="stock"
-                    value={formData.stock}
-                    onChange={handleChange}
-                    isInvalid={!!errors.stock}
-                    placeholder="100"
-                    min="0"
-                    disabled={loading}
-                  />
-                  <Form.Control.Feedback type="invalid">{errors.stock}</Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            )}
-
-            {productType === 'simple' && (
-              <Col md={12}>
+              {productType === 'simple' && (
                 <Form.Group className="mb-3">
                   <Form.Label>SKU (Optional)</Form.Label>
                   <Form.Control
@@ -858,202 +1029,9 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
                   <Form.Text className="text-muted">Leave blank to auto-generate</Form.Text>
                   <Form.Control.Feedback type="invalid">{errors.sku}</Form.Control.Feedback>
                 </Form.Group>
-              </Col>
-            )}
-          </Row>
-
-          {/* Tiers Section - only for variant products */}
-          {productType === 'variant' && (
-            <>
-              <hr className="my-4" />
-              <h6 className="mb-3 text-muted">Product Variations</h6>
-              {errors.tiers && <div className="alert alert-danger">{errors.tiers}</div>}
-              <TiersEditor tiers={tiers} onChange={setTiers} disabled={loading} />
-
-              {models.length > 0 && (
-                <>
-                  <hr className="my-4" />
-                  <h6 className="mb-3 text-muted">
-                    Variants ({models.length} {models.length > 200 && '⚠️ Exceeds max 200'})
-                  </h6>
-                  {errors.models && <div className="alert alert-danger">{errors.models}</div>}
-                  <VariantsTable
-                    models={models}
-                    onChange={setModels}
-                    tiers={tiers}
-                    disabled={loading}
-                  />
-                </>
               )}
-            </>
-          )}
 
-          {/* Dynamic Attributes Section */}
-          {attributes.length > 0 && (
-            <>
-              <hr className="my-4" />
-              <h6 className="mb-3 text-muted">Product Attributes</h6>
-              <Row>
-                {attributes.map((attr) => (
-                  <Col md={12} key={attr._id}>
-                    {renderAttributeField(attr)}
-                  </Col>
-                ))}
-              </Row>
-            </>
-          )}
-
-          <Row>
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Enter product description"
-                  disabled={loading}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          {/* Media Upload Section */}
-          <hr className="my-4" />
-          <h6 className="mb-3 text-muted">Product Media</h6>
-
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Size Chart (Optional)</Form.Label>
-                <Form.Control
-                  type="file"
-                  accept="image/*"
-                  onChange={handleSizeChartUpload}
-                  disabled={loading || sizeChart}
-                  isInvalid={!!errors.sizeChart}
-                />
-                <Form.Control.Feedback type="invalid">{errors.sizeChart}</Form.Control.Feedback>
-                <Form.Text className="text-muted">Max 5MB. PNG, JPG, JPEG</Form.Text>
-                {sizeChartPreview && (
-                  <div className="mt-2 position-relative" style={{ maxWidth: '200px' }}>
-                    <img
-                      src={sizeChartPreview}
-                      alt="Size chart preview"
-                      style={{ width: '100%', height: 'auto', borderRadius: '4px' }}
-                    />
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={handleRemoveSizeChart}
-                      className="position-absolute top-0 end-0 m-1"
-                      style={{ padding: '0.2rem 0.5rem' }}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                )}
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Product Images (Optional)</Form.Label>
-                <Form.Control
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImagesUpload}
-                  disabled={loading || images.length >= 10}
-                  isInvalid={!!errors.images}
-                />
-                <Form.Control.Feedback type="invalid">{errors.images}</Form.Control.Feedback>
-                <Form.Text className="text-muted">
-                  Max 10 images, 5MB each. PNG, JPG, JPEG
-                </Form.Text>
-                {imagePreviews.length > 0 && (
-                  <div className="d-flex flex-wrap gap-2 mt-2">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="position-relative" style={{ width: '100px' }}>
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          style={{
-                            width: '100%',
-                            height: '100px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                          }}
-                        />
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleRemoveImage(index)}
-                          className="position-absolute top-0 end-0 m-1"
-                          style={{ padding: '0.2rem 0.5rem' }}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={12}>
-              <Form.Group className="mb-3">
-                <Form.Label>Product Videos (Optional)</Form.Label>
-                <Form.Control
-                  type="file"
-                  accept="video/*"
-                  multiple
-                  onChange={handleVideosUpload}
-                  disabled={loading || videos.length >= 3}
-                  isInvalid={!!errors.videos}
-                />
-                <Form.Control.Feedback type="invalid">{errors.videos}</Form.Control.Feedback>
-                <Form.Text className="text-muted">Max 3 videos, 50MB each. MP4, MOV, AVI</Form.Text>
-                {videoPreviews.length > 0 && (
-                  <div className="d-flex flex-wrap gap-2 mt-2">
-                    {videoPreviews.map((preview, index) => (
-                      <div key={index} className="position-relative" style={{ width: '150px' }}>
-                        <video
-                          src={preview}
-                          style={{
-                            width: '100%',
-                            height: '100px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                          }}
-                          controls
-                        />
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleRemoveVideo(index)}
-                          className="position-absolute top-0 end-0 m-1"
-                          style={{ padding: '0.2rem 0.5rem' }}
-                        >
-                          ×
-                        </Button>
-                        <small className="d-block text-muted mt-1">{videos[index]?.name}</small>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={12}>
+              {/* Tags */}
               <Form.Group className="mb-3">
                 <Form.Label>Tags</Form.Label>
                 <Form.Control
@@ -1066,6 +1044,201 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
                 />
                 <Form.Text className="text-muted">Separate tags with commas</Form.Text>
               </Form.Group>
+
+              {/* Description */}
+              <Form.Group className="mb-3">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter product description"
+                  disabled={loading}
+                />
+              </Form.Group>
+
+              {/* Tiers + Variants */}
+              {productType === 'variant' && (
+                <>
+                  <hr className="my-3" />
+                  <h6 className="mb-3 text-muted">Product Variations</h6>
+                  {errors.tiers && <div className="alert alert-danger">{errors.tiers}</div>}
+                  <TiersEditor tiers={tiers} onChange={setTiers} disabled={loading} />
+
+                  {models.length > 0 && (
+                    <>
+                      <hr className="my-3" />
+                      <h6 className="mb-3 text-muted">
+                        Variants ({models.length}){' '}
+                        {models.length > 200 && <span className="text-danger">⚠️ Max 200</span>}
+                      </h6>
+                      {errors.models && <div className="alert alert-danger">{errors.models}</div>}
+                      <VariantsTable
+                        models={models}
+                        onChange={setModels}
+                        tiers={tiers}
+                        disabled={loading}
+                      />
+                    </>
+                  )}
+                </>
+              )}
+            </Col>
+
+            {/* ── RIGHT COLUMN ── */}
+            <Col xl={5} lg={12}>
+              {/* Vertical divider only on xl */}
+              <div className={styles.rightPanel}>
+                {/* Dynamic Attributes */}
+                {attributes.length > 0 && (
+                  <>
+                    <h6 className="mb-3 text-muted">Product Attributes</h6>
+                    <Row>
+                      {attributes.map((attr) => (
+                        <Col md={6} key={attr._id}>
+                          {renderAttributeField(attr)}
+                        </Col>
+                      ))}
+                    </Row>
+                    <hr className="my-3" />
+                  </>
+                )}
+
+                {/* Product Media */}
+                <h6 className="mb-3 text-muted">Product Media</h6>
+
+                {/* Size Chart */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Size Chart (Optional)</Form.Label>
+                  <Form.Control
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSizeChartUpload}
+                    disabled={loading || !!sizeChart}
+                    isInvalid={!!errors.sizeChart}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.sizeChart}</Form.Control.Feedback>
+                  <Form.Text className="text-muted">Max 5MB. PNG, JPG, JPEG</Form.Text>
+                  {sizeChartPreview && (
+                    <div className="mt-2 position-relative d-inline-block">
+                      <img
+                        src={sizeChartPreview}
+                        alt="Size chart preview"
+                        style={{ width: '120px', height: 'auto', borderRadius: '4px' }}
+                      />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleRemoveSizeChart}
+                        className="position-absolute top-0 end-0 m-1"
+                        style={{ padding: '0.15rem 0.4rem' }}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
+                </Form.Group>
+
+                {/* Product Images */}
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Product Images{' '}
+                    <span className="text-muted" style={{ fontWeight: 400 }}>
+                      ({imagePreviews.length}/10)
+                    </span>
+                  </Form.Label>
+                  <Form.Control
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImagesUpload}
+                    disabled={loading || images.length >= 10}
+                    isInvalid={!!errors.images}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.images}</Form.Control.Feedback>
+                  <Form.Text className="text-muted">Max 10 images, 5MB each.</Form.Text>
+                  {imagePreviews.length > 0 && (
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="position-relative" style={{ width: '72px' }}>
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            style={{
+                              width: '72px',
+                              height: '72px',
+                              objectFit: 'cover',
+                              borderRadius: '4px',
+                              border: '1px solid #dee2e6',
+                            }}
+                          />
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleRemoveImage(index)}
+                            className="position-absolute top-0 end-0"
+                            style={{ padding: '0px 4px', fontSize: '10px', lineHeight: 1 }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Form.Group>
+
+                {/* Product Videos */}
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Product Videos{' '}
+                    <span className="text-muted" style={{ fontWeight: 400 }}>
+                      ({videoPreviews.length}/3)
+                    </span>
+                  </Form.Label>
+                  <Form.Control
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    onChange={handleVideosUpload}
+                    disabled={loading || videos.length >= 3}
+                    isInvalid={!!errors.videos}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.videos}</Form.Control.Feedback>
+                  <Form.Text className="text-muted">Max 3 videos, 50MB each.</Form.Text>
+                  {videoPreviews.length > 0 && (
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      {videoPreviews.map((preview, index) => (
+                        <div key={index} className="position-relative" style={{ width: '120px' }}>
+                          <video
+                            src={preview}
+                            style={{
+                              width: '100%',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '4px',
+                            }}
+                            controls
+                          />
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleRemoveVideo(index)}
+                            className="position-absolute top-0 end-0"
+                            style={{ padding: '0px 4px', fontSize: '10px', lineHeight: 1 }}
+                          >
+                            ×
+                          </Button>
+                          <small className="d-block text-muted mt-1 text-truncate">
+                            {videos[index]?.name}
+                          </small>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Form.Group>
+              </div>
             </Col>
           </Row>
         </Form>

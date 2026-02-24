@@ -8,6 +8,7 @@ export { default as productService } from './productService';
 export { default as categoryService } from './categoryService';
 export { default as homeService } from './homeService';
 export { default as dealService } from './dealService';
+export { flashsaleService } from './flashsaleService';
 export { default as brandService } from './brandService';
 export { default as searchService } from './searchService';
 export { default as purchaseOrderService } from './purchaseOrderService';
