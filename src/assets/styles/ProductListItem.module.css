@@ -5,24 +5,25 @@
   padding: 16px;
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
+  cursor: pointer;
 }
 
 .productListItem:hover {
-  border-color: #2e9bff;
-  box-shadow: 0 2px 8px rgba(46, 155, 255, 0.1);
+  border-color: #ee4d2d;
+  box-shadow: 0 4px 16px rgba(238, 77, 45, 0.08);
   transform: translateY(-2px);
 }
 
 .imageWrapper {
   position: relative;
-  width: 160px;
-  height: 160px;
-  border-radius: 8px;
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #f8f9fa;
   flex-shrink: 0;
 }
 
@@ -30,18 +31,36 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.productListItem:hover .productImage {
+  transform: scale(1.05);
+}
+
+.discountBadge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #ee4d2d;
+  color: var(--color-white);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 0 10px 0 6px;
+  z-index: 2;
 }
 
 .badge {
   position: absolute;
-  top: 8px;
+  bottom: 8px;
   left: 8px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 600;
   color: var(--color-white);
-  max-width: calc(100% - 16px);
+  text-transform: uppercase;
 }
 
 .badge.danger {
@@ -60,11 +79,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .productName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
@@ -83,22 +102,27 @@
 .stars {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 
-.star {
+.starFilled {
   color: #ffc107;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.starEmpty {
+  color: #dee2e6;
+  font-size: 13px;
 }
 
 .ratingValue {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-primary);
   margin-left: 4px;
 }
 
-.reviews {
+.soldCount {
   font-size: 12px;
   color: var(--color-text-secondary);
 }
@@ -106,64 +130,75 @@
 .prices {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .currentPrice {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: #ee4d2d;
 }
 
 .originalPrice {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   text-decoration: line-through;
 }
 
+/* Actions Column */
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 180px;
+  align-items: center;
+  gap: 12px;
+  min-width: 140px;
 }
 
-.getDealBtn,
-.buyNowBtn {
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+.wishlistBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.wishlistBtn:hover {
+  border-color: #ee4d2d;
+  color: #ee4d2d;
+  transform: scale(1.1);
+}
+
+.wishlistBtnActive {
+  color: #ee4d2d;
+  border-color: #ee4d2d;
+}
+
+.viewDetailBtn {
+  display: flex;
+  align-items: center;
   gap: 6px;
-}
-
-.getDealBtn {
-  background: #f59e0b;
-  color: var(--color-white);
-}
-
-.getDealBtn:hover {
-  background: #d97706;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
-}
-
-.buyNowBtn {
+  padding: 10px 20px;
   background: var(--color-text-primary);
   color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.buyNowBtn:hover {
+.viewDetailBtn:hover {
   background: #111827;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 @media (max-width: 992px) {
@@ -179,6 +214,8 @@
 
   .actions {
     width: 100%;
+    flex-direction: row;
+    justify-content: flex-end;
     min-width: unset;
   }
 }
@@ -193,6 +230,6 @@
   }
 
   .currentPrice {
-    font-size: 18px;
+    font-size: 16px;
   }
 }

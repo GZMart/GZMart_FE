@@ -65,7 +65,12 @@ const ProductsPage = () => {
   const [selectedRatings, setSelectedRatings] = useState([]);
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedAvailability, setSelectedAvailability] = useState([]);
-  const [openSections, setOpenSections] = useState({});
+  const [openSections, setOpenSections] = useState({
+    location: true,
+    brand: true,
+    priceRange: true,
+    rating: true,
+  });
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -262,20 +267,17 @@ const ProductsPage = () => {
   const totalProducts = totalCount || filteredProducts.length;
   const displayedProducts = sortedProducts; // Already paginated from API
 
-  if (loading) {
-    return (
-      <div className={styles.productsPage}>
-        <Breadcrumb items={breadcrumbItems} />
-        <div className={styles.container}>
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
+  // Skeleton Card Component
+  const SkeletonCard = () => (
+    <div className={styles.skeletonCard}>
+      <div className={styles.skeletonImage}></div>
+      <div className={styles.skeletonInfo}>
+        <div className={styles.skeletonLine} style={{ width: '80%' }}></div>
+        <div className={styles.skeletonLine} style={{ width: '60%' }}></div>
+        <div className={styles.skeletonLine} style={{ width: '40%' }}></div>
       </div>
-    );
-  }
+    </div>
+  );
 
   const toggleFilter = (filterType, value) => {
     const setters = {
@@ -606,7 +608,19 @@ const ProductsPage = () => {
             </div>
 
             {/* Product Grid/List */}
-            {viewMode === 'grid' ? (
+            {loading ? (
+              <div className={styles.productGrid}>
+                {[...Array(itemsToShow)].map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            ) : displayedProducts.length === 0 ? (
+              <div className={styles.emptyState}>
+                <i className="bi bi-search" style={{ fontSize: '48px', color: '#d1d5db' }}></i>
+                <h3>No products found</h3>
+                <p>Try adjusting your filters or search query</p>
+              </div>
+            ) : viewMode === 'grid' ? (
               <div className={styles.productGrid}>
                 {displayedProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
