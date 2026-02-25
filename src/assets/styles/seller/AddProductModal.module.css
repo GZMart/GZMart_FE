@@ -153,6 +153,19 @@
   letter-spacing: 0.05em;
 }
 
+/* Right panel divider — only shown when side-by-side (xl breakpoint) */
+.rightPanel {
+  padding-left: 0;
+  border-left: none;
+}
+
+@media (min-width: 1200px) {
+  .rightPanel {
+    border-left: 1px solid #e5e7eb;
+    padding-left: 1.5rem !important;
+  }
+}
+
 /* Alert Badges */
 .warningBadge {
   background-color: #fef3c7;

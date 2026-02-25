@@ -1,6 +1,7 @@
+import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useState } from 'react';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
@@ -21,6 +22,40 @@ const ProductListItem = ({ product }) => {
     }
     return product.image;
   })();
+
+  // Flash sale countdown timer
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!product.dealEndDate) return;
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const end = new Date(product.dealEndDate).getTime();
+      const distance = end - now;
+
+      if (distance < 0) {
+        setTimeLeft('Ended');
+        return;
+      }
+
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [product.dealEndDate]);
+
+  const isFlashSale = product.dealType === 'flash_sale';
+  const soldPercentage = product.dealQuantityLimit
+    ? Math.round((product.dealSoldCount / product.dealQuantityLimit) * 100)
+    : 0;
 
   const discountPercentage =
     product.originalPrice > 0 && product.originalPrice > product.price
@@ -63,21 +98,85 @@ const ProductListItem = ({ product }) => {
       setFavLoading(false);
     }
   };
-
   return (
     <div className={styles.productListItem} onClick={handleCardClick} role="link" tabIndex={0}>
       <div className={styles.imageWrapper}>
         <img src={productImage} alt={product.name} className={styles.productImage} />
-        {discountPercentage > 0 && (
+        {isFlashSale ? (
+          <div
+            className={styles.badge}
+            style={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+            }}
+          >
+            ⚡ FLASH SALE
+          </div>
+        ) : discountPercentage > 0 ? (
           <div className={styles.discountBadge}>-{discountPercentage}%</div>
-        )}
+        ) : null}
         {product.badge && (
           <div className={`${styles.badge} ${styles[product.badgeColor]}`}>{product.badge}</div>
         )}
       </div>
 
       <div className={styles.productInfo}>
-        <h3 className={styles.productName}>{product.name}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+          <h3 className={styles.productName}>{product.name}</h3>
+          {isFlashSale && timeLeft && (
+            <span
+              style={{
+                background: '#fff3cd',
+                color: '#856404',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: '600',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              ⏰ {timeLeft}
+            </span>
+          )}
+        </div>
+
+        {/* Sold Progress */}
+        {isFlashSale && product.dealQuantityLimit && (
+          <div style={{ marginBottom: '8px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '11px',
+                marginBottom: '4px',
+                color: '#666',
+              }}
+            >
+              <span>
+                Sold: {product.dealSoldCount} / {product.dealQuantityLimit}
+              </span>
+              <span>{soldPercentage}%</span>
+            </div>
+            <div
+              style={{
+                height: '6px',
+                background: '#e9ecef',
+                borderRadius: '3px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${soldPercentage}%`,
+                  background: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)',
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         <div className={styles.rating}>
           <div className={styles.stars}>
             {[...Array(fullStars)].map((_, i) => (
@@ -136,6 +235,14 @@ ProductListItem.propTypes = {
     badge: PropTypes.string,
     badgeColor: PropTypes.string,
     tier_variations: PropTypes.array,
+    // Flash sale / Deal fields
+    dealId: PropTypes.string,
+    dealType: PropTypes.string,
+    dealStatus: PropTypes.string,
+    dealStartDate: PropTypes.string,
+    dealEndDate: PropTypes.string,
+    dealSoldCount: PropTypes.number,
+    dealQuantityLimit: PropTypes.number,
   }).isRequired,
 };
 

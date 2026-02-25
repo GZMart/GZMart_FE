@@ -5,7 +5,7 @@ import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import LoadingSpinner from '@components/common/LoadingSpinner';
 import styles from '@assets/styles/ProductsPage.module.css';
-import { dealService } from '../../services/api';
+import { dealService, flashsaleService } from '../../services/api';
 
 const FlashDealsPage = () => {
   const [viewMode, setViewMode] = useState('grid');
@@ -26,19 +26,70 @@ const FlashDealsPage = () => {
     const fetchDeals = async () => {
       try {
         setLoading(true);
-        const response = await dealService.getAllDeals();
-        console.log('📦 Deals API Response:', response);
 
-        const dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
-        console.log('✅ Deals Data:', dealsData);
+        // Use flashsaleService.getActive() to get active flash sales
+        const response = await flashsaleService.getActive();
 
-        // Transform deals data to products format
-        const productsFromDeals = dealsData
-          .filter((deal) => deal.status === 'active' && deal.productId)
-          .map((deal) => {
-            const product = deal.productId;
-            const activeModel =
-              product.models?.find((m) => m.isActive) || product.models?.[0] || {};
+        if (import.meta.env.DEV) {
+          console.log('📦 Flash Sales API Response:', response);
+          console.log('📦 Response type:', typeof response);
+          console.log('📦 Response keys:', response ? Object.keys(response) : 'null');
+        }
+
+        // Handles multiple response structures:
+        // Case 1: { success: true, data: [...] }
+        // Case 2: { data: [...] }
+        // Case 3: [...] (direct array)
+        let flashSalesData = [];
+
+        if (Array.isArray(response)) {
+          // Direct array response
+          flashSalesData = response;
+        } else if (response?.data) {
+          // Has data property
+          if (Array.isArray(response.data)) {
+            flashSalesData = response.data;
+          } else if (Array.isArray(response.data?.data)) {
+            flashSalesData = response.data.data;
+          }
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('✅ Flash Sales Data (count):', flashSalesData.length);
+          console.log('✅ First flash sale sample:', flashSalesData[0]);
+        }
+
+        if (flashSalesData.length === 0) {
+          if (import.meta.env.DEV) {
+            console.warn('⚠️ Backend returned empty data array - no flash sales available');
+          }
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
+        // Transform flash sales data to products format
+        const productsFromFlashSales = flashSalesData
+          .filter((flashSale) => {
+            const hasProduct = flashSale && flashSale.productId;
+            if (!hasProduct) {
+              console.warn('⚠️ Flash sale missing productId:', flashSale);
+            }
+            return hasProduct;
+          })
+          .map((flashSale) => {
+            const product = flashSale.productId;
+
+            // Find the variant model by SKU or tier_index
+            let variantModel = null;
+            if (flashSale.variantSku && product.models) {
+              variantModel = product.models.find((m) => m.sku === flashSale.variantSku);
+            }
+
+            // Fallback to first active model or first model
+            if (!variantModel) {
+              variantModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
+            }
 
             return {
               id: product._id,
@@ -46,37 +97,57 @@ const FlashDealsPage = () => {
               description: product.description,
               image:
                 product.images?.[0] ||
-                activeModel.image ||
+                variantModel.image ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               images: product.images || [],
-              price: deal.dealPrice || activeModel.price || 0,
-              originalPrice: product.originalPrice || activeModel.originalPrice || 0,
-              discount: deal.discountPercent || product.discount || 0,
+              price: flashSale.salePrice || variantModel.price || 0,
+              originalPrice: variantModel.price || flashSale.salePrice || 0,
+              discount:
+                flashSale.discountPercent ||
+                Math.round(
+                  ((variantModel.price - flashSale.salePrice) / variantModel.price) * 100
+                ) ||
+                0,
               rating: product.rating || 5,
               reviews: product.reviewCount || product.sold || 0,
-              sold: product.sold || 0,
-              stock: activeModel.stock || 0,
+              sold: flashSale.soldQuantity || product.sold || 0,
+              stock: flashSale.remainingQuantity || variantModel.stock || 0,
               brand: typeof product.brand === 'object' ? product.brand?.name : product.brand,
               category:
                 typeof product.category === 'object' ? product.category?.name : product.category,
               categoryId:
                 typeof product.category === 'object' ? product.category?._id : product.categoryId,
               tier_variations: product.tier_variations,
-              // Deal specific fields
-              dealId: deal._id,
-              dealType: deal.type || 'flash_sale',
-              dealStatus: deal.status,
-              dealStartDate: deal.startDate,
-              dealEndDate: deal.endDate,
-              dealSoldCount: deal.soldCount || 0,
-              dealQuantityLimit: deal.quantityLimit,
+              // Flash Sale specific fields
+              flashSaleId: flashSale._id,
+              dealId: flashSale._id, // Alias for compatibility
+              dealType: 'flash_sale',
+              dealStatus: flashSale.status,
+              dealStartDate: flashSale.startAt,
+              dealEndDate: flashSale.endAt,
+              dealSoldCount: flashSale.soldQuantity || 0,
+              dealQuantityLimit: flashSale.totalQuantity,
+              variantSku: flashSale.variantSku,
+              purchaseLimit: flashSale.purchaseLimit,
+              campaignTitle: flashSale.campaignTitle,
             };
           });
 
-        setProducts(productsFromDeals);
-        console.log('📊 Transformed Products:', productsFromDeals.length);
+        setProducts(productsFromFlashSales);
+
+        if (import.meta.env.DEV) {
+          console.log('📊 Transformed Products from Flash Sales:', productsFromFlashSales.length);
+        }
       } catch (error) {
-        console.error('❌ Error fetching deals:', error);
+        console.error('❌ Error fetching flash sales:', error);
+
+        if (import.meta.env.DEV) {
+          console.error('❌ Error details:', {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status,
+          });
+        }
         setProducts([]);
       } finally {
         setLoading(false);
@@ -490,8 +561,16 @@ const FlashDealsPage = () => {
                   className="bi bi-inbox"
                   style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}
                 ></i>
-                <p style={{ fontSize: '18px', marginBottom: '8px' }}>No deals available</p>
-                <p style={{ fontSize: '14px' }}>Try adjusting your filters or check back later</p>
+                <p style={{ fontSize: '18px', marginBottom: '8px', fontWeight: '600' }}>
+                  {products.length === 0
+                    ? '🛒 No Flash Sales Available'
+                    : 'No Matching Flash Sales'}
+                </p>
+                <p style={{ fontSize: '14px', marginBottom: '8px' }}>
+                  {products.length === 0
+                    ? 'Backend has no active flash sales at the moment. Check back later or sellers can create flash sales.'
+                    : 'Try adjusting your filters to see more flash sales'}
+                </p>
               </div>
             )}
           </main>

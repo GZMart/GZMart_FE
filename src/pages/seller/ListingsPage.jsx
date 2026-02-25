@@ -37,28 +37,41 @@ const ListingsPage = () => {
       setLoading(true);
       setError(null);
 
-      // Call API without pagination - get all products
-      const response = await productService.getAll({ limit: 1000 });
+      // Call API to get seller's own products only
+      const response = await productService.getMyProducts({ limit: 1000 });
 
       if (response.success) {
         // Transform API data to match listings format
-        const transformedListings = response.data.map((product) => ({
-          id: product._id,
-          image:
-            product.images?.[0] || product.tiers?.[0]?.images?.[0] || '/images/placeholder.jpg',
-          name: product.name,
-          category: product.categoryId?.name || 'Uncategorized',
-          price: formatCurrency(product.originalPrice),
-          status: mapProductStatus(product.status),
-          sku: product.models?.[0]?.sku || 'N/A',
-          brand: product.brand || 'N/A',
-          inStock: product.models?.some((m) => m.stock > 0) || false,
-          // Keep original data for filtering
-          _originalStatus: product.status,
-          _originalCategory: product.categoryId?.name || 'Uncategorized',
-          _createdAt: product.createdAt,
-          _price: product.originalPrice,
-        }));
+        const transformedListings = response.data.map((product) => {
+          // Handle categoryId - can be object or string
+          let categoryName = 'Uncategorized';
+          if (product.categoryId) {
+            if (typeof product.categoryId === 'object') {
+              categoryName = product.categoryId.name || 'Uncategorized';
+            } else {
+              // If categoryId is just a string, show as ID (backend not populated)
+              categoryName = product.category?.name || 'Uncategorized';
+            }
+          }
+
+          return {
+            id: product._id,
+            image:
+              product.images?.[0] || product.tiers?.[0]?.images?.[0] || '/images/placeholder.jpg',
+            name: product.name,
+            category: categoryName,
+            price: formatCurrency(product.originalPrice),
+            status: mapProductStatus(product.status),
+            sku: product.models?.[0]?.sku || 'N/A',
+            brand: product.brand || 'N/A',
+            inStock: product.models?.some((m) => m.stock > 0) || false,
+            // Keep original data for filtering
+            _originalStatus: product.status,
+            _originalCategory: categoryName,
+            _createdAt: product.createdAt,
+            _price: product.originalPrice,
+          };
+        });
         setAllListings(transformedListings);
       } else {
         setError('Failed to load listings');
