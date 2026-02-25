@@ -13,6 +13,7 @@ import addressService from '@services/api/addressService';
 import locationService from '@services/api/locationService';
 import { Modal, Form } from 'react-bootstrap';
 import toast, { Toaster } from 'react-hot-toast';
+import ReviewModal from '@components/common/ReviewModal';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,11 @@ const ProfilePage = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(null);
+
+  // Review Modal State
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   // Initialize form data from user
   const [formData, setFormData] = useState({
@@ -371,6 +377,38 @@ const ProfilePage = () => {
     } catch (err) {
       alert(err.message || 'Failed to create payment link');
       setPaymentProcessing(null);
+    }
+  };
+
+  const handleOpenReviewModal = (order) => {
+    setReviewingOrder(order);
+    setShowReviewModal(true);
+  };
+
+  const handleReviewSubmit = async (reviewData) => {
+    if (!reviewingOrder) return;
+
+    setReviewSubmitting(true);
+    try {
+      // TODO: Replace with actual API call
+      // const response = await orderService.submitReview(reviewingOrder._id, reviewData);
+      // if (response.success) {
+      //   toast.success('Review submitted successfully');
+      //   setShowReviewModal(false);
+      //   setReviewingOrder(null);
+      // }
+
+      // Temporary: Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Review submitted for order:', reviewingOrder._id, reviewData);
+      toast.success('Review submitted successfully');
+      setShowReviewModal(false);
+      setReviewingOrder(null);
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      toast.error('Failed to submit review. Please try again.');
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -754,6 +792,30 @@ const ProfilePage = () => {
                             ) : (
                               'Pay Now'
                             )}
+                          </button>
+                        )}
+                        {order.status === 'completed' && (
+                          <button
+                            className={`${styles.badge} ${styles.badgeInfo}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenReviewModal(order);
+                            }}
+                            style={{
+                              cursor: 'pointer',
+                              border: 'none',
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            Add Review
                           </button>
                         )}
                       </td>
@@ -1364,6 +1426,16 @@ const ProfilePage = () => {
           </button>
         </div>
       </Modal>
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => {
+          setShowReviewModal(false);
+          setReviewingOrder(null);
+        }}
+        onSubmit={handleReviewSubmit}
+        orderNumber={reviewingOrder?.orderNumber}
+        isSubmitting={reviewSubmitting}
+      />
     </div>
   );
 };

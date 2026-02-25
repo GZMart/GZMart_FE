@@ -132,7 +132,7 @@
 .infoSection {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .productHeader {
@@ -228,7 +228,6 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  margin-bottom: 12px;
 }
 
 .priceRow .label {
@@ -263,6 +262,132 @@
   border-radius: 4px;
   font-size: 14px;
   font-weight: 600;
+}
+
+/* Rating Section */
+.ratingSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ratingStars {
+  display: flex;
+  gap: 2px;
+  color: #ffa500;
+  font-size: 16px;
+}
+
+.ratingValue {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.reviewCount {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Flash Sale Section */
+.flashSaleSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.flashSaleSection i {
+  color: #ff6b6b;
+  font-size: 16px;
+}
+
+.flashSaleLabel {
+  font-weight: 700;
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+.flashSaleTime {
+  color: #666;
+  font-size: 13px;
+  margin-left: auto;
+}
+
+/* Voucher Section */
+.voucherSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.voucherLabel {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.voucherItems {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.voucherItem {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #ffebee;
+  border-left: 3px solid #ff4444;
+  border-radius: 2px;
+}
+
+.voucherDiscount {
+  color: #ff4444;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Shipping Info Section */
+.shippingInfoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.shippingInfoItem {
+  display: flex;
+  gap: 12px;
+}
+
+.shippingInfoItem i {
+  font-size: 18px;
+  color: #0066ff;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.shippingTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.shippingDetail {
+  font-size: 13px;
+  color: #666;
 }
 
 .dealPrice {
@@ -415,26 +540,27 @@
 
 .sizeChartBtn {
   margin-left: auto;
-  padding: 6px 12px;
+  padding: 4px 10px;
   background-color: transparent;
-  border: 1px solid #0066ff;
+  border: none;
   color: #0066ff;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .sizeChartBtn:hover {
-  background-color: #0066ff;
-  color: white;
+  background-color: #f0f8ff;
+  text-decoration: underline;
 }
 
 .sizeChartBtn i {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .sizeOptions {
@@ -1139,6 +1265,94 @@
   color: #666;
   line-height: 1.6;
   margin: 0;
+}
+
+/* Tier / Variant Sections */
+.tierSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tierHeader {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tierLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.tierOptions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: 1;
+}
+
+.tierOption {
+  padding: 8px 16px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: auto;
+}
+
+.tierOption:hover {
+  border-color: #0066ff;
+  color: #0066ff;
+}
+
+.tierOption.active {
+  background-color: #0066ff;
+  border-color: #0066ff;
+  color: white;
+}
+
+.tierOption.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+}
+
+.sizeChartBtn {
+  margin-left: auto;
+  padding: 4px 10px;
+  background-color: transparent;
+  border: none;
+  color: #0066ff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sizeChartBtn:hover {
+  background-color: #f0f8ff;
+  text-decoration: underline;
+}
+
+.sizeChartBtn i {
+  font-size: 12px;
 }
 
 /* Product Sections */
