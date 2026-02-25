@@ -1,10 +1,11 @@
-import { Container, Row, Col, Card, Form, Button, Spinner } from 'react-bootstrap';
-import { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from 'react-bootstrap';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
+import voucherService from '@services/api/voucherService';
 import { formatCurrency } from '@utils/formatters';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 
@@ -32,6 +33,26 @@ const CheckoutPage = () => {
     address: '',
     phone: '',
   });
+
+  // Fetch applicable vouchers on mount
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      setVoucherLoading(true);
+      try {
+        const response = await voucherService.getApplicableVouchers();
+        if (response.success) {
+          setApplicableVouchers(response.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch applicable vouchers:', error);
+      } finally {
+        setVoucherLoading(false);
+      }
+    };
+    if (cartItems.length > 0) {
+      fetchVouchers();
+    }
+  }, [cartItems]);
 
   // Fetch customer info on mount
   useEffect(() => {
@@ -62,6 +83,15 @@ const CheckoutPage = () => {
   const [shippingCompany, setShippingCompany] = useState('ausff');
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Voucher state
+  const [applicableVouchers, setApplicableVouchers] = useState([]);
+  const [selectedShopVoucherId, setSelectedShopVoucherId] = useState(null);
+  const [selectedProductVoucherId, setSelectedProductVoucherId] = useState(null);
+  const [manualCode, setManualCode] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [voucherLoading, setVoucherLoading] = useState(false);
 
   // Payment methods data
   const paymentMethods = [
@@ -131,19 +161,28 @@ const CheckoutPage = () => {
     0
   );
 
-  // Fetch order preview when city/state changes or cart items change
+  // Get selected voucher IDs for API calls
+  const getSelectedVoucherIds = useCallback(() => {
+    const ids = [];
+    if (selectedShopVoucherId) ids.push(selectedShopVoucherId);
+    if (selectedProductVoucherId) ids.push(selectedProductVoucherId);
+    return ids;
+  }, [selectedShopVoucherId, selectedProductVoucherId]);
+
+  // Fetch order preview when city/state, cart, or vouchers change
   useEffect(() => {
     const fetchPreview = async () => {
-      // Use state/region as 'city' for backend logic (HCM vs Others)
       const city = customerInfo.state;
       try {
-        const response = await orderService.previewOrder({ city });
+        const response = await orderService.previewOrder({
+          city,
+          voucherIds: getSelectedVoucherIds(),
+        });
         if (response.success) {
           setOrderSummary(response.data);
         }
       } catch (error) {
         console.error('Failed to fetch order preview:', error);
-        // Fallback to local calculation
         setOrderSummary({
           subtotal: localSubtotal,
           shippingCost: 0,
@@ -157,7 +196,7 @@ const CheckoutPage = () => {
     if (cartItems.length > 0) {
       fetchPreview();
     }
-  }, [customerInfo.state, cartItems, localSubtotal]); // Re-run when address (city) or cart changes
+  }, [customerInfo.state, cartItems, localSubtotal, getSelectedVoucherIds]);
 
   // Get selected shipping company cost
   const selectedShippingCompany = shippingCompanies.find((c) => c.id === shippingCompany);
@@ -202,6 +241,7 @@ const CheckoutPage = () => {
         city: customerInfo.state,
         paymentMethod,
         notes: '',
+        voucherIds: getSelectedVoucherIds(),
       };
 
       try {
@@ -592,6 +632,240 @@ const CheckoutPage = () => {
     </Card>
   );
 
+  // Handle manual voucher code apply
+  const handleApplyCode = async () => {
+    if (!manualCode.trim()) return;
+    setCodeError('');
+    setCodeLoading(true);
+    try {
+      const response = await voucherService.validateCode(manualCode.trim());
+      if (response.success && response.data) {
+        const v = response.data;
+        // Check if already in list
+        const exists = applicableVouchers.find((av) => av._id === v._id);
+        if (!exists) {
+          setApplicableVouchers((prev) => [...prev, { ...v, estimatedSaving: 0, eligible: true }]);
+        }
+        // Auto-select
+        if (v.type === 'shop') {
+          setSelectedShopVoucherId(v._id);
+        } else if (v.type === 'product') {
+          setSelectedProductVoucherId(v._id);
+        }
+        setManualCode('');
+      }
+    } catch (error) {
+      setCodeError(error.response?.data?.message || error.message || 'Invalid voucher code');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  // Render Voucher Section
+  const renderVoucherSection = () => {
+    const shopVouchers = applicableVouchers.filter((v) => v.type === 'shop');
+    const productVouchers = applicableVouchers.filter((v) => v.type === 'product');
+    const hasVouchers = shopVouchers.length > 0 || productVouchers.length > 0;
+
+    return (
+      <div className="mb-3">
+        <div
+          className="d-flex align-items-center gap-2 mb-2"
+          style={{ fontSize: '0.95rem', fontWeight: 600 }}
+        >
+          <i className="bi bi-tag" style={{ color: '#ee4d2d' }}></i>
+          <span>Vouchers</span>
+        </div>
+
+        {voucherLoading && (
+          <div className="text-center py-2">
+            <Spinner animation="border" size="sm" className="me-2" />
+            <small className="text-muted">Loading vouchers...</small>
+          </div>
+        )}
+
+        {!voucherLoading && hasVouchers && (
+          <>
+            {/* Shop Vouchers */}
+            {shopVouchers.length > 0 && (
+              <div className="mb-2">
+                <small className="text-muted fw-semibold d-block mb-1">Shop Voucher</small>
+                {shopVouchers.map((v) => (
+                  <div
+                    key={v._id}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
+                      }`}
+                    style={{
+                      backgroundColor:
+                        selectedShopVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
+                      border:
+                        selectedShopVoucherId === v._id
+                          ? '1px solid #ee4d2d'
+                          : '1px solid transparent',
+                      cursor: v.eligible ? 'pointer' : 'not-allowed',
+                      fontSize: '0.85rem',
+                      transition: 'all 0.15s',
+                    }}
+                    onClick={() => {
+                      if (!v.eligible) return;
+                      setSelectedShopVoucherId(
+                        selectedShopVoucherId === v._id ? null : v._id,
+                      );
+                    }}
+                  >
+                    <Form.Check
+                      type="radio"
+                      name="shopVoucher"
+                      checked={selectedShopVoucherId === v._id}
+                      disabled={!v.eligible}
+                      onChange={() => { }}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <div className="flex-grow-1">
+                      <div className="d-flex align-items-center gap-1">
+                        <Badge
+                          bg=""
+                          style={{
+                            backgroundColor: '#ee4d2d',
+                            fontSize: '0.7rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {v.code}
+                        </Badge>
+                        <span className="fw-semibold" style={{ color: '#333' }}>
+                          {v.name}
+                        </span>
+                      </div>
+                      <div className="text-muted" style={{ fontSize: '0.78rem' }}>
+                        {v.shopName}
+                        {v.minBasketPrice > 0 && ` · Min ${formatCurrency(v.minBasketPrice)}`}
+                      </div>
+                      {v.eligible && v.estimatedSaving > 0 && (
+                        <div style={{ color: '#ee4d2d', fontSize: '0.78rem', fontWeight: 500 }}>
+                          Save {formatCurrency(v.estimatedSaving)}
+                        </div>
+                      )}
+                      {!v.eligible && v.ineligibleReason && (
+                        <div className="text-danger" style={{ fontSize: '0.75rem' }}>
+                          {v.ineligibleReason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Product Vouchers */}
+            {productVouchers.length > 0 && (
+              <div className="mb-2">
+                <small className="text-muted fw-semibold d-block mb-1">Product Voucher</small>
+                {productVouchers.map((v) => (
+                  <div
+                    key={v._id}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
+                      }`}
+                    style={{
+                      backgroundColor:
+                        selectedProductVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
+                      border:
+                        selectedProductVoucherId === v._id
+                          ? '1px solid #ee4d2d'
+                          : '1px solid transparent',
+                      cursor: v.eligible ? 'pointer' : 'not-allowed',
+                      fontSize: '0.85rem',
+                      transition: 'all 0.15s',
+                    }}
+                    onClick={() => {
+                      if (!v.eligible) return;
+                      setSelectedProductVoucherId(
+                        selectedProductVoucherId === v._id ? null : v._id,
+                      );
+                    }}
+                  >
+                    <Form.Check
+                      type="radio"
+                      name="productVoucher"
+                      checked={selectedProductVoucherId === v._id}
+                      disabled={!v.eligible}
+                      onChange={() => { }}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <div className="flex-grow-1">
+                      <div className="d-flex align-items-center gap-1">
+                        <Badge
+                          bg=""
+                          style={{
+                            backgroundColor: '#ff6633',
+                            fontSize: '0.7rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {v.code}
+                        </Badge>
+                        <span className="fw-semibold" style={{ color: '#333' }}>
+                          {v.name}
+                        </span>
+                      </div>
+                      <div className="text-muted" style={{ fontSize: '0.78rem' }}>
+                        {v.applicableProductNames?.length > 0
+                          ? v.applicableProductNames.join(', ')
+                          : v.shopName}
+                        {v.minBasketPrice > 0 && ` · Min ${formatCurrency(v.minBasketPrice)}`}
+                      </div>
+                      {v.eligible && v.estimatedSaving > 0 && (
+                        <div style={{ color: '#ee4d2d', fontSize: '0.78rem', fontWeight: 500 }}>
+                          Save {formatCurrency(v.estimatedSaving)}
+                        </div>
+                      )}
+                      {!v.eligible && v.ineligibleReason && (
+                        <div className="text-danger" style={{ fontSize: '0.75rem' }}>
+                          {v.ineligibleReason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Manual Code Input */}
+        <div className="d-flex gap-2 mt-2">
+          <Form.Control
+            size="sm"
+            type="text"
+            placeholder="Enter voucher code"
+            value={manualCode}
+            onChange={(e) => {
+              setManualCode(e.target.value.toUpperCase());
+              setCodeError('');
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleApplyCode()}
+            style={{ fontSize: '0.85rem' }}
+            isInvalid={!!codeError}
+          />
+          <Button
+            size="sm"
+            variant="outline-primary"
+            onClick={handleApplyCode}
+            disabled={codeLoading || !manualCode.trim()}
+            style={{ whiteSpace: 'nowrap', fontSize: '0.82rem' }}
+          >
+            {codeLoading ? <Spinner animation="border" size="sm" /> : 'Apply'}
+          </Button>
+        </div>
+        {codeError && (
+          <small className="text-danger d-block mt-1" style={{ fontSize: '0.78rem' }}>
+            {codeError}
+          </small>
+        )}
+      </div>
+    );
+  };
+
   // Render Order Summary Sidebar
   const renderOrderSummary = () => (
     <Card className="sticky-top" style={{ top: '20px' }}>
@@ -616,9 +890,16 @@ const CheckoutPage = () => {
           <span className="fw-semibold">{tax === 0 ? 'Free' : formatCurrency(tax)}</span>
         </div>
 
+        <hr className="my-2" />
+
+        {/* Voucher Section */}
+        {renderVoucherSection()}
+
         {discount > 0 && (
-          <div className="d-flex justify-content-between mb-2 text-success">
-            <span>Discount price</span>
+          <div className="d-flex justify-content-between mb-2" style={{ color: '#ee4d2d' }}>
+            <span>
+              <i className="bi bi-tag-fill me-1"></i>Discount
+            </span>
             <span className="fw-semibold">-{formatCurrency(discount)}</span>
           </div>
         )}
