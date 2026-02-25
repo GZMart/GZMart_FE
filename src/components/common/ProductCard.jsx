@@ -1,12 +1,20 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
 import { getProductImages } from '@utils/data/ProductsPage_MockData';
+import * as favouriteService from '@services/api/favouriteService';
 import styles from '@assets/styles/ProductCard.module.css';
 
 const ProductCard = ({ product }) => {
-  // Get first image from tier_variations or fallback to product.image
+  const navigate = useNavigate();
+  const user = useSelector((state) => state.auth.user);
+  const [isFav, setIsFav] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+
   const productImage = (() => {
     if (product.tier_variations && product.tier_variations.length > 0) {
       const images = getProductImages(product);
@@ -14,9 +22,48 @@ const ProductCard = ({ product }) => {
     }
     return product.image;
   })();
-  const discountPercentage = Math.round(
-    ((product.originalPrice - product.price) / product.originalPrice) * 100
-  );
+
+  const discountPercentage =
+    product.originalPrice > 0 && product.originalPrice > product.price
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+      : 0;
+
+  const ratingValue = parseFloat(product.rating) || 0;
+  const fullStars = Math.floor(ratingValue);
+  const hasHalfStar = ratingValue - fullStars >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleWishlistToggle = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!user) {
+      toast.info('Please login to add favourites');
+      navigate('/login');
+      return;
+    }
+
+    setFavLoading(true);
+    try {
+      if (isFav) {
+        await favouriteService.removeFromFavourites(product.id);
+        setIsFav(false);
+        toast.success('Removed from wishlist');
+      } else {
+        await favouriteService.addToFavourites(product.id);
+        setIsFav(true);
+        toast.success('Added to wishlist');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update wishlist');
+    } finally {
+      setFavLoading(false);
+    }
+  };
 
   // Flash sale countdown timer
   const [timeLeft, setTimeLeft] = useState('');
@@ -53,7 +100,12 @@ const ProductCard = ({ product }) => {
     : 0;
 
   return (
-    <Link to={`/product/${product.id}`} className={styles.productCard}>
+    <div className={styles.productCard} onClick={handleCardClick} role="link" tabIndex={0}>
+      {/* Discount Badge */}
+      {discountPercentage > 0 && (
+        <div className={styles.discountBadge}>-{discountPercentage}%</div>
+      )}
+
       {/* Badge */}
       {isFlashSale ? (
         <div
@@ -72,12 +124,14 @@ const ProductCard = ({ product }) => {
       {/* Product Image */}
       <div className={styles.imageWrapper}>
         <img src={productImage} alt={product.name} className={styles.productImage} />
-        <div className={styles.actions}>
-          <button className={styles.actionBtn} aria-label="Add to cart">
-            <i className="bi bi-cart3"></i>
-          </button>
-          <button className={styles.actionBtn} aria-label="Add to wishlist">
-            <i className="bi bi-plus"></i>
+        <div className={styles.imageOverlay}>
+          <button
+            className={`${styles.actionBtn} ${isFav ? styles.actionBtnActive : ''}`}
+            aria-label={isFav ? 'Remove from wishlist' : 'Add to wishlist'}
+            onClick={handleWishlistToggle}
+            disabled={favLoading}
+          >
+            <i className={`bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}`}></i>
           </button>
         </div>
       </div>
@@ -146,30 +200,27 @@ const ProductCard = ({ product }) => {
 
         <div className={styles.rating}>
           <div className={styles.stars}>
-            {[...Array(5)].map((_, i) => (
-              <i key={i} className={`bi bi-star-fill ${styles.star}`}></i>
+            {[...Array(fullStars)].map((_, i) => (
+              <i key={`full-${i}`} className={`bi bi-star-fill ${styles.starFilled}`}></i>
             ))}
-            <span className={styles.ratingValue}>{product.rating}</span>
+            {hasHalfStar && (
+              <i className={`bi bi-star-half ${styles.starFilled}`}></i>
+            )}
+            {[...Array(emptyStars)].map((_, i) => (
+              <i key={`empty-${i}`} className={`bi bi-star ${styles.starEmpty}`}></i>
+            ))}
+            <span className={styles.ratingValue}>{ratingValue.toFixed(1)}</span>
           </div>
-          <span className={styles.reviews}>({product.reviews} Reviews)</span>
+          <span className={styles.soldCount}>Sold {product.sold || 0}</span>
         </div>
         <div className={styles.priceRow}>
-          <div className={styles.prices}>
-            <span className={styles.currentPrice}>{formatCurrency(product.price)}</span>
+          <span className={styles.currentPrice}>{formatCurrency(product.price)}</span>
+          {discountPercentage > 0 && (
             <span className={styles.originalPrice}>{formatCurrency(product.originalPrice)}</span>
-          </div>
+          )}
         </div>
       </div>
-
-      {/* Action Buttons */}
-      <div className={styles.cardActions}>
-        <button className={styles.getDealBtn}>
-          <i className="bi bi-lightning-fill"></i>
-          GET DEAL - {formatCurrency(product.price)}
-        </button>
-        <button className={styles.buyNowBtn}>BUY NOW - {formatCurrency(product.price)}</button>
-      </div>
-    </Link>
+    </div>
   );
 };
 
