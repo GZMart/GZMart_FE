@@ -14,6 +14,7 @@ const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@pages/auth/ResetPasswordPage'));
 const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
+const ChangePasswordPage = lazy(() => import('@pages/auth/ChangePasswordPage'));
 
 const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
 const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'));
@@ -56,6 +57,7 @@ const ShopPromotionsPage = lazy(() => import('@pages/seller/promotions/ShopPromo
 const ShopProgramForm = lazy(() => import('@pages/seller/promotions/ShopProgramForm'));
 const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboPromotionForm'));
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
+const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -149,6 +151,13 @@ export const routeConfig = [
     element: ResetPasswordPage,
     public: true,
     restricted: true,
+    layout: 'none',
+  },
+  {
+    path: '/change-password',
+    element: ChangePasswordPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER, USER_ROLES.SELLER, USER_ROLES.ADMIN],
     layout: 'none',
   },
   {
@@ -359,6 +368,13 @@ export const routeConfig = [
   {
     path: '/seller/orders/:id',
     element: OrderDetailsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/messages',
+    element: ChatPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

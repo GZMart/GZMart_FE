@@ -1,0 +1,27 @@
+.chat-page-container {
+    height: calc(100vh - 100px);
+    /* Adjust based on layout header height */
+}
+
+/* Custom scrollbar for message list */
+.overflow-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+}
+
+.message-bubble {
+    max-width: 70%;
+    position: relative;
+}

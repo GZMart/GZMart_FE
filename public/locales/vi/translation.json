@@ -12,6 +12,7 @@
         "profile": "Hồ sơ",
         "logout": "Đăng xuất",
         "language": "Ngôn ngữ",
+        "change_password": "Đổi mật khẩu",
         "search_results": {
             "products": "SẢN PHẨM",
             "categories": "DANH MỤC",
@@ -176,6 +177,150 @@
             "default": "Xác thực OTP thất bại",
             "resend_failed": "Gửi lại OTP thất bại",
             "invalid_email_redirect": "Email không hợp lệ. Vui lòng đăng ký lại."
+        }
+    },
+    "change_password_page": {
+        "title": "Đổi Mật Khẩu",
+        "subtitle": "Nhập mật khẩu hiện tại và mật khẩu mới.",
+        "current_password_placeholder": "Mật khẩu hiện tại",
+        "new_password_placeholder": "Mật khẩu mới",
+        "confirm_password_placeholder": "Xác nhận mật khẩu mới",
+        "submit_button": "Đổi Mật Khẩu",
+        "submitting": "Đang xử lý...",
+        "success_message": "Đổi mật khẩu thành công",
+        "validation": {
+            "required_current_password": "Vui lòng nhập mật khẩu hiện tại",
+            "required_password": "Vui lòng nhập mật khẩu mới",
+            "min_password": "Mật khẩu phải có ít nhất 8 ký tự!",
+            "uppercase": "Mật khẩu phải chứa ít nhất một chữ hoa!",
+            "lowercase": "Mật khẩu phải chứa ít nhất một chữ thường!",
+            "number": "Mật khẩu phải chứa ít nhất một số!",
+            "special_char": "Mật khẩu phải chứa ít nhất một ký tự đặc biệt (@$!%*?&#)!",
+            "required_confirm_password": "Vui lòng xác nhận mật khẩu",
+            "password_match": "Mật khẩu không khớp"
+        },
+        "errors": {
+            "default": "Đổi mật khẩu thất bại",
+            "general": "Đã xảy ra lỗi",
+            "incorrect_current_password": "Mật khẩu hiện tại không đúng"
+        }
+    },
+    "cart": {
+        "title": "Giỏ hàng",
+        "subtitle": "Các sản phẩm trong giỏ chưa được đặt trước — hãy thanh toán ngay để sở hữu.",
+        "breadcrumbs": {
+            "home": "Trang chủ",
+            "cart": "Giỏ hàng"
+        },
+        "select_all": "Chọn tất cả",
+        "number_of_items": "Số lượng sản phẩm",
+        "empty": "Giỏ hàng của bạn đang trống",
+        "item": {
+            "color": "Màu sắc",
+            "size": "Kích thước",
+            "per_item": "/ sản phẩm",
+            "remove_tooltip": "Xóa sản phẩm"
+        },
+        "summary": {
+            "title": "Tóm tắt đơn hàng",
+            "price": "Tạm tính",
+            "shipping": "Phí vận chuyển",
+            "tax": "Thuế",
+            "discount": "Giảm giá",
+            "free": "Miễn phí",
+            "gift_box": "Đóng gói quà tặng",
+            "total_price": "Tổng cộng",
+            "checkout_button": "MUA NGAY",
+            "empty_hint": "Thêm sản phẩm để tiếp tục"
+        },
+        "recommend": {
+            "title": "CÓ THỂ BẠN SẼ THÍCH",
+            "add_to_cart": "Thêm vào giỏ",
+            "loading": "Đang tải gợi ý..."
+        },
+        "promo": {
+            "free_shipping": "Miễn phí vận chuyển cho đơn hàng trên $100!"
+        }
+    },
+    "profile_page": {
+        "success_update": "Cập nhật hồ sơ thành công",
+        "error_update": "Cập nhật hồ sơ thất bại",
+        "error_general": "Đã xảy ra lỗi",
+        "account": {
+            "title": "Chi tiết tài khoản",
+            "first_name": "TÊN",
+            "last_name": "HỌ",
+            "email": "ĐỊA CHỈ EMAIL",
+            "phone": "SỐ ĐIỆN THOẠI",
+            "gender": "GIỚI TÍNH",
+            "gender_options": {
+                "male": "Nam",
+                "female": "Nữ",
+                "other": "Khác"
+            },
+            "dob": "NGÀY SINH",
+            "about_me": "GIỚI THIỆU",
+            "about_me_placeholder": "Hãy kể một chút về bản thân bạn...",
+            "save_button": "Lưu thay đổi"
+        },
+        "address": {
+            "title": "Địa chỉ đã lưu",
+            "empty_state": "Chưa có địa chỉ nào. Thêm ngay!",
+            "default_badge": "Địa chỉ mặc định",
+            "address_badge": "Địa chỉ",
+            "set_default": "Đặt làm mặc định",
+            "success_add": "Thêm địa chỉ thành công",
+            "success_update": "Cập nhật địa chỉ thành công",
+            "error_save": "Lưu địa chỉ thất bại. Vui lòng thử lại.",
+            "confirm_delete": "Bạn có chắc chắn muốn xóa địa chỉ này?",
+            "success_delete": "Xóa địa chỉ thành công",
+            "error_delete": "Xóa địa chỉ thất bại",
+            "success_default": "Cập nhật địa chỉ mặc định thành công",
+            "error_default": "Đặt địa chỉ mặc định thất bại",
+            "edit_tooltip": "Sửa địa chỉ",
+            "delete_tooltip": "Xóa địa chỉ",
+            "modal": {
+                "title_add": "Thêm địa chỉ mới",
+                "title_edit": "Sửa địa chỉ",
+                "receiver_name": "Tên người nhận",
+                "receiver_name_placeholder": "VD: Nguyễn Văn A",
+                "phone": "Số điện thoại",
+                "phone_placeholder": "VD: 0912345678",
+                "province": "Tỉnh / Thành phố",
+                "select_province": "Chọn Tỉnh / Thành phố",
+                "ward": "Phường / Xã",
+                "select_ward": "Chọn Phường / Xã",
+                "street": "Đường",
+                "street_placeholder": "Tên đường, số nhà",
+                "specific_address": "Địa chỉ cụ thể",
+                "specific_address_placeholder": "Tòa nhà, tầng, căn hộ v.v.",
+                "set_default": "Đặt làm địa chỉ mặc định",
+                "cancel": "Hủy",
+                "save": "Lưu địa chỉ",
+                "update": "Cập nhật địa chỉ"
+            }
+        },
+        "orders": {
+            "title": "Lịch sử đơn hàng",
+            "loading": "Đang tải đơn hàng...",
+            "empty_title": "Không tìm thấy đơn hàng",
+            "empty_msg": "Có vẻ như bạn chưa đặt đơn hàng nào.",
+            "table": {
+                "id": "Mã đơn hàng",
+                "date": "Ngày đặt",
+                "status": "Trạng thái",
+                "total": "Tổng tiền",
+                "action": "Hành động"
+            },
+            "error_invoice": "Lấy hóa đơn thất bại",
+            "error_invoice_alert": "Không thể tạo hóa đơn. Vui lòng thử lại.",
+            "error_payment": "Tạo liên kết thanh toán thất bại",
+            "status": {
+                "completed": "Hoàn thành",
+                "pending": "Chờ xử lý",
+                "cancelled": "Đã hủy",
+                "processing": "Đang xử lý"
+            }
         }
     }
 }
