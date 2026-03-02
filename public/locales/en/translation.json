@@ -441,6 +441,10 @@
                 "description": "Available at select locations"
             }
         },
-        "only_left": "Only {{stock}} left!"
+        "only_left": "Only {{stock}} left!",
+        "tab_home": "Home",
+        "tab_all_products": "ALL PRODUCTS",
+        "suggested_for_you": "SUGGESTED FOR YOU",
+        "no_products": "This shop does not have any products yet."
     }
 }

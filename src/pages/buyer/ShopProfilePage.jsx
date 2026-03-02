@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import ProductCard from '../../components/common/ProductCard';
+import ShopInfoCard from '../../components/common/ShopInfoCard';
 import Pagination from '../../components/common/Pagination';
 import { productService } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
@@ -10,15 +12,17 @@ import styles from '../../assets/styles/ShopProfilePage.module.css';
 const ShopProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('ALL');
   
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 12,
+    limit: 20,
     total: 0,
     pages: 0
   });
@@ -87,66 +91,129 @@ const ShopProfilePage = () => {
   }
 
   return (
-    <div className={styles.shopProfilePage}>
-      {/* Shop Banner / Header */}
-      <div className={styles.shopHeader}>
-        <Container>
-          <div className={styles.shopInfoCard}>
-            <div className={styles.shopAvatar}>
-              <img src={seller.avatar || 'https://via.placeholder.com/100'} alt={seller.fullName} />
-            </div>
-            <div className={styles.shopDetails}>
-              <h1 className={styles.shopName}>{seller.fullName}</h1>
-              <div className={styles.shopMeta}>
-                <span><i className="bi bi-geo-alt-fill"></i> {seller.provinceName || 'Not specified'}</span>
-                <span><i className="bi bi-calendar-check-fill"></i> Joined: {formatDate(seller.createdAt)}</span>
-                <span><i className="bi bi-box-seam-fill"></i> Products: {pagination.total}</span>
-              </div>
-              {seller.aboutMe && (
-                <p className={styles.shopDescription}>{seller.aboutMe}</p>
-              )}
-            </div>
-          </div>
+    <>
+      <div>
+        <Container className="mt-4 mb-3">
+          <ShopInfoCard seller={seller} showViewShop={false} />
         </Container>
       </div>
-
-      {/* Shop Products */}
-      <Container className={styles.productsSection}>
-        <div className={styles.sectionTitle}>
-          <h3>All Products</h3>
+      
+      <div className={styles.shopProfilePage}>
+        <div className={styles.tabsContainer}>
+          <Container>
+            <div className={styles.shopTabs}>
+              <button 
+                className={`${styles.tabItem} ${activeTab === 'HOME' ? styles.active : ''}`}
+                onClick={() => setActiveTab('HOME')}
+              >
+                {t('product_details.tab_home', 'Dạo')}
+              </button>
+              <button 
+                className={`${styles.tabItem} ${activeTab === 'ALL' ? styles.active : ''}`}
+                onClick={() => setActiveTab('ALL')}
+              >
+                {t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')}
+              </button>
+              {/* Other pseudo-categories */}
+              <button className={styles.tabItem}>Áo Nỉ</button>
+              <button className={styles.tabItem}>Quần Đùi/Quần Short</button>
+              <button className={styles.tabItem}>Áo hoodies</button>
+            </div>
+          </Container>
         </div>
-        
-        {loading && products.length > 0 ? (
-          <div className="text-center py-4">
-            <div className="spinner-border text-primary" role="status"></div>
-          </div>
-        ) : products.length > 0 ? (
-          <>
-            <Row className="g-4">
-              {products.map(product => (
-                <Col key={product.id || product._id} xs={6} md={4} lg={3}>
-                  <ProductCard product={product} />
-                </Col>
-              ))}
-            </Row>
-            
-            {pagination.pages > 1 && (
-              <div className="mt-5 d-flex justify-content-center">
-                <Pagination 
-                  currentPage={pagination.page}
-                  totalPages={pagination.pages}
-                  onPageChange={handlePageChange}
-                />
+
+        <Container>
+          {loading && products.length === 0 ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"></div>
+            </div>
+          ) : products.length > 0 ? (
+            activeTab === 'HOME' ? (
+              <>
+                {/* 1. Gợi Ý Cho Bạn Section */}
+                <div className={styles.productsSection}>
+                  <div className={styles.sectionHeader}>
+                    <h3 className={styles.sectionTitle}>{t('product_details.suggested_for_you', 'GỢI Ý CHO BẠN')}</h3>
+                    <button className={styles.viewAllBtn}>Xem Tất Cả <i className="bi bi-chevron-right"></i></button>
+                  </div>
+                  <Row className="g-3">
+                    {products.slice(0, 6).map(product => (
+                      <Col key={product.id || product._id} xs={6} md={4} lg={2}>
+                        <ProductCard product={product} />
+                      </Col>
+                    ))}
+                  </Row>
+                </div>
+
+                {/* 2. Ưu Đãi Khủng Section */}
+                {products.length > 6 && (
+                  <div className={styles.productsSection}>
+                    <div className={styles.sectionHeader}>
+                      <h3 className={`${styles.sectionTitle} ${styles.fire}`}>
+                        <i className="bi bi-fire"></i> ƯU ĐÃI KHỦNG
+                      </h3>
+                      <button className={styles.viewAllBtn}>Xem Tất Cả <i className="bi bi-chevron-right"></i></button>
+                    </div>
+                    <Row className="g-3">
+                      {products.slice(6, 12).map(product => (
+                        <Col key={product.id || product._id} xs={6} md={4} lg={2}>
+                          <ProductCard product={product} />
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                )}
+
+                {/* 3. Sản Phẩm Bán Chạy Section */}
+                {products.length > 12 && (
+                  <div className={styles.productsSection}>
+                    <div className={styles.sectionHeader}>
+                      <h3 className={styles.sectionTitle}>SẢN PHẨM BÁN CHẠY</h3>
+                      <button className={styles.viewAllBtn}>Xem Tất Cả <i className="bi bi-chevron-right"></i></button>
+                    </div>
+                    <Row className="g-3">
+                      {products.slice(12, 18).map(product => (
+                        <Col key={product.id || product._id} xs={6} md={4} lg={2}>
+                          <ProductCard product={product} />
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* ALL PRODUCTS TAB */
+              <div className={styles.productsSection}>
+                <div className={styles.sectionHeader}>
+                  <h3 className={styles.sectionTitle}>{t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')}</h3>
+                </div>
+                <Row className="g-3">
+                  {products.map(product => (
+                    <Col key={product.id || product._id} xs={6} md={4} lg={2}>
+                      <ProductCard product={product} />
+                    </Col>
+                  ))}
+                </Row>
+                
+                {pagination.pages > 1 && (
+                  <div className="mt-5 d-flex justify-content-center">
+                    <Pagination 
+                      currentPage={pagination.page}
+                      totalPages={pagination.pages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-5">
-            <h4>This shop doesn't have any active products yet.</h4>
-          </div>
-        )}
-      </Container>
-    </div>
+            )
+          ) : (
+            <div className="text-center py-5">
+              <h4>{t('product_details.no_products', 'Shop chưa có sản phẩm nào.')}</h4>
+            </div>
+          )}
+        </Container>
+      </div>
+    </>
   );
 };
 

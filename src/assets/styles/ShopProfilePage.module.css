@@ -4,104 +4,93 @@
   padding-bottom: 40px;
 }
 
-.shopHeader {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  padding: 40px 0;
+/* Navigation Tabs */
+.tabsContainer {
   margin-bottom: 30px;
 }
 
-.shopInfoCard {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+.shopTabs {
   display: flex;
-  align-items: center;
-  gap: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.shopAvatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   overflow: hidden;
-  border: 4px solid white;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
+  box-shadow: none;
 }
 
-.shopAvatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.shopDetails {
+.tabItem {
   flex: 1;
+  min-width: 150px;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 3px solid transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
-.shopName {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 12px;
+.tabItem:last-child {
+  border-right: none;
 }
 
-.shopMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 16px;
+.tabItem:hover {
+  background-color: #f0f0f0;
+  color: #333;
 }
 
-.shopMeta span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #4b5563;
-  font-size: 15px;
+.tabItem.active {
+  background-color: white;
+  color: #0066ff;
+  border-bottom-color: #0066ff;
 }
 
-.shopMeta i {
-  color: #4f46e5;
-  font-size: 18px;
-}
-
-.shopDescription {
-  color: #6b7280;
-  font-size: 15px;
-  line-height: 1.6;
-  margin: 0;
-}
-
+/* Main Content Sections */
 .productsSection {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
   margin-bottom: 30px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .sectionTitle {
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.sectionTitle h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 16px;
+  font-weight: 500;
+  color: #757575;
   margin: 0;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
 }
 
-@media (max-width: 768px) {
-  .shopInfoCard {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .shopMeta {
-    justify-content: center;
-  }
+.sectionTitle.fire {
+  color: #ff4444;
+  /* Keep fire icon red but maybe slightly softer */
+}
+
+.sectionTitle.fire i {
+  margin-right: 5px;
+}
+
+.viewAllBtn {
+  color: #0066ff;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.viewAllBtn:hover {
+  text-decoration: underline;
 }

@@ -441,6 +441,10 @@
                 "description": "Có sẵn tại các cửa hàng chọn lọc"
             }
         },
-        "only_left": "Chưa đầy {{stock}} sản phẩm!"
+        "only_left": "Chưa đầy {{stock}} sản phẩm!",
+        "tab_home": "Dạo",
+        "tab_all_products": "TẤT CẢ SẢN PHẨM",
+        "suggested_for_you": "GỢI Ý CHO BẠN",
+        "no_products": "Shop chưa có sản phẩm nào."
     }
 }

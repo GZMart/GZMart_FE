@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
+import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import { productService } from '../../services/api';
 import * as favouriteService from '../../services/api/favouriteService';
@@ -623,78 +624,7 @@ const ProductDetailsPage = () => {
       {/* Shop Info Section - Shopee Style */}
       {(product.sellerId || true) && (
         <div className={styles.shopSection}>
-          <div className={styles.shopInfoCard}>
-            
-            {/* Left Side: Avatar, Name, Buttons */}
-            <div className={styles.shopProfileLeft}>
-              <div className={styles.shopAvatarContainer}>
-                <img
-                  src={(typeof product.sellerId === 'object' && product.sellerId?.avatar) ? product.sellerId.avatar : 'https://ui-avatars.com/api/?name=Tong+Kho+Si+Minh+Khoi&background=random'}
-                  alt={(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Tổng Kho Sỉ Minh Khôi'}
-                  className={styles.shopAvatarImg}
-                />
-                {((typeof product.sellerId === 'object' && product.sellerId?.isPreferred) || true) && (
-                  <div className={styles.shopFavBadge}>{t('product_details.shop_badge_favorite')}</div>
-                )}
-              </div>
-              <div className={styles.shopProfileInfo}>
-                <div className={styles.shopName}>{(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Shop'}</div>
-                <div className={styles.shopOnlineStatus}>
-                    {typeof product.sellerId === 'object' && product.sellerId?.createdAt ? `${t('product_details.shop_joined')} ${Math.max(1, Math.floor((new Date() - new Date(product.sellerId.createdAt)) / (1000 * 60 * 60 * 24 * 30)))} ${t('product_details.shop_months_ago')}` : ''}
-                </div>
-                <div className={styles.shopActions}>
-                  <button className={styles.btnViewShop}>
-                    <i className="bi bi-person-plus-fill"></i> {t('product_details.btn_follow')}
-                  </button>
-                  <button
-                    className={styles.btnChat}
-                    onClick={() => navigate(`/shop/${typeof product.sellerId === 'object' ? product.sellerId._id : product.sellerId}`)}
-                  >
-                    <i className="bi bi-shop"></i> {t('product_details.btn_view_shop')}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.shopDivider}></div>
-
-          {/* Right Side: Stats */}
-            <div className={styles.shopStatsRight}>
-              <div className={styles.statItem}>
-                <i className="bi bi-shop statIcon"></i>
-                <span className={styles.statLabel}>{t('product_details.shop_stat_products')}:</span>
-                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.productCount !== undefined ? product.sellerId.productCount : t('product_details.val_updating')}</span>
-              </div>
-              <div className={styles.statItem}>
-                <i className="bi bi-people statIcon"></i>
-                <span className={styles.statLabel}>{t('product_details.shop_stat_followers')}:</span>
-                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.followerCount !== undefined ? product.sellerId.followerCount : t('product_details.val_updating')}</span>
-              </div>
-              <div className={styles.statItem}>
-                <i className="bi bi-person-check statIcon"></i>
-                <span className={styles.statLabel}>{t('product_details.shop_stat_following')}:</span>
-                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.followingCount !== undefined ? product.sellerId.followingCount : 0}</span>
-              </div>
-              <div className={styles.statItem}>
-                <i className="bi bi-star statIcon"></i>
-                <span className={styles.statLabel}>{t('product_details.shop_stat_rating')}:</span>
-                <span className={styles.statValue}>
-                  {typeof product.sellerId === 'object' && product.sellerId?.rating !== undefined ? product.sellerId.rating.toFixed(1) : '0.0'} 
-                  {typeof product.sellerId === 'object' && product.sellerId?.ratingCount > 0 ? ` (${product.sellerId?.ratingCount} ${t('product_details.shop_stat_rating')})` : ''}
-                </span>
-              </div>
-              <div className={styles.statItem}>
-                <i className="bi bi-chat-dots statIcon"></i>
-                <span className={styles.statLabel}>{t('product_details.shop_stat_response_rate')}:</span>
-                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.chatResponseRate !== undefined ? product.sellerId.chatResponseRate : 100}%</span>
-              </div>
-              <div className={styles.statItem}>
-                <i className="bi bi-x-circle statIcon"></i>
-                <span className={styles.statLabel}>{t('product_details.shop_stat_cancel_rate')}:</span>
-                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.cancelDutyRate !== undefined ? product.sellerId.cancelDutyRate : 0}%</span>
-              </div>
-            </div>
-          </div>
+          <ShopInfoCard seller={product.sellerId} showViewShop={true} />
         </div>
       )}
 
