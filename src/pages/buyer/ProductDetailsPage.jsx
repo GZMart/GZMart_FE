@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import { Image } from 'antd';
 import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
@@ -143,15 +144,8 @@ const ProductDetailsPage = () => {
           // Ensure other fields are preserved
           models: productData.models || [],
           price: productData.originalPrice || 0, // Base price
-          // Add mock data for missing optional fields
-          flashSale: productData.flashSale || {
-            timeText: 'FLASH SALE STARTS IN 21:00, TODAY'
-          },
-          shopVouchers: productData.shopVouchers || [
-            { discount: 'Save 10k' }
-          ],
-          shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
-          warranty: productData.warranty || 'Free return within 15 days • Warranty included'
+          // Default optional fields
+          descriptionText: productData.description ? productData.description.split('\n') : [],
         };
 
         setProduct(transformed);
@@ -369,11 +363,13 @@ const ProductDetailsPage = () => {
         const response = await favouriteService.removeFromFavourites(product._id);
         console.log('Remove response:', response);
         setIsFavourite(false);
+        setProduct((prev) => ({ ...prev, wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1) }));
         toast.success('Removed from favourites');
       } else {
         const response = await favouriteService.addToFavourites(product._id);
         console.log('Add response:', response);
         setIsFavourite(true);
+        setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
         toast.success('Added to favourites');
       }
     } catch (error) {
@@ -422,10 +418,20 @@ const ProductDetailsPage = () => {
       <div className={styles.productContainer}>
         {/* Images */}
         <div className={styles.imageSection}>
-          <div className={styles.mainImage}>
-            <img src={productImages[selectedImage]} alt={product.name} />
+          <div className={styles.mainImage} style={{ position: 'relative' }}>
+            <Image.PreviewGroup items={productImages}>
+              <Image 
+                src={productImages[selectedImage]} 
+                alt={product.name}
+                width="100%"
+                style={{ objectFit: 'cover', borderRadius: '12px', minHeight: '300px' }}
+              />
+            </Image.PreviewGroup>
             {product.badge && (
-              <span className={`${styles.badge} ${styles[product.badgeColor]}`}>
+              <span 
+                className={`${styles.badge} ${styles[product.badgeColor]}`}
+                style={{ zIndex: 10, position: 'absolute', top: '15px', left: '15px' }}
+              >
                 {product.badge}
               </span>
             )}
@@ -437,7 +443,7 @@ const ProductDetailsPage = () => {
                 className={`${styles.thumbnail} ${selectedImage === index ? styles.active : ''}`}
                 onClick={() => setSelectedImage(index)}
               >
-                <img src={img} alt="" />
+                <img src={img} alt={`Thumbnail ${index + 1}`} />
               </div>
             ))}
           </div>
@@ -455,7 +461,8 @@ const ProductDetailsPage = () => {
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
-            <span className={styles.reviewCount}>({product.reviewCount || 0} Reviews)</span>
+            <span className={styles.reviewCount}>({product.reviewCount || 0} Đánh giá)</span>
+            <span className={styles.soldCount} style={{marginLeft: 15, color: '#666'}}>Đã bán {product.sold || 0}</span>
           </div>
 
           {/* Price & Discount Section */}
@@ -476,7 +483,7 @@ const ProductDetailsPage = () => {
           </div>
 
           {/* Flash Sale Section */}
-          {product.flashSale && (
+          {product.isTrending && (
             <div className={styles.flashSaleSection}>
               <i className="bi bi-lightning-fill"></i>
               <span className={styles.flashSaleLabel}>FLASH SALE</span>
@@ -628,7 +635,7 @@ const ProductDetailsPage = () => {
               </div>
               <div className={styles.shopProfileInfo}>
                 <div className={styles.shopName}>{(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Tổng Kho Sỉ Minh Khôi'}</div>
-                <div className={styles.shopOnlineStatus}>Online 1 Giờ Trước</div>
+                <div className={styles.shopOnlineStatus}></div>
                 <div className={styles.shopActions}>
                   <button className={styles.btnChat}>
                     <i className="bi bi-chat-dots-fill"></i> Chat Ngay
@@ -648,35 +655,32 @@ const ProductDetailsPage = () => {
             {/* Right Side: Stats */}
             <div className={styles.shopStatsRight}>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Đánh Giá</span>
-                <span className={styles.statValue}>155,6k</span>
+                <span className={styles.statLabel}>Lượt Bán</span>
+                <span className={styles.statValue}>{product.sold || 0}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Tỉ Lệ Phản Hồi</span>
-                <span className={styles.statValue}>80%</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Tham Gia</span>
+                <span className={styles.statLabel}>Lượt Cập Nhật</span>
                 <span className={styles.statValue}>
-                  {(typeof product.sellerId === 'object' && product.sellerId?.createdAt) 
-                    ? (() => {
-                        const years = new Date().getFullYear() - new Date(product.sellerId.createdAt).getFullYear();
-                        return years > 0 ? `${years} năm trước` : 'Gần đây';
-                      })()
-                    : '7 năm trước'}
+                  {new Date(product.updatedAt || Date.now()).toLocaleDateString('vi-VN')}
                 </span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Sản Phẩm</span>
-                <span className={styles.statValue}>1,5k</span>
+                <span className={styles.statLabel}>Ngày Tạo Sản Phẩm</span>
+                <span className={styles.statValue}>
+                  {new Date(product.createdAt || Date.now()).toLocaleDateString('vi-VN')}
+                </span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Thời Gian Phản Hồi</span>
-                <span className={styles.statValue}>trong vài giờ</span>
+                <span className={styles.statLabel}>Lượt Xem</span>
+                <span className={styles.statValue}>{product.viewCount || 0}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Người Theo Dõi</span>
-                <span className={styles.statValue}>60,7k</span>
+                <span className={styles.statLabel}>Trạng Thái</span>
+                <span className={styles.statValue}>{product.status === 'active' ? 'Đang Bán' : 'Hết Hàng'}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Lượt Thích</span>
+                <span className={styles.statValue}>{product.wishlistCount || 0}</span>
               </div>
             </div>
           </div>
