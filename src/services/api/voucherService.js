@@ -5,11 +5,9 @@ const voucherService = {
   createVoucher: async (data) => await api.post('/api/vouchers', data),
 
   // Get all vouchers with filters
-  getVouchers: async (params) => 
+  getVouchers: async (params) =>
     // params: { page, limit, status, type }
-     await api.get('/api/vouchers', { params })
-  ,
-
+    await api.get('/api/vouchers', { params }),
   // Get single voucher by ID
   getVoucherById: async (id) => await api.get(`/api/vouchers/${id}`),
 
@@ -20,7 +18,14 @@ const voucherService = {
   deleteVoucher: async (id) => await api.delete(`/api/vouchers/${id}`),
 
   // Apply voucher (for buyer - optional for now)
-  applyVoucher: async (code, cartTotal) => await api.post('/api/vouchers/apply', { code, cartTotal }),
+  applyVoucher: async (code, cartTotal) =>
+    await api.post('/api/vouchers/apply', { code, cartTotal }),
+
+  // Get applicable vouchers for buyer's current cart (checkout)
+  getApplicableVouchers: async () => await api.get('/api/vouchers/applicable'),
+
+  // Validate a voucher code manually entered by buyer
+  validateCode: async (code) => await api.post('/api/vouchers/validate-code', { code }),
 };
 
 export default voucherService;

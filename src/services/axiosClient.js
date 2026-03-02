@@ -55,6 +55,11 @@ axiosClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // Remove Content-Type for FormData - let Axios set it automatically with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     // Log request in development
     if (import.meta.env.DEV) {
       // console.log('🚀 Request:', {

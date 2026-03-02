@@ -1,81 +1,88 @@
 /**
  * Deal Service - APIs for Deals and Promotions
- * Handles flash sales, daily deals, weekend deals
+ * Handles flash sales, daily deals, weekend deals, deal details, and my deals.
+ *
+ * Base URL: /api/deals
  */
 
 import axiosClient from '../axiosClient';
 
 const dealService = {
   /**
-   * Get all active deals
-   * @returns {Promise} All deals data
+   * Get all active deals (paginated)
+   * GET /api/deals
+   * @param {object} params - { page, limit }
    */
-  getAllDeals: async () => {
-    try {
-      const response = await axiosClient.get('/api/deals');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching all deals:', error);
-      throw error;
-    }
-  },
+  getActiveDeals: (params = {}) =>
+    axiosClient.get('/api/deals', { params }),
+
+  /** @deprecated use getActiveDeals() */
+  getAllDeals: (params = {}) =>
+    axiosClient.get('/api/deals', { params }),
 
   /**
-   * Get flash sales
-   * @returns {Promise} Flash sales data
+   * Get only flash_sale type deals
+   * GET /api/deals/flash-sales
+   * @param {object} params - { page, limit }
    */
-  getFlashSales: async () => {
-    try {
-      const response = await axiosClient.get('/api/deals/flash-sales');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching flash sales:', error);
-      throw error;
-    }
-  },
+  getFlashSaleDeals: (params = {}) =>
+    axiosClient.get('/api/deals/flash-sales', { params }),
+
+  /** @deprecated use getFlashSaleDeals() */
+  getFlashSales: (params = {}) =>
+    axiosClient.get('/api/deals/flash-sales', { params }),
 
   /**
-   * Get daily deals
-   * @returns {Promise} Daily deals data
+   * Get only daily_deal type deals
+   * GET /api/deals/daily-deals
+   * @param {object} params - { page, limit }
    */
-  getDailyDeals: async () => {
-    try {
-      const response = await axiosClient.get('/api/deals/daily-deals');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching daily deals:', error);
-      throw error;
-    }
-  },
+  getDailyDeals: (params = {}) =>
+    axiosClient.get('/api/deals/daily-deals', { params }),
 
   /**
-   * Get weekend deals
-   * @returns {Promise} Weekend deals data
+   * Get only weekly_deal type deals (Weekend Deals)
+   * GET /api/deals/weekend-deals
+   * @param {object} params - { page, limit }
    */
-  getWeekendDeals: async () => {
-    try {
-      const response = await axiosClient.get('/api/deals/weekend-deals');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching weekend deals:', error);
-      throw error;
-    }
-  },
+  getWeekendDeals: (params = {}) =>
+    axiosClient.get('/api/deals/weekend-deals', { params }),
 
   /**
-   * Get deal by product ID
-   * @param {string} productId - Product ID
-   * @returns {Promise} Deal data for specific product
+   * Get product-level deal badge info
+   * GET /api/deals/product/:productId
+   * @param {string} productId
    */
-  getDealByProduct: async (productId) => {
-    try {
-      const response = await axiosClient.get(`/api/deals/product/${productId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching deal by product:', error);
-      throw error;
-    }
-  },
+  getDealByProduct: (productId) =>
+    axiosClient.get(`/api/deals/product/${productId}`),
+
+  /**
+   * Get full deal details by deal ID — used by DealDetailsPage
+   * GET /api/deals/:dealId
+   *
+   * Response shape:
+   *   deal.dealPrice           → discounted price to display
+   *   deal.productId.originalPrice → original price (strikethrough)
+   *   deal.discountPercent     → % off badge
+   *   deal.endDate             → countdown timer
+   *   deal.soldCount           → buyers filled
+   *   deal.quantityLimit       → max buyers / members
+   *   deal.productId.tier_variations → variant selectors
+   *
+   * @param {string} dealId
+   */
+  getDealById: (dealId) =>
+    axiosClient.get(`/api/deals/${dealId}`),
+
+  /**
+   * Get authenticated user's deals (pending + approved)
+   * GET /api/deals/my-deals  🔒 Requires Authorization header
+   *
+   * Response: { success, pendingDeals: [], approvedDeals: [] }
+   * NOTE: BE currently returns empty arrays (stub). Display empty state gracefully.
+   */
+  getMyDeals: () =>
+    axiosClient.get('/api/deals/my-deals'),
 };
 
 export default dealService;

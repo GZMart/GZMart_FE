@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Table, Spin, Empty, Pagination, Statistic, Row, Col, Card, Button, Space, Tag, message } from 'antd';
-import { EyeOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import PageHeader from '../../components/common/PageHeader';
-import PageFilters from '../../components/common/PageFilters';
+import { Clock, Cog, Truck, CheckCircle, AlertCircle, XCircle, RefreshCw, CreditCard, Wallet } from 'lucide-react';
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import { orderSellerService } from '../../services/api/orderSellerService';
 import { formatCurrency } from '../../utils/formatters';
+import styles from '../../assets/styles/seller/OrdersPage.module.css';
 
 const OrdersPage = () => {
   const [searchParams] = useSearchParams();
@@ -45,9 +43,44 @@ const OrdersPage = () => {
     { value: 'under_investigation', label: 'Under Investigation' },
   ];
 
+  // Status tag styling
+  const statusTagColors = {
+    pending: { bg: '#FFF3CD', color: '#856404', label: 'Pending', icon: Clock },
+    processing: { bg: '#D1ECF1', color: '#0C5460', label: 'Processing', icon: Cog },
+    shipped: { bg: '#D4EDDA', color: '#155724', label: 'Shipped', icon: Truck },
+    delivered: { bg: '#D4EDDA', color: '#155724', label: 'Delivered', icon: CheckCircle },
+    delivered_pending_confirmation: { bg: '#FFF3CD', color: '#856404', label: 'Pending Confirmation', icon: AlertCircle },
+    completed: { bg: '#D4EDDA', color: '#155724', label: 'Completed', icon: CheckCircle },
+    cancelled: { bg: '#F8D7DA', color: '#721C24', label: 'Cancelled', icon: XCircle },
+    refunded: { bg: '#F8D7DA', color: '#721C24', label: 'Refunded', icon: XCircle },
+    refund_pending: { bg: '#FFF3CD', color: '#856404', label: 'Refund Pending', icon: RefreshCw },
+    under_investigation: { bg: '#E2E3E5', color: '#383D41', label: 'Under Investigation', icon: AlertCircle },
+  };
+
+  // Payment status tag styling
+  const paymentStatusColors = {
+    pending: { bg: '#FFF3CD', color: '#856404', label: 'Pending', icon: Clock },
+    paid: { bg: '#D4EDDA', color: '#155724', label: 'Paid', icon: CheckCircle },
+    completed: { bg: '#D4EDDA', color: '#155724', label: 'Paid', icon: CheckCircle },
+    failed: { bg: '#F8D7DA', color: '#721C24', label: 'Failed', icon: XCircle },
+    refunded: { bg: '#F8D7DA', color: '#721C24', label: 'Refunded', icon: XCircle },
+    refund_pending: { bg: '#FFF3CD', color: '#856404', label: 'Refund Pending', icon: RefreshCw },
+  };
+
+  // Payment method icons
+  const paymentMethodIcons = {
+    cash_on_delivery: '💵 COD',
+    credit_card: '💳 Thẻ tín dụng',
+    debit_card: '💳 Thẻ ghi nợ',
+    bank_transfer: '🏦 Bank',
+    wallet: '👛 E-Wallet',
+    paypal: '🅿️ PayPal',
+  };
+
   // Fetch orders
   useEffect(() => {
     fetchOrders(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, currentPage]);
 
   const fetchOrders = async (page) => {
@@ -102,11 +135,13 @@ const OrdersPage = () => {
     setCurrentPage(1); // Reset to first page
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleViewDetails = (order) => {
     // Navigate to order details page
     window.location.href = `/seller/orders/${order._id}`;
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleUpdateStatus = (order) => {
     setSelectedOrder(order);
     setShowStatusModal(true);
@@ -122,6 +157,7 @@ const OrdersPage = () => {
     fetchOrders(currentPage); // Refresh orders
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleCancelOrder = async (orderId) => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
       try {
@@ -148,168 +184,47 @@ const OrdersPage = () => {
     }
   };
 
-  // Get status color for Ant Design Tag
-  const getStatusTagColor = (status) => {
-    const colors = {
-      pending: 'gold',
-      processing: 'blue',
-      shipped: 'cyan',
-      delivered: 'green',
-      delivered_pending_confirmation: 'blue',
-      completed: 'green',
-      cancelled: 'red',
-      refunded: 'orange',
-      refund_pending: 'orange',
-      under_investigation: 'red',
-    };
-    return colors[status] || 'default';
-  };
-
-  const getPaymentStatusTagColor = (status) => {
-    const colors = {
-      pending: 'gold',
-      completed: 'green',
-      failed: 'red',
-      refunding: 'blue',
-      refunded: 'green',
-    };
-    return colors[status] || 'default';
-  };
-
-  // Format order data for table
-  const tableData = orders.map((order) => ({
+  // Format order data for display
+  const formattedOrders = orders.map((order) => ({
     key: order._id,
     _id: order._id,
     orderNumber: order.orderNumber,
-    buyer: order.userId?.name || 'Unknown',
+    buyer: order.userId?.fullName || 'Unknown',
     buyerEmail: order.userId?.email || '',
+    buyerPhone: order.userId?.phone || '',
     totalItems: order.items?.length || 0,
     totalPrice: order.totalPrice,
     status: order.status,
     paymentMethod: order.paymentMethod,
-    shippingMethod: order.shippingMethod,
+    paymentStatus: order.paymentStatus,
     shippingAddress: order.shippingAddress,
     createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
-    paymentStatus: order.paymentStatus,
+    items: (order.items || []).map((item) => ({
+      _id: item._id,
+      productName: item.productId?.name || 'Unknown Product',
+      productImage: item.productId?.images?.[0] || null,
+      price: item.price || 0,
+      quantity: item.quantity || 1,
+      sku: item.sku || '',
+      tierDetails: item.tierDetails || {},
+      model: item.tierSelections || {},
+    })),
     _originalData: order,
   }));
-
-  const columns = [
-    {
-      title: 'Order #',
-      dataIndex: 'orderNumber',
-      key: 'orderNumber',
-      width: 120,
-      render: (text) => <strong>{text}</strong>,
-    },
-    {
-      title: 'Customer',
-      key: 'buyer',
-      width: 140,
-      render: (_, record) => (
-        <div>
-          <p style={{ marginBottom: 4, fontSize: '13px' }}>{record.buyer}</p>
-          <p style={{ marginBottom: 0, color: '#999', fontSize: '11px' }}>{record.buyerEmail}</p>
-        </div>
-      ),
-    },
-    {
-      title: 'Items',
-      dataIndex: 'totalItems',
-      key: 'totalItems',
-      width: 60,
-      align: 'center',
-    },
-    {
-      title: 'Total',
-      dataIndex: 'totalPrice',
-      key: 'totalPrice',
-      width: 100,
-      render: (price) => <strong style={{ color: '#1890ff', fontSize: '13px' }}>{formatCurrency(price)}</strong>,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 110,
-      render: (status) => <Tag color={getStatusTagColor(status)} style={{ fontSize: '11px' }}>{status.replace(/_/g, ' ').toUpperCase()}</Tag>,
-    },
-    {
-      title: 'Payment',
-      dataIndex: 'paymentStatus',
-      key: 'paymentStatus',
-      width: 90,
-      render: (status) => <Tag color={getPaymentStatusTagColor(status)} style={{ fontSize: '11px' }}>{status?.toUpperCase() || 'PENDING'}</Tag>,
-    },
-    {
-      title: 'Shipping',
-      dataIndex: 'shippingMethod',
-      key: 'shippingMethod',
-      width: 85,
-      render: (method) => <span style={{ fontSize: '13px' }}>{method?.toUpperCase()}</span>,
-    },
-    {
-      title: 'Date',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 90,
-      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 110,
-      align: 'center',
-      render: (_, record) => (
-        <Space size={4}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetails(record._originalData)}
-            title="View Details"
-          />
-          <Button
-            type="default"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleUpdateStatus(record._originalData)}
-            disabled={record.status === 'completed' || record.status === 'cancelled'}
-            title="Update Status"
-          />
-          <Button
-            type="primary"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            onClick={() => handleCancelOrder(record._id)}
-            disabled={
-              record.status === 'completed' ||
-              record.status === 'cancelled' ||
-              record.status === 'shipped' ||
-              record.status === 'delivered'
-            }
-            title="Cancel Order"
-          />
-        </Space>
-      ),
-    },
-  ];
 
   // Show loading state
   if (loading && orders.length === 0) {
     return (
-      <div style={{ padding: '24px' }}>
-        <PageHeader
-          title="Orders"
-          subtitle="Manage your customer orders"
-          showButton={false}
-        />
-        <Card style={{ marginTop: '24px' }}>
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <Spin size="large" />
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <h1>Orders</h1>
+            <p>Returned orders by customers.</p>
           </div>
-        </Card>
+        </div>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
+        </div>
       </div>
     );
   }
@@ -317,110 +232,258 @@ const OrdersPage = () => {
   // Show error state
   if (error) {
     return (
-      <div style={{ padding: '24px' }}>
-        <PageHeader
-          title="Orders"
-          subtitle="Manage your customer orders"
-          showButton={false}
-        />
-        <Card style={{ marginTop: '24px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <p style={{ color: '#ff4d4f', fontSize: '16px', marginBottom: '8px' }}>
-              ⚠️ Error Loading Orders
-            </p>
-            <p>{error}</p>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <h1>Orders</h1>
+            <p>Returned orders by customers.</p>
           </div>
-          <Button type="primary" onClick={() => fetchOrders(currentPage)} icon={<ReloadOutlined />}>
+        </div>
+        <div className={styles.errorState}>
+          <div className={styles.errorTitle}>⚠️ Error Loading Orders</div>
+          <div className={styles.errorMessage}>{error}</div>
+          <button className={styles.retryButton} onClick={() => fetchOrders(currentPage)}>
             Try Again
-          </Button>
-        </Card>
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '0px' }}>
-      <div style={{ padding: '12px 16px 0 16px' }}>
-        <PageHeader
-          title="Orders"
-          subtitle="Manage your customer orders"
-          showButton={false}
-        />
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1>Orders</h1>
+          <p>Returned orders by customers.</p>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card style={{ margin: '8px 16px', borderRadius: '4px' }}>
-        <PageFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          filterConfigs={[
-            {
-              name: 'status',
-              label: 'Status',
-              options: orderStatuses,
-            },
-            {
-              name: 'paymentMethod',
-              label: 'Payment Method',
-              options: [
-                { value: 'all', label: 'All Methods' },
-                { value: 'vnpay', label: 'VNPay' },
-                { value: 'cash_on_delivery', label: 'Cash on Delivery' },
-                { value: 'payos', label: 'PayOS' },
-              ],
-            },
-            {
-              name: 'shippingMethod',
-              label: 'Shipping Method',
-              options: [
-                { value: 'all', label: 'All Methods' },
-                { value: 'standard', label: 'Standard' },
-                { value: 'express', label: 'Express' },
-                { value: 'next_day', label: 'Next Day' },
-                { value: 'store', label: 'In Store' },
-              ],
-            },
-            {
-              name: 'sortBy',
-              label: 'Sort By',
-              options: [
-                { value: 'newest-first', label: 'Newest First' },
-                { value: 'oldest-first', label: 'Oldest First' },
-                { value: 'total-high', label: 'Total: High to Low' },
-                { value: 'total-low', label: 'Total: Low to High' },
-              ],
-            },
-          ]}
-        />
-      </Card>
+      <div className={styles.filtersCard}>
+        <div className={styles.filtersGrid}>
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Type</label>
+            <select
+              className={styles.filterSelect}
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+            >
+              {orderStatuses.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* Orders Table */}
-      <Card style={{ margin: '8px 16px', borderRadius: '4px' }}>
-        <Spin spinning={loading}>
-          {tableData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <Empty description="No orders found" />
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Month</label>
+            <select className={styles.filterSelect} defaultValue="all">
+              <option value="all">All Months</option>
+              <option value="january">January</option>
+              <option value="february">February</option>
+              <option value="march">March</option>
+            </select>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>Urgency</label>
+            <select className={styles.filterSelect} defaultValue="all">
+              <option value="all">All Urgency</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Orders List */}
+      {formattedOrders.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyStateIcon}>📦</div>
+          <div className={styles.emptyStateTitle}>No Orders Found</div>
+          <div className={styles.emptyStateText}>Try adjusting your filters or check back later</div>
+        </div>
+      ) : (
+        <div className={styles.ordersContainer}>
+          {formattedOrders.map((order) => (
+            <div
+              key={order._id}
+              className={styles.orderCard}
+              onClick={() => handleViewDetails(order._originalData)}
+              role="button"
+              tabIndex={0}
+            >
+              {/* Order Header with Meta Information */}
+              <div className={styles.orderHeaderRow}>
+                <div className={styles.orderMeta}>
+                  <div className={styles.metaItem}>
+                    <span className={styles.metaLabel}>Order ID</span>
+                    <span className={styles.metaValue}>{order.orderNumber}</span>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <span className={styles.metaLabel}>Purchased</span>
+                    <span className={styles.metaValue}>{order.createdAt}</span>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <span className={styles.metaLabel}>Customer</span>
+                    <span className={styles.metaValue}>{order.buyer}</span>
+                  </div>
+
+                  {/* Status - Same format as other items */}
+                  {(() => {
+                    const statusConfig = statusTagColors[order.status];
+                    const StatusIcon = statusConfig?.icon || AlertCircle;
+                    return (
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Status</span>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 10px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor: statusConfig?.bg || '#E2E3E5',
+                            color: statusConfig?.color || '#383D41',
+                            whiteSpace: 'nowrap',
+                            width: 'fit-content',
+                          }}
+                        >
+                          <StatusIcon size={12} />
+                          {statusConfig?.label || order.status}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Total and Payment Status - Right aligned */}
+                <div className={`${styles.metaItem} ${styles.totalPriceItem}`}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', justifyContent: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                      <span className={styles.metaLabel} style={{ fontSize: '11px' }}>Total</span>
+                      <span className={`${styles.metaValue} ${styles.totalPriceValue}`} style={{ fontSize: '14px', fontWeight: '700' }}>{formatCurrency(order.totalPrice)}</span>
+                    </div>
+                    {(() => {
+                      const paymentConfig = paymentStatusColors[order.paymentStatus];
+                      const PaymentIcon = paymentConfig?.icon || AlertCircle;
+                      return (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            padding: '3px 8px',
+                            borderRadius: '3px',
+                            fontSize: '10px',
+                            fontWeight: '600',
+                            backgroundColor: paymentConfig?.bg || '#E2E3E5',
+                            color: paymentConfig?.color || '#383D41',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <PaymentIcon size={10} />
+                          {paymentConfig?.label || order.paymentStatus}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              <hr className={styles.headerDivider} />
+
+              {/* Order Items */}
+              <div className={styles.orderItemsWrapper}>
+                {order.items.map((item, index) => (
+                  <div key={`${order._id}-${index}`} className={styles.orderItem}>
+                    {/* Product Image */}
+                    <div className={styles.productImage}>
+                      {item.productImage ? (
+                        <img src={item.productImage} alt={item.productName} />
+                      ) : (
+                        <div className={styles.productImagePlaceholder}>📷</div>
+                      )}
+                    </div>
+
+                    {/* Product Details */}
+                    <div className={styles.productDetails}>
+                      <h3 className={styles.productName}>{item.productName}</h3>
+                      <div className={styles.productAttributesList} style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'space-between', maxWidth: '400px' }}>
+                        <div className={styles.attributeItem}>
+                          <span className={styles.attributeLabel}>Quantity:</span>
+                          <span className={styles.attributeValue}>{item.quantity}</span>
+                        </div>
+                        {Object.entries(item.tierDetails || {}).map(([key, value]) => (
+                          <div key={key} className={styles.attributeItem}>
+                            <span className={styles.attributeLabel}>{key}:</span>
+                            <span className={styles.attributeValue}>{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Status, Payment, and Actions - Only show on first item */}
+                    {index === 0 && (
+                      <div className={styles.orderActions}>
+                        <button
+                          className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          title="Dispatch Order"
+                        >
+                          DISPATCH
+                        </button>
+                        <button
+                          className={`${styles.actionButton} ${styles.actionButtonOutline}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          title="Message Buyer"
+                        >
+                          MESSAGE BUYER
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : (
-            <Table
-              columns={columns}
-              dataSource={tableData}
-              pagination={{
-                current: currentPage,
-                pageSize: itemsPerPage,
-                total: totalPages * itemsPerPage,
-                onChange: handlePageChange,
-                showSizeChanger: false,
-                size: 'small',
-              }}
-              scroll={{ x: 'max-content' }}
-              rowHoverable
-              size="small"
-            />
-          )}
-        </Spin>
-      </Card>
+          ))}
+        </div>
+      )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className={styles.paginationContainer}>
+          <button
+            className={styles.paginationButton}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <span className={styles.paginationInfo}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            className={styles.paginationButton}
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {/* Status Modal */}
       {selectedOrder && (
         <OrderStatusModal
           show={showStatusModal}

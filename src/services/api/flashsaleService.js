@@ -69,8 +69,8 @@ export const flashsaleService = {
    * @param {number} [params.limit=10] - Items per page (optional)
    * @returns {Promise} Search results with pagination
    */
-  search: async (id, params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/${id}/search`, { params });
+  search: async (id, q, params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/${id}/search`, { params: { q, ...params } });
   },
 
   /**

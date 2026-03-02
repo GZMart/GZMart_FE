@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { dealService } from '../../services/api';
+import { dealService, flashsaleService } from '../../services/api';
 import { PUBLIC_ROUTES } from '../../constants/routes';
 
 // Helper function to format price
@@ -165,39 +165,68 @@ const DealsOfTheDay = () => {
     const fetchDeals = async () => {
       try {
         setLoading(true);
-        const response = await dealService.getAllDeals();
+        const response = await flashsaleService.getActive();
 
         console.log('🔍 DealsOfTheDay - Full API Response:', response);
         console.log('🔍 DealsOfTheDay - Response.data:', response.data);
 
-        const dealsData = Array.isArray(response) ? response : response.data || [];
+        // Handle response structure
+        let flashSalesData = [];
+        if (Array.isArray(response)) {
+          flashSalesData = response;
+        } else if (response?.data) {
+          flashSalesData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        }
 
-        console.log('🔍 DealsOfTheDay - Deals Data:', dealsData);
-        console.log('🔍 DealsOfTheDay - First Deal:', dealsData[0]);
+        console.log('🔍 DealsOfTheDay - Flash Sales Data:', flashSalesData);
+        console.log('🔍 DealsOfTheDay - First Flash Sale:', flashSalesData[0]);
 
-        const transformedDeals = dealsData.map((deal) => {
-          // Backend populates 'productId' not 'product'
-          const product = deal.productId || deal.product;
+        // Filter for today's deals only
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
 
-          console.log('🔍 Deal transform:', {
-            dealId: deal._id,
-            hasProductId: !!deal.productId,
-            hasProduct: !!deal.product,
-            productData: product,
-            discountedPrice: deal.discountedMinPrice || deal.discountedPrice,
+        const todayDeals = flashSalesData.filter((flashSale) => {
+          const startDate = new Date(flashSale.startAt);
+          const endDate = new Date(flashSale.endAt);
+          // Include if deal is active today (started before tomorrow and ends after today)
+          return startDate < tomorrow && endDate > today;
+        });
+
+        console.log('🔍 Today Deals Count:', todayDeals.length);
+
+        const transformedDeals = todayDeals.map((flashSale) => {
+          const product = flashSale.productId;
+
+          // Find the variant model by SKU or use first model
+          let variantModel = null;
+          if (flashSale.variantSku && product?.models) {
+            variantModel = product.models.find((m) => m.sku === flashSale.variantSku);
+          }
+          if (!variantModel) {
+            variantModel = product?.models?.find((m) => m.isActive) || product?.models?.[0] || {};
+          }
+
+          console.log('🔍 Flash Sale transform:', {
+            flashSaleId: flashSale._id,
+            productName: product?.name,
+            variantSku: flashSale.variantSku,
+            salePrice: flashSale.salePrice,
+            originalPrice: variantModel?.price,
           });
 
           return {
-            id: deal._id,
+            id: product?._id || flashSale._id,
             name: product?.name || 'Product',
-            image: product?.images?.[0] || product?.image || '',
-            price: formatPrice(
-              deal.discountedMinPrice || deal.discountedPrice || product?.price || 0
-            ),
-            originalPrice: product?.price,
-            discount: deal.discountPercent,
-            dealEndsIn: getTimeRemaining(deal.endDate),
-            endDate: deal.endDate,
+            image: product?.images?.[0] || variantModel?.image || '',
+            price: formatPrice(flashSale.salePrice || variantModel?.price || 0),
+            originalPrice: variantModel?.price,
+            discount:
+              flashSale.discountPercent ||
+              Math.round(((variantModel?.price - flashSale.salePrice) / variantModel?.price) * 100),
+            dealEndsIn: getTimeRemaining(flashSale.endAt),
+            endDate: flashSale.endAt,
             isNew: product?.isNew || false,
           };
         });

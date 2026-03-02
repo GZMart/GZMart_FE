@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Form, Button, Badge } from 'react-bootstrap';
+import { Table, Form, Button, Badge, Image } from 'react-bootstrap';
 import { formatCurrency } from '../../../utils/formatters';
 
 const VariantsTable = ({ tiers, models, onChange, disabled }) => {
@@ -19,6 +19,42 @@ const VariantsTable = ({ tiers, models, onChange, disabled }) => {
   const handleModelChange = (index, field, value) => {
     const updated = [...models];
     updated[index] = { ...updated[index], [field]: value };
+    onChange(updated);
+  };
+
+  const handleImageUpload = (index, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
+
+      const updated = [...models];
+      updated[index] = {
+        ...updated[index],
+        imageFile: file,
+        imagePreview: URL.createObjectURL(file),
+      };
+      onChange(updated);
+    }
+  };
+
+  const handleRemoveImage = (index) => {
+    const updated = [...models];
+    if (updated[index].imagePreview) {
+      URL.revokeObjectURL(updated[index].imagePreview);
+    }
+    updated[index] = {
+      ...updated[index],
+      imageFile: null,
+      imagePreview: null,
+      image: null,
+    };
     onChange(updated);
   };
 
@@ -122,6 +158,7 @@ const VariantsTable = ({ tiers, models, onChange, disabled }) => {
                   onChange={handleSelectAll}
                 />
               </th>
+              <th style={{ width: '100px' }}>Image</th>
               <th>Variant</th>
               <th style={{ width: '150px' }}>
                 Price (₫) <span className="text-danger">*</span>
@@ -142,6 +179,55 @@ const VariantsTable = ({ tiers, models, onChange, disabled }) => {
                     checked={selectedRows.has(index)}
                     onChange={() => handleSelectRow(index)}
                   />
+                </td>
+                <td>
+                  <div className="text-center">
+                    {model.imagePreview || model.image ? (
+                      <div className="position-relative d-inline-block">
+                        <Image
+                          src={model.imagePreview || model.image}
+                          thumbnail
+                          style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          className="position-absolute top-0 end-0"
+                          style={{
+                            padding: '0px 4px',
+                            fontSize: '10px',
+                            lineHeight: '1',
+                          }}
+                          onClick={() => handleRemoveImage(index)}
+                          disabled={disabled}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ) : (
+                      <label
+                        style={{
+                          width: '60px',
+                          height: '60px',
+                          border: '2px dashed #ccc',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(index, e)}
+                          style={{ display: 'none' }}
+                          disabled={disabled}
+                        />
+                        <small className="text-muted">+</small>
+                      </label>
+                    )}
+                  </div>
                 </td>
                 <td>
                   <strong>{getVariantLabel(model)}</strong>
@@ -201,8 +287,8 @@ const VariantsTable = ({ tiers, models, onChange, disabled }) => {
 
       <div className="text-muted mt-2">
         <small>
-          💡 Tip: Select multiple rows and use bulk edit to set the same price/stock. Leave SKU
-          blank to auto-generate.
+          💡 Tip: Upload variant images to show different colors. Select multiple rows and use bulk
+          edit to set the same price/stock.
         </small>
       </div>
     </div>
