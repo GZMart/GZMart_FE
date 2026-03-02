@@ -709,35 +709,35 @@
   font-size: 13px;
   border-radius: 2px;
   cursor: pointer;
-  background-color: #fff;
+  background-color: transparent;
   transition: all 0.2s ease;
 }
 
-.btnChat {
+.btnViewShop {
   border: 1px solid #ee4d2d;
   color: #ee4d2d;
-  background-color: rgba(238, 77, 45, 0.05);
-}
-
-.btnChat i {
-  color: #ee4d2d;
-}
-
-.btnChat:hover {
-  background-color: rgba(238, 77, 45, 0.1);
-}
-
-.btnViewShop {
-  border: 1px solid #d0cfce;
-  color: #555;
 }
 
 .btnViewShop i {
-  color: #555;
+  color: #ee4d2d;
   font-size: 15px;
 }
 
 .btnViewShop:hover {
+  background-color: rgba(238, 77, 45, 0.05);
+}
+
+.btnChat {
+  border: 1px solid #d0cfce;
+  color: #555;
+}
+
+.btnChat i {
+  color: #555;
+  font-size: 14px;
+}
+
+.btnChat:hover {
   background-color: #f8f8f8;
 }
 
@@ -752,7 +752,7 @@
   flex: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 15px 20px;
   padding-left: 30px;
 }
 
@@ -762,10 +762,15 @@
   font-size: 14px;
 }
 
+.statItem i {
+  color: #757575;
+  margin-right: 8px;
+  font-size: 15px;
+}
+
 .statLabel {
   color: #757575;
-  width: 130px;
-  /* Fixed width for alignment */
+  margin-right: 6px;
 }
 
 .statValue {

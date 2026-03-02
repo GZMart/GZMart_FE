@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { Image } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
@@ -12,20 +13,20 @@ import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
 
-const shippingMethods = [
+const getShippingMethods = (t) => [
   {
-    name: 'Free Shipping',
-    description: 'Delivery 5-7 business days',
+    name: t('product_details.shipping_method.free.name'),
+    description: t('product_details.shipping_method.free.description'),
     icon: 'bi-truck',
   },
   {
-    name: 'Express Shipping',
-    description: 'Delivery 2-3 business days',
+    name: t('product_details.shipping_method.express.name'),
+    description: t('product_details.shipping_method.express.description'),
     icon: 'bi-lightning',
   },
   {
-    name: 'Store Pickup',
-    description: 'Available at select locations',
+    name: t('product_details.shipping_method.pickup.name'),
+    description: t('product_details.shipping_method.pickup.description'),
     icon: 'bi-shop',
   },
 ];
@@ -79,6 +80,7 @@ const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]); // [tier0_index, tier1_index]
@@ -276,11 +278,11 @@ const ProductDetailsPage = () => {
     // Validate Selection
     if (product.tier_variations?.length > 0) {
       if (selectedTierIndex.some((idx) => idx === null || idx === undefined)) {
-        toast.error('Please select all options');
+        toast.error(t('product_details.toast_select_all'));
         return;
       }
       if (!activeModel) {
-        toast.error('Selected variation is unavailable');
+        toast.error(t('product_details.toast_unavailable'));
         return;
       }
     }
@@ -293,7 +295,7 @@ const ProductDetailsPage = () => {
         : { data: { available: true } };
 
       if (!stockCheck.data?.available) {
-        toast.error(`Insufficient stock! Available: ${stockCheck.data?.currentStock || 0}`);
+        toast.error(`${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`);
         setAddingToCart(false);
         return;
       }
@@ -333,10 +335,10 @@ const ProductDetailsPage = () => {
         })
       ).unwrap();
 
-      toast.success('Added to cart successfully!');
+      toast.success(t('product_details.toast_add_cart_success'));
     } catch (err) {
       console.error('Add to cart error:', err);
-      toast.error(typeof err === 'string' ? err : 'Failed to add to cart');
+      toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
     } finally {
       setAddingToCart(false);
     }
@@ -364,17 +366,17 @@ const ProductDetailsPage = () => {
         console.log('Remove response:', response);
         setIsFavourite(false);
         setProduct((prev) => ({ ...prev, wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1) }));
-        toast.success('Removed from favourites');
+        toast.success(t('product_details.toast_wishlist_remove'));
       } else {
         const response = await favouriteService.addToFavourites(product._id);
         console.log('Add response:', response);
         setIsFavourite(true);
         setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
-        toast.success('Added to favourites');
+        toast.success(t('product_details.toast_wishlist_add'));
       }
     } catch (error) {
       console.error('Error toggling favourite:', error);
-      toast.error(error.response?.data?.message || 'Failed to update favourites');
+      toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
     } finally {
       setFavouriteLoading(false);
     }
@@ -393,8 +395,8 @@ const ProductDetailsPage = () => {
   if (error || !product) {
     return (
       <div className={styles.notFound}>
-        <h2>{error || 'Product Not Found'}</h2>
-        <button onClick={() => navigate('/products')}>Back to Products</button>
+        <h2>{error || t('product_details.err_product_not_found')}</h2>
+        <button onClick={() => navigate('/products')}>{t('product_details.back_to_products')}</button>
       </div>
     );
   }
@@ -405,8 +407,8 @@ const ProductDetailsPage = () => {
     <div className={styles.productDetailsPage}>
       <Breadcrumb
         items={[
-          { label: 'Home', path: '/', icon: 'bi-house' },
-          { label: 'Shop', path: '/products' },
+          { label: t('product_details.breadcrumb_home'), path: '/', icon: 'bi-house' },
+          { label: t('product_details.breadcrumb_shop'), path: '/products' },
           {
             label: typeof product.category === 'string' ? product.category : product.category?.name,
             path: `/products?category=${product.categoryId}`,
@@ -461,8 +463,8 @@ const ProductDetailsPage = () => {
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
-            <span className={styles.reviewCount}>({product.reviewCount || 0} Đánh giá)</span>
-            <span className={styles.soldCount} style={{marginLeft: 15, color: '#666'}}>Đã bán {product.sold || 0}</span>
+            <span className={styles.reviewCount}>({product.reviewCount || 0} {t('product_details.reviews')})</span>
+            <span className={styles.soldCount} style={{marginLeft: 15, color: '#666'}}>{t('product_details.stat_sold')} {product.sold || 0}</span>
           </div>
 
           {/* Price & Discount Section */}
@@ -510,19 +512,19 @@ const ProductDetailsPage = () => {
             <div className={styles.shippingInfoItem}>
               <i className="bi bi-truck"></i>
               <div>
-                <div className={styles.shippingTitle}>Shipping</div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_shipping')}</div>
                 {product.shippingInfo ? (
                   <div className={styles.shippingDetail}>{product.shippingInfo}</div>
                 ) : (
-                  <div className={styles.shippingDetail}>Delivery in 2-3 days • Free shipping</div>
+                  <div className={styles.shippingDetail}>{t('product_details.default_shipping_detail')}</div>
                 )}
               </div>
             </div>
             <div className={styles.shippingInfoItem}>
               <i className="bi bi-shield-check"></i>
               <div>
-                <div className={styles.shippingTitle}>Warranty</div>
-                <div className={styles.shippingDetail}>{product.warranty || 'Free return within 15 days'}</div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
+                <div className={styles.shippingDetail}>{product.warranty || t('product_details.default_warranty_detail')}</div>
               </div>
             </div>
           </div>
@@ -552,7 +554,7 @@ const ProductDetailsPage = () => {
                         }
                       }}
                       disabled={isDisabled}
-                      title={isDisabled ? 'Out of Stock' : option}
+                      title={isDisabled ? t('product_details.stat_status_inactive') : option}
                     >
                       {option}
                     </button>
@@ -579,38 +581,38 @@ const ProductDetailsPage = () => {
                 onClick={handleAddToCart}
                 disabled={addingToCart || currentStock <= 0}
               >
-                {addingToCart ? 'Adding...' : 'Add to Cart'}
+                {addingToCart ? t('product_details.loading') : t('product_details.btn_add_to_cart')}
               </button>
               <button
                 className={styles.buyBtn}
                 onClick={handleBuyNow}
                 disabled={addingToCart || currentStock <= 0}
               >
-                Buy Now
+                {t('product_details.btn_buy_now')}
               </button>
               <button
                 className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
                 onClick={handleToggleFavourite}
                 disabled={favouriteLoading}
-                title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+                title={isFavourite ? t('product_details.toast_wishlist_remove') : t('product_details.toast_wishlist_add')}
               >
                 <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {favouriteLoading ? 'Loading...' : isFavourite ? 'Saved' : 'Save'}
+                {favouriteLoading ? t('product_details.loading') : isFavourite ? t('product_details.toast_wishlist_remove') : t('product_details.favorite')}
               </button>
             </div>
-            {currentStock <= 0 && <div className="text-danger mt-2">Out of Stock</div>}
+            {currentStock <= 0 && <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>}
             {currentStock > 0 && currentStock < 10 && (
-              <div className="text-warning mt-2">Only {currentStock} left!</div>
+              <div className="text-warning mt-2">{t('product_details.only_left', { stock: currentStock })}</div>
             )}
           </div>
 
           {/* Meta Info */}
           <div className={styles.metaInfo}>
             <div className={styles.metaItem}>
-              <span>Stock:</span> {currentStock}
+              <span>{t('product_details.label_stock')}:</span> {currentStock}
             </div>
             <div className={styles.metaItem}>
-              <span>SKU:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
+              <span>{t('product_details.label_sku')}:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
           </div>
 
@@ -631,20 +633,24 @@ const ProductDetailsPage = () => {
                   alt={(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Tổng Kho Sỉ Minh Khôi'}
                   className={styles.shopAvatarImg}
                 />
-                <div className={styles.shopFavBadge}>Yêu thích</div>
+                {((typeof product.sellerId === 'object' && product.sellerId?.isPreferred) || true) && (
+                  <div className={styles.shopFavBadge}>{t('product_details.shop_badge_favorite')}</div>
+                )}
               </div>
               <div className={styles.shopProfileInfo}>
-                <div className={styles.shopName}>{(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Tổng Kho Sỉ Minh Khôi'}</div>
-                <div className={styles.shopOnlineStatus}></div>
+                <div className={styles.shopName}>{(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Shop'}</div>
+                <div className={styles.shopOnlineStatus}>
+                    {typeof product.sellerId === 'object' && product.sellerId?.createdAt ? `${t('product_details.shop_joined')} ${Math.max(1, Math.floor((new Date() - new Date(product.sellerId.createdAt)) / (1000 * 60 * 60 * 24 * 30)))} ${t('product_details.shop_months_ago')}` : ''}
+                </div>
                 <div className={styles.shopActions}>
-                  <button className={styles.btnChat}>
-                    <i className="bi bi-chat-dots-fill"></i> Chat Ngay
+                  <button className={styles.btnViewShop}>
+                    <i className="bi bi-person-plus-fill"></i> {t('product_details.btn_follow')}
                   </button>
                   <button
-                    className={styles.btnViewShop}
+                    className={styles.btnChat}
                     onClick={() => navigate(`/shop/${typeof product.sellerId === 'object' ? product.sellerId._id : product.sellerId}`)}
                   >
-                    <i className="bi bi-shop"></i> Xem Shop
+                    <i className="bi bi-shop"></i> {t('product_details.btn_view_shop')}
                   </button>
                 </div>
               </div>
@@ -652,35 +658,40 @@ const ProductDetailsPage = () => {
 
             <div className={styles.shopDivider}></div>
 
-            {/* Right Side: Stats */}
+          {/* Right Side: Stats */}
             <div className={styles.shopStatsRight}>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Lượt Bán</span>
-                <span className={styles.statValue}>{product.sold || 0}</span>
+                <i className="bi bi-shop statIcon"></i>
+                <span className={styles.statLabel}>{t('product_details.shop_stat_products')}:</span>
+                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.productCount !== undefined ? product.sellerId.productCount : t('product_details.val_updating')}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Lượt Cập Nhật</span>
+                <i className="bi bi-people statIcon"></i>
+                <span className={styles.statLabel}>{t('product_details.shop_stat_followers')}:</span>
+                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.followerCount !== undefined ? product.sellerId.followerCount : t('product_details.val_updating')}</span>
+              </div>
+              <div className={styles.statItem}>
+                <i className="bi bi-person-check statIcon"></i>
+                <span className={styles.statLabel}>{t('product_details.shop_stat_following')}:</span>
+                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.followingCount !== undefined ? product.sellerId.followingCount : 0}</span>
+              </div>
+              <div className={styles.statItem}>
+                <i className="bi bi-star statIcon"></i>
+                <span className={styles.statLabel}>{t('product_details.shop_stat_rating')}:</span>
                 <span className={styles.statValue}>
-                  {new Date(product.updatedAt || Date.now()).toLocaleDateString('vi-VN')}
+                  {typeof product.sellerId === 'object' && product.sellerId?.rating !== undefined ? product.sellerId.rating.toFixed(1) : '0.0'} 
+                  {typeof product.sellerId === 'object' && product.sellerId?.ratingCount > 0 ? ` (${product.sellerId?.ratingCount} ${t('product_details.shop_stat_rating')})` : ''}
                 </span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Ngày Tạo Sản Phẩm</span>
-                <span className={styles.statValue}>
-                  {new Date(product.createdAt || Date.now()).toLocaleDateString('vi-VN')}
-                </span>
+                <i className="bi bi-chat-dots statIcon"></i>
+                <span className={styles.statLabel}>{t('product_details.shop_stat_response_rate')}:</span>
+                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.chatResponseRate !== undefined ? product.sellerId.chatResponseRate : 100}%</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Lượt Xem</span>
-                <span className={styles.statValue}>{product.viewCount || 0}</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Trạng Thái</span>
-                <span className={styles.statValue}>{product.status === 'active' ? 'Đang Bán' : 'Hết Hàng'}</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Lượt Thích</span>
-                <span className={styles.statValue}>{product.wishlistCount || 0}</span>
+                <i className="bi bi-x-circle statIcon"></i>
+                <span className={styles.statLabel}>{t('product_details.shop_stat_cancel_rate')}:</span>
+                <span className={styles.statValue}>{typeof product.sellerId === 'object' && product.sellerId?.cancelDutyRate !== undefined ? product.sellerId.cancelDutyRate : 0}%</span>
               </div>
             </div>
           </div>
@@ -694,45 +705,45 @@ const ProductDetailsPage = () => {
             className={`${styles.tab} ${activeTab === 'description' ? styles.active : ''}`}
             onClick={() => setActiveTab('description')}
           >
-            DESCRIPTION
+            {t('product_details.tab_description_upper')}
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'additional' ? styles.active : ''}`}
             onClick={() => setActiveTab('additional')}
           >
-            ADDITIONAL INFORMATION
+            {t('product_details.tab_additional_upper')}
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'review' ? styles.active : ''}`}
             onClick={() => setActiveTab('review')}
           >
-            REVIEW
+            {t('product_details.tab_review_upper')}
           </button>
         </div>
 
         <div className={styles.tabContent}>
           {activeTab === 'description' && (
             <div className={styles.description}>
-              <h3>Description</h3>
+              <h3>{t('product_details.title_description')}</h3>
               {product.descriptionText?.map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
-              )) || <p>No description available.</p>}
+              )) || <p>{t('product_details.no_description')}</p>}
 
               <div className={styles.features}>
-                <h4>Feature</h4>
+                <h4>{t('product_details.title_features')}</h4>
                 <div className={styles.featureGrid}>
                   {product.features?.map((feature, index) => (
                     <div key={index} className={styles.featureItem}>
                       <i className="bi bi-check-circle-fill"></i>
                       <span>{feature}</span>
                     </div>
-                  )) || <p>No features available.</p>}
+                  )) || <p>{t('product_details.no_features')}</p>}
                 </div>
               </div>
 
               <div className={styles.shippingInfo}>
-                <h4>Shipping Information</h4>
-                {shippingMethods.map((method, index) => (
+                <h4>{t('product_details.title_shipping_info')}</h4>
+                {getShippingMethods(t).map((method, index) => (
                   <div key={index} className={styles.shippingItem}>
                     <i className={`bi ${method.icon}`}></i>
                     <div>
@@ -747,7 +758,7 @@ const ProductDetailsPage = () => {
 
           {activeTab === 'additional' && (
             <div className={styles.additionalInfo}>
-              <h3>Additional Information</h3>
+              <h3>{t('product_details.title_additional_info')}</h3>
               <table className={styles.infoTable}>
                 <tbody>
                   {product.attributes
@@ -760,7 +771,7 @@ const ProductDetailsPage = () => {
                     ))}
                   {product.tier_variations?.length > 0 && (
                     <tr>
-                      <td className={styles.label}>Available Variations</td>
+                      <td className={styles.label}>{t('product_details.label_available_variations')}</td>
                       <td className={styles.value}>
                         {product.tier_variations.map((tier, idx) => (
                           <div key={idx}>
@@ -815,7 +826,7 @@ const ProductDetailsPage = () => {
 
           {activeTab === 'review' && (
             <div className={styles.reviews}>
-              <h3>Customer Reviews</h3>
+              <h3>{t('product_details.title_customer_reviews')}</h3>
               <div className={styles.reviewSummary}>
                 <div className={styles.averageRating}>
                   <div className={styles.ratingNumber}>{product.rating}</div>
@@ -823,7 +834,7 @@ const ProductDetailsPage = () => {
                     {'★'.repeat(Math.floor(product.rating))}
                     {'☆'.repeat(5 - Math.floor(product.rating))}
                   </div>
-                  <div className={styles.totalReviews}>{product.reviews} Reviews</div>
+                  <div className={styles.totalReviews}>{product.reviews} {t('product_details.total_reviews')}</div>
                 </div>
               </div>
               <div className={styles.reviewList}>
@@ -839,7 +850,7 @@ const ProductDetailsPage = () => {
                     </div>
                   ))
                 ) : (
-                  <p>No reviews yet.</p>
+                  <p>{t('product_details.no_reviews')}</p>
                 )}
               </div>
             </div>
@@ -850,8 +861,8 @@ const ProductDetailsPage = () => {
       {/* Frequently Bought Together */}
       <div className={styles.frequentlyBought}>
         <div className={styles.sectionHeader}>
-          <h2>FREQUENTLY BOUGHT TOGETHER</h2>
-          <button className={styles.viewAllBtn}>VIEW ALL</button>
+          <h2>{t('product_details.frequently_bought')}</h2>
+          <button className={styles.viewAllBtn}>{t('product_details.view_all')}</button>
         </div>
         <div className={styles.productGrid}>
           {frequentlyBought.map((item) => (
@@ -863,8 +874,8 @@ const ProductDetailsPage = () => {
       {/* Related Products */}
       <div className={styles.relatedProducts}>
         <div className={styles.sectionHeader}>
-          <h2>RELATED PRODUCTS</h2>
-          <button className={styles.viewAllBtn}>VIEW ALL</button>
+          <h2>{t('product_details.related_products')}</h2>
+          <button className={styles.viewAllBtn}>{t('product_details.view_all')}</button>
         </div>
         <div className={styles.productGrid}>
           {relatedProducts.slice(0, 4).map((item) => (
