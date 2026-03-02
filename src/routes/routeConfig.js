@@ -15,6 +15,7 @@ const ForgotPasswordPage = lazy(() => import('@pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@pages/auth/ResetPasswordPage'));
 const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
 const ChangePasswordPage = lazy(() => import('@pages/auth/ChangePasswordPage'));
+const ShopProfilePage = lazy(() => import('@pages/buyer/ShopProfilePage'));
 
 const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
 const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'));
@@ -115,6 +116,12 @@ export const routeConfig = [
   {
     path: '/product/:id',
     element: ProductDetailsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/shop/:id',
+    element: ShopProfilePage,
     public: true,
     layout: 'main',
   },

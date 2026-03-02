@@ -606,8 +606,82 @@ const ProductDetailsPage = () => {
               <span>SKU:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
           </div>
+
+
         </div>
       </div>
+
+      {/* Shop Info Section - Shopee Style */}
+      {(product.sellerId || true) && (
+        <div className={styles.shopSection}>
+          <div className={styles.shopInfoCard}>
+            
+            {/* Left Side: Avatar, Name, Buttons */}
+            <div className={styles.shopProfileLeft}>
+              <div className={styles.shopAvatarContainer}>
+                <img
+                  src={(typeof product.sellerId === 'object' && product.sellerId?.avatar) ? product.sellerId.avatar : 'https://ui-avatars.com/api/?name=Tong+Kho+Si+Minh+Khoi&background=random'}
+                  alt={(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Tổng Kho Sỉ Minh Khôi'}
+                  className={styles.shopAvatarImg}
+                />
+                <div className={styles.shopFavBadge}>Yêu thích</div>
+              </div>
+              <div className={styles.shopProfileInfo}>
+                <div className={styles.shopName}>{(typeof product.sellerId === 'object' && product.sellerId?.fullName) ? product.sellerId.fullName : 'Tổng Kho Sỉ Minh Khôi'}</div>
+                <div className={styles.shopOnlineStatus}>Online 1 Giờ Trước</div>
+                <div className={styles.shopActions}>
+                  <button className={styles.btnChat}>
+                    <i className="bi bi-chat-dots-fill"></i> Chat Ngay
+                  </button>
+                  <button
+                    className={styles.btnViewShop}
+                    onClick={() => navigate(`/shop/${typeof product.sellerId === 'object' ? product.sellerId._id : product.sellerId}`)}
+                  >
+                    <i className="bi bi-shop"></i> Xem Shop
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.shopDivider}></div>
+
+            {/* Right Side: Stats */}
+            <div className={styles.shopStatsRight}>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Đánh Giá</span>
+                <span className={styles.statValue}>155,6k</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Tỉ Lệ Phản Hồi</span>
+                <span className={styles.statValue}>80%</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Tham Gia</span>
+                <span className={styles.statValue}>
+                  {(typeof product.sellerId === 'object' && product.sellerId?.createdAt) 
+                    ? (() => {
+                        const years = new Date().getFullYear() - new Date(product.sellerId.createdAt).getFullYear();
+                        return years > 0 ? `${years} năm trước` : 'Gần đây';
+                      })()
+                    : '7 năm trước'}
+                </span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Sản Phẩm</span>
+                <span className={styles.statValue}>1,5k</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Thời Gian Phản Hồi</span>
+                <span className={styles.statValue}>trong vài giờ</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Người Theo Dõi</span>
+                <span className={styles.statValue}>60,7k</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Details Tabs */}
       <div className={styles.detailsSection}>

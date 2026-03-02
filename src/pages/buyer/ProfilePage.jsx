@@ -12,10 +12,9 @@ import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
 import locationService from '@services/api/locationService';
 import { Modal, Form } from 'react-bootstrap';
-import toast, { Toaster } from 'react-hot-toast';
-import ReviewModal from '@components/common/ReviewModal';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next'; // Added import
+import ReviewModal from '@components/common/ReviewModal';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
