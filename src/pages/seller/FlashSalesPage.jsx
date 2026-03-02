@@ -47,10 +47,13 @@ const FlashSalesPage = () => {
   const [loading, setLoading] = useState(false);
   const [flashSales, setFlashSales] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedFlashSale, setSelectedFlashSale] = useState(null);
+  const [selectedCampaignGroup, setSelectedCampaignGroup] = useState(null);
   const [form] = Form.useForm();
   const [statsLoading, setStatsLoading] = useState(false);
   const [stats, setStats] = useState(null);
@@ -138,7 +141,16 @@ const FlashSalesPage = () => {
         }
         return [];
       }
-      return product.models.map((model) => {
+      // Deduplicate by SKU — keep only first occurrence of each SKU
+      const seenSkus = new Set();
+      const uniqueModels = product.models.filter((model) => {
+        if (!model.sku || seenSkus.has(model.sku)) {
+          return false;
+        }
+        seenSkus.add(model.sku);
+        return true;
+      });
+      return uniqueModels.map((model) => {
         const key = `${product._id}_${model.sku}`;
         const config = variantConfigs[key] || {};
         return {
@@ -314,7 +326,7 @@ const FlashSalesPage = () => {
   };
   */
 
-  // Handle delete
+  // Handle delete (single variant)
   const handleDelete = async (id) => {
     try {
       setLoading(true);
@@ -327,6 +339,87 @@ const FlashSalesPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle delete all variants in a campaign group
+  const handleDeleteCampaign = async (group) => {
+    try {
+      setLoading(true);
+      await Promise.all(group.records.map((r) => flashsaleService.delete(r._id)));
+      message.success(`Deleted campaign with ${group.records.length} variant(s)`);
+      fetchFlashSales(pagination.page);
+    } catch (error) {
+      message.error('Failed to delete campaign');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle edit all variants in a campaign group
+  const handleEditCampaign = async (group) => {
+    setIsDetailModalVisible(false);
+
+    setCampaignInfo({
+      title: group.campaignTitle || '',
+      timeSlot: null,
+      startTime: dayjs(group.startAt),
+      endTime: dayjs(group.endAt),
+    });
+
+    const productId = typeof group.productId === 'object' ? group.productId._id : group.productId;
+    if (!productId) {
+      message.error('Product information not found');
+      return;
+    }
+
+    try {
+      const response = await productService.getById(productId);
+      const fullProduct = response.data || response;
+
+      if (!fullProduct?.models) {
+        message.error('Product has no variants');
+        return;
+      }
+
+      setSelectedProducts([fullProduct]);
+
+      const configs = {};
+      const keys = [];
+
+      group.records.forEach((record) => {
+        const variantModel = fullProduct.models.find((m) => m.sku === record.variantSku);
+        if (variantModel) {
+          const k = `${fullProduct._id}_${variantModel.sku}`;
+          configs[k] = {
+            productId: fullProduct._id,
+            variantSku: variantModel.sku,
+            tierIndex: variantModel.tier_index,
+            originalPrice: variantModel.price,
+            salePrice: record.salePrice,
+            discountPercent: Math.round(
+              ((variantModel.price - record.salePrice) / variantModel.price) * 100
+            ),
+            quantity: record.totalQuantity,
+            stock: variantModel.stock,
+            purchaseLimit: record.purchaseLimit || 1,
+            enabled: true,
+            _flashSaleId: record._id,
+          };
+          keys.push(k);
+        }
+      });
+
+      setVariantConfigs(configs);
+      setSelectedVariantKeys(keys);
+      setSelectedFlashSale({ isCampaign: true, records: group.records });
+    } catch (error) {
+      message.error(`Failed to load product: ${error?.message || 'Unknown error'}`);
+      return;
+    }
+
+    setCurrentStep(0);
+    setIsModalVisible(true);
   };
 
   // Handle edit - populate 2-step modal with flash sale data
@@ -457,13 +550,33 @@ const FlashSalesPage = () => {
     setIsModalVisible(true);
   };
 
-  // Handle detail view
-  // Handle detail view
+  // Handle detail view (single SKU)
   const handleViewDetail = (record) => {
     setSelectedFlashSale(record);
-    setIsModalVisible(false); // Close edit modal if open
+    setSelectedCampaignGroup(null);
+    setIsModalVisible(false);
     setIsDetailModalVisible(true);
     fetchStats(record._id);
+  };
+
+  // Handle detail view for a full campaign group (all SKUs)
+  const handleViewCampaign = (group) => {
+    setSelectedCampaignGroup(group);
+    setSelectedFlashSale(group.records[0]);
+    setIsModalVisible(false);
+    setIsDetailModalVisible(true);
+    setStats(null);
+  };
+
+  // Open create modal (reset all state to avoid leftover from view/edit)
+  const handleOpenCreateModal = () => {
+    setSelectedFlashSale(null);
+    setCurrentStep(0);
+    setCampaignInfo({ title: '', timeSlot: null, startTime: null, endTime: null });
+    setSelectedProducts([]);
+    setVariantConfigs({});
+    setSelectedVariantKeys([]);
+    setIsModalVisible(true);
   };
 
   // Close modal
@@ -657,13 +770,28 @@ const FlashSalesPage = () => {
         return;
       }
 
-      // Get enabled variants only
+      // Get variants to submit:
+      // - Edit mode: use enabled status as before
+      // - Create mode: use selectedVariantKeys (checkbox selection); fallback to all enabled if none selected
       const enabledVariants = Object.entries(variantConfigs)
-        .filter(([_, config]) => config.enabled)
+        .filter(([key, config]) => {
+          if (selectedFlashSale) {
+            return config.enabled;
+          }
+          // Create mode: respect checkbox selection if any rows are checked
+          if (selectedVariantKeys.length > 0) {
+            return selectedVariantKeys.includes(key);
+          }
+          return config.enabled;
+        })
         .map(([_, config]) => config);
 
       if (enabledVariants.length === 0) {
-        message.error('Please enable at least one variant');
+        message.error(
+          selectedVariantKeys.length === 0
+            ? 'Please select at least one variant (check the rows in the table)'
+            : 'No valid variant selected'
+        );
         setLoading(false);
         return;
       }
@@ -690,7 +818,29 @@ const FlashSalesPage = () => {
         });
       }
 
-      // EDIT MODE: Update existing flash sale
+      // EDIT CAMPAIGN MODE: Update all variants in a campaign at once
+      if (selectedFlashSale?.isCampaign) {
+        const updatePromises = enabledVariants.map((variant) => {
+          if (!variant._flashSaleId) {
+            return Promise.resolve();
+          }
+          return flashsaleService.update(variant._flashSaleId, {
+            salePrice: variant.salePrice,
+            totalQuantity: variant.quantity,
+            purchaseLimit: variant.purchaseLimit,
+            startAt: campaignInfo.startTime.toISOString(),
+            endAt: campaignInfo.endTime.toISOString(),
+            campaignTitle: campaignInfo.title,
+          });
+        });
+        await Promise.all(updatePromises);
+        message.success(`Campaign updated (${enabledVariants.length} variant(s))`);
+        handleCloseModal();
+        fetchFlashSales(pagination.page);
+        return;
+      }
+
+      // EDIT MODE: Update existing flash sale (single variant)
       if (selectedFlashSale) {
         if (enabledVariants.length !== 1) {
           message.warning('Edit mode only supports 1 variant. Please select exactly 1 variant.');
@@ -744,35 +894,52 @@ const FlashSalesPage = () => {
         return;
       }
 
-      // CREATE MODE: Create flash sale for each variant
-      const promises = enabledVariants.map((variant) => {
+      // CREATE MODE: Group selected variants by productId → one batch request per product
+      // This creates ONE flash sale campaign per product that contains all selected SKUs.
+      const variantsByProduct = enabledVariants.reduce((acc, variant) => {
+        const pid = variant.productId;
+        if (!acc[pid]) {
+          acc[pid] = [];
+        }
+        acc[pid].push(variant);
+        return acc;
+      }, {});
+
+      const batchPromises = Object.entries(variantsByProduct).map(([productId, variants]) => {
         const payload = {
-          productId: variant.productId,
-          variantSku: variant.variantSku,
-          salePrice: variant.salePrice,
-          totalQuantity: variant.quantity,
-          purchaseLimit: variant.purchaseLimit,
+          productId,
+          campaignTitle: campaignInfo.title,
           startAt: campaignInfo.startTime.toISOString(),
           endAt: campaignInfo.endTime.toISOString(),
-          campaignTitle: campaignInfo.title,
+          variants: variants.map((v) => {
+            const variantItem = {
+              variantSku: v.variantSku,
+              salePrice: v.salePrice,
+              totalQuantity: v.quantity,
+              purchaseLimit: v.purchaseLimit,
+            };
+            if (v.tierIndex) {
+              variantItem.tierIndex = v.tierIndex;
+            }
+            return variantItem;
+          }),
         };
-
-        // Only include tierIndex if it exists
-        if (variant.tierIndex) {
-          payload.tierIndex = variant.tierIndex;
-        }
 
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
-          console.log('📦 Flash sale payload:', payload);
+          console.log('📦 Batch flash sale payload:', payload);
         }
 
-        return flashsaleService.create(payload);
+        return flashsaleService.createBatch(payload);
       });
 
-      await Promise.all(promises);
+      await Promise.all(batchPromises);
 
-      message.success(`Created ${enabledVariants.length} flash sale(s) successfully`);
+      const totalVariants = enabledVariants.length;
+      const totalProducts = Object.keys(variantsByProduct).length;
+      message.success(
+        `Created ${totalProducts} flash sale campaign(s) with ${totalVariants} variant(s) successfully`
+      );
       handleCloseModal();
       fetchFlashSales(pagination.page);
     } catch (error) {
@@ -796,42 +963,65 @@ const FlashSalesPage = () => {
     }
   };
 
-  // Table columns
-  const columns = [
+  // Status config helper
+  const statusConfig = {
+    pending: { color: 'blue', label: 'Upcoming' },
+    upcoming: { color: 'blue', label: 'Upcoming' },
+    active: { color: 'green', label: 'Active' },
+    ended: { color: 'default', label: 'Ended' },
+    expired: { color: 'default', label: 'Ended' },
+    cancelled: { color: 'red', label: 'Cancelled' },
+  };
+
+  // Campaign-level (parent) columns
+  const campaignColumns = [
     {
-      title: 'Product',
-      dataIndex: ['productId', 'name'],
-      key: 'productName',
-      width: 200,
-      ellipsis: true,
+      title: 'Campaign / Product',
+      key: 'campaign',
+      width: 220,
+      render: (_, group) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{group.campaignTitle || group.productId?.name}</div>
+          {group.campaignTitle && (
+            <div style={{ color: '#888', fontSize: 12 }}>{group.productId?.name}</div>
+          )}
+          <Tag color="blue" style={{ marginTop: 4 }}>
+            {group.skuCount} SKU{group.skuCount > 1 ? 's' : ''}
+          </Tag>
+        </div>
+      ),
     },
     {
       title: 'Price',
       key: 'price',
-      width: 120,
-      render: (_, record) => (
+      width: 150,
+      render: (_, group) => (
         <div className={styles.priceColumn}>
-          <div className={styles.salePrice}>{record.salePrice?.toLocaleString('vi-VN')} ₫</div>
+          <div className={styles.salePrice}>
+            {group.salePrice === group.salePriceMax
+              ? `${group.salePrice?.toLocaleString('vi-VN')} ₫`
+              : `${group.salePrice?.toLocaleString('vi-VN')} – ${group.salePriceMax?.toLocaleString('vi-VN')} ₫`}
+          </div>
           <div className={styles.originalPrice}>
-            {record.productId?.originalPrice?.toLocaleString('vi-VN')}
+            {group.productId?.originalPrice?.toLocaleString('vi-VN')}
           </div>
         </div>
       ),
     },
     {
-      title: 'Quantity',
+      title: 'Total Qty',
       key: 'quantity',
       width: 140,
-      render: (_, record) => (
+      render: (_, group) => (
         <div className={styles.quantityColumn}>
           <span className={styles.sold}>
-            {record.soldQuantity} / {record.totalQuantity}
+            {group.soldQuantity} / {group.totalQuantity}
           </span>
           <div className={styles.progressBar}>
             <div
               className={styles.progress}
               style={{
-                width: `${(record.soldQuantity / record.totalQuantity) * 100}%`,
+                width: `${group.totalQuantity ? (group.soldQuantity / group.totalQuantity) * 100 : 0}%`,
               }}
             />
           </div>
@@ -842,10 +1032,96 @@ const FlashSalesPage = () => {
       title: 'Time',
       key: 'time',
       width: 200,
-      render: (_, record) => (
+      render: (_, group) => (
         <div className={styles.timeColumn}>
-          <div>Start: {dayjs(record.startAt).format('DD/MM HH:mm')}</div>
-          <div>End: {dayjs(record.endAt).format('DD/MM HH:mm')}</div>
+          <div>Start: {dayjs(group.startAt).format('DD/MM HH:mm')}</div>
+          <div>End: {dayjs(group.endAt).format('DD/MM HH:mm')}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      width: 110,
+      render: (_, group) => {
+        const cfg = statusConfig[group.status] || { color: 'default', label: group.status };
+        return <Tag color={cfg.color}>{cfg.label}</Tag>;
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 60,
+      fixed: 'right',
+      align: 'center',
+      render: (_, group) => {
+        const items = [
+          {
+            key: 'edit',
+            icon: <EditOutlined />,
+            label: 'Edit Campaign',
+            onClick: (e) => {
+              e?.domEvent?.stopPropagation();
+              handleEditCampaign(group);
+            },
+          },
+          {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: 'Delete Campaign',
+            danger: true,
+            onClick: (e) => {
+              e?.domEvent?.stopPropagation();
+              handleDeleteCampaign(group);
+            },
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+            <Button type="text" icon={<EllipsisOutlined />} onClick={(e) => e.stopPropagation()} />
+          </Dropdown>
+        );
+      },
+    },
+  ];
+
+  // Variant-level (child) columns shown when expanding a campaign row
+  const variantColumns = [
+    {
+      title: 'SKU',
+      dataIndex: 'variantSku',
+      key: 'sku',
+      width: 160,
+      render: (sku) => (sku ? <Tag>{sku}</Tag> : <span style={{ color: '#aaa' }}>—</span>),
+    },
+    {
+      title: 'Sale Price',
+      key: 'price',
+      width: 140,
+      render: (_, r) => (
+        <div className={styles.priceColumn}>
+          <div className={styles.salePrice}>{r.salePrice?.toLocaleString('vi-VN')} ₫</div>
+          <div className={styles.originalPrice}>{r.originalPrice?.toLocaleString('vi-VN')}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Quantity',
+      key: 'quantity',
+      width: 140,
+      render: (_, r) => (
+        <div className={styles.quantityColumn}>
+          <span className={styles.sold}>
+            {r.soldQuantity} / {r.totalQuantity}
+          </span>
+          <div className={styles.progressBar}>
+            <div
+              className={styles.progress}
+              style={{
+                width: `${r.totalQuantity ? (r.soldQuantity / r.totalQuantity) * 100 : 0}%`,
+              }}
+            />
+          </div>
         </div>
       ),
     },
@@ -855,25 +1131,16 @@ const FlashSalesPage = () => {
       key: 'status',
       width: 110,
       render: (status) => {
-        const statusConfig = {
-          pending: { color: 'blue', label: 'Upcoming' },
-          upcoming: { color: 'blue', label: 'Upcoming' },
-          active: { color: 'green', label: 'Active' },
-          ended: { color: 'default', label: 'Ended' },
-          expired: { color: 'default', label: 'Ended' },
-          cancelled: { color: 'red', label: 'Cancelled' },
-        };
-        const config = statusConfig[status] || { color: 'default', label: status };
-        return <Tag color={config.color}>{config.label}</Tag>;
+        const cfg = statusConfig[status] || { color: 'default', label: status };
+        return <Tag color={cfg.color}>{cfg.label}</Tag>;
       },
     },
     {
-      title: 'Actions',
+      title: '',
       key: 'actions',
       width: 60,
-      fixed: 'right',
       align: 'center',
-      render: (_, record) => {
+      render: (_, r) => {
         const items = [
           {
             key: 'edit',
@@ -881,21 +1148,20 @@ const FlashSalesPage = () => {
             label: 'Edit',
             onClick: (e) => {
               e?.domEvent?.stopPropagation();
-              handleEdit(record);
+              handleEdit(r);
             },
           },
           {
             key: 'delete',
             icon: <DeleteOutlined />,
             label: 'Delete',
+            danger: true,
             onClick: (e) => {
               e?.domEvent?.stopPropagation();
-              handleDelete(record._id);
+              handleDelete(r._id);
             },
-            danger: true,
           },
         ];
-
         return (
           <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
             <Button type="text" icon={<EllipsisOutlined />} onClick={(e) => e.stopPropagation()} />
@@ -909,21 +1175,91 @@ const FlashSalesPage = () => {
     fetchFlashSales(newPagination.current, newPagination.pageSize);
   };
 
-  // Filter flash sales by search text
+  // Filter flash sales by search text, status, and date range
+  const hasActiveFilters = searchText || statusFilter !== 'all' || dateRangeFilter;
+
   const filteredFlashSales = flashSales.filter((item) => {
     const searchLower = searchText.toLowerCase();
-    return (
+    const matchesSearch =
+      !searchLower ||
       item.productId?.name?.toLowerCase().includes(searchLower) ||
-      item.productId?.sku?.toLowerCase().includes(searchLower)
-    );
+      item.variantSku?.toLowerCase().includes(searchLower) ||
+      item.campaignTitle?.toLowerCase().includes(searchLower);
+
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'expired'
+        ? item.status === 'expired' || item.status === 'ended'
+        : statusFilter === 'pending'
+          ? item.status === 'pending' || item.status === 'upcoming'
+          : item.status === statusFilter);
+
+    let matchesDate = true;
+    if (dateRangeFilter?.[0] && dateRangeFilter?.[1]) {
+      const itemStart = dayjs(item.startAt);
+      const itemEnd = dayjs(item.endAt);
+      const filterStart = dateRangeFilter[0].startOf('day');
+      const filterEnd = dateRangeFilter[1].endOf('day');
+      matchesDate = itemStart.isBefore(filterEnd) && itemEnd.isAfter(filterStart);
+    }
+
+    return matchesSearch && matchesStatus && matchesDate;
   });
+
+  // Group flash sales by campaign (same product + campaignTitle + start + end = 1 campaign)
+  const groupedFlashSales = useMemo(() => {
+    const groups = {};
+    filteredFlashSales.forEach((record) => {
+      const pid = typeof record.productId === 'object' ? record.productId?._id : record.productId;
+      const key = `${pid}_${record.campaignTitle || ''}_${record.startAt}_${record.endAt}`;
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          productId: record.productId,
+          campaignTitle: record.campaignTitle,
+          startAt: record.startAt,
+          endAt: record.endAt,
+          records: [],
+        };
+      }
+      groups[key].records.push(record);
+    });
+
+    return Object.values(groups).map((g) => {
+      const totalQty = g.records.reduce((s, r) => s + (r.totalQuantity || 0), 0);
+      const totalSold = g.records.reduce((s, r) => s + (r.soldQuantity || 0), 0);
+      const priceMin = Math.min(...g.records.map((r) => r.salePrice || 0));
+      const priceMax = Math.max(...g.records.map((r) => r.salePrice || 0));
+      const statusOrder = {
+        active: 3,
+        pending: 2,
+        upcoming: 2,
+        expired: 1,
+        ended: 1,
+        cancelled: 0,
+      };
+      const topStatus = g.records.reduce(
+        (best, r) => ((statusOrder[r.status] || 0) > (statusOrder[best] || 0) ? r.status : best),
+        g.records[0]?.status
+      );
+      return {
+        ...g,
+        totalQuantity: totalQty,
+        soldQuantity: totalSold,
+        salePrice: priceMin,
+        salePriceMax: priceMax,
+        status: topStatus,
+        skuCount: g.records.length,
+      };
+    });
+  }, [filteredFlashSales]);
 
   return (
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
         <h1 className={styles.title}>Flash Sale Management</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
           Create Flash Sale
         </Button>
       </div>
@@ -1033,15 +1369,45 @@ const FlashSalesPage = () => {
 
       {/* Main content */}
       <Card className={styles.card} style={{ marginBottom: 12 }}>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <Input
-            placeholder="Search by product name, SKU..."
+            placeholder="Search by product name, SKU, campaign..."
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             allowClear
-            style={{ maxWidth: 350 }}
+            style={{ maxWidth: 300 }}
           />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 195 }}
+            options={[
+              { label: 'All Status', value: 'all' },
+              { label: 'Active', value: 'active' },
+              { label: 'Upcoming / Pending', value: 'pending' },
+              { label: 'Expired / Ended', value: 'expired' },
+              { label: 'Cancelled', value: 'cancelled' },
+            ]}
+          />
+          <DatePicker.RangePicker
+            value={dateRangeFilter}
+            onChange={setDateRangeFilter}
+            placeholder={['Campaign start', 'Campaign end']}
+            allowClear
+            style={{ maxWidth: 280 }}
+          />
+          {hasActiveFilters && (
+            <Button
+              onClick={() => {
+                setSearchText('');
+                setStatusFilter('all');
+                setDateRangeFilter(null);
+              }}
+            >
+              Reset Filters
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -1049,33 +1415,50 @@ const FlashSalesPage = () => {
         <Spin spinning={loading}>
           {filteredFlashSales.length > 0 || loading ? (
             <Table
-              columns={columns}
-              dataSource={filteredFlashSales}
-              rowKey="_id"
+              columns={campaignColumns}
+              dataSource={groupedFlashSales}
+              rowKey="key"
               pagination={{
                 current: pagination.page,
                 pageSize: pagination.limit,
-                total: pagination.total,
+                total: groupedFlashSales.length,
                 showSizeChanger: true,
-                showTotal: (total) => `Total: ${total} flash sale(s)`,
+                showTotal: (total) => `Total: ${total} campaign(s)`,
               }}
               onChange={handleTableChange}
               size="small"
-              onRow={(record) => ({
-                onClick: () => handleViewDetail(record),
+              onRow={(group) => ({
+                onClick: () => handleViewCampaign(group),
                 style: { cursor: 'pointer' },
               })}
+              expandable={{
+                expandedRowRender: (group) => (
+                  <Table
+                    columns={variantColumns}
+                    dataSource={group.records}
+                    rowKey="_id"
+                    pagination={false}
+                    size="small"
+                    style={{ marginLeft: 48 }}
+                    onRow={(record) => ({
+                      onClick: () => handleViewDetail(record),
+                      style: { cursor: 'pointer' },
+                    })}
+                  />
+                ),
+                rowExpandable: (group) => group.skuCount > 1,
+              }}
             />
           ) : (
             <Empty
               description={
-                searchText
+                hasActiveFilters
                   ? 'No matching flash sales found'
                   : 'No flash sales yet. Create your first flash sale!'
               }
               style={{ padding: '48px 24px' }}
             >
-              {!searchText && (
+              {!hasActiveFilters && (
                 <div style={{ marginTop: '16px' }}>
                   <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '12px' }}>
                     💡 No flash sale data yet. Click &ldquo;Create Flash Sale&rdquo; to get started.
@@ -1591,217 +1974,427 @@ const FlashSalesPage = () => {
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>📊 Flash Sale Statistics</span>
-            {selectedFlashSale && (
-              <Tag color={selectedFlashSale.status === 'active' ? 'green' : 'default'}>
-                {selectedFlashSale.status === 'active' ? 'Active' : selectedFlashSale.status}
-              </Tag>
+            <span>📊 {selectedCampaignGroup ? 'Campaign Detail' : 'Flash Sale Statistics'}</span>
+            {selectedCampaignGroup ? (
+              <Tag color="blue">{selectedCampaignGroup.skuCount} SKU(s)</Tag>
+            ) : (
+              selectedFlashSale && (
+                <Tag color={selectedFlashSale.status === 'active' ? 'green' : 'default'}>
+                  {selectedFlashSale.status === 'active' ? 'Active' : selectedFlashSale.status}
+                </Tag>
+              )
             )}
           </div>
         }
         open={isDetailModalVisible}
-        onCancel={() => setIsDetailModalVisible(false)}
-        footer={null}
-        width={800}
+        onCancel={() => {
+          setIsDetailModalVisible(false);
+          setSelectedCampaignGroup(null);
+        }}
+        footer={
+          selectedCampaignGroup ? (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setIsDetailModalVisible(false);
+                  setSelectedCampaignGroup(null);
+                  handleEditCampaign(selectedCampaignGroup);
+                }}
+              >
+                Edit Campaign
+              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  setIsDetailModalVisible(false);
+                  setSelectedCampaignGroup(null);
+                  handleDeleteCampaign(selectedCampaignGroup);
+                }}
+              >
+                Delete Campaign
+              </Button>
+            </div>
+          ) : null
+        }
+        width={900}
       >
-        <Spin spinning={statsLoading}>
-          {stats ? (
-            <div style={{ padding: '8px 0' }}>
-              {/* Product Info Card */}
-              <Card size="small" style={{ marginBottom: 16, background: '#fafafa' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {selectedFlashSale?.productId?.images?.[0] && (
-                    <Avatar src={selectedFlashSale.productId.images[0]} shape="square" size={64} />
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0, fontSize: 16 }}>
-                      {selectedFlashSale?.productId?.name}
-                    </h3>
-                    <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: 13 }}>
-                      {selectedFlashSale?.variantSku ? (
-                        <>
-                          <strong>Variant SKU:</strong>{' '}
-                          <Tag color="blue" style={{ marginLeft: 4 }}>
-                            {selectedFlashSale.variantSku}
-                          </Tag>
-                        </>
-                      ) : selectedFlashSale?.productId?.sku ? (
-                        <>
-                          <strong>SKU:</strong> {selectedFlashSale.productId.sku}
-                        </>
-                      ) : (
-                        <span style={{ color: '#999' }}>SKU: N/A</span>
-                      )}
+        {/* CAMPAIGN VIEW: show all SKUs */}
+        {selectedCampaignGroup ? (
+          <div style={{ padding: '8px 0' }}>
+            {/* Product + campaign info */}
+            <Card size="small" style={{ marginBottom: 16, background: '#fafafa' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {selectedFlashSale?.productId?.images?.[0] && (
+                  <Avatar src={selectedFlashSale.productId.images[0]} shape="square" size={64} />
+                )}
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: 0, fontSize: 16 }}>{selectedFlashSale?.productId?.name}</h3>
+                  {selectedCampaignGroup.campaignTitle && (
+                    <p style={{ margin: '4px 0 0', color: '#1890ff', fontSize: 13 }}>
+                      🎯 {selectedCampaignGroup.campaignTitle}
                     </p>
-                    {selectedFlashSale?.campaignTitle && (
-                      <p style={{ margin: '4px 0 0 0', color: '#1890ff', fontSize: 13 }}>
-                        🎯 {selectedFlashSale.campaignTitle}
-                      </p>
-                    )}
-                  </div>
+                  )}
+                  <p style={{ margin: '4px 0 0', color: '#666', fontSize: 13 }}>
+                    🕒 {dayjs(selectedCampaignGroup.startAt).format('DD/MM/YYYY HH:mm')} →{' '}
+                    {dayjs(selectedCampaignGroup.endAt).format('DD/MM/YYYY HH:mm')}
+                  </p>
                 </div>
-              </Card>
+                <Tag
+                  color={
+                    selectedCampaignGroup.status === 'active'
+                      ? 'green'
+                      : selectedCampaignGroup.status === 'pending'
+                        ? 'blue'
+                        : 'default'
+                  }
+                  style={{ fontSize: 13, padding: '2px 10px' }}
+                >
+                  {selectedCampaignGroup.status}
+                </Tag>
+              </div>
+            </Card>
 
-              {/* Price & Discount Stats */}
-              <Card title="Price & Discount" size="small" style={{ marginBottom: 16 }}>
-                <Row gutter={[16, 16]}>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Flash Sale Price"
-                      value={stats.salePrice}
-                      suffix="₫"
-                      valueStyle={{ fontSize: 18, color: '#f5222d', fontWeight: 'bold' }}
-                    />
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Original Price"
-                      value={stats.originalPrice}
-                      suffix="₫"
-                      valueStyle={{
-                        fontSize: 16,
-                        color: '#8c8c8c',
-                        textDecoration: 'line-through',
-                      }}
-                    />
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Discount %"
-                      value={stats.discountPercent}
-                      suffix="%"
-                      valueStyle={{ fontSize: 18, color: '#ff4d4f' }}
-                      prefix="-"
-                    />
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Savings"
-                      value={stats.discountAmount}
-                      suffix="₫"
-                      valueStyle={{ fontSize: 16, color: '#52c41a' }}
-                    />
-                  </Col>
-                </Row>
-              </Card>
-
-              {/* Sales Performance */}
-              <Card title="Sales Performance" size="small" style={{ marginBottom: 16 }}>
-                <Row gutter={[16, 16]}>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Sold / Total"
-                      value={stats.soldQuantity}
-                      suffix={`/ ${stats.totalQuantity}`}
-                      valueStyle={{ fontSize: 20, color: '#52c41a', fontWeight: 'bold' }}
-                    />
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Sell Rate"
-                      value={stats.soldPercentage}
-                      suffix="%"
-                      valueStyle={{
-                        fontSize: 18,
-                        color: stats.soldPercentage > 50 ? '#52c41a' : '#faad14',
-                      }}
-                    />
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Remaining"
-                      value={stats.remainingQuantity}
-                      valueStyle={{
-                        fontSize: 18,
-                        color: stats.remainingQuantity < 10 ? '#ff4d4f' : '#faad14',
-                      }}
-                    />
-                  </Col>
-                  <Col xs={12} sm={6}>
-                    <Statistic
-                      title="Estimated Revenue"
-                      value={(stats.soldQuantity * stats.salePrice).toLocaleString('vi-VN')}
-                      suffix="₫"
-                      valueStyle={{ fontSize: 16, color: '#722ed1', fontWeight: 'bold' }}
-                    />
-                  </Col>
-                </Row>
-
-                {/* Progress Bar */}
-                <div style={{ marginTop: 16 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span style={{ fontWeight: 500 }}>Sales Progress</span>
-                    <span style={{ color: '#52c41a', fontWeight: 600 }}>
-                      {stats.soldQuantity} / {stats.totalQuantity}
-                    </span>
+            {/* Aggregated totals */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+              <Col span={8}>
+                <Card size="small" style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#8c8c8c', fontSize: 12 }}>Total Sold / Qty</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#52c41a' }}>
+                    {selectedCampaignGroup.soldQuantity} / {selectedCampaignGroup.totalQuantity}
                   </div>
                   <Progress
-                    percent={stats.soldPercentage}
-                    strokeColor={
-                      stats.soldPercentage > 80
-                        ? '#52c41a'
-                        : stats.soldPercentage > 50
-                          ? '#1890ff'
-                          : '#faad14'
+                    percent={
+                      selectedCampaignGroup.totalQuantity
+                        ? Math.round(
+                            (selectedCampaignGroup.soldQuantity /
+                              selectedCampaignGroup.totalQuantity) *
+                              100
+                          )
+                        : 0
                     }
-                    format={(pct) => `${pct}%`}
-                    size={['100%', 20]}
+                    size="small"
+                    showInfo={false}
+                    strokeColor="#52c41a"
+                    style={{ marginTop: 4 }}
                   />
-                </div>
-              </Card>
+                </Card>
+              </Col>
+              <Col span={8}>
+                <Card size="small" style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#8c8c8c', fontSize: 12 }}>Price Range</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#f5222d' }}>
+                    {selectedCampaignGroup.salePrice === selectedCampaignGroup.salePriceMax
+                      ? `${selectedCampaignGroup.salePrice?.toLocaleString('vi-VN')} ₫`
+                      : `${selectedCampaignGroup.salePrice?.toLocaleString('vi-VN')} – ${selectedCampaignGroup.salePriceMax?.toLocaleString('vi-VN')} ₫`}
+                  </div>
+                </Card>
+              </Col>
+              <Col span={8}>
+                <Card size="small" style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#8c8c8c', fontSize: 12 }}>SKUs in Campaign</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#1890ff' }}>
+                    {selectedCampaignGroup.skuCount}
+                  </div>
+                </Card>
+              </Col>
+            </Row>
 
-              {/* Time Information */}
-              <Card title="Time" size="small">
-                <Row gutter={[16, 8]}>
-                  <Col span={12}>
+            {/* SKU table */}
+            <Table
+              columns={[
+                {
+                  title: 'SKU',
+                  dataIndex: 'variantSku',
+                  key: 'sku',
+                  render: (sku) =>
+                    sku ? <Tag color="blue">{sku}</Tag> : <span style={{ color: '#aaa' }}>—</span>,
+                },
+                {
+                  title: 'Sale Price',
+                  key: 'price',
+                  render: (_, r) => (
+                    <span style={{ color: '#f5222d', fontWeight: 600 }}>
+                      {r.salePrice?.toLocaleString('vi-VN')} ₫
+                    </span>
+                  ),
+                },
+                {
+                  title: 'Sold / Qty',
+                  key: 'qty',
+                  render: (_, r) => (
                     <div>
-                      <div style={{ color: '#8c8c8c', fontSize: 13, marginBottom: 4 }}>
-                        🕒 Start
-                      </div>
-                      <div style={{ fontWeight: 500, fontSize: 14 }}>
-                        {dayjs(stats.startAt).format('DD/MM/YYYY HH:mm')}
-                      </div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div>
-                      <div style={{ color: '#8c8c8c', fontSize: 13, marginBottom: 4 }}>⏰ End</div>
-                      <div style={{ fontWeight: 500, fontSize: 14 }}>
-                        {dayjs(stats.endAt).format('DD/MM/YYYY HH:mm')}
-                      </div>
-                    </div>
-                  </Col>
-                  {stats.timeRemaining && stats.timeRemaining > 0 && (
-                    <Col span={24}>
-                      <Alert
-                        message={
-                          <span>
-                            ⏳ Time remaining:{' '}
-                            <strong>
-                              {Math.floor(stats.timeRemaining / 3600000)} hour(s){' '}
-                              {Math.floor((stats.timeRemaining % 3600000) / 60000)} minute(s)
-                            </strong>
-                          </span>
+                      <span>
+                        {r.soldQuantity} / {r.totalQuantity}
+                      </span>
+                      <Progress
+                        percent={
+                          r.totalQuantity ? Math.round((r.soldQuantity / r.totalQuantity) * 100) : 0
                         }
-                        type="info"
-                        showIcon
-                        style={{ marginTop: 8 }}
+                        size="small"
+                        showInfo={false}
+                        style={{ marginTop: 2 }}
+                      />
+                    </div>
+                  ),
+                },
+                {
+                  title: 'Status',
+                  dataIndex: 'status',
+                  key: 'status',
+                  render: (status) => {
+                    const cfg = {
+                      pending: { color: 'blue', label: 'Upcoming' },
+                      active: { color: 'green', label: 'Active' },
+                      expired: { color: 'default', label: 'Ended' },
+                      cancelled: { color: 'red', label: 'Cancelled' },
+                    }[status] || { color: 'default', label: status };
+                    return <Tag color={cfg.color}>{cfg.label}</Tag>;
+                  },
+                },
+                {
+                  title: 'Actions',
+                  key: 'actions',
+                  align: 'center',
+                  render: (_, r) => (
+                    <Space>
+                      <Button
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => {
+                          setIsDetailModalVisible(false);
+                          setSelectedCampaignGroup(null);
+                          handleEdit(r);
+                        }}
+                      />
+                      <Button
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          setIsDetailModalVisible(false);
+                          setSelectedCampaignGroup(null);
+                          handleDelete(r._id);
+                        }}
+                      />
+                    </Space>
+                  ),
+                },
+              ]}
+              dataSource={selectedCampaignGroup.records}
+              rowKey="_id"
+              pagination={false}
+              size="small"
+            />
+          </div>
+        ) : (
+          /* SINGLE SKU STATS VIEW */
+          <Spin spinning={statsLoading}>
+            {stats ? (
+              <div style={{ padding: '8px 0' }}>
+                {/* Product Info Card */}
+                <Card size="small" style={{ marginBottom: 16, background: '#fafafa' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {selectedFlashSale?.productId?.images?.[0] && (
+                      <Avatar
+                        src={selectedFlashSale.productId.images[0]}
+                        shape="square"
+                        size={64}
+                      />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: 0, fontSize: 16 }}>
+                        {selectedFlashSale?.productId?.name}
+                      </h3>
+                      <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: 13 }}>
+                        {selectedFlashSale?.variantSku ? (
+                          <>
+                            <strong>Variant SKU:</strong>{' '}
+                            <Tag color="blue" style={{ marginLeft: 4 }}>
+                              {selectedFlashSale.variantSku}
+                            </Tag>
+                          </>
+                        ) : selectedFlashSale?.productId?.sku ? (
+                          <>
+                            <strong>SKU:</strong> {selectedFlashSale.productId.sku}
+                          </>
+                        ) : (
+                          <span style={{ color: '#999' }}>SKU: N/A</span>
+                        )}
+                      </p>
+                      {selectedFlashSale?.campaignTitle && (
+                        <p style={{ margin: '4px 0 0 0', color: '#1890ff', fontSize: 13 }}>
+                          🎯 {selectedFlashSale.campaignTitle}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Price & Discount Stats */}
+                <Card title="Price & Discount" size="small" style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Flash Sale Price"
+                        value={stats.salePrice}
+                        suffix="₫"
+                        valueStyle={{ fontSize: 18, color: '#f5222d', fontWeight: 'bold' }}
                       />
                     </Col>
-                  )}
-                </Row>
-              </Card>
-            </div>
-          ) : (
-            <Empty description="No statistics data available" />
-          )}
-        </Spin>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Original Price"
+                        value={stats.originalPrice}
+                        suffix="₫"
+                        valueStyle={{
+                          fontSize: 16,
+                          color: '#8c8c8c',
+                          textDecoration: 'line-through',
+                        }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Discount %"
+                        value={stats.discountPercent}
+                        suffix="%"
+                        valueStyle={{ fontSize: 18, color: '#ff4d4f' }}
+                        prefix="-"
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Savings"
+                        value={stats.discountAmount}
+                        suffix="₫"
+                        valueStyle={{ fontSize: 16, color: '#52c41a' }}
+                      />
+                    </Col>
+                  </Row>
+                </Card>
+
+                {/* Sales Performance */}
+                <Card title="Sales Performance" size="small" style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Sold / Total"
+                        value={stats.soldQuantity}
+                        suffix={`/ ${stats.totalQuantity}`}
+                        valueStyle={{ fontSize: 20, color: '#52c41a', fontWeight: 'bold' }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Sell Rate"
+                        value={stats.soldPercentage}
+                        suffix="%"
+                        valueStyle={{
+                          fontSize: 18,
+                          color: stats.soldPercentage > 50 ? '#52c41a' : '#faad14',
+                        }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Remaining"
+                        value={stats.remainingQuantity}
+                        valueStyle={{
+                          fontSize: 18,
+                          color: stats.remainingQuantity < 10 ? '#ff4d4f' : '#faad14',
+                        }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="Estimated Revenue"
+                        value={(stats.soldQuantity * stats.salePrice).toLocaleString('vi-VN')}
+                        suffix="₫"
+                        valueStyle={{ fontSize: 16, color: '#722ed1', fontWeight: 'bold' }}
+                      />
+                    </Col>
+                  </Row>
+
+                  {/* Progress Bar */}
+                  <div style={{ marginTop: 16 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontWeight: 500 }}>Sales Progress</span>
+                      <span style={{ color: '#52c41a', fontWeight: 600 }}>
+                        {stats.soldQuantity} / {stats.totalQuantity}
+                      </span>
+                    </div>
+                    <Progress
+                      percent={stats.soldPercentage}
+                      strokeColor={
+                        stats.soldPercentage > 80
+                          ? '#52c41a'
+                          : stats.soldPercentage > 50
+                            ? '#1890ff'
+                            : '#faad14'
+                      }
+                      format={(pct) => `${pct}%`}
+                      size={['100%', 20]}
+                    />
+                  </div>
+                </Card>
+
+                {/* Time Information */}
+                <Card title="Time" size="small">
+                  <Row gutter={[16, 8]}>
+                    <Col span={12}>
+                      <div>
+                        <div style={{ color: '#8c8c8c', fontSize: 13, marginBottom: 4 }}>
+                          🕒 Start
+                        </div>
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>
+                          {dayjs(stats.startAt).format('DD/MM/YYYY HH:mm')}
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={12}>
+                      <div>
+                        <div style={{ color: '#8c8c8c', fontSize: 13, marginBottom: 4 }}>
+                          ⏰ End
+                        </div>
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>
+                          {dayjs(stats.endAt).format('DD/MM/YYYY HH:mm')}
+                        </div>
+                      </div>
+                    </Col>
+                    {stats.timeRemaining && stats.timeRemaining > 0 && (
+                      <Col span={24}>
+                        <Alert
+                          message={
+                            <span>
+                              ⏳ Time remaining:{' '}
+                              <strong>
+                                {Math.floor(stats.timeRemaining / 3600000)} hour(s){' '}
+                                {Math.floor((stats.timeRemaining % 3600000) / 60000)} minute(s)
+                              </strong>
+                            </span>
+                          }
+                          type="info"
+                          showIcon
+                          style={{ marginTop: 8 }}
+                        />
+                      </Col>
+                    )}
+                  </Row>
+                </Card>
+              </div>
+            ) : (
+              <Empty description="No statistics data available" />
+            )}
+          </Spin>
+        )}
       </Modal>
     </div>
   );

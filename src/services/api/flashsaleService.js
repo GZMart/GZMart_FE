@@ -43,6 +43,25 @@ export const flashsaleService = {
   },
 
   /**
+   * Create a flash sale campaign with multiple SKU variants in one request
+   * @param {object} payload
+   * @param {string} payload.productId - Product ID (required)
+   * @param {string} payload.campaignTitle - Campaign name (required)
+   * @param {string} payload.startAt - ISO 8601 start time (required)
+   * @param {string} payload.endAt - ISO 8601 end time (required)
+   * @param {Array}  payload.variants - Array of variant configs
+   * @param {string} payload.variants[].variantSku
+   * @param {Array}  [payload.variants[].tierIndex]
+   * @param {number} payload.variants[].salePrice
+   * @param {number} payload.variants[].totalQuantity
+   * @param {number} [payload.variants[].purchaseLimit]
+   * @returns {Promise} Created flash sale campaign object
+   */
+  createBatch: async (payload) => {
+    return await axiosClient.post(`${BASE_URL}/batch`, payload);
+  },
+
+  /**
    * Get flash sale details by ID
    * @param {string} id - Flash sale ID
    * @returns {Promise} Flash sale details object
