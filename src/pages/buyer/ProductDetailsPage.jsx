@@ -6,6 +6,7 @@ import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
+import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import { productService } from '../../services/api';
 import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
@@ -139,11 +140,9 @@ const ProductDetailsPage = () => {
         const transformed = {
           ...productData,
           id: productData._id,
-          tier_variations: tiers, // Key fix: Map 'tiers' to 'tier_variations'
-          // Ensure other fields are preserved
+          tier_variations: tiers,
           models: productData.models || [],
-          price: productData.originalPrice || 0, // Base price
-          // Add mock data for missing optional fields
+          price: productData.originalPrice || 0,
           flashSale: productData.flashSale || {
             timeText: 'FLASH SALE STARTS IN 21:00, TODAY'
           },
@@ -151,7 +150,9 @@ const ProductDetailsPage = () => {
             { discount: 'Save 10k' }
           ],
           shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
-          warranty: productData.warranty || 'Free return within 15 days • Warranty included'
+          warranty: productData.warranty || 'Free return within 15 days • Warranty included',
+          soldCount: productData.soldCount || productData.sold || 0,
+          savedCount: productData.savedCount || productData.favoriteCount || 0,
         };
 
         setProduct(transformed);
@@ -202,19 +203,13 @@ const ProductDetailsPage = () => {
       if (user && product?._id) {
         try {
           const response = await favouriteService.checkInFavourites(product._id);
-          console.log('Check favourite response:', response);
-
-          // Backend: { success: true, data: { isInFavourites: true/false } }
-          // axiosClient unwraps to: { success: true, data: { isInFavourites: true/false } }
-          // But based on the screenshot, response is already the data object: { isInFavourites: true }
           const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
-          console.log('Setting isFavourite to:', isInFav);
           setIsFavourite(isInFav);
         } catch (error) {
           console.error('Error checking favourite status:', error);
         }
       } else {
-        console.log('Skipping favourite check:', { user: !!user, productId: product?._id });
+        setIsFavourite(false);
       }
     };
     checkFavouriteStatus();
@@ -357,6 +352,14 @@ const ProductDetailsPage = () => {
     navigate('/cart');
   };
 
+  const formatSavedCount = (count) => {
+    if (!count) return 0;
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1).replace('.0', '') + 'k';
+    }
+    return count;
+  };
+
   const handleToggleFavourite = async () => {
     if (!user) {
       setShowLoginModal(true);
@@ -366,13 +369,11 @@ const ProductDetailsPage = () => {
     try {
       setFavouriteLoading(true);
       if (isFavourite) {
-        const response = await favouriteService.removeFromFavourites(product._id);
-        console.log('Remove response:', response);
+        await favouriteService.removeFromFavourites(product._id);
         setIsFavourite(false);
         toast.success('Removed from favourites');
       } else {
-        const response = await favouriteService.addToFavourites(product._id);
-        console.log('Add response:', response);
+        await favouriteService.addToFavourites(product._id);
         setIsFavourite(true);
         toast.success('Added to favourites');
       }
@@ -441,6 +442,56 @@ const ProductDetailsPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Share Section */}
+          <div className={styles.shareSection}>
+            <span className={styles.shareLabel}>Share:</span>
+            <div className={styles.shareButtons}>
+              <button
+                className={`${styles.shareButton} ${styles.facebook}`}
+                title="Share on Facebook"
+                onClick={() => {
+                  const url = `https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-facebook"></i>
+              </button>
+              <button
+                className={`${styles.shareButton} ${styles.messenger}`}
+                title="Share via Messenger"
+                onClick={() => {
+                  const url = `https://www.messenger.com/share?link=${window.location.href}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-chat-dots"></i>
+              </button>
+              <button
+                className={`${styles.shareButton} ${styles.x}`}
+                title="Share on X (Twitter)"
+                onClick={() => {
+                  const url = `https://twitter.com/intent/tweet?url=${window.location.href}&text=${product.name}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-twitter-x"></i>
+              </button>
+            </div>
+            <div className={styles.favouriteSpacer}>
+              <button
+                className={`${styles.shareButton} ${!isFavourite ? styles.unfavourite : styles.isFavourite}`}
+                onClick={handleToggleFavourite}
+                disabled={favouriteLoading}
+                title={isFavourite ? 'Remove from saved' : 'Save this product'}
+              >
+                <i className={`bi bi-heart`}></i>
+              </button>
+              <span className={styles.saveLabel}>
+                {isFavourite ? `Saved (${formatSavedCount(product.savedCount)})` : `Save (${formatSavedCount(product.savedCount)})`}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Info */}
@@ -455,7 +506,20 @@ const ProductDetailsPage = () => {
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
-            <span className={styles.reviewCount}>({product.reviewCount || 0} Reviews)</span>
+            <span className={styles.reviewCount}>
+              {product.reviewCount 
+                ? product.reviewCount >= 1000 
+                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k` 
+                  : product.reviewCount
+                : '0'} Rating
+            </span>
+            <span className={styles.soldCount}>
+              {product.sold 
+                ? product.sold >= 1000 
+                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+` 
+                  : `${product.sold}+`
+                : '0+'} Sold
+            </span>
           </div>
 
           {/* Price & Discount Section */}
@@ -580,15 +644,6 @@ const ProductDetailsPage = () => {
                 disabled={addingToCart || currentStock <= 0}
               >
                 Buy Now
-              </button>
-              <button
-                className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
-                onClick={handleToggleFavourite}
-                disabled={favouriteLoading}
-                title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
-              >
-                <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {favouriteLoading ? 'Loading...' : isFavourite ? 'Saved' : 'Save'}
               </button>
             </div>
             {currentStock <= 0 && <div className="text-danger mt-2">Out of Stock</div>}
@@ -736,35 +791,7 @@ const ProductDetailsPage = () => {
           )}
 
           {activeTab === 'review' && (
-            <div className={styles.reviews}>
-              <h3>Customer Reviews</h3>
-              <div className={styles.reviewSummary}>
-                <div className={styles.averageRating}>
-                  <div className={styles.ratingNumber}>{product.rating}</div>
-                  <div className={styles.stars}>
-                    {'★'.repeat(Math.floor(product.rating))}
-                    {'☆'.repeat(5 - Math.floor(product.rating))}
-                  </div>
-                  <div className={styles.totalReviews}>{product.reviews} Reviews</div>
-                </div>
-              </div>
-              <div className={styles.reviewList}>
-                {product.productReviews?.length > 0 ? (
-                  product.productReviews.map((review) => (
-                    <div key={review.id} className={styles.reviewItem}>
-                      <div className={styles.reviewHeader}>
-                        <strong>{review.author}</strong>
-                        <span className={styles.reviewDate}>{review.date}</span>
-                      </div>
-                      <div className={styles.reviewRating}>{'★'.repeat(review.rating)}</div>
-                      <p>{review.comment}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p>No reviews yet.</p>
-                )}
-              </div>
-            </div>
+            <ProductReviewSection product={product} />
           )}
         </div>
       </div>
