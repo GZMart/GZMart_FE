@@ -4,18 +4,25 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Spinner, Button } from 'react-bootstrap';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
 import { PUBLIC_ROUTES } from '@constants/routes';
-import { selectUser, selectIsAuthenticated, logoutUser, updateUserProfile } from '@store/slices/authSlice';
+import {
+  selectUser,
+  selectIsAuthenticated,
+  logoutUser,
+  updateUserProfile,
+} from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
 import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
+import ReturnRequestModal from '@components/buyer/ReturnRequestModal';
 import locationService from '@services/api/locationService';
 import { Modal, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next'; // Added import
 import ReviewModal from '@components/common/ReviewModal';
+import { io } from 'socket.io-client';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -42,6 +49,7 @@ const ProfilePage = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(null);
 
@@ -65,6 +73,7 @@ const ProfilePage = () => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const fileInputRef = useRef(null);
+  const socketRef = useRef(null);
 
   // Address State
   const [addresses, setAddresses] = useState([]);
@@ -81,7 +90,10 @@ const ProfilePage = () => {
     street: '',
     details: '',
     isDefault: false,
+    lat: null,
+    lng: null,
   });
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   // Location State
   const [provinces, setProvinces] = useState([]);
@@ -173,13 +185,94 @@ const ProfilePage = () => {
 
   // Fetch orders when Orders tab is active
   useEffect(() => {
+    // Only fetch if user is authenticated
+    if (!isAuthenticated || !user) return;
+
     if (activeTab === 'orders') {
       fetchOrders(pagination.page);
     }
     if (activeTab === 'address') {
       fetchAddresses();
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, user]);
+
+  // Socket.io connection for real-time order updates
+  useEffect(() => {
+    if (!isAuthenticated || !user || orders.length === 0) return;
+
+    // Connect to socket
+    const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      // Socket connected
+    });
+
+    socket.on('disconnect', () => {
+      // Socket disconnected
+    });
+
+    // Listen for order status updates for all user's orders
+    orders.forEach((order) => {
+      const statusEventName = `order:status:${order._id}`;
+      const arrivedEventName = `order:arrived:${order._id}`;
+
+      socket.on(statusEventName, (data) => {
+        // Update order in the list
+        setOrders((prevOrders) =>
+          prevOrders.map((o) =>
+            o._id === data.orderId ? { ...o, status: data.status, ...data } : o
+          )
+        );
+
+        // If this is the selected order, update its details too
+        setSelectedOrderDetails((prev) => {
+          if (prev?._id === data.orderId) {
+            return { ...prev, status: data.status, ...data };
+          }
+          return prev;
+        });
+
+        // Show toast notification
+        const orderNum =
+          orders.find((o) => o._id === data.orderId)?.orderNumber || data.orderId.slice(-6);
+        toast.info(`Order #${orderNum} status: ${data.status}`);
+      });
+
+      socket.on(arrivedEventName, (data) => {
+        // Update order status to delivered
+        setOrders((prevOrders) =>
+          prevOrders.map((o) =>
+            o._id === data.orderId ? { ...o, status: 'delivered', deliveredAt: data.arrivedAt } : o
+          )
+        );
+
+        setSelectedOrderDetails((prev) => {
+          if (prev?._id === data.orderId) {
+            return { ...prev, status: 'delivered', deliveredAt: data.arrivedAt };
+          }
+          return prev;
+        });
+
+        // Show toast notification
+        const orderNum =
+          orders.find((o) => o._id === data.orderId)?.orderNumber || data.orderId.slice(-6);
+        toast.success(`Order #${orderNum} has been delivered! 🎉`);
+      });
+    });
+
+    // Cleanup
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [isAuthenticated, user, orders.length]); // Only reconnect when orders count changes
 
   // Update URL when tab changes
   const handleTabChange = (tab) => {
@@ -217,6 +310,8 @@ const ProfilePage = () => {
       street: '',
       details: '',
       isDefault: false,
+      lat: null,
+      lng: null,
     });
     setEditingAddress(null);
   };
@@ -240,10 +335,52 @@ const ProfilePage = () => {
       street: addr.street || '',
       details: addr.details || '',
       isDefault: addr.isDefault,
+      lat: addr.location?.lat || null,
+      lng: addr.location?.lng || null,
     });
     setShowAddressModal(true);
     // Trigger location fetches by setting codes (controlled by useEffects)
     // Note: useEffects will run and fetch districts/wards based on these codes
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setAddressForm((prev) => ({
+          ...prev,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }));
+        setGettingLocation(false);
+        toast.success(
+          `GPS coordinates obtained: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
+        );
+      },
+      (error) => {
+        setGettingLocation(false);
+        let errorMessage = 'Unable to retrieve your location';
+        if (error.code === 1) {
+          errorMessage =
+            'Location permission denied. Please enable location access in your browser settings.';
+        } else if (error.code === 2) {
+          errorMessage = 'Location information unavailable';
+        } else if (error.code === 3) {
+          errorMessage = 'Location request timed out';
+        }
+        toast.error(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   const handleAddressFormChange = (e) => {
@@ -256,16 +393,34 @@ const ProfilePage = () => {
 
   const handleSaveAddress = async () => {
     try {
-      if (editingAddress) {
-        await addressService.updateAddress(editingAddress._id, addressForm);
-      } else {
-        await addressService.createAddress(addressForm);
+      // Prepare data with location object if lat/lng exist
+      const addressData = { ...addressForm };
+
+      // Convert lat/lng to location object for backend
+      if (addressForm.lat !== null && addressForm.lng !== null) {
+        addressData.location = {
+          lat: addressForm.lat,
+          lng: addressForm.lng,
+        };
       }
 
-      
+      // Remove separate lat/lng fields as they're now in location object
+      delete addressData.lat;
+      delete addressData.lng;
+
+      if (editingAddress) {
+        await addressService.updateAddress(editingAddress._id, addressData);
+      } else {
+        await addressService.createAddress(addressData);
+      }
+
       setShowAddressModal(false);
       fetchAddresses();
-      toast.success(editingAddress ? t('profile_page.address.success_update') : t('profile_page.address.success_add'));
+      toast.success(
+        editingAddress
+          ? t('profile_page.address.success_update')
+          : t('profile_page.address.success_add')
+      );
     } catch (error) {
       console.error('Failed to save address:', error);
       toast.error(t('profile_page.address.error_save'));
@@ -384,7 +539,7 @@ const ProfilePage = () => {
       submitData.append('gender', formData.gender);
       submitData.append('dateOfBirth', formData.dateOfBirth);
       submitData.append('aboutMe', formData.aboutMe);
-      
+
       if (avatarFile) {
         submitData.append('avatar', avatarFile);
       }
@@ -396,8 +551,8 @@ const ProfilePage = () => {
         toast.error(profileAction.payload || t('profile_page.error_update'));
       }
     } catch (error) {
-       console.error('Update profile error:', error);
-       toast.error(t('profile_page.error_general'));
+      console.error('Update profile error:', error);
+      toast.error(t('profile_page.error_general'));
     }
   };
 
@@ -443,7 +598,6 @@ const ProfilePage = () => {
 
       // Temporary: Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Review submitted for order:', reviewingOrder._id, reviewData);
       toast.success('Review submitted successfully');
       setShowReviewModal(false);
       setReviewingOrder(null);
@@ -569,8 +723,6 @@ const ProfilePage = () => {
         </div>
       </div>
 
-
-
       <div className={styles.formGroup}>
         <button className={styles.saveButton} onClick={handleSave}>
           {t('profile_page.account.save_button')}
@@ -632,7 +784,9 @@ const ProfilePage = () => {
           >
             <div className={styles.cardHeader}>
               <span className={styles.cardType}>
-                {addr.isDefault ? t('profile_page.address.default_badge') : t('profile_page.address.address_badge')}
+                {addr.isDefault
+                  ? t('profile_page.address.default_badge')
+                  : t('profile_page.address.address_badge')}
               </span>
               <div
                 className={styles.cardActions}
@@ -717,17 +871,17 @@ const ProfilePage = () => {
   // Pro Max Badge Logic
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { class: styles.badgeWarning, text: 'Chờ xử lý' },
-      processing: { class: styles.badgeInfo, text: 'Đang xử lý' },
-      confirmed: { class: styles.badgeInfo, text: 'Đã xác nhận' },
-      packing: { class: styles.badgeInfo, text: 'Đang đóng gói' },
-      shipping: { class: styles.badgeInfo, text: 'Đang giao hàng' },
-      shipped: { class: styles.badgeInfo, text: 'Đang giao hàng' },
-      delivered: { class: styles.badgeSuccess, text: 'Đã giao hàng' },
-      delivered_pending_confirmation: { class: styles.badgeSuccess, text: 'Đã giao hàng' },
-      completed: { class: styles.badgeSuccess, text: 'Hoàn thành' },
-      cancelled: { class: styles.badgeDanger, text: 'Đã hủy' },
-      refunded: { class: styles.badgeWarning, text: 'Đã hoàn tiền' },
+      pending: { class: styles.badgeWarning, text: 'Pending' },
+      processing: { class: styles.badgeInfo, text: 'Processing' },
+      confirmed: { class: styles.badgeInfo, text: 'Confirmed' },
+      packing: { class: styles.badgeInfo, text: 'Packing' },
+      shipping: { class: styles.badgeInfo, text: 'Shipping' },
+      shipped: { class: styles.badgeInfo, text: 'Shipping' },
+      delivered: { class: styles.badgeSuccess, text: 'Delivered' },
+      delivered_pending_confirmation: { class: styles.badgeSuccess, text: 'Delivered' },
+      completed: { class: styles.badgeSuccess, text: 'Completed' },
+      cancelled: { class: styles.badgeDanger, text: 'Cancelled' },
+      refunded: { class: styles.badgeWarning, text: 'Refunded' },
     };
 
     const config = statusConfig[status] || { class: styles.badgeInfo, text: status };
@@ -1111,8 +1265,17 @@ const ProfilePage = () => {
                   <OrderTrackingEnhanced
                     order={selectedOrderDetails}
                     onOrderUpdate={(updatedData) => {
-                      console.log('Order updated in ProfilePage:', updatedData);
-                      // Refresh order details
+                      // 1. Update selected order details immediately for instant UI update
+                      setSelectedOrderDetails(updatedData);
+
+                      // 2. Update order in the list if it exists
+                      setOrders((prevOrders) =>
+                        prevOrders.map((order) =>
+                          order._id === updatedData._id ? { ...order, ...updatedData } : order
+                        )
+                      );
+
+                      // 3. Refetch order details in background to ensure consistency
                       handleOrderClick(selectedOrderDetails._id);
                     }}
                   />
@@ -1215,6 +1378,25 @@ const ProfilePage = () => {
               <div className={styles.actionButtons}>
                 <button className={styles.ratingBtn}>Add Rating</button>
                 <button className={styles.reorderBtn}>Reorder Again</button>
+                {(selectedOrderDetails.status === 'delivered' ||
+                  selectedOrderDetails.status === 'completed') && (
+                  <button
+                    className={styles.returnBtn}
+                    onClick={() => setShowReturnModal(true)}
+                    style={{
+                      backgroundColor: '#f59e0b',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    🔄 Request Return/Refund
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -1267,10 +1449,7 @@ const ProfilePage = () => {
             <div className={styles.sidebarCard}>
               <div className={styles.avatarSection}>
                 <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
-                <div 
-                  className={styles.cameraButton}
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <div className={styles.cameraButton} onClick={() => fileInputRef.current?.click()}>
                   <svg
                     width="18"
                     height="18"
@@ -1377,7 +1556,9 @@ const ProfilePage = () => {
       >
         <div className={styles.modalHeader}>
           <h4 className={styles.modalTitle}>
-            {editingAddress ? t('profile_page.address.modal.title_edit') : t('profile_page.address.modal.title_add')}
+            {editingAddress
+              ? t('profile_page.address.modal.title_edit')
+              : t('profile_page.address.modal.title_add')}
           </h4>
           <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>
             <svg
@@ -1399,7 +1580,9 @@ const ProfilePage = () => {
         <div className={styles.modalBody}>
           <Form>
             <div className={styles.modalFormGroup}>
-              <label className={styles.modalLabel}>{t('profile_page.address.modal.receiver_name')}</label>
+              <label className={styles.modalLabel}>
+                {t('profile_page.address.modal.receiver_name')}
+              </label>
               <input
                 type="text"
                 name="receiverName"
@@ -1422,7 +1605,9 @@ const ProfilePage = () => {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className={styles.modalFormGroup}>
-                <label className={styles.modalLabel}>{t('profile_page.address.modal.province')}</label>
+                <label className={styles.modalLabel}>
+                  {t('profile_page.address.modal.province')}
+                </label>
                 <select
                   name="provinceCode"
                   value={addressForm.provinceCode}
@@ -1467,7 +1652,9 @@ const ProfilePage = () => {
               />
             </div>
             <div className={styles.modalFormGroup}>
-              <label className={styles.modalLabel}>{t('profile_page.address.modal.specific_address')}</label>
+              <label className={styles.modalLabel}>
+                {t('profile_page.address.modal.specific_address')}
+              </label>
               <textarea
                 rows={2}
                 name="details"
@@ -1477,6 +1664,142 @@ const ProfilePage = () => {
                 className={styles.modalTextarea || styles.modalInput}
               />
             </div>
+
+            {/* GPS Location Section */}
+            <div className={styles.modalFormGroup}>
+              <label className={styles.modalLabel}>
+                GPS Location (Optional)
+                <span
+                  style={{
+                    fontSize: '0.8125rem',
+                    color: '#6B7280',
+                    fontWeight: 400,
+                    marginLeft: '0.5rem',
+                  }}
+                >
+                  - For accurate delivery tracking
+                </span>
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  disabled={gettingLocation}
+                  className={styles.modalInput}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem',
+                    cursor: gettingLocation ? 'not-allowed' : 'pointer',
+                    backgroundColor: gettingLocation ? '#F3F4F6' : '#EFF6FF',
+                    color: '#2563EB',
+                    border: '2px dashed #2563EB',
+                    fontWeight: 500,
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!gettingLocation) {
+                      e.currentTarget.style.backgroundColor = '#DBEAFE';
+                      e.currentTarget.style.borderColor = '#1D4ED8';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!gettingLocation) {
+                      e.currentTarget.style.backgroundColor = '#EFF6FF';
+                      e.currentTarget.style.borderColor = '#2563EB';
+                    }
+                  }}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ animation: gettingLocation ? 'spin 1s linear infinite' : 'none' }}
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="3" />
+                    <line x1="12" y1="2" x2="12" y2="4" />
+                    <line x1="12" y1="20" x2="12" y2="22" />
+                    <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+                    <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+                    <line x1="2" y1="12" x2="4" y2="12" />
+                    <line x1="20" y1="12" x2="22" y2="12" />
+                    <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+                    <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+                  </svg>
+                  {gettingLocation ? 'Getting location...' : '📍 Use My Current Location'}
+                </button>
+
+                {addressForm.lat !== null && addressForm.lng !== null && (
+                  <div
+                    style={{
+                      padding: '0.75rem',
+                      backgroundColor: '#F0FDF4',
+                      border: '1px solid #86EFAC',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#16A34A"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span style={{ fontSize: '0.875rem', color: '#166534', fontWeight: 500 }}>
+                        Lat: {addressForm.lat.toFixed(6)}, Lng: {addressForm.lng.toFixed(6)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAddressForm((prev) => ({ ...prev, lat: null, lng: null }))}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#DC2626',
+                      }}
+                      title="Remove GPS coordinates"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className={styles.modalFormGroup}>
               <label
                 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
@@ -1501,7 +1824,9 @@ const ProfilePage = () => {
             {t('profile_page.address.modal.cancel')}
           </button>
           <button className={styles.modalSaveBtn} onClick={handleSaveAddress}>
-            {editingAddress ? t('profile_page.address.modal.update') : t('profile_page.address.modal.save')}
+            {editingAddress
+              ? t('profile_page.address.modal.update')
+              : t('profile_page.address.modal.save')}
           </button>
         </div>
       </Modal>
@@ -1514,6 +1839,21 @@ const ProfilePage = () => {
         onSubmit={handleReviewSubmit}
         orderNumber={reviewingOrder?.orderNumber}
         isSubmitting={reviewSubmitting}
+      />
+
+      {/* Return/Refund Request Modal */}
+      <ReturnRequestModal
+        show={showReturnModal}
+        order={selectedOrderDetails}
+        onHide={() => setShowReturnModal(false)}
+        onSuccess={(returnRequest) => {
+          toast.success('Return request submitted successfully!');
+          setShowReturnModal(false);
+          // Optionally refresh order details
+          if (selectedOrderDetails?._id) {
+            fetchOrderDetails(selectedOrderDetails._id);
+          }
+        }}
       />
     </div>
   );

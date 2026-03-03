@@ -1095,6 +1095,7 @@ const Header = () => {
   const cartTotalItems = useSelector(selectCartTotalItems);
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [activeSubcategory, setActiveSubcategory] = useState(null);
+  const [activeBrand, setActiveBrand] = useState(null);
 
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState(null);
@@ -1127,6 +1128,7 @@ const Header = () => {
       if (megaMenuRef.current && !megaMenuRef.current.contains(event.target)) {
         setHoveredCategory(null);
         setActiveSubcategory(null);
+        setActiveBrand(null);
       }
     };
 
@@ -1145,11 +1147,22 @@ const Header = () => {
     };
   }, []);
 
-  // Fetch cart data when user is authenticated
+  // Fetch cart data when user logs in (only when authentication state changes to true)
+  const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
-    if (isAuthenticated) {
+    console.log(
+      '[CART-DEBUG] 🛒 Header useEffect - isAuthenticated:',
+      isAuthenticated,
+      'prevAuth:',
+      prevAuthRef.current
+    );
+
+    // Only fetch cart when user transitions from not authenticated to authenticated
+    if (isAuthenticated && !prevAuthRef.current) {
+      console.log('[CART-DEBUG] 📥 Fetching cart (auth state changed to true)');
       dispatch(fetchCart());
     }
+    prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated, dispatch]);
 
   const handleLogout = async () => {
@@ -1252,6 +1265,7 @@ const Header = () => {
   const handleCategoryHover = (category) => {
     setHoveredCategory(category);
     setActiveSubcategory(null);
+    setActiveBrand(null);
   };
 
   // Handle category click
@@ -1264,6 +1278,7 @@ const Header = () => {
       setHoveredCategory(category);
     }
     setActiveSubcategory(null);
+    setActiveBrand(null);
   };
 
   // Handle wishlist click
@@ -1735,7 +1750,16 @@ const Header = () => {
                         onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
                         onClick={() => setShowProfileDropdown(false)}
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                           <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
@@ -1832,174 +1856,337 @@ const Header = () => {
         </div>
 
         {/* Mega Menu Dropdown */}
-        {currentCategoryData && (
-          <div
-            className="position-absolute bg-white shadow-lg border-top d-flex justify-content-center"
-            style={{
-              top: '100%',
-              left: 0,
-              right: 0,
-              zIndex: 1000,
-            }}
-          >
-            <div
-              className="d-flex gap-4 py-4 px-3"
-              style={{
-                maxWidth: '1400px',
-                width: '90%',
-              }}
-            >
-              {/* Left Side - Subcategories */}
+        {currentCategoryData &&
+          (() => {
+            // Extract unique brands from selected subcategory
+            const uniqueBrands = activeSubcategory?.products
+              ? [...new Set(activeSubcategory.products.map((p) => p.brand).filter(Boolean))]
+              : [];
+
+            // Filter products by selected brand
+            const displayProducts = activeSubcategory?.products
+              ? activeBrand
+                ? activeSubcategory.products.filter((p) => p.brand === activeBrand)
+                : activeSubcategory.products
+              : currentCategoryData.featuredProducts;
+
+            return (
               <div
+                className="position-absolute bg-white shadow-lg border-top mega-menu-scroll"
                 style={{
-                  width: '280px',
-                  flexShrink: 0,
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 1000,
+                  maxWidth: '1200px',
+                  width: '95%',
+                  maxHeight: '520px',
+                  overflowY: 'auto',
+                  borderRadius: '0 0 12px 12px',
+                  animation: 'slideDown 0.3s ease-out',
                 }}
               >
-                <h6 className="fw-bold mb-3 text-uppercase small text-muted">Browse By Category</h6>
-                <div className="d-flex flex-column">
-                  {currentCategoryData.subcategories.map((subcategory) => (
-                    <div
-                      key={subcategory.id}
-                      onClick={() => setActiveSubcategory(subcategory)}
-                      className={`d-flex align-items-center justify-content-between px-3 py-2 rounded mb-1 ${
-                        activeSubcategory?.id === subcategory.id
-                          ? 'bg-dark text-white'
-                          : 'text-dark'
-                      }`}
-                      style={{
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        backgroundColor:
-                          activeSubcategory?.id === subcategory.id ? '#212529' : 'transparent',
-                      }}
+                <div
+                  className="d-flex gap-3 py-3 px-3"
+                  style={{
+                    minHeight: '400px',
+                  }}
+                >
+                  {/* Column 1 - Subcategories */}
+                  <div
+                    style={{
+                      width: '200px',
+                      flexShrink: 0,
+                      borderRight: '1px solid #e9ecef',
+                      paddingRight: '12px',
+                    }}
+                  >
+                    <h6
+                      className="fw-bold mb-2 text-uppercase"
+                      style={{ fontSize: '0.75rem', color: '#6c757d' }}
                     >
-                      <span>{subcategory.name}</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right Side - Featured Products & Discount */}
-              <div className="flex-grow-1 d-flex gap-4">
-                {/* Featured Products */}
-                <div className="flex-grow-1">
-                  <h6 className="fw-bold mb-3 text-uppercase small text-muted">
-                    {activeSubcategory ? activeSubcategory.name : 'Featured Products'}
-                  </h6>
-                  <div className="d-flex flex-column gap-3">
-                    {(activeSubcategory?.products || currentCategoryData.featuredProducts).map(
-                      (product) => (
+                      Categories
+                    </h6>
+                    <div className="d-flex flex-column gap-1">
+                      {currentCategoryData.subcategories.map((subcategory) => (
                         <div
-                          key={product.id}
-                          className="d-flex align-items-center gap-3 p-2 rounded"
+                          key={subcategory.id}
+                          onClick={() => {
+                            setActiveSubcategory(subcategory);
+                            setActiveBrand(null); // Reset brand when changing subcategory
+                          }}
+                          className={`d-flex align-items-center justify-content-between px-2 py-2 rounded ${
+                            activeSubcategory?.id === subcategory.id
+                              ? 'bg-dark text-white'
+                              : 'text-dark'
+                          }`}
                           style={{
                             cursor: 'pointer',
-                            transition: 'background-color 0.2s',
+                            transition: 'all 0.2s',
+                            fontSize: '0.85rem',
+                            backgroundColor:
+                              activeSubcategory?.id === subcategory.id ? '#212529' : 'transparent',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = 'transparent')
-                          }
+                          onMouseEnter={(e) => {
+                            if (activeSubcategory?.id !== subcategory.id) {
+                              e.currentTarget.style.backgroundColor = '#f8f9fa';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (activeSubcategory?.id !== subcategory.id) {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }
+                          }}
+                        >
+                          <span className="text-truncate">{subcategory.name}</span>
+                          <ChevronRight size={14} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Column 2 - Brands (only show when subcategory is selected) */}
+                  {activeSubcategory && uniqueBrands.length > 0 && (
+                    <div
+                      style={{
+                        width: '180px',
+                        flexShrink: 0,
+                        borderRight: '1px solid #e9ecef',
+                        paddingRight: '12px',
+                      }}
+                    >
+                      <h6
+                        className="fw-bold mb-2 text-uppercase"
+                        style={{ fontSize: '0.75rem', color: '#6c757d' }}
+                      >
+                        Brands
+                      </h6>
+                      <div className="d-flex flex-column gap-1">
+                        {uniqueBrands.map((brand, index) => (
+                          <div
+                            key={index}
+                            onClick={() => setActiveBrand(brand)}
+                            className={`px-2 py-2 rounded ${
+                              activeBrand === brand ? 'bg-primary text-white' : 'text-dark'
+                            }`}
+                            style={{
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              fontSize: '0.85rem',
+                              backgroundColor: activeBrand === brand ? '#0d6efd' : 'transparent',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (activeBrand !== brand) {
+                                e.currentTarget.style.backgroundColor = '#f8f9fa';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (activeBrand !== brand) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            <span className="text-truncate d-block">{brand}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Column 3 - Products */}
+                  <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                    <h6
+                      className="fw-bold mb-2 text-uppercase"
+                      style={{ fontSize: '0.75rem', color: '#6c757d' }}
+                    >
+                      {activeBrand
+                        ? `${activeBrand} Products`
+                        : activeSubcategory
+                          ? activeSubcategory.name
+                          : 'Featured Products'}
+                    </h6>
+                    <div
+                      className="d-flex flex-column gap-2 mega-menu-scroll"
+                      style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '8px' }}
+                    >
+                      {displayProducts.slice(0, 4).map((product) => (
+                        <div
+                          key={product.id}
+                          className="d-flex align-items-center gap-2 p-2 rounded"
+                          style={{
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            border: '1px solid transparent',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f8f9fa';
+                            e.currentTarget.style.borderColor = '#dee2e6';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = 'transparent';
+                          }}
                           onClick={() => {
                             setHoveredCategory(null);
                             setActiveSubcategory(null);
+                            setActiveBrand(null);
                           }}
                         >
                           <img
                             src={product.image}
                             alt={product.name}
                             style={{
-                              width: '80px',
-                              height: '80px',
+                              width: '65px',
+                              height: '65px',
                               objectFit: 'cover',
-                              borderRadius: '8px',
+                              borderRadius: '6px',
+                              flexShrink: 0,
+                              backgroundColor: '#f8f9fa',
+                            }}
+                            onError={(e) => {
+                              e.target.src =
+                                'https://via.placeholder.com/65x65/f8f9fa/6c757d?text=No+Image';
                             }}
                           />
-                          <div className="flex-grow-1">
-                            <div className="small text-muted">{product.brand}</div>
-                            <div className="fw-medium text-dark mb-1">{product.name}</div>
+                          <div className="flex-grow-1 overflow-hidden">
+                            <div className="small text-muted" style={{ fontSize: '0.75rem' }}>
+                              {product.brand}
+                            </div>
+                            <div
+                              className="fw-medium text-dark mb-1 text-truncate"
+                              style={{ fontSize: '0.9rem' }}
+                              title={product.name}
+                            >
+                              {product.name}
+                            </div>
                             <div className="d-flex align-items-center gap-2">
                               {product.originalPrice && (
                                 <span
-                                  className="text-muted small text-decoration-line-through"
-                                  style={{ fontSize: '0.85rem' }}
+                                  className="text-muted text-decoration-line-through"
+                                  style={{ fontSize: '0.8rem' }}
                                 >
                                   {product.originalPrice.toLocaleString('vi-VN')}₫
                                 </span>
                               )}
-                              <span className="text-primary fw-bold">
+                              <span
+                                className="text-primary fw-bold"
+                                style={{ fontSize: '0.95rem' }}
+                              >
                                 {product.price.toLocaleString('vi-VN')}₫
                               </span>
                             </div>
                           </div>
                         </div>
-                      )
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Discount Product */}
-                <div
-                  style={{
-                    width: '320px',
-                    flexShrink: 0,
-                  }}
-                >
+                  {/* Column 4 - Discount Product */}
                   <div
-                    className="rounded p-4 h-100 d-flex flex-column justify-content-between"
                     style={{
-                      backgroundColor: '#FFF4E6',
-                      minHeight: '380px',
+                      width: '280px',
+                      flexShrink: 0,
+                      marginLeft: 'auto',
                     }}
                   >
-                    <div>
-                      <h3 className="fw-bold mb-3" style={{ fontSize: '2rem' }}>
-                        {currentCategoryData.discountProduct.discount}% Discount
-                      </h3>
-                      <p className="text-dark mb-3" style={{ fontSize: '0.9rem' }}>
-                        {currentCategoryData.discountProduct.description}
-                      </p>
-                      <div className="mb-3">
-                        <span className="text-muted small">Starting price: </span>
-                        <span className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>
-                          {currentCategoryData.discountProduct.price.toLocaleString('vi-VN')}₫
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <img
-                        src={currentCategoryData.discountProduct.image}
-                        alt={currentCategoryData.discountProduct.name}
+                    <div
+                      className="rounded p-3 h-100 d-flex flex-column justify-content-between position-relative overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(135deg, #FFF4E6 0%, #FFE8CC 100%)',
+                        minHeight: '380px',
+                        maxHeight: '420px',
+                      }}
+                    >
+                      {/* Decorative circle */}
+                      <div
+                        className="position-absolute rounded-circle"
                         style={{
-                          width: '100%',
-                          height: '150px',
-                          objectFit: 'cover',
-                          borderRadius: '8px',
+                          width: '180px',
+                          height: '180px',
+                          background: 'rgba(255, 138, 0, 0.1)',
+                          top: '-60px',
+                          right: '-60px',
+                          zIndex: 0,
                         }}
-                        className="mb-3"
                       />
-                      <button
-                        className="btn btn-warning w-100 fw-bold text-white"
-                        style={{
-                          backgroundColor: '#FF8A00',
-                          border: 'none',
-                        }}
-                        onClick={() => {
-                          setHoveredCategory(null);
-                          setActiveSubcategory(null);
-                        }}
-                      >
-                        SHOP NOW →
-                      </button>
+
+                      <div style={{ position: 'relative', zIndex: 1 }}>
+                        <div
+                          className="badge bg-danger text-white px-2 py-1 mb-2"
+                          style={{
+                            fontSize: '0.7rem',
+                            animation: 'pulse 2s ease-in-out infinite',
+                          }}
+                        >
+                          HOT DEAL
+                        </div>
+                        <h3
+                          className="fw-bold mb-2"
+                          style={{
+                            fontSize: '2.5rem',
+                            color: '#FF8A00',
+                            lineHeight: '1',
+                            letterSpacing: '-0.02em',
+                          }}
+                        >
+                          {currentCategoryData.discountProduct.discount}% OFF
+                        </h3>
+                        <p
+                          className="text-dark mb-2"
+                          style={{ fontSize: '0.85rem', lineHeight: '1.4' }}
+                        >
+                          {currentCategoryData.discountProduct.description}
+                        </p>
+                        <div className="mb-3">
+                          <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                            Starting from
+                          </span>
+                          <div className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
+                            {currentCategoryData.discountProduct.price.toLocaleString('vi-VN')}₫
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ position: 'relative', zIndex: 1 }}>
+                        <img
+                          src={currentCategoryData.discountProduct.image}
+                          alt={currentCategoryData.discountProduct.name}
+                          style={{
+                            width: '100%',
+                            height: '150px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                          }}
+                          className="mb-2"
+                          onError={(e) => {
+                            e.target.src =
+                              'https://via.placeholder.com/280x150/FFF4E6/FF8A00?text=Special+Offer';
+                          }}
+                        />
+                        <button
+                          className="btn btn-warning w-100 fw-bold text-white py-2 discount-btn-hover"
+                          style={{
+                            backgroundColor: '#FF8A00',
+                            border: 'none',
+                            fontSize: '0.9rem',
+                            borderRadius: '6px',
+                            boxShadow: '0 2px 8px rgba(255, 138, 0, 0.3)',
+                            transition: 'all 0.3s ease',
+                          }}
+                          onClick={() => {
+                            setHoveredCategory(null);
+                            setActiveSubcategory(null);
+                            setActiveBrand(null);
+                          }}
+                        >
+                          SHOP NOW →
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            );
+          })()}
       </div>
 
       {/* Login Required Modal */}
