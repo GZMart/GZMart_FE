@@ -263,6 +263,10 @@
   color: #ff4444;
 }
 
+.currentPriceFlashSale {
+  color: #ee4d2d !important;
+}
+
 .originalPrice {
   font-size: 20px;
   color: #999;
@@ -276,6 +280,39 @@
   border-radius: 4px;
   font-size: 14px;
   font-weight: 600;
+}
+
+.flashSaleContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.flashSaleInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flashSaleLabel {
+  font-weight: 600;
+  color: #ee4d2d;
+}
+
+.flashSaleIcon {
+  font-size: 18px;
+  color: #ee4d2d;
+}
+
+.flashSaleTimer {
+  background-color: #fef1ed;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ee4d2d;
 }
 
 /* Rating Section */
