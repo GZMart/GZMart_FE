@@ -26,46 +26,129 @@ import {
 import enFlag from '../../assets/svg/language/en.svg';
 import viFlag from '../../assets/svg/language/vi.svg';
 
-// Fake data for Guangzhou fashion categories with subcategories and products
+// Fashion categories data from Guangzhou market
 const FAKE_CATEGORIES_DATA = [
   {
     id: 1,
     name: "Women's Fashion",
     subcategories: [
-      { id: 101, name: 'Dresses & Gowns' },
-      { id: 102, name: 'Tops & Blouses' },
-      { id: 103, name: 'Skirts' },
-      { id: 104, name: 'Pants & Trousers' },
-      { id: 105, name: 'Co-ord Sets' },
-      { id: 106, name: 'Outerwear & Coats' },
-      { id: 107, name: 'Activewear' },
-      { id: 108, name: 'Lingerie & Sleepwear' },
-      { id: 109, name: 'Traditional Wear' },
+      {
+        id: 101,
+        name: 'Dresses',
+        products: [
+          {
+            id: 10101,
+            name: 'Floral Print Dress',
+            brand: 'Mishow',
+            image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200',
+            price: 250000,
+            originalPrice: 350000,
+          },
+          {
+            id: 10102,
+            name: 'Satin Silk Dress',
+            brand: 'Realeft',
+            image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=200',
+            price: 320000,
+            originalPrice: 450000,
+          },
+          {
+            id: 10103,
+            name: 'Summer Maxi Dress',
+            brand: 'Mishow',
+            image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=200',
+            price: 280000,
+            originalPrice: 400000,
+          },
+        ],
+      },
+      {
+        id: 102,
+        name: 'Shirts & Blouses',
+        products: [
+          {
+            id: 10201,
+            name: 'Office Chiffon Shirt',
+            brand: 'Simple Retro',
+            image: 'https://images.unsplash.com/photo-1564257577721-fa5be2c300b9?w=200',
+            price: 180000,
+            originalPrice: 260000,
+          },
+          {
+            id: 10202,
+            name: 'Bow Tie Blouse',
+            brand: 'Syiwidii',
+            image: 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=200',
+            price: 210000,
+            originalPrice: 300000,
+          },
+          {
+            id: 10203,
+            name: 'Silk Office Blouse',
+            brand: 'Simple Retro',
+            image: 'https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?w=200',
+            price: 195000,
+            originalPrice: 280000,
+          },
+        ],
+      },
+      {
+        id: 103,
+        name: 'Skirts',
+        products: [
+          {
+            id: 10301,
+            name: 'A-Line Skirt',
+            brand: 'Tangada',
+            image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=200',
+            price: 150000,
+            originalPrice: 220000,
+          },
+          {
+            id: 10302,
+            name: 'Long Pleated Skirt',
+            brand: 'Toyouth',
+            image: 'https://images.unsplash.com/photo-1611086967196-eb780a3a0dde?w=200',
+            price: 240000,
+            originalPrice: 340000,
+          },
+          {
+            id: 10303,
+            name: 'Midi Wrap Skirt',
+            brand: 'Tangada',
+            image: 'https://images.unsplash.com/photo-1590735213920-68192a487bc2?w=200',
+            price: 185000,
+            originalPrice: 265000,
+          },
+        ],
+      },
+      { id: 104, name: 'Lingerie & Sleepwear' },
+      { id: 105, name: 'Activewear' },
     ],
     featuredProducts: [
       {
         id: 1001,
-        name: 'Elegant Floral Summer Dress',
-        brand: 'Guangzhou Fashion House',
+        name: 'Floral Print Dress',
+        brand: 'Mishow',
         image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200',
-        price: 350000,
-        originalPrice: 500000,
+        price: 250000,
+        originalPrice: 350000,
       },
       {
         id: 1002,
-        name: 'Premium Silk Blouse',
-        brand: 'GZ Luxury',
-        image: 'https://images.unsplash.com/photo-1564257577721-fa5be2c300b9?w=200',
-        price: 280000,
-        originalPrice: 400000,
+        name: 'Satin Silk Dress',
+        brand: 'Realeft',
+        image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=200',
+        price: 320000,
+        originalPrice: 450000,
       },
       {
         id: 1003,
-        name: 'Korean Style Co-ord Set',
-        brand: 'Trendy GZ',
-        image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200',
-        price: 420000,
-        originalPrice: 600000,
+        name: 'Office Chiffon Shirt',
+        brand: 'Simple Retro',
+        image: 'https://images.unsplash.com/photo-1564257577721-fa5be2c300b9?w=200',
+        price: 180000,
+        originalPrice: 260000,
       },
     ],
     discountProduct: {
@@ -74,46 +157,130 @@ const FAKE_CATEGORIES_DATA = [
       image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400',
       discount: 40,
       price: 299000,
-      description: 'Bộ sưu tập mới nhất từ Quảng Châu. Thiết kế trendy, chất liệu cao cấp!',
+      description: 'Latest collection from Guangzhou. Trendy designs, premium quality fabrics!',
     },
   },
   {
     id: 2,
     name: "Men's Fashion",
     subcategories: [
-      { id: 201, name: 'T-Shirts & Polos' },
-      { id: 202, name: 'Shirts & Dress Shirts' },
-      { id: 203, name: 'Pants & Jeans' },
-      { id: 204, name: 'Shorts' },
-      { id: 205, name: 'Suits & Blazers' },
-      { id: 206, name: 'Jackets & Coats' },
-      { id: 207, name: 'Activewear & Sportswear' },
-      { id: 208, name: 'Underwear & Loungewear' },
+      {
+        id: 201,
+        name: 'T-Shirts',
+        products: [
+          {
+            id: 20101,
+            name: 'Basic Cotton T-Shirt',
+            brand: 'Semir',
+            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200',
+            price: 135000,
+            originalPrice: 200000,
+          },
+          {
+            id: 20102,
+            name: 'Printed Graphic Tee',
+            brand: 'Metersbonwe',
+            image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200',
+            price: 165000,
+            originalPrice: 240000,
+          },
+          {
+            id: 20103,
+            name: 'Premium Cotton Polo',
+            brand: 'Semir',
+            image: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=200',
+            price: 180000,
+            originalPrice: 260000,
+          },
+        ],
+      },
+      {
+        id: 202,
+        name: 'Jeans',
+        products: [
+          {
+            id: 20201,
+            name: 'Straight Cut Jeans',
+            brand: 'Giordano',
+            image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+          {
+            id: 20202,
+            name: 'Distressed Knee Jeans',
+            brand: 'Jeanswest',
+            image: 'https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?w=200',
+            price: 380000,
+            originalPrice: 540000,
+          },
+          {
+            id: 20203,
+            name: 'Slim Fit Denim',
+            brand: 'Giordano',
+            image: 'https://images.unsplash.com/photo-1548883354-1ee8b94b744d?w=200',
+            price: 365000,
+            originalPrice: 520000,
+          },
+        ],
+      },
+      {
+        id: 203,
+        name: 'Jackets',
+        products: [
+          {
+            id: 20301,
+            name: 'Bomber Jacket',
+            brand: 'Peacebird',
+            image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200',
+            price: 550000,
+            originalPrice: 780000,
+          },
+          {
+            id: 20302,
+            name: 'Khaki Jacket',
+            brand: 'Mark Fairwhale',
+            image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=200',
+            price: 480000,
+            originalPrice: 680000,
+          },
+          {
+            id: 20303,
+            name: 'Denim Jacket',
+            brand: 'Peacebird',
+            image: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=200',
+            price: 520000,
+            originalPrice: 740000,
+          },
+        ],
+      },
+      { id: 204, name: 'Formal Wear' },
+      { id: 205, name: 'Shorts' },
     ],
     featuredProducts: [
       {
         id: 1004,
-        name: 'Premium Cotton Polo Shirt',
-        brand: 'GZ Men',
-        image: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=200',
-        price: 180000,
-        originalPrice: 280000,
+        name: 'Basic Cotton T-Shirt',
+        brand: 'Semir',
+        image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200',
+        price: 135000,
+        originalPrice: 200000,
       },
       {
         id: 1005,
-        name: 'Slim Fit Business Shirt',
-        brand: 'Guangzhou Elite',
-        image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=200',
-        price: 220000,
-        originalPrice: 350000,
+        name: 'Straight Cut Jeans',
+        brand: 'Giordano',
+        image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=200',
+        price: 350000,
+        originalPrice: 500000,
       },
       {
         id: 1006,
-        name: 'Designer Leather Jacket',
-        brand: 'GZ Premium',
+        name: 'Bomber Jacket',
+        brand: 'Peacebird',
         image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200',
-        price: 890000,
-        originalPrice: 1200000,
+        price: 550000,
+        originalPrice: 780000,
       },
     ],
     discountProduct: {
@@ -122,149 +289,799 @@ const FAKE_CATEGORIES_DATA = [
       image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400',
       discount: 35,
       price: 199000,
-      description: 'Thời trang nam cao cấp từ Quảng Châu. Phong cách hiện đại, lịch lãm!',
+      description: "Premium men's fashion from Guangzhou. Modern and elegant style!",
     },
   },
   {
     id: 3,
-    name: 'Bags & Accessories',
+    name: 'Footwear',
     subcategories: [
-      { id: 301, name: 'Handbags' },
-      { id: 302, name: 'Backpacks' },
-      { id: 303, name: 'Crossbody Bags' },
-      { id: 304, name: 'Clutches & Evening Bags' },
-      { id: 305, name: 'Wallets & Purses' },
-      { id: 306, name: 'Belts' },
-      { id: 307, name: 'Sunglasses' },
-      { id: 308, name: 'Jewelry & Watches' },
+      {
+        id: 301,
+        name: 'Sneakers',
+        products: [
+          {
+            id: 30101,
+            name: 'Classic Canvas Sneakers',
+            brand: 'Warrior',
+            image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200',
+            price: 250000,
+            originalPrice: 380000,
+          },
+          {
+            id: 30102,
+            name: 'Platform Sneakers',
+            brand: 'Feiyue',
+            image: 'https://images.unsplash.com/photo-1600269452121-4f2416e55c28?w=200',
+            price: 450000,
+            originalPrice: 650000,
+          },
+          {
+            id: 30103,
+            name: 'Running Shoes',
+            brand: 'Warrior',
+            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200',
+            price: 380000,
+            originalPrice: 540000,
+          },
+        ],
+      },
+      {
+        id: 302,
+        name: 'High Heels',
+        products: [
+          {
+            id: 30201,
+            name: '7cm Pointed Heels',
+            brand: 'Dusto',
+            image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200',
+            price: 380000,
+            originalPrice: 550000,
+          },
+          {
+            id: 30202,
+            name: 'High Heel Sandals',
+            brand: 'Tata',
+            image: 'https://images.unsplash.com/photo-1603808033587-e1906e4e97ed?w=200',
+            price: 320000,
+            originalPrice: 480000,
+          },
+          {
+            id: 30203,
+            name: 'Strappy Heels',
+            brand: 'Dusto',
+            image: 'https://images.unsplash.com/photo-1535043934128-cf0b28d52f95?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+        ],
+      },
+      {
+        id: 303,
+        name: "Men's Leather Shoes",
+        products: [
+          {
+            id: 30301,
+            name: 'Oxford Leather Shoes',
+            brand: 'Spider King',
+            image: 'https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=200',
+            price: 750000,
+            originalPrice: 1000000,
+          },
+          {
+            id: 30302,
+            name: 'Lazy Loafers',
+            brand: 'Red Dragonfly',
+            image: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=200',
+            price: 680000,
+            originalPrice: 920000,
+          },
+          {
+            id: 30303,
+            name: 'Derby Dress Shoes',
+            brand: 'Spider King',
+            image: 'https://images.unsplash.com/photo-1582897085656-c561a83f5d2c?w=200',
+            price: 720000,
+            originalPrice: 950000,
+          },
+        ],
+      },
+      { id: 304, name: 'Sandals & Slippers' },
+      { id: 305, name: 'Boots' },
     ],
     featuredProducts: [
       {
         id: 1007,
-        name: 'Luxury Designer Handbag',
-        brand: 'GZ Luxury Bags',
-        image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200',
-        price: 650000,
-        originalPrice: 950000,
+        name: 'Classic Canvas Sneakers',
+        brand: 'Warrior',
+        image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200',
+        price: 250000,
+        originalPrice: 380000,
       },
       {
         id: 1008,
-        name: 'Premium Leather Wallet',
-        brand: 'Guangzhou Leather',
-        image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=200',
-        price: 150000,
-        originalPrice: 250000,
-      },
-      {
-        id: 1009,
-        name: 'Designer Sunglasses',
-        brand: 'GZ Eyewear',
-        image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=200',
-        price: 120000,
-        originalPrice: 200000,
-      },
-    ],
-    discountProduct: {
-      id: 2003,
-      name: 'Accessories Bundle',
-      image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400',
-      discount: 45,
-      price: 399000,
-      description: 'Bộ sưu tập phụ kiện thời trang cao cấp. Hoàn thiện phong cách của bạn!',
-    },
-  },
-  {
-    id: 4,
-    name: 'Footwear',
-    subcategories: [
-      { id: 401, name: 'Sneakers' },
-      { id: 402, name: 'High Heels' },
-      { id: 403, name: 'Flats & Loafers' },
-      { id: 404, name: 'Boots & Booties' },
-      { id: 405, name: 'Sandals & Slippers' },
-      { id: 406, name: 'Sport Shoes' },
-      { id: 407, name: 'Formal Shoes' },
-    ],
-    featuredProducts: [
-      {
-        id: 1010,
-        name: 'Premium Leather Sneakers',
-        brand: 'GZ Footwear',
-        image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200',
+        name: '7cm Pointed Heels',
+        brand: 'Dusto',
+        image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200',
         price: 380000,
         originalPrice: 550000,
       },
       {
-        id: 1011,
-        name: 'Elegant High Heels',
-        brand: 'Guangzhou Heels',
-        image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200',
-        price: 320000,
-        originalPrice: 480000,
-      },
-      {
-        id: 1012,
-        name: 'Casual Sport Shoes',
-        brand: 'GZ Sport',
-        image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=200',
-        price: 280000,
-        originalPrice: 420000,
+        id: 1009,
+        name: 'Oxford Leather Shoes',
+        brand: 'Spider King',
+        image: 'https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=200',
+        price: 750000,
+        originalPrice: 1000000,
       },
     ],
     discountProduct: {
-      id: 2004,
+      id: 2003,
       name: 'Footwear Collection',
       image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400',
       discount: 30,
       price: 249000,
-      description: 'Giày dép thời trang Quảng Châu. Chất lượng cao, giá cực tốt!',
+      description: 'Guangzhou fashion footwear. High quality, great prices!',
+    },
+  },
+  {
+    id: 4,
+    name: 'Bags & Accessories',
+    subcategories: [
+      {
+        id: 401,
+        name: "Women's Bags",
+        products: [
+          {
+            id: 40101,
+            name: 'Mini Crossbody Bag',
+            brand: 'Micocah',
+            image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200',
+            price: 280000,
+            originalPrice: 420000,
+          },
+          {
+            id: 40102,
+            name: 'Leather Tote Bag',
+            brand: 'Charles & Keith',
+            image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200',
+            price: 420000,
+            originalPrice: 600000,
+          },
+          {
+            id: 40103,
+            name: 'Shoulder Bag',
+            brand: 'Micocah',
+            image: 'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+        ],
+      },
+      {
+        id: 402,
+        name: 'Backpacks',
+        products: [
+          {
+            id: 40201,
+            name: 'Waterproof Backpack',
+            brand: 'Mr.ace Homme',
+            image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+          {
+            id: 40202,
+            name: 'Laptop Backpack',
+            brand: 'Ginye',
+            image: 'https://images.unsplash.com/photo-1622560480654-d96214fdc887?w=200',
+            price: 450000,
+            originalPrice: 640000,
+          },
+          {
+            id: 40203,
+            name: 'Travel Backpack',
+            brand: 'Mr.ace Homme',
+            image: 'https://images.unsplash.com/photo-1546938576-6e6a64f317cc?w=200',
+            price: 480000,
+            originalPrice: 680000,
+          },
+        ],
+      },
+      {
+        id: 403,
+        name: 'Belts & Wallets',
+        products: [
+          {
+            id: 40301,
+            name: 'Men Leather Wallet',
+            brand: 'Septwolves',
+            image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=200',
+            price: 290000,
+            originalPrice: 420000,
+          },
+          {
+            id: 40302,
+            name: 'Auto-Buckle Belt',
+            brand: 'Goldlion',
+            image: 'https://images.unsplash.com/photo-1624222247344-550fb60583c2?w=200',
+            price: 210000,
+            originalPrice: 300000,
+          },
+          {
+            id: 40303,
+            name: 'Bifold Wallet',
+            brand: 'Septwolves',
+            image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=200',
+            price: 250000,
+            originalPrice: 360000,
+          },
+        ],
+      },
+      { id: 404, name: 'Sunglasses' },
+      { id: 405, name: 'Jewelry' },
+    ],
+    featuredProducts: [
+      {
+        id: 1010,
+        name: 'Mini Crossbody Bag',
+        brand: 'Micocah',
+        image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200',
+        price: 280000,
+        originalPrice: 420000,
+      },
+      {
+        id: 1011,
+        name: 'Waterproof Backpack',
+        brand: 'Mr.ace Homme',
+        image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200',
+        price: 350000,
+        originalPrice: 500000,
+      },
+      {
+        id: 1012,
+        name: 'Aviator Sunglasses',
+        brand: 'Bolon',
+        image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=200',
+        price: 550000,
+        originalPrice: 780000,
+      },
+    ],
+    discountProduct: {
+      id: 2004,
+      name: 'Accessories Bundle',
+      image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400',
+      discount: 45,
+      price: 399000,
+      description: 'Premium fashion accessories collection. Complete your style!',
     },
   },
   {
     id: 5,
-    name: 'Outerwear & Coats',
+    name: 'Kids & Baby',
     subcategories: [
-      { id: 501, name: 'Blazers' },
-      { id: 502, name: 'Jackets' },
-      { id: 503, name: 'Coats' },
-      { id: 504, name: 'Cardigans' },
-      { id: 505, name: 'Hoodies & Sweatshirts' },
-      { id: 506, name: 'Vests' },
-      { id: 507, name: 'Raincoats & Windbreakers' },
+      {
+        id: 501,
+        name: 'Newborn',
+        products: [
+          {
+            id: 50101,
+            name: 'Cotton Bodysuit',
+            brand: 'Balabala',
+            image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=200',
+            price: 120000,
+            originalPrice: 180000,
+          },
+          {
+            id: 50102,
+            name: 'Baby Gloves & Socks Set',
+            brand: 'Dave & Bella',
+            image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200',
+            price: 45000,
+            originalPrice: 70000,
+          },
+          {
+            id: 50103,
+            name: 'Newborn Romper',
+            brand: 'Balabala',
+            image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=200',
+            price: 135000,
+            originalPrice: 200000,
+          },
+        ],
+      },
+      {
+        id: 502,
+        name: "Girls' Dresses",
+        products: [
+          {
+            id: 50201,
+            name: 'Princess Dress',
+            brand: 'Annil',
+            image: 'https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=200',
+            price: 260000,
+            originalPrice: 380000,
+          },
+          {
+            id: 50202,
+            name: 'Denim Overall Dress',
+            brand: 'Souhait',
+            image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=200',
+            price: 195000,
+            originalPrice: 280000,
+          },
+          {
+            id: 50203,
+            name: 'Party Dress',
+            brand: 'Annil',
+            image: 'https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?w=200',
+            price: 280000,
+            originalPrice: 400000,
+          },
+        ],
+      },
+      {
+        id: 503,
+        name: "Boys' Sets",
+        products: [
+          {
+            id: 50301,
+            name: 'Active Wear Set',
+            brand: 'Yeehoo',
+            image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=200',
+            price: 185000,
+            originalPrice: 280000,
+          },
+          {
+            id: 50302,
+            name: 'Mini Vest Set',
+            brand: 'Pepco',
+            image: 'https://images.unsplash.com/photo-1519238483498-21e45be8a5e4?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+          {
+            id: 50303,
+            name: 'Casual T-shirt & Shorts',
+            brand: 'Yeehoo',
+            image: 'https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=200',
+            price: 165000,
+            originalPrice: 240000,
+          },
+        ],
+      },
+      { id: 504, name: "Kids' Shoes" },
+      { id: 505, name: "Kids' Accessories" },
     ],
     featuredProducts: [
       {
         id: 1013,
-        name: 'Wool Blend Overcoat',
-        brand: 'GZ Winter',
-        image: 'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=200',
-        price: 780000,
-        originalPrice: 1100000,
+        name: 'Cotton Bodysuit',
+        brand: 'Balabala',
+        image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=200',
+        price: 120000,
+        originalPrice: 180000,
       },
       {
         id: 1014,
-        name: 'Designer Blazer',
-        brand: 'Guangzhou Elite',
-        image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=200',
-        price: 580000,
-        originalPrice: 850000,
+        name: 'Princess Dress',
+        brand: 'Annil',
+        image: 'https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?w=200',
+        price: 260000,
+        originalPrice: 380000,
       },
       {
         id: 1015,
-        name: 'Trendy Bomber Jacket',
-        brand: 'GZ Street',
-        image: 'https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=200',
-        price: 450000,
-        originalPrice: 650000,
+        name: 'Active Wear Set',
+        brand: 'Yeehoo',
+        image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=200',
+        price: 185000,
+        originalPrice: 280000,
       },
     ],
     discountProduct: {
       id: 2005,
-      name: 'Winter Collection',
-      image: 'https://images.unsplash.com/photo-1544923408-75c5cef46f14?w=400',
+      name: 'Kids Collection',
+      image: 'https://images.unsplash.com/photo-1514090458221-65bb69cf63e4?w=400',
+      discount: 35,
+      price: 199000,
+      description: 'Cute and comfortable kids fashion. Quality guaranteed!',
+    },
+  },
+  {
+    id: 6,
+    name: 'Outdoor & Sports',
+    subcategories: [
+      {
+        id: 601,
+        name: 'Running Wear',
+        products: [
+          {
+            id: 60101,
+            name: 'Running Shorts',
+            brand: 'Anta',
+            image: 'https://images.unsplash.com/photo-1582143952969-de898403c772?w=200',
+            price: 190000,
+            originalPrice: 280000,
+          },
+          {
+            id: 60102,
+            name: 'Sport Windbreaker',
+            brand: 'Li-Ning',
+            image: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=200',
+            price: 420000,
+            originalPrice: 600000,
+          },
+          {
+            id: 60103,
+            name: 'Running Tank Top',
+            brand: 'Anta',
+            image: 'https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb?w=200',
+            price: 150000,
+            originalPrice: 220000,
+          },
+        ],
+      },
+      {
+        id: 602,
+        name: 'Basketball',
+        products: [
+          {
+            id: 60201,
+            name: 'Basketball Set',
+            brand: 'Peak',
+            image: 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?w=200',
+            price: 280000,
+            originalPrice: 420000,
+          },
+          {
+            id: 60202,
+            name: 'High-Top Basketball Shoes',
+            brand: '361 Degrees',
+            image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=200',
+            price: 850000,
+            originalPrice: 1200000,
+          },
+          {
+            id: 60203,
+            name: 'Basketball Jersey',
+            brand: 'Peak',
+            image: 'https://images.unsplash.com/photo-1598551199889-4fd6d8f2a0c0?w=200',
+            price: 220000,
+            originalPrice: 320000,
+          },
+        ],
+      },
+      {
+        id: 603,
+        name: 'Swimwear',
+        products: [
+          {
+            id: 60301,
+            name: 'Two-Piece Bikini',
+            brand: 'Hosa',
+            image: 'https://images.unsplash.com/photo-1582639590011-f5a8416d1101?w=200',
+            price: 220000,
+            originalPrice: 330000,
+          },
+          {
+            id: 60302,
+            name: 'One-Piece Swimsuit',
+            brand: 'Yingfa',
+            image: 'https://images.unsplash.com/photo-1559333086-b0a56225a93c?w=200',
+            price: 310000,
+            originalPrice: 450000,
+          },
+          {
+            id: 60303,
+            name: 'Men Swim Trunks',
+            brand: 'Hosa',
+            image: 'https://images.unsplash.com/photo-1591369822096-ffd140ec948f?w=200',
+            price: 180000,
+            originalPrice: 260000,
+          },
+        ],
+      },
+      { id: 604, name: 'Hiking Gear' },
+      { id: 605, name: 'Sports Accessories' },
+    ],
+    featuredProducts: [
+      {
+        id: 1016,
+        name: 'Running Shorts',
+        brand: 'Anta',
+        image: 'https://images.unsplash.com/photo-1582143952969-de898403c772?w=200',
+        price: 190000,
+        originalPrice: 280000,
+      },
+      {
+        id: 1017,
+        name: 'Basketball Set',
+        brand: 'Peak',
+        image: 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?w=200',
+        price: 280000,
+        originalPrice: 420000,
+      },
+      {
+        id: 1018,
+        name: 'Two-Piece Bikini',
+        brand: 'Hosa',
+        image: 'https://images.unsplash.com/photo-1582639590011-f5a8416d1101?w=200',
+        price: 220000,
+        originalPrice: 330000,
+      },
+    ],
+    discountProduct: {
+      id: 2006,
+      name: 'Sports Collection',
+      image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400',
+      discount: 40,
+      price: 299000,
+      description: 'Professional sports gear. Performance and comfort combined!',
+    },
+  },
+  {
+    id: 7,
+    name: 'Streetwear',
+    subcategories: [
+      {
+        id: 701,
+        name: 'Hoodies & Sweatshirts',
+        products: [
+          {
+            id: 70101,
+            name: 'Oversize Hoodie',
+            brand: 'Beaster',
+            image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200',
+            price: 450000,
+            originalPrice: 650000,
+          },
+          {
+            id: 70102,
+            name: 'Crewneck Sweatshirt',
+            brand: 'Randomevent',
+            image: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=200',
+            price: 380000,
+            originalPrice: 540000,
+          },
+          {
+            id: 70103,
+            name: 'Graphic Hoodie',
+            brand: 'Beaster',
+            image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=200',
+            price: 420000,
+            originalPrice: 600000,
+          },
+        ],
+      },
+      {
+        id: 702,
+        name: 'Jogger & Cargo Pants',
+        products: [
+          {
+            id: 70201,
+            name: 'Cargo Pants',
+            brand: 'Inflation',
+            image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200',
+            price: 320000,
+            originalPrice: 480000,
+          },
+          {
+            id: 70202,
+            name: 'Jogger Pants',
+            brand: 'Simple Project',
+            image: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=200',
+            price: 260000,
+            originalPrice: 380000,
+          },
+          {
+            id: 70203,
+            name: 'Multi-Pocket Cargo',
+            brand: 'Inflation',
+            image: 'https://images.unsplash.com/photo-1603252109373-7a3d5d8a6015?w=200',
+            price: 340000,
+            originalPrice: 500000,
+          },
+        ],
+      },
+      {
+        id: 703,
+        name: 'Sweaters & Cardigans',
+        products: [
+          {
+            id: 70301,
+            name: 'Pattern Cardigan',
+            brand: 'Guuka',
+            image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=200',
+            price: 480000,
+            originalPrice: 680000,
+          },
+          {
+            id: 70302,
+            name: 'Turtleneck Sweater',
+            brand: 'Unvesno',
+            image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+          {
+            id: 70303,
+            name: 'Knit Cardigan',
+            brand: 'Guuka',
+            image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=200',
+            price: 420000,
+            originalPrice: 600000,
+          },
+        ],
+      },
+      { id: 704, name: 'Headwear' },
+      { id: 705, name: 'Urban Sets' },
+    ],
+    featuredProducts: [
+      {
+        id: 1019,
+        name: 'Oversize Hoodie',
+        brand: 'Beaster',
+        image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200',
+        price: 450000,
+        originalPrice: 650000,
+      },
+      {
+        id: 1020,
+        name: 'Cargo Pants',
+        brand: 'Inflation',
+        image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200',
+        price: 320000,
+        originalPrice: 480000,
+      },
+      {
+        id: 1021,
+        name: 'Pattern Cardigan',
+        brand: 'Guuka',
+        image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=200',
+        price: 480000,
+        originalPrice: 680000,
+      },
+    ],
+    discountProduct: {
+      id: 2007,
+      name: 'Street Style',
+      image: 'https://images.unsplash.com/photo-1558769132-cb1aea1f1c64?w=400',
       discount: 38,
-      price: 499000,
-      description: 'Áo khoác cao cấp mùa đông. Ấm áp và thời trang từ Quảng Châu!',
+      price: 399000,
+      description: 'Urban streetwear collection. Stand out with style!',
+    },
+  },
+  {
+    id: 8,
+    name: 'Underwear & Loungewear',
+    subcategories: [
+      {
+        id: 801,
+        name: 'Pajamas',
+        products: [
+          {
+            id: 80101,
+            name: 'Silk Pajama Set',
+            brand: 'Gukoo',
+            image: 'https://images.unsplash.com/photo-1594369003016-6b0a89f50370?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+          {
+            id: 80102,
+            name: 'Cotton Pajama',
+            brand: 'Many many',
+            image: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=200',
+            price: 280000,
+            originalPrice: 400000,
+          },
+          {
+            id: 80103,
+            name: 'Long Sleeve Silk PJs',
+            brand: 'Gukoo',
+            image: 'https://images.unsplash.com/photo-1615397349754-f8d6b632c925?w=200',
+            price: 350000,
+            originalPrice: 500000,
+          },
+        ],
+      },
+      {
+        id: 802,
+        name: "Men's Underwear",
+        products: [
+          {
+            id: 80201,
+            name: 'Boxer Set (3 pieces)',
+            brand: 'Miiow',
+            image: 'https://images.unsplash.com/photo-1600095472779-38a55464d9ce?w=200',
+            price: 180000,
+            originalPrice: 270000,
+          },
+          {
+            id: 80202,
+            name: 'Cotton Briefs',
+            brand: 'Hodoh',
+            image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=200',
+            price: 55000,
+            originalPrice: 80000,
+          },
+          {
+            id: 80203,
+            name: 'Premium Boxer 5-Pack',
+            brand: 'Miiow',
+            image: 'https://images.unsplash.com/photo-1601524909162-ae8725290836?w=200',
+            price: 250000,
+            originalPrice: 360000,
+          },
+        ],
+      },
+      {
+        id: 803,
+        name: 'Socks',
+        products: [
+          {
+            id: 80301,
+            name: 'High Socks with Pattern',
+            brand: 'Tutuanna',
+            image: 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=200',
+            price: 35000,
+            originalPrice: 50000,
+          },
+          {
+            id: 80302,
+            name: 'No-Show Socks 5-Pack',
+            brand: 'Caramella',
+            image: 'https://images.unsplash.com/photo-1580713019097-fc2d36aa6865?w=200',
+            price: 90000,
+            originalPrice: 130000,
+          },
+          {
+            id: 80303,
+            name: 'Cotton Crew Socks',
+            brand: 'Tutuanna',
+            image: 'https://images.unsplash.com/photo-1587563871167-1ee9c731aefb?w=200',
+            price: 45000,
+            originalPrice: 65000,
+          },
+        ],
+      },
+      { id: 804, name: 'Bath Robes' },
+      { id: 805, name: 'House Slippers' },
+    ],
+    featuredProducts: [
+      {
+        id: 1022,
+        name: 'Silk Pajama Set',
+        brand: 'Gukoo',
+        image: 'https://images.unsplash.com/photo-1594369003016-6b0a89f50370?w=200',
+        price: 350000,
+        originalPrice: 500000,
+      },
+      {
+        id: 1023,
+        name: 'Boxer Set (3 pieces)',
+        brand: 'Miiow',
+        image: 'https://images.unsplash.com/photo-1600095472779-38a55464d9ce?w=200',
+        price: 180000,
+        originalPrice: 270000,
+      },
+      {
+        id: 1024,
+        name: 'Cotton Bath Robe',
+        brand: 'Grace',
+        image: 'https://images.unsplash.com/photo-1620799139834-6b8f844fbe61?w=200',
+        price: 450000,
+        originalPrice: 630000,
+      },
+    ],
+    discountProduct: {
+      id: 2008,
+      name: 'Comfort Collection',
+      image: 'https://images.unsplash.com/photo-1578302537155-c5ce1b36a0e4?w=400',
+      discount: 30,
+      price: 249000,
+      description: 'Premium loungewear for home comfort. Relax in style!',
     },
   },
 ];
@@ -287,6 +1104,8 @@ const Header = () => {
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalType, setLoginModalType] = useState(''); // 'wishlist' or 'cart'
   const dropdownRef = useRef(null);
   const searchDropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
@@ -447,6 +1266,36 @@ const Header = () => {
     setActiveSubcategory(null);
   };
 
+  // Handle wishlist click
+  const handleWishlistClick = (e) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      setLoginModalType('wishlist');
+      setShowLoginModal(true);
+    }
+  };
+
+  // Handle cart click
+  const handleCartClick = (e) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      setLoginModalType('cart');
+      setShowLoginModal(true);
+    }
+  };
+
+  // Handle login modal confirm
+  const handleLoginModalConfirm = () => {
+    setShowLoginModal(false);
+    navigate(PUBLIC_ROUTES.LOGIN);
+  };
+
+  // Handle login modal cancel
+  const handleLoginModalCancel = () => {
+    setShowLoginModal(false);
+    setLoginModalType('');
+  };
+
   // Get user display name and avatar
   const userDisplayName = user?.fullName || user?.email?.split('@')[0] || 'User';
   const userAvatar =
@@ -521,7 +1370,11 @@ const Header = () => {
 
             {/* Actions (Mobile) */}
             <div className="col-6 d-lg-none d-flex justify-content-end align-items-center gap-3">
-              <Link to={BUYER_ROUTES.CART} className="text-dark position-relative">
+              <Link
+                to={BUYER_ROUTES.CART}
+                className="text-dark position-relative"
+                onClick={handleCartClick}
+              >
                 <ShoppingCart size={24} />
                 {cartTotalItems > 0 && (
                   <span
@@ -796,6 +1649,7 @@ const Header = () => {
               <Link
                 to={BUYER_ROUTES.FAVOURITES}
                 className="d-flex align-items-center gap-2 text-decoration-none text-dark"
+                onClick={handleWishlistClick}
               >
                 <Heart size={24} /> <span>{t('header.wishlist')}</span>
               </Link>
@@ -919,6 +1773,7 @@ const Header = () => {
               <Link
                 to={BUYER_ROUTES.CART}
                 className="d-flex align-items-center gap-2 text-decoration-none text-dark position-relative"
+                onClick={handleCartClick}
               >
                 <div className="position-relative">
                   <ShoppingCart size={24} />
@@ -979,106 +1834,124 @@ const Header = () => {
         {/* Mega Menu Dropdown */}
         {currentCategoryData && (
           <div
-            className="position-absolute bg-white w-100 shadow-lg border-top"
+            className="position-absolute bg-white shadow-lg border-top d-flex justify-content-center"
             style={{
               top: '100%',
               left: 0,
+              right: 0,
               zIndex: 1000,
             }}
           >
-            <div className="container py-4">
-              <div className="row">
-                {/* Subcategories - Left Column */}
-                <div className="col-md-3">
-                  <div className="d-flex flex-column">
-                    <h6 className="fw-bold mb-3 text-uppercase small text-muted">
-                      Browse By Category
-                    </h6>
-                    {currentCategoryData.subcategories.map((subcategory) => (
-                      <div
-                        key={subcategory.id}
-                        onClick={() => setActiveSubcategory(subcategory)}
-                        className={`d-flex align-items-center justify-content-between px-3 py-2 rounded mb-1 ${
-                          activeSubcategory?.id === subcategory.id
-                            ? 'bg-dark text-white'
-                            : 'text-dark'
-                        }`}
-                        style={{
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          backgroundColor:
-                            activeSubcategory?.id === subcategory.id ? '#212529' : 'transparent',
-                        }}
-                      >
-                        <span>{subcategory.name}</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    ))}
-                  </div>
+            <div
+              className="d-flex gap-4 py-4 px-3"
+              style={{
+                maxWidth: '1400px',
+                width: '90%',
+              }}
+            >
+              {/* Left Side - Subcategories */}
+              <div
+                style={{
+                  width: '280px',
+                  flexShrink: 0,
+                }}
+              >
+                <h6 className="fw-bold mb-3 text-uppercase small text-muted">Browse By Category</h6>
+                <div className="d-flex flex-column">
+                  {currentCategoryData.subcategories.map((subcategory) => (
+                    <div
+                      key={subcategory.id}
+                      onClick={() => setActiveSubcategory(subcategory)}
+                      className={`d-flex align-items-center justify-content-between px-3 py-2 rounded mb-1 ${
+                        activeSubcategory?.id === subcategory.id
+                          ? 'bg-dark text-white'
+                          : 'text-dark'
+                      }`}
+                      style={{
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        backgroundColor:
+                          activeSubcategory?.id === subcategory.id ? '#212529' : 'transparent',
+                      }}
+                    >
+                      <span>{subcategory.name}</span>
+                      <ChevronRight size={16} />
+                    </div>
+                  ))}
                 </div>
+              </div>
 
-                {/* Featured Products - Middle Column */}
-                <div className="col-md-6">
+              {/* Right Side - Featured Products & Discount */}
+              <div className="flex-grow-1 d-flex gap-4">
+                {/* Featured Products */}
+                <div className="flex-grow-1">
                   <h6 className="fw-bold mb-3 text-uppercase small text-muted">
-                    Featured Products
+                    {activeSubcategory ? activeSubcategory.name : 'Featured Products'}
                   </h6>
                   <div className="d-flex flex-column gap-3">
-                    {currentCategoryData.featuredProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="d-flex align-items-center gap-3 p-2 rounded"
-                        style={{
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor = 'transparent')
-                        }
-                        onClick={() => {
-                          setHoveredCategory(null);
-                          setActiveSubcategory(null);
-                        }}
-                      >
-                        <img
-                          src={product.image}
-                          alt={product.name}
+                    {(activeSubcategory?.products || currentCategoryData.featuredProducts).map(
+                      (product) => (
+                        <div
+                          key={product.id}
+                          className="d-flex align-items-center gap-3 p-2 rounded"
                           style={{
-                            width: '80px',
-                            height: '80px',
-                            objectFit: 'cover',
-                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s',
                           }}
-                        />
-                        <div className="flex-grow-1">
-                          <div className="small text-muted">{product.brand}</div>
-                          <div className="fw-medium text-dark mb-1">{product.name}</div>
-                          <div className="d-flex align-items-center gap-2">
-                            {product.originalPrice && (
-                              <span
-                                className="text-muted small text-decoration-line-through"
-                                style={{ fontSize: '0.85rem' }}
-                              >
-                                Rs {product.originalPrice.toLocaleString()}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor = 'transparent')
+                          }
+                          onClick={() => {
+                            setHoveredCategory(null);
+                            setActiveSubcategory(null);
+                          }}
+                        >
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                            }}
+                          />
+                          <div className="flex-grow-1">
+                            <div className="small text-muted">{product.brand}</div>
+                            <div className="fw-medium text-dark mb-1">{product.name}</div>
+                            <div className="d-flex align-items-center gap-2">
+                              {product.originalPrice && (
+                                <span
+                                  className="text-muted small text-decoration-line-through"
+                                  style={{ fontSize: '0.85rem' }}
+                                >
+                                  {product.originalPrice.toLocaleString('vi-VN')}₫
+                                </span>
+                              )}
+                              <span className="text-primary fw-bold">
+                                {product.price.toLocaleString('vi-VN')}₫
                               </span>
-                            )}
-                            <span className="text-primary fw-bold">
-                              Rs {product.price.toLocaleString()}
-                            </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
 
-                {/* Discount Product - Right Column */}
-                <div className="col-md-3">
+                {/* Discount Product */}
+                <div
+                  style={{
+                    width: '320px',
+                    flexShrink: 0,
+                  }}
+                >
                   <div
                     className="rounded p-4 h-100 d-flex flex-column justify-content-between"
                     style={{
                       backgroundColor: '#FFF4E6',
-                      minHeight: '300px',
+                      minHeight: '380px',
                     }}
                   >
                     <div>
@@ -1091,7 +1964,7 @@ const Header = () => {
                       <div className="mb-3">
                         <span className="text-muted small">Starting price: </span>
                         <span className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>
-                          ${currentCategoryData.discountProduct.price} USD
+                          {currentCategoryData.discountProduct.price.toLocaleString('vi-VN')}₫
                         </span>
                       </div>
                     </div>
@@ -1128,6 +2001,89 @@ const Header = () => {
           </div>
         )}
       </div>
+
+      {/* Login Required Modal */}
+      {showLoginModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
+            style={{ zIndex: 9998 }}
+            onClick={handleLoginModalCancel}
+          />
+
+          {/* Modal */}
+          <div
+            className="position-fixed top-50 start-50 translate-middle bg-white rounded shadow-lg"
+            style={{
+              zIndex: 9999,
+              maxWidth: '450px',
+              width: '90%',
+              animation: 'fadeIn 0.2s ease-in-out',
+            }}
+          >
+            <div className="p-4">
+              {/* Icon */}
+              <div className="text-center mb-3">
+                <div
+                  className="d-inline-flex align-items-center justify-content-center rounded-circle"
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    backgroundColor: '#FFF4E6',
+                  }}
+                >
+                  {loginModalType === 'wishlist' ? (
+                    <Heart size={30} className="text-warning" />
+                  ) : (
+                    <ShoppingCart size={30} className="text-warning" />
+                  )}
+                </div>
+              </div>
+
+              {/* Title */}
+              <h5 className="text-center fw-bold mb-2">
+                {t('header.login_required_title') || 'Login Required'}
+              </h5>
+
+              {/* Message */}
+              <p className="text-center text-muted mb-4">
+                {loginModalType === 'wishlist'
+                  ? t('header.login_required_wishlist_msg') ||
+                    'Please login to access your wishlist and save your favorite items.'
+                  : t('header.login_required_cart_msg') ||
+                    'Please login to access your cart and continue shopping.'}
+              </p>
+
+              {/* Buttons */}
+              <div className="d-flex gap-3">
+                <button
+                  onClick={handleLoginModalCancel}
+                  className="btn btn-outline-secondary flex-grow-1 py-2"
+                  style={{
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                  }}
+                >
+                  {t('header.cancel') || 'Cancel'}
+                </button>
+                <button
+                  onClick={handleLoginModalConfirm}
+                  className="btn btn-warning flex-grow-1 py-2 text-white"
+                  style={{
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    backgroundColor: '#FF8A00',
+                    border: 'none',
+                  }}
+                >
+                  {t('header.go_to_login') || 'Go to Login'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 };
