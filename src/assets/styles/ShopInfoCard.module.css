@@ -1,0 +1,184 @@
+.shopInfoCard {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 24px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.shopProfileLeft {
+    display: flex;
+    align-items: center;
+    padding-right: 20px;
+    width: 400px;
+    flex-shrink: 0;
+}
+
+.shopAvatarContainer {
+    position: relative;
+    width: 78px;
+    height: 78px;
+    margin-right: 20px;
+    border-radius: 50%;
+    border: 1px solid #efefef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background-color: #fff;
+}
+
+.shopAvatarImg {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.shopFavBadge {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff4444;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    white-space: nowrap;
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.shopProfileInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.shopName {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.shopOnlineStatus {
+    font-size: 13px;
+    color: #757575;
+    margin-bottom: 12px;
+}
+
+.shopActions {
+    display: flex;
+    gap: 12px;
+}
+
+.btnChat,
+.btnViewShop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    min-width: 110px;
+    padding: 0 12px;
+    font-size: 13px;
+    border-radius: 2px;
+    cursor: pointer;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.btnViewShop {
+    border: 1px solid #ff4444;
+    color: #ff4444;
+}
+
+.btnViewShop i {
+    color: #ff4444;
+    font-size: 15px;
+}
+
+.btnViewShop:hover {
+    background-color: rgba(255, 68, 68, 0.05);
+}
+
+.btnChat {
+    border: 1px solid #d0cfce;
+    color: #555;
+}
+
+.btnChat i {
+    color: #555;
+    font-size: 14px;
+}
+
+.btnChat:hover {
+    background-color: #f8f8f8;
+}
+
+.shopDivider {
+    width: 1px;
+    height: 80px;
+    background-color: #efefef;
+    margin: 0 10px;
+}
+
+.shopStatsRight {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px 20px;
+    padding-left: 30px;
+}
+
+.statItem {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.statItem i {
+    color: #757575;
+    margin-right: 8px;
+    font-size: 15px;
+}
+
+.statLabel {
+    color: #757575;
+    margin-right: 6px;
+}
+
+.statValue {
+    color: #ff4444;
+}
+
+@media (max-width: 900px) {
+    .shopInfoCard {
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    .shopProfileLeft {
+        width: 100%;
+        border-bottom: 1px solid #efefef;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+
+    .shopDivider {
+        display: none;
+    }
+
+    .shopStatsRight {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .shopStatsRight {
+        grid-template-columns: 1fr;
+    }
+}

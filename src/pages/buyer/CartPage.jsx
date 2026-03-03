@@ -1,59 +1,18 @@
 import { Container, Row, Col, Button } from 'react-bootstrap';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { selectCartItems, fetchCart } from '@store/slices/cartSlice';
-import { products } from '@utils/data/mockData';
+
 import { PUBLIC_ROUTES } from '@constants/routes';
 import CartSection from '@components/common/cart/CartSection';
 import OrderSummary from '@components/common/cart/OrderSummary';
 import RecommendSection from '@components/common/cart/RecommendSection';
 import PromoBanner from '@components/common/cart/PromoBanner';
 
-/**
- * Color name to hex code mapping
- */
-const colorMap = {
-  Black: '#000000',
-  White: '#FFFFFF',
-  Blue: '#0066CC',
-  Red: '#CC0000',
-  Green: '#00CC00',
-  Grey: '#808080',
-  Navy: '#000080',
-  Yellow: '#FFFF00',
-  Brown: '#8B4513',
-  Pink: '#FFC0CB',
-  Orange: '#FFA500',
-  Purple: '#800080',
-};
 
-/**
- * Helper function to convert product from mockData to cart item format
- */
-const convertProductToCartItem = (product, variantIndex = 0) => {
-  // Get first variant or use product data
-  const variant = product.variantsArray?.[variantIndex] || product.variantsArray?.[0];
-  const inventoryItem = product.inventory?.[variantIndex] || product.inventory?.[0];
-  const color = variant?.color || inventoryItem?.color || 'N/A';
-  const size = variant?.size || inventoryItem?.size || inventoryItem?.clothingSize || 'N/A';
 
-  return {
-    id: variant?.sku_code || `${product._id}-${variantIndex}`,
-    _id: product._id,
-    name: product.name,
-    description: product.summary || product.description,
-    image: product.mainImage || product.images?.[0] || '/placeholder-image.jpg',
-    price: variant?.selling_price || product.finalPrice || product.price?.regular || 0,
-    quantity: 1,
-    color,
-    colorCode: colorMap[color] || '#CCCCCC',
-    size,
-    variant: `${size} - ${color}`.trim(),
-    sku: variant?.sku_code || product.sku,
-    brand: product.brand,
-  };
-};
+
 
 /**
  * Cart Page Component
@@ -107,21 +66,7 @@ const CartPage = () => {
   // Get selected items data
   const getSelectedItemsData = () => cartItems.filter((item) => selectedItems.has(item.id));
 
-  // Calculate totals for selected items only
-  const calculateSelectedTotal = () => {
-    const selected = getSelectedItemsData();
-    return selected.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-  };
 
-  // Calculate discount based on selected items only
-  const calculateDiscount = () => {
-    if (selectedItems.size === 0) {
-      return 0;
-    }
-    const total = calculateSelectedTotal();
-    // Apply 20% discount if total > 100
-    return total > 100 ? total * 0.2 : 0;
-  };
 
   const selectedItemsData = getSelectedItemsData();
 
@@ -224,7 +169,7 @@ const CartPage = () => {
             <OrderSummary
               shipping={0}
               tax={0}
-              discount={selectedItemsData.length > 0 ? calculateDiscount() : 0}
+              discount={0}
               giftBoxPrice={10.9}
               selectedItems={selectedItemsData}
             />

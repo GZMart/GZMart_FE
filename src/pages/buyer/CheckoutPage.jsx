@@ -1,13 +1,16 @@
 import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from 'react-bootstrap';
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
+import addressService from '@services/api/addressService';
+import locationService from '@services/api/locationService';
 import voucherService from '@services/api/voucherService';
 import { formatCurrency } from '@utils/formatters';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
+import { Modal } from 'react-bootstrap';
 
 /**
  * Checkout Page Component
@@ -18,7 +21,11 @@ import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
  */
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const cartItems = useSelector(selectCartItems);
+  const location = useLocation();
+  const allCartItems = useSelector(selectCartItems);
+
+  // Use selected items from CartPage if available, otherwise use all items
+  const cartItems = location.state?.selectedItems || allCartItems;
 
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -28,8 +35,8 @@ const CheckoutPage = () => {
     email: '',
     firstName: '',
     lastName: '',
-    country: 'Australia',
-    state: 'Melbourne',
+    country: 'Vietnam',
+    state: '',
     address: '',
     phone: '',
   });
@@ -54,35 +61,258 @@ const CheckoutPage = () => {
     }
   }, [cartItems]);
 
-  // Fetch customer info on mount
+  const handleSelectAddress = (addr) => {
+    // Split receiverName into first/last name
+    const nameParts = (addr.receiverName || '').trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    setCustomerInfo((prev) => ({
+      ...prev,
+      firstName,
+      lastName,
+      country: addr.country || (addr.provinceName ? 'Vietnam' : 'Vietnam'),
+      state: addr.provinceName || '',
+      address: [addr.details, addr.street, addr.wardName].filter(Boolean).join(', '),
+      phone: addr.phone || prev.phone,
+    }));
+    setSelectedAddressId(addr._id);
+    setShowAddressModal(false);
+  };
+
+  // Fetch customer info and addresses on mount
   useEffect(() => {
-    const fetchCustomerInfo = async () => {
+    const initializeData = async () => {
+      let currentAddressValue = '';
+
+      // 1. Fetch Customer Info
       try {
-        const response = await orderService.getCheckoutInfo();
-        if (response.success) {
+        const infoResponse = await orderService.getCheckoutInfo();
+        if (infoResponse.success) {
+          const data = infoResponse.data;
           setCustomerInfo((prev) => ({
             ...prev,
-            ...response.data,
-            // Ensure controlled inputs don't become uncontrolled
-            firstName: response.data.firstName || '',
-            lastName: response.data.lastName || '',
-            email: response.data.email || '',
-            phone: response.data.phone || '',
-            address: response.data.address || '',
+            ...data,
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
           }));
+          currentAddressValue = data.address || '';
         }
       } catch (error) {
         console.error('Failed to fetch customer info:', error);
       }
+
+      // 2. Fetch Addresses
+      try {
+        const addrResponse = await addressService.getAddresses();
+        if (addrResponse.success) {
+          const list = addrResponse.data || [];
+          setAddresses(list);
+
+          // Auto-select default address if no address is currently set
+          if (!currentAddressValue && list.length > 0) {
+            const defaultAddr = list.find((a) => a.isDefault) || list[0];
+            if (defaultAddr) {
+              handleSelectAddress(defaultAddr);
+            }
+          } else if (currentAddressValue && list.length > 0) {
+            // Try to match current address to an ID for radio button sync
+            const match = list.find(a =>
+              [a.details, a.street, a.wardName].filter(Boolean).join(', ') === currentAddressValue
+            );
+            if (match) {
+              setSelectedAddressId(match._id);
+              // Also sync state/country if they are missing or to ensure consistency for previewOrder
+              setCustomerInfo(prev => ({
+                ...prev,
+                state: match.provinceName || prev.state,
+                country: match.country || 'Vietnam'
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch addresses:', error);
+      }
     };
 
-    fetchCustomerInfo();
+    initializeData();
   }, []);
+
+  const resetAddressForm = () => {
+    setAddressForm({
+      receiverName: '',
+      phone: '',
+      provinceCode: '',
+      provinceName: '',
+      wardCode: '',
+      wardName: '',
+      street: '',
+      details: '',
+      isDefault: false,
+    });
+    setEditingAddress(null);
+  };
+
+  const handleAddAddressClick = () => {
+    resetAddressForm();
+    setAddressModalView('add');
+  };
+
+  const handleEditAddressClick = (addr) => {
+    setEditingAddress(addr);
+    setAddressForm({
+      receiverName: addr.receiverName,
+      phone: addr.phone,
+      provinceCode: addr.provinceCode || '',
+      provinceName: addr.provinceName || '',
+      wardCode: addr.wardCode || '',
+      wardName: addr.wardName || '',
+      street: addr.street || '',
+      details: addr.details || '',
+      isDefault: addr.isDefault,
+    });
+    setAddressModalView('edit');
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (window.confirm('Are you sure you want to delete this address?')) {
+      try {
+        const response = await addressService.deleteAddress(id);
+        if (response.success) {
+          const updatedAddresses = addresses.filter((a) => a._id !== id);
+          setAddresses(updatedAddresses);
+        }
+      } catch (error) {
+        console.error('Failed to delete address:', error);
+      }
+    }
+  };
+
+  const handleSetDefaultAddress = async (id) => {
+    try {
+      const response = await addressService.setDefaultAddress(id);
+      if (response.success) {
+        const updatedAddresses = await addressService.getAddresses();
+        setAddresses(updatedAddresses.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to set default address:', error);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    try {
+      let response;
+      if (editingAddress) {
+        response = await addressService.updateAddress(editingAddress._id, addressForm);
+      } else {
+        response = await addressService.createAddress(addressForm);
+      }
+
+      if (response.success) {
+        const updatedAddresses = await addressService.getAddresses();
+        setAddresses(updatedAddresses.data || []);
+
+        // If it was newly created and is the only address, or just created, let's select it
+        if (!editingAddress) {
+          handleSelectAddress(response.data || updatedAddresses.data[0]);
+        } else {
+          setAddressModalView('list');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save address:', error);
+    }
+  };
+
+  const handleAddressFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setAddressForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleProvinceChange = (e) => {
+    const code = e.target.value;
+    const province = provinces.find((p) => p.code === Number(code));
+    setAddressForm((prev) => ({
+      ...prev,
+      provinceCode: code,
+      provinceName: province ? province.name : '',
+      wardCode: '',
+      wardName: '',
+    }));
+  };
+
+  const handleWardChange = (e) => {
+    const code = e.target.value;
+    const ward = wards.find((w) => w.code === Number(code));
+    setAddressForm((prev) => ({
+      ...prev,
+      wardCode: code,
+      wardName: ward ? ward.name : '',
+    }));
+  };
 
   const [paymentMethod, setPaymentMethod] = useState('payos');
   const [shippingCompany, setShippingCompany] = useState('ausff');
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [addressModalView, setAddressModalView] = useState('list'); // 'list' | 'add' | 'edit'
+  const [editingAddress, setEditingAddress] = useState(null);
+
+  const [addressForm, setAddressForm] = useState({
+    receiverName: '',
+    phone: '',
+    provinceCode: '',
+    provinceName: '',
+    wardCode: '',
+    wardName: '',
+    street: '',
+    details: '',
+    isDefault: false,
+  });
+
+  const [provinces, setProvinces] = useState([]);
+  const [wards, setWards] = useState([]);
+
+  // Fetch Provinces on mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const data = await locationService.getProvinces();
+        setProvinces(data);
+      } catch (error) {
+        console.error('Failed to fetch provinces:', error);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Fetch Wards when Province changes
+  useEffect(() => {
+    if (addressForm.provinceCode) {
+      const fetchWards = async () => {
+        try {
+          const data = await locationService.getWards(addressForm.provinceCode);
+          setWards(data);
+        } catch (error) {
+          console.error('Failed to fetch wards:', error);
+        }
+      };
+      fetchWards();
+    } else {
+      setWards([]);
+    }
+  }, [addressForm.provinceCode]);
 
   // Voucher state
   const [applicableVouchers, setApplicableVouchers] = useState([]);
@@ -164,8 +394,12 @@ const CheckoutPage = () => {
   // Get selected voucher IDs for API calls
   const getSelectedVoucherIds = useCallback(() => {
     const ids = [];
-    if (selectedShopVoucherId) ids.push(selectedShopVoucherId);
-    if (selectedProductVoucherId) ids.push(selectedProductVoucherId);
+    if (selectedShopVoucherId) {
+      ids.push(selectedShopVoucherId);
+    }
+    if (selectedProductVoucherId) {
+      ids.push(selectedProductVoucherId);
+    }
     return ids;
   }, [selectedShopVoucherId, selectedProductVoucherId]);
 
@@ -177,6 +411,7 @@ const CheckoutPage = () => {
         const response = await orderService.previewOrder({
           city,
           voucherIds: getSelectedVoucherIds(),
+          cartItemIds: cartItems.map((item) => item._id || item.id),
         });
         if (response.success) {
           setOrderSummary(response.data);
@@ -206,11 +441,6 @@ const CheckoutPage = () => {
   const { subtotal, tax, discount } = orderSummary;
   const giftBoxPrice = includeGiftBox ? 10.9 : 0;
   const finalTotal = subtotal + selectedShippingCost + tax - discount + giftBoxPrice;
-
-  // Handle form input changes
-  const handleCustomerInfoChange = (field, value) => {
-    setCustomerInfo((prev) => ({ ...prev, [field]: value }));
-  };
 
   // Handle step navigation
   const handleNext = () => {
@@ -242,6 +472,7 @@ const CheckoutPage = () => {
         paymentMethod,
         notes: '',
         voucherIds: getSelectedVoucherIds(),
+        cartItemIds: cartItems.map((item) => item._id || item.id),
       };
 
       try {
@@ -284,94 +515,73 @@ const CheckoutPage = () => {
   const renderStep1 = () => (
     <Form onSubmit={handleSubmit}>
       <div className="mb-4">
-        <h3 className="fw-bold mb-2">Customer Information</h3>
-        <Form.Group className="mb-3">
-          <Form.Label>E-mail</Form.Label>
-          <Form.Control
-            type="email"
-            value={customerInfo.email}
-            onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
-            required
-          />
-        </Form.Group>
-
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>First Name</Form.Label>
-              <Form.Control
-                type="text"
-                value={customerInfo.firstName}
-                onChange={(e) => handleCustomerInfoChange('firstName', e.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Last Name</Form.Label>
-              <Form.Control
-                type="text"
-                value={customerInfo.lastName}
-                onChange={(e) => handleCustomerInfoChange('lastName', e.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-      </div>
-
-      <div className="mb-4">
-        <h3 className="fw-bold mb-2">Shipping Address</h3>
-        <Form.Group className="mb-3">
-          <Form.Label>Country</Form.Label>
-          <Form.Select
-            value={customerInfo.country}
-            onChange={(e) => handleCustomerInfoChange('country', e.target.value)}
-            required
+        {/* Selected Address Display Block */}
+        {customerInfo.address ? (
+          <Card
+            className="mb-4 border-0 shadow-sm overflow-hidden"
+            style={{ borderRadius: '12px', background: '#fff' }}
           >
-            <option value="Australia">Australia</option>
-            <option value="India">India</option>
-            <option value="United States">United States</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="Canada">Canada</option>
-          </Form.Select>
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>State/Region</Form.Label>
-          <Form.Select
-            value={customerInfo.state}
-            onChange={(e) => handleCustomerInfoChange('state', e.target.value)}
-            required
-          >
-            <option value="Melbourne">Melbourne</option>
-            <option value="Sydney">Sydney</option>
-            <option value="Brisbane">Brisbane</option>
-            <option value="Perth">Perth</option>
-            <option value="Adelaide">Adelaide</option>
-          </Form.Select>
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Address</Form.Label>
-          <Form.Control
-            type="text"
-            value={customerInfo.address}
-            onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
-            required
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Phone Number</Form.Label>
-          <Form.Control
-            type="tel"
-            value={customerInfo.phone}
-            onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
-            required
-          />
-        </Form.Group>
+            <div
+              style={{
+                height: '4px',
+                background: 'repeating-linear-gradient(45deg, #0D6EFD, #0D6EFD 33px, #fff 33px, #fff 46px, #405cbf 46px, #405cbf 79px, #fff 79px, #fff 92px)'
+              }}
+            />
+            <Card.Body className="p-4">
+              <div className="d-flex align-items-start gap-3">
+                <div
+                  className="mt-1"
+                  style={{ color: '#0D6EFD', fontSize: '1.2rem' }}
+                >
+                  <i className="bi bi-geo-alt-fill"></i>
+                </div>
+                <div className="flex-grow-1">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="fw-bold mb-0" style={{ color: '#0D6EFD' }}>Shipping Address</h5>
+                    <Button
+                      variant="link"
+                      className="text-decoration-none p-0 fw-bold"
+                      style={{ color: '#0D6EFD' }}
+                      onClick={() => {
+                        setAddressModalView('list');
+                        setShowAddressModal(true);
+                      }}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                  <div className="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <span className="fw-bold text-dark fs-5">
+                      {customerInfo.firstName} {customerInfo.lastName}
+                    </span>
+                    <span className="text-secondary fs-5">
+                      (+84) {customerInfo.phone}
+                    </span>
+                  </div>
+                  <p className="mb-0 text-muted fs-5 lh-base">
+                    {customerInfo.address}, {customerInfo.state}, {customerInfo.country}
+                  </p>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        ) : (
+          <div className="text-center py-5 bg-light rounded-4 mb-4 border-dashed border-2">
+            <i className="bi bi-geo-alt text-muted mb-3" style={{ fontSize: '3rem' }}></i>
+            <h5 className="text-muted">No shipping address yet</h5>
+            <Button
+              variant="primary"
+              className="mt-3 px-4 rounded-pill"
+              onClick={() => {
+                setAddressModalView('list');
+                setShowAddressModal(true);
+              }}
+              style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
+            >
+              Select or Add Address
+            </Button>
+          </div>
+        )}
       </div>
     </Form>
   );
@@ -495,7 +705,7 @@ const CheckoutPage = () => {
                 <Row className="align-items-center">
                   <Col xs="auto">
                     <img
-                      src={item.image || '/placeholder-image.jpg'}
+                      src={item.image || '/placeholder-image.png'}
                       alt={item.name}
                       style={{
                         width: '80px',
@@ -504,7 +714,8 @@ const CheckoutPage = () => {
                         borderRadius: '8px',
                       }}
                       onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = '/placeholder-image.png';
                       }}
                     />
                   </Col>
@@ -634,7 +845,9 @@ const CheckoutPage = () => {
 
   // Handle manual voucher code apply
   const handleApplyCode = async () => {
-    if (!manualCode.trim()) return;
+    if (!manualCode.trim()) {
+      return;
+    }
     setCodeError('');
     setCodeLoading(true);
     try {
@@ -644,10 +857,10 @@ const CheckoutPage = () => {
         // Check if already in list
         const exists = applicableVouchers.find((av) => av._id === v._id);
         if (!exists) {
-          setApplicableVouchers((prev) => [...prev, { ...v, estimatedSaving: 0, eligible: true }]);
+          setApplicableVouchers((prev) => [...prev, v]);
         }
         // Auto-select
-        if (v.type === 'shop') {
+        if (v.type === 'shop' || v.type === 'private') {
           setSelectedShopVoucherId(v._id);
         } else if (v.type === 'product') {
           setSelectedProductVoucherId(v._id);
@@ -663,7 +876,7 @@ const CheckoutPage = () => {
 
   // Render Voucher Section
   const renderVoucherSection = () => {
-    const shopVouchers = applicableVouchers.filter((v) => v.type === 'shop');
+    const shopVouchers = applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private');
     const productVouchers = applicableVouchers.filter((v) => v.type === 'product');
     const hasVouchers = shopVouchers.length > 0 || productVouchers.length > 0;
 
@@ -673,7 +886,7 @@ const CheckoutPage = () => {
           className="d-flex align-items-center gap-2 mb-2"
           style={{ fontSize: '0.95rem', fontWeight: 600 }}
         >
-          <i className="bi bi-tag" style={{ color: '#ee4d2d' }}></i>
+          <i className="bi bi-tag" style={{ color: '#0D6EFD' }}></i>
           <span>Vouchers</span>
         </div>
 
@@ -693,14 +906,16 @@ const CheckoutPage = () => {
                 {shopVouchers.map((v) => (
                   <div
                     key={v._id}
-                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
-                      }`}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${
+                      !v.eligible ? 'opacity-50' : ''
+                    }`}
                     style={{
+                      backgroundColor: selectedShopVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
                       backgroundColor:
-                        selectedShopVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
+                        selectedShopVoucherId === v._id ? '#e7f1ff' : '#f8f9fa',
                       border:
                         selectedShopVoucherId === v._id
-                          ? '1px solid #ee4d2d'
+                          ? '1px solid #0D6EFD'
                           : '1px solid transparent',
                       cursor: v.eligible ? 'pointer' : 'not-allowed',
                       fontSize: '0.85rem',
@@ -708,9 +923,7 @@ const CheckoutPage = () => {
                     }}
                     onClick={() => {
                       if (!v.eligible) return;
-                      setSelectedShopVoucherId(
-                        selectedShopVoucherId === v._id ? null : v._id,
-                      );
+                      setSelectedShopVoucherId(selectedShopVoucherId === v._id ? null : v._id);
                     }}
                   >
                     <Form.Check
@@ -718,7 +931,7 @@ const CheckoutPage = () => {
                       name="shopVoucher"
                       checked={selectedShopVoucherId === v._id}
                       disabled={!v.eligible}
-                      onChange={() => { }}
+                      onChange={() => {}}
                       style={{ marginTop: '2px' }}
                     />
                     <div className="flex-grow-1">
@@ -726,7 +939,7 @@ const CheckoutPage = () => {
                         <Badge
                           bg=""
                           style={{
-                            backgroundColor: '#ee4d2d',
+                            backgroundColor: '#0D6EFD',
                             fontSize: '0.7rem',
                             fontWeight: 500,
                           }}
@@ -742,7 +955,7 @@ const CheckoutPage = () => {
                         {v.minBasketPrice > 0 && ` · Min ${formatCurrency(v.minBasketPrice)}`}
                       </div>
                       {v.eligible && v.estimatedSaving > 0 && (
-                        <div style={{ color: '#ee4d2d', fontSize: '0.78rem', fontWeight: 500 }}>
+                        <div style={{ color: '#ff6b35', fontSize: '0.78rem', fontWeight: 500 }}>
                           Save {formatCurrency(v.estimatedSaving)}
                         </div>
                       )}
@@ -764,23 +977,25 @@ const CheckoutPage = () => {
                 {productVouchers.map((v) => (
                   <div
                     key={v._id}
-                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
-                      }`}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${
+                      !v.eligible ? 'opacity-50' : ''
+                    }`}
                     style={{
-                      backgroundColor:
-                        selectedProductVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
+                      backgroundColor: selectedProductVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
                       border:
                         selectedProductVoucherId === v._id
-                          ? '1px solid #ee4d2d'
+                          ? '1px solid #0D6EFD'
                           : '1px solid transparent',
                       cursor: v.eligible ? 'pointer' : 'not-allowed',
                       fontSize: '0.85rem',
                       transition: 'all 0.15s',
                     }}
                     onClick={() => {
-                      if (!v.eligible) return;
+                      if (!v.eligible) {
+                        return;
+                      }
                       setSelectedProductVoucherId(
-                        selectedProductVoucherId === v._id ? null : v._id,
+                        selectedProductVoucherId === v._id ? null : v._id
                       );
                     }}
                   >
@@ -789,7 +1004,7 @@ const CheckoutPage = () => {
                       name="productVoucher"
                       checked={selectedProductVoucherId === v._id}
                       disabled={!v.eligible}
-                      onChange={() => { }}
+                      onChange={() => {}}
                       style={{ marginTop: '2px' }}
                     />
                     <div className="flex-grow-1">
@@ -797,7 +1012,7 @@ const CheckoutPage = () => {
                         <Badge
                           bg=""
                           style={{
-                            backgroundColor: '#ff6633',
+                            backgroundColor: '#0D6EFD',
                             fontSize: '0.7rem',
                             fontWeight: 500,
                           }}
@@ -815,7 +1030,7 @@ const CheckoutPage = () => {
                         {v.minBasketPrice > 0 && ` · Min ${formatCurrency(v.minBasketPrice)}`}
                       </div>
                       {v.eligible && v.estimatedSaving > 0 && (
-                        <div style={{ color: '#ee4d2d', fontSize: '0.78rem', fontWeight: 500 }}>
+                        <div style={{ color: '#0D6EFD', fontSize: '0.78rem', fontWeight: 500 }}>
                           Save {formatCurrency(v.estimatedSaving)}
                         </div>
                       )}
@@ -896,7 +1111,7 @@ const CheckoutPage = () => {
         {renderVoucherSection()}
 
         {discount > 0 && (
-          <div className="d-flex justify-content-between mb-2" style={{ color: '#ee4d2d' }}>
+          <div className="d-flex justify-content-between mb-2" style={{ color: '#0D6EFD' }}>
             <span>
               <i className="bi bi-tag-fill me-1"></i>Discount
             </span>
@@ -936,9 +1151,14 @@ const CheckoutPage = () => {
             variant="primary"
             className={currentStep === 1 ? 'w-100' : 'flex-fill'}
             onClick={handleSubmit}
-            disabled={cartItems.length === 0}
+            disabled={cartItems.length === 0 || isProcessing}
+            style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
           >
-            <i className="bi bi-gift me-2"></i>
+            {isProcessing ? (
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            ) : (
+              <i className="bi bi-gift me-2"></i>
+            )}
             {currentStep === 3 ? 'CONFIRM' : 'NEXT'}
           </Button>
         </div>
@@ -947,7 +1167,7 @@ const CheckoutPage = () => {
   );
 
   // Step titles
-  const stepTitles = ['Customer Information', 'Shipping & Payments', 'Product Confirmation'];
+  const stepTitles = ['Customer Information', 'Shipping & Payments', 'Order Confirmation'];
 
   return (
     <div className="checkout-page" style={{ minHeight: '100vh', backgroundColor: '#FFFFFF' }}>
@@ -995,6 +1215,238 @@ const CheckoutPage = () => {
           <Col lg={4}>{renderOrderSummary()}</Col>
         </Row>
       </Container>
+
+      <Modal
+        show={showAddressModal}
+        onHide={() => setShowAddressModal(false)}
+        centered
+        size="lg"
+        className="address-selection-modal"
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold fs-4">
+            {addressModalView === 'list' ? 'My Addresses' : addressModalView === 'edit' ? 'Update Address' : 'New Address'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-4 pt-2">
+          {addressModalView === 'list' ? (
+            <>
+              <div className="address-list py-3" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                {addresses.length === 0 ? (
+                  <div className="text-center py-5">
+                    <p className="text-muted">You don&apos;t have any saved addresses.</p>
+                  </div>
+                ) : (
+                  addresses.map((addr) => (
+                    <div
+                      key={addr._id}
+                      className={`address-item p-3 mb-0 border-bottom position-relative ${addr._id === selectedAddressId ? 'bg-light-subtle' : ''}`}
+                      onClick={() => handleSelectAddress(addr)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <div className="d-flex align-items-center gap-2">
+                          <Form.Check
+                            type="radio"
+                            name="address-radio"
+                            checked={addr._id === selectedAddressId}
+                            readOnly
+                          />
+                          <span className="fw-bold fs-5">{addr.receiverName}</span>
+                          <span className="text-secondary mx-1">|</span>
+                          <span className="text-secondary fs-5">(+84) {addr.phone}</span>
+                        </div>
+                        <div className="d-flex gap-3">
+                          {!addr.isDefault && (
+                            <Button
+                              variant="link"
+                              className="text-decoration-none p-0 fw-bold small text-muted"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetDefaultAddress(addr._id);
+                              }}
+                            >
+                              Set Default
+                            </Button>
+                          )}
+                          <Button
+                            variant="link"
+                            className="text-decoration-none p-0 fw-bold"
+                            style={{ color: '#666' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditAddressClick(addr);
+                            }}
+                            title="Update"
+                          >
+                            <i className="bi bi-pencil-square"></i>
+                          </Button>
+                          <Button
+                            variant="link"
+                            className="text-decoration-none p-0 fw-bold text-danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteAddress(addr._id);
+                            }}
+                            title="Delete"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="ms-4">
+                        <p className="text-muted mb-2 fs-6">
+                          {addr.details}<br />
+                          {addr.street}, {addr.wardName}, {addr.provinceName}
+                        </p>
+                        {addr.isDefault && (
+                          <Badge bg="transparent" className="border border-danger text-danger rounded-0 px-2 py-1 small">
+                            Default
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <Button
+                variant="outline-secondary"
+                className="w-100 py-3 mt-3 d-flex align-items-center justify-content-center gap-2"
+                onClick={handleAddAddressClick}
+                style={{ borderRadius: '4px', borderStyle: 'dashed' }}
+              >
+                <i className="bi bi-plus-lg"></i> Add New Address
+              </Button>
+            </>
+          ) : (
+            <Form>
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Control
+                      type="text"
+                      placeholder="Full Name"
+                      name="receiverName"
+                      value={addressForm.receiverName}
+                      onChange={handleAddressFormChange}
+                      className="py-2"
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Control
+                      type="tel"
+                      placeholder="Phone Number"
+                      name="phone"
+                      value={addressForm.phone}
+                      onChange={handleAddressFormChange}
+                      className="py-2"
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Select
+                      name="provinceCode"
+                      value={addressForm.provinceCode}
+                      onChange={handleProvinceChange}
+                      className="py-2"
+                    >
+                      <option value="">Province/City</option>
+                      {provinces.map(p => (
+                        <option key={p.code} value={p.code}>{p.name}</option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Select
+                      name="wardCode"
+                      value={addressForm.wardCode}
+                      onChange={handleWardChange}
+                      className="py-2"
+                      disabled={!addressForm.provinceCode}
+                    >
+                      <option value="">Ward/Commune</option>
+                      {wards.map(w => (
+                        <option key={w.code} value={w.code}>{w.name}</option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Form.Group className="mb-3">
+                <Form.Control
+                  type="text"
+                  placeholder="Street Name"
+                  name="street"
+                  value={addressForm.street}
+                  onChange={handleAddressFormChange}
+                  className="py-2"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  placeholder="Specific Address"
+                  name="details"
+                  value={addressForm.details}
+                  onChange={handleAddressFormChange}
+                  className="py-2"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Check
+                  type="checkbox"
+                  label="Set as default address"
+                  name="isDefault"
+                  checked={addressForm.isDefault}
+                  onChange={handleAddressFormChange}
+                  id="default-address-checkbox"
+                />
+              </Form.Group>
+            </Form>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button
+            variant="outline-secondary"
+            className="px-4 py-2"
+            onClick={() => {
+              if (addressModalView === 'list') {
+                setShowAddressModal(false);
+              } else {
+                setAddressModalView('list');
+              }
+            }}
+          >
+            {addressModalView === 'list' ? 'Cancel' : 'BACK'}
+          </Button>
+          <Button
+            variant="primary"
+            className="px-4 py-2"
+            style={{ background: '#0D6EFD', borderColor: '#0D6EFD' }}
+            onClick={() => {
+              if (addressModalView === 'list') {
+                setShowAddressModal(false);
+              } else {
+                handleSaveAddress();
+              }
+            }}
+          >
+            {addressModalView === 'list' ? 'Confirm' : 'SAVE'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

@@ -68,8 +68,9 @@ const FlashDealsPage = () => {
           return;
         }
 
-        // Transform flash sales data to products format
-        const productsFromFlashSales = flashSalesData
+        // Group flash sales by product + campaign so each product only appears once
+        const grouped = {};
+        flashSalesData
           .filter((flashSale) => {
             const hasProduct = flashSale && flashSale.productId;
             if (!hasProduct) {
@@ -77,61 +78,84 @@ const FlashDealsPage = () => {
             }
             return hasProduct;
           })
-          .map((flashSale) => {
-            const product = flashSale.productId;
-
-            // Find the variant model by SKU or tier_index
-            let variantModel = null;
-            if (flashSale.variantSku && product.models) {
-              variantModel = product.models.find((m) => m.sku === flashSale.variantSku);
+          .forEach((flashSale) => {
+            const pid =
+              typeof flashSale.productId === 'object'
+                ? flashSale.productId._id
+                : flashSale.productId;
+            const groupKey = `${pid}_${flashSale.campaignTitle || ''}_${flashSale.startAt}`;
+            if (!grouped[groupKey]) {
+              grouped[groupKey] = { product: flashSale.productId, deals: [] };
             }
-
-            // Fallback to first active model or first model
-            if (!variantModel) {
-              variantModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
-            }
-
-            return {
-              id: product._id,
-              name: product.name,
-              description: product.description,
-              image:
-                product.images?.[0] ||
-                variantModel.image ||
-                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
-              images: product.images || [],
-              price: flashSale.salePrice || variantModel.price || 0,
-              originalPrice: variantModel.price || flashSale.salePrice || 0,
-              discount:
-                flashSale.discountPercent ||
-                Math.round(
-                  ((variantModel.price - flashSale.salePrice) / variantModel.price) * 100
-                ) ||
-                0,
-              rating: product.rating || 5,
-              reviews: product.reviewCount || product.sold || 0,
-              sold: flashSale.soldQuantity || product.sold || 0,
-              stock: flashSale.remainingQuantity || variantModel.stock || 0,
-              brand: typeof product.brand === 'object' ? product.brand?.name : product.brand,
-              category:
-                typeof product.category === 'object' ? product.category?.name : product.category,
-              categoryId:
-                typeof product.category === 'object' ? product.category?._id : product.categoryId,
-              tier_variations: product.tier_variations,
-              // Flash Sale specific fields
-              flashSaleId: flashSale._id,
-              dealId: flashSale._id, // Alias for compatibility
-              dealType: 'flash_sale',
-              dealStatus: flashSale.status,
-              dealStartDate: flashSale.startAt,
-              dealEndDate: flashSale.endAt,
-              dealSoldCount: flashSale.soldQuantity || 0,
-              dealQuantityLimit: flashSale.totalQuantity,
-              variantSku: flashSale.variantSku,
-              purchaseLimit: flashSale.purchaseLimit,
-              campaignTitle: flashSale.campaignTitle,
-            };
+            grouped[groupKey].deals.push(flashSale);
           });
+
+        // Transform each group into one product card (cheapest deal as representative)
+        const productsFromFlashSales = Object.values(grouped).map(({ product, deals }) => {
+          // Pick the deal with the lowest sale price as the representative
+          const rep = deals.reduce((best, d) =>
+            (d.salePrice || Infinity) < (best.salePrice || Infinity) ? d : best
+          );
+
+          // Find the variant model for the representative deal
+          let variantModel = null;
+          if (rep.variantSku && product.models) {
+            variantModel = product.models.find((m) => m.sku === rep.variantSku);
+          }
+          if (!variantModel) {
+            variantModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
+          }
+
+          const totalSold = deals.reduce((s, d) => s + (d.soldQuantity || 0), 0);
+          const totalQty = deals.reduce((s, d) => s + (d.totalQuantity || 0), 0);
+          const priceMin = Math.min(...deals.map((d) => d.salePrice || 0));
+          const priceMax = Math.max(...deals.map((d) => d.salePrice || 0));
+
+          return {
+            id: product._id,
+            name: product.name,
+            description: product.description,
+            image:
+              product.images?.[0] ||
+              variantModel.image ||
+              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+            images: product.images || [],
+            price: priceMin,
+            originalPrice: variantModel.price || priceMin || 0,
+            discount:
+              rep.discountPercent ||
+              Math.round(((variantModel.price - priceMin) / variantModel.price) * 100) ||
+              0,
+            rating: product.rating || 5,
+            reviews: product.reviewCount || product.sold || 0,
+            sold: totalSold,
+            stock: deals.reduce(
+              (s, d) => s + (d.remainingQuantity ?? d.totalQuantity - d.soldQuantity ?? 0),
+              0
+            ),
+            brand: typeof product.brand === 'object' ? product.brand?.name : product.brand,
+            category:
+              typeof product.category === 'object' ? product.category?.name : product.category,
+            categoryId:
+              typeof product.category === 'object' ? product.category?._id : product.categoryId,
+            tier_variations: product.tier_variations,
+            // Flash Sale specific fields
+            flashSaleId: rep._id,
+            dealId: rep._id,
+            dealType: 'flash_sale',
+            dealStatus: rep.status,
+            dealStartDate: rep.startAt,
+            dealEndDate: rep.endAt,
+            dealSoldCount: totalSold,
+            dealQuantityLimit: totalQty,
+            dealPriceMin: priceMin,
+            dealPriceMax: priceMax,
+            skuCount: deals.length,
+            variantSku: rep.variantSku,
+            purchaseLimit: rep.purchaseLimit,
+            campaignTitle: rep.campaignTitle,
+          };
+        });
 
         setProducts(productsFromFlashSales);
 

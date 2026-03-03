@@ -14,6 +14,8 @@ const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@pages/auth/ResetPasswordPage'));
 const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
+const ChangePasswordPage = lazy(() => import('@pages/auth/ChangePasswordPage'));
+const ShopProfilePage = lazy(() => import('@pages/buyer/ShopProfilePage'));
 
 const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
 const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'));
@@ -21,7 +23,7 @@ const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPag
 
 // Buyer Pages
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
-const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage'));
+// const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage')); // Removed: Use ProfilePage tab=orders
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
@@ -56,6 +58,7 @@ const ShopPromotionsPage = lazy(() => import('@pages/seller/promotions/ShopPromo
 const ShopProgramForm = lazy(() => import('@pages/seller/promotions/ShopProgramForm'));
 const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboPromotionForm'));
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
+const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -117,6 +120,12 @@ export const routeConfig = [
     layout: 'main',
   },
   {
+    path: '/shop/:id',
+    element: ShopProfilePage,
+    public: true,
+    layout: 'main',
+  },
+  {
     path: '/login',
     element: LoginPage,
     public: true,
@@ -149,6 +158,13 @@ export const routeConfig = [
     element: ResetPasswordPage,
     public: true,
     restricted: true,
+    layout: 'none',
+  },
+  {
+    path: '/change-password',
+    element: ChangePasswordPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER, USER_ROLES.SELLER, USER_ROLES.ADMIN],
     layout: 'none',
   },
   {
@@ -225,9 +241,17 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
   },
+  // Removed: Use /buyer/profile?tab=orders instead (BUYER_ROUTES.ORDERS)
+  // {
+  //   path: '/buyer/orders',
+  //   element: OrdersPage,
+  //   protected: true,
+  //   allowedRoles: [USER_ROLES.BUYER],
+  //   layout: 'main',
+  // },
   {
-    path: '/buyer/orders',
-    element: OrdersPage,
+    path: '/buyer/orders/:orderId',
+    element: TrackOrderDetailsPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
@@ -359,6 +383,13 @@ export const routeConfig = [
   {
     path: '/seller/orders/:id',
     element: OrderDetailsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/messages',
+    element: ChatPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

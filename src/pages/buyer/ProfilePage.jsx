@@ -1,24 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Spinner, Button } from 'react-bootstrap';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
 import { PUBLIC_ROUTES } from '@constants/routes';
-import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
+import { selectUser, selectIsAuthenticated, logoutUser, updateUserProfile } from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
 import { reviewService } from '@services/api';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
+import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
 import locationService from '@services/api/locationService';
 import { Modal, Form } from 'react-bootstrap';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next'; // Added import
 import ReviewModal from '@components/common/ReviewModal';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation(); // Added hook usage
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -54,10 +57,15 @@ const ProfilePage = () => {
     lastName: '',
     displayName: '',
     email: '',
-    oldPassword: '',
-    newPassword: '',
-    repeatPassword: '',
+    phone: '',
+    gender: 'other',
+    dateOfBirth: '',
+    aboutMe: '',
   });
+
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Address State
   const [addresses, setAddresses] = useState([]);
@@ -155,10 +163,12 @@ const ProfilePage = () => {
         lastName,
         displayName: firstName || user.fullName || user.email?.split('@')[0] || '',
         email: user.email || '',
-        oldPassword: '',
-        newPassword: '',
-        repeatPassword: '',
+        phone: user.phone || '',
+        gender: user.gender || 'other',
+        dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+        aboutMe: user.aboutMe || '',
       });
+      setAvatarPreview(user.avatar || user.profileImage || null);
     }
   }, [user]);
 
@@ -253,24 +263,25 @@ const ProfilePage = () => {
         await addressService.createAddress(addressForm);
       }
 
+      
       setShowAddressModal(false);
       fetchAddresses();
-      toast.success(editingAddress ? 'Address updated successfully' : 'Address added successfully');
+      toast.success(editingAddress ? t('profile_page.address.success_update') : t('profile_page.address.success_add'));
     } catch (error) {
       console.error('Failed to save address:', error);
-      toast.error('Failed to save address. Please try again.');
+      toast.error(t('profile_page.address.error_save'));
     }
   };
 
   const handleDeleteAddress = async (id) => {
-    if (window.confirm('Are you sure you want to delete this address?')) {
+    if (window.confirm(t('profile_page.address.confirm_delete'))) {
       try {
         await addressService.deleteAddress(id);
         fetchAddresses();
-        toast.success('Address deleted successfully');
+        toast.success(t('profile_page.address.success_delete'));
       } catch (error) {
         console.error('Failed to delete address:', error);
-        toast.error('Failed to delete address');
+        toast.error(t('profile_page.address.error_delete'));
       }
     }
   };
@@ -279,12 +290,10 @@ const ProfilePage = () => {
     try {
       await addressService.setDefaultAddress(id);
       fetchAddresses();
-      toast.success('Default address updated');
-      // Optionally reload user profile to sync top-level user data
-      // dispatch(fetchUserProfile()); // if such action exists
+      toast.success(t('profile_page.address.success_default'));
     } catch (error) {
       console.error('Failed to set default address:', error);
-      toast.error('Failed to set default address');
+      toast.error(t('profile_page.address.error_default'));
     }
   };
 
@@ -342,7 +351,7 @@ const ProfilePage = () => {
       }
     } catch (error) {
       console.error('Failed to get invoice:', error);
-      alert('Could not generate invoice. Please try again.');
+      alert(t('profile_page.orders.error_invoice_alert'));
     }
   };
 
@@ -354,9 +363,43 @@ const ProfilePage = () => {
     }));
   };
 
-  const handleSave = () => {
-    // TODO: Implement save logic
-    console.log('Saving profile:', formData);
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const submitData = new FormData();
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      submitData.append('fullName', fullName);
+      submitData.append('email', formData.email);
+      submitData.append('phone', formData.phone);
+      submitData.append('gender', formData.gender);
+      submitData.append('dateOfBirth', formData.dateOfBirth);
+      submitData.append('aboutMe', formData.aboutMe);
+      
+      if (avatarFile) {
+        submitData.append('avatar', avatarFile);
+      }
+
+      const profileAction = await dispatch(updateUserProfile({ formData: submitData }));
+      if (updateUserProfile.fulfilled.match(profileAction)) {
+        toast.success(t('profile_page.success_update'));
+      } else {
+        toast.error(profileAction.payload || t('profile_page.error_update'));
+      }
+    } catch (error) {
+       console.error('Update profile error:', error);
+       toast.error(t('profile_page.error_general'));
+    }
   };
 
   const handleLogout = async () => {
@@ -376,7 +419,7 @@ const ProfilePage = () => {
         window.location.href = response.data.checkoutUrl;
       }
     } catch (err) {
-      alert(err.message || 'Failed to create payment link');
+      alert(err.message || t('profile_page.orders.error_payment'));
       setPaymentProcessing(null);
     }
   };
@@ -407,6 +450,7 @@ const ProfilePage = () => {
   // Get user display info
   const userDisplayName = user?.fullName || user?.email?.split('@')[0] || 'User';
   const userAvatar =
+    avatarPreview ||
     user?.avatar ||
     user?.profileImage ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(userDisplayName)}&background=random`;
@@ -430,12 +474,12 @@ const ProfilePage = () => {
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
-        <h3 className={styles.sectionTitle}>Account Details</h3>
+        <h3 className={styles.sectionTitle}>{t('profile_page.account.title')}</h3>
       </div>
 
       <div className={styles.formSection}>
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>FIRST NAME</label>
+          <label className={styles.formLabel}>{t('profile_page.account.first_name')}</label>
           <input
             type="text"
             name="firstName"
@@ -445,7 +489,7 @@ const ProfilePage = () => {
           />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>LAST NAME</label>
+          <label className={styles.formLabel}>{t('profile_page.account.last_name')}</label>
           <input
             type="text"
             name="lastName"
@@ -456,60 +500,72 @@ const ProfilePage = () => {
         </div>
 
         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <label className={styles.formLabel}>EMAIL ADDRESS</label>
+          <label className={styles.formLabel}>{t('profile_page.account.email')}</label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             className={styles.formInput}
+            disabled // Email usually shouldn't be changed easily or needs verification
           />
         </div>
-      </div>
 
-      <div className={styles.sectionHeader}>
-        <h3 className={styles.sectionTitle}>Security</h3>
-      </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>{t('profile_page.account.phone')}</label>
+          <input
+            type="text"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className={styles.formInput}
+            placeholder="Enter phone number"
+          />
+        </div>
 
-      <div className={styles.formSection}>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>{t('profile_page.account.gender')}</label>
+          <select
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+            className={styles.formInput}
+          >
+            <option value="male">{t('profile_page.account.gender_options.male')}</option>
+            <option value="female">{t('profile_page.account.gender_options.female')}</option>
+            <option value="other">{t('profile_page.account.gender_options.other')}</option>
+          </select>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>{t('profile_page.account.dob')}</label>
+          <input
+            type="date"
+            name="dateOfBirth"
+            value={formData.dateOfBirth}
+            onChange={handleChange}
+            className={styles.formInput}
+          />
+        </div>
+
         <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <label className={styles.formLabel}>CURRENT PASSWORD</label>
-          <input
-            type="password"
-            name="oldPassword"
-            value={formData.oldPassword}
+          <label className={styles.formLabel}>{t('profile_page.account.about_me')}</label>
+          <textarea
+            name="aboutMe"
+            value={formData.aboutMe}
             onChange={handleChange}
-            placeholder="••••••••"
             className={styles.formInput}
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>NEW PASSWORD</label>
-          <input
-            type="password"
-            name="newPassword"
-            value={formData.newPassword}
-            onChange={handleChange}
-            placeholder="New strong password"
-            className={styles.formInput}
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>CONFIRM PASSWORD</label>
-          <input
-            type="password"
-            name="repeatPassword"
-            value={formData.repeatPassword}
-            onChange={handleChange}
-            placeholder="Repeat new password"
-            className={styles.formInput}
+            rows={4}
+            placeholder={t('profile_page.account.about_me_placeholder')}
           />
         </div>
       </div>
+
+
 
       <div className={styles.formGroup}>
         <button className={styles.saveButton} onClick={handleSave}>
-          Save Changes
+          {t('profile_page.account.save_button')}
         </button>
       </div>
     </>
@@ -532,11 +588,11 @@ const ProfilePage = () => {
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
-          Saved Addresses
+          {t('profile_page.address.title')}
         </h3>
         <button
           className={styles.addAddressBtn}
-          title="Add New Address"
+          title={t('profile_page.address.title')}
           onClick={handleAddAddressClick}
         >
           <svg
@@ -558,7 +614,7 @@ const ProfilePage = () => {
       <div className={styles.addressGrid}>
         {addresses.length === 0 && (
           <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#666' }}>
-            No addresses found. Add one now!
+            {t('profile_page.address.empty_state')}
           </p>
         )}
         {addresses.map((addr) => (
@@ -568,7 +624,7 @@ const ProfilePage = () => {
           >
             <div className={styles.cardHeader}>
               <span className={styles.cardType}>
-                {addr.isDefault ? 'Default Address' : 'Address'}
+                {addr.isDefault ? t('profile_page.address.default_badge') : t('profile_page.address.address_badge')}
               </span>
               <div
                 className={styles.cardActions}
@@ -581,9 +637,9 @@ const ProfilePage = () => {
                       e.stopPropagation();
                       handleSetDefaultAddress(addr._id);
                     }}
-                    title="Set as Default"
+                    title={t('profile_page.address.set_default')}
                   >
-                    Set Default
+                    {t('profile_page.address.set_default')}
                   </span>
                 )}
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -593,7 +649,7 @@ const ProfilePage = () => {
                       e.stopPropagation();
                       handleEditAddressClick(addr);
                     }}
-                    title="Edit Address"
+                    title={t('profile_page.address.edit_tooltip')}
                   >
                     <svg
                       width="18"
@@ -615,7 +671,7 @@ const ProfilePage = () => {
                       e.stopPropagation();
                       handleDeleteAddress(addr._id);
                     }}
-                    title="Delete Address"
+                    title={t('profile_page.address.delete_tooltip')}
                     style={{ color: '#DC2626' }}
                   >
                     <svg
@@ -652,23 +708,22 @@ const ProfilePage = () => {
 
   // Pro Max Badge Logic
   const getStatusBadge = (status) => {
-    let badgeClass = styles.badgeInfo;
-    switch (status) {
-      case 'completed':
-        badgeClass = styles.badgeSuccess;
-        break;
-      case 'pending':
-        badgeClass = styles.badgeWarning;
-        break;
-      case 'cancelled':
-        badgeClass = styles.badgeDanger;
-        break;
-      case 'processing':
-        badgeClass = styles.badgeInfo;
-        break;
-    }
+    const statusConfig = {
+      pending: { class: styles.badgeWarning, text: 'Chờ xử lý' },
+      processing: { class: styles.badgeInfo, text: 'Đang xử lý' },
+      confirmed: { class: styles.badgeInfo, text: 'Đã xác nhận' },
+      packing: { class: styles.badgeInfo, text: 'Đang đóng gói' },
+      shipping: { class: styles.badgeInfo, text: 'Đang giao hàng' },
+      shipped: { class: styles.badgeInfo, text: 'Đang giao hàng' },
+      delivered: { class: styles.badgeSuccess, text: 'Đã giao hàng' },
+      delivered_pending_confirmation: { class: styles.badgeSuccess, text: 'Đã giao hàng' },
+      completed: { class: styles.badgeSuccess, text: 'Hoàn thành' },
+      cancelled: { class: styles.badgeDanger, text: 'Đã hủy' },
+      refunded: { class: styles.badgeWarning, text: 'Đã hoàn tiền' },
+    };
 
-    return <span className={`${styles.badge} ${badgeClass}`}>{status}</span>;
+    const config = statusConfig[status] || { class: styles.badgeInfo, text: status };
+    return <span className={`${styles.badge} ${config.class}`}>{config.text}</span>;
   };
 
   const renderOrdersTab = () => (
@@ -699,7 +754,7 @@ const ProfilePage = () => {
                   <path d="M10 12h4" />
                 </svg>
               </div>
-              Orders History
+              {t('profile_page.orders.title')}
             </h3>
           </div>
 
@@ -707,22 +762,22 @@ const ProfilePage = () => {
             {orderLoading ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
                 <Spinner animation="border" variant="primary" />
-                <p className="mt-3 font-weight-bold">Loading your orders...</p>
+                <p className="mt-3 font-weight-bold">{t('profile_page.orders.loading')}</p>
               </div>
             ) : orders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
-                <h4>No orders found</h4>
-                <p>Looks like you haven't placed any orders yet.</p>
+                <h4>{t('profile_page.orders.empty_title')}</h4>
+                <p>{t('profile_page.orders.empty_msg')}</p>
               </div>
             ) : (
               <table className={styles.orderTable}>
                 <thead>
                   <tr className={styles.orderTableHeader}>
-                    <th>Order ID</th>
-                    <th>Date Placed</th>
-                    <th>Status</th>
-                    <th>Total Amount</th>
-                    <th>Action</th>
+                    <th>{t('profile_page.orders.table.id')}</th>
+                    <th>{t('profile_page.orders.table.date')}</th>
+                    <th>{t('profile_page.orders.table.status')}</th>
+                    <th>{t('profile_page.orders.table.total')}</th>
+                    <th>{t('profile_page.orders.table.action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -744,6 +799,40 @@ const ProfilePage = () => {
                       <td>{getStatusBadge(order.status)}</td>
                       <td>{formatCurrency(order.totalPrice)}</td>
                       <td>
+                        {[
+                          'confirmed',
+                          'processing',
+                          'packing',
+                          'shipping',
+                          'shipped',
+                          'delivered',
+                          'delivered_pending_confirmation',
+                        ].includes(order.status) && (
+                          <button
+                            className={`${styles.badge} ${styles.badgeSuccess}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/buyer/orders/${order._id}`);
+                            }}
+                            style={{
+                              cursor: 'pointer',
+                              border: 'none',
+                              transition: 'all 0.2s ease',
+                              backgroundColor: '#10B981',
+                              color: 'white',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            📍 Track Order
+                          </button>
+                        )}
                         {order.paymentMethod === 'payos' && order.paymentStatus === 'pending' && (
                           <button
                             className={`${styles.badge} ${styles.badgeWarning}`}
@@ -1009,35 +1098,16 @@ const ProfilePage = () => {
               )}
 
               {detailsTab === 'shipment' && (
-                <div
-                  style={{
-                    padding: '4rem',
-                    textAlign: 'center',
-                    background: 'white',
-                    borderRadius: '16px',
-                    border: '1px solid #f3f4f6',
-                  }}
-                >
-                  <h4 style={{ marginBottom: '1rem' }}>Shipment Status</h4>
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      padding: '0.5rem 1rem',
-                      background: '#EFF6FF',
-                      color: '#2563EB',
-                      borderRadius: '99px',
-                      fontWeight: '600',
-                      marginBottom: '1rem',
+                <div>
+                  {/* Use OrderTrackingEnhanced component for map and tracking steps */}
+                  <OrderTrackingEnhanced
+                    order={selectedOrderDetails}
+                    onOrderUpdate={(updatedData) => {
+                      console.log('Order updated in ProfilePage:', updatedData);
+                      // Refresh order details
+                      handleOrderClick(selectedOrderDetails._id);
                     }}
-                  >
-                    {selectedOrderDetails.status.toUpperCase()}
-                  </div>
-                  <p style={{ color: '#6B7280' }}>
-                    Tracking Number:{' '}
-                    <span style={{ fontFamily: 'monospace', color: '#111827' }}>
-                      {selectedOrderDetails.trackingNumber || 'Pending Assignment'}
-                    </span>
-                  </p>
+                  />
                 </div>
               )}
 
@@ -1147,7 +1217,6 @@ const ProfilePage = () => {
 
   return (
     <div className={styles.pageLayout}>
-      <Toaster position="top-center" reverseOrder={false} />
       <div className={styles.mainContent}>
         <div className={styles.profileContainer}>
           {/* Mobile Navigation Bar */}
@@ -1190,7 +1259,10 @@ const ProfilePage = () => {
             <div className={styles.sidebarCard}>
               <div className={styles.avatarSection}>
                 <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
-                <div className={styles.cameraButton}>
+                <div 
+                  className={styles.cameraButton}
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <svg
                     width="18"
                     height="18"
@@ -1204,6 +1276,13 @@ const ProfilePage = () => {
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    style={{ display: 'none' }}
+                    accept="image/*"
+                  />
                 </div>
               </div>
               <h2 className={styles.userName}>{userDisplayName}</h2>
@@ -1290,7 +1369,7 @@ const ProfilePage = () => {
       >
         <div className={styles.modalHeader}>
           <h4 className={styles.modalTitle}>
-            {editingAddress ? 'Edit Address' : 'Add New Address'}
+            {editingAddress ? t('profile_page.address.modal.title_edit') : t('profile_page.address.modal.title_add')}
           </h4>
           <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>
             <svg
@@ -1312,37 +1391,37 @@ const ProfilePage = () => {
         <div className={styles.modalBody}>
           <Form>
             <div className={styles.modalFormGroup}>
-              <label className={styles.modalLabel}>Receiver Name</label>
+              <label className={styles.modalLabel}>{t('profile_page.address.modal.receiver_name')}</label>
               <input
                 type="text"
                 name="receiverName"
                 value={addressForm.receiverName}
                 onChange={handleAddressFormChange}
-                placeholder="Ex: John Doe"
+                placeholder={t('profile_page.address.modal.receiver_name_placeholder')}
                 className={styles.modalInput}
               />
             </div>
             <div className={styles.modalFormGroup}>
-              <label className={styles.modalLabel}>Phone Number</label>
+              <label className={styles.modalLabel}>{t('profile_page.address.modal.phone')}</label>
               <input
                 type="text"
                 name="phone"
                 value={addressForm.phone}
                 onChange={handleAddressFormChange}
-                placeholder="Ex: 0912345678"
+                placeholder={t('profile_page.address.modal.phone_placeholder')}
                 className={styles.modalInput}
               />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className={styles.modalFormGroup}>
-                <label className={styles.modalLabel}>Province</label>
+                <label className={styles.modalLabel}>{t('profile_page.address.modal.province')}</label>
                 <select
                   name="provinceCode"
                   value={addressForm.provinceCode}
                   onChange={handleProvinceChange}
                   className={styles.modalSelect}
                 >
-                  <option value="">Select Province</option>
+                  <option value="">{t('profile_page.address.modal.select_province')}</option>
                   {provinces.map((p) => (
                     <option key={p.code} value={p.code}>
                       {p.name}
@@ -1351,7 +1430,7 @@ const ProfilePage = () => {
                 </select>
               </div>
               <div className={styles.modalFormGroup}>
-                <label className={styles.modalLabel}>Ward</label>
+                <label className={styles.modalLabel}>{t('profile_page.address.modal.ward')}</label>
                 <select
                   name="wardCode"
                   value={addressForm.wardCode}
@@ -1359,7 +1438,7 @@ const ProfilePage = () => {
                   disabled={!addressForm.provinceCode}
                   className={styles.modalSelect}
                 >
-                  <option value="">Select Ward</option>
+                  <option value="">{t('profile_page.address.modal.select_ward')}</option>
                   {wards.map((w) => (
                     <option key={w.code} value={w.code}>
                       {w.name}
@@ -1369,24 +1448,24 @@ const ProfilePage = () => {
               </div>
             </div>
             <div className={styles.modalFormGroup}>
-              <label className={styles.modalLabel}>Street</label>
+              <label className={styles.modalLabel}>{t('profile_page.address.modal.street')}</label>
               <input
                 type="text"
                 name="street"
                 value={addressForm.street}
                 onChange={handleAddressFormChange}
-                placeholder="Street name, number"
+                placeholder={t('profile_page.address.modal.street_placeholder')}
                 className={styles.modalInput}
               />
             </div>
             <div className={styles.modalFormGroup}>
-              <label className={styles.modalLabel}>Specific Address</label>
+              <label className={styles.modalLabel}>{t('profile_page.address.modal.specific_address')}</label>
               <textarea
                 rows={2}
                 name="details"
                 value={addressForm.details}
                 onChange={handleAddressFormChange}
-                placeholder="Building, Floor, Unit etc."
+                placeholder={t('profile_page.address.modal.specific_address_placeholder')}
                 className={styles.modalTextarea || styles.modalInput}
               />
             </div>
@@ -1402,7 +1481,7 @@ const ProfilePage = () => {
                   style={{ width: '18px', height: '18px', accentColor: '#2563EB' }}
                 />
                 <span style={{ fontSize: '0.9375rem', color: '#374151', fontWeight: 500 }}>
-                  Set as default address
+                  {t('profile_page.address.modal.set_default')}
                 </span>
               </label>
             </div>
@@ -1411,10 +1490,10 @@ const ProfilePage = () => {
 
         <div className={styles.modalFooter}>
           <button className={styles.modalCancelBtn} onClick={() => setShowAddressModal(false)}>
-            Cancel
+            {t('profile_page.address.modal.cancel')}
           </button>
           <button className={styles.modalSaveBtn} onClick={handleSaveAddress}>
-            {editingAddress ? 'Update Address' : 'Save Address'}
+            {editingAddress ? t('profile_page.address.modal.update') : t('profile_page.address.modal.save')}
           </button>
         </div>
       </Modal>

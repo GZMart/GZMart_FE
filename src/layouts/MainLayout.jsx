@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 // Import local components (Adjust paths if you saved them in different folders)
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import ChatWidget from '../components/common/ChatWidget';
 
 const MainLayout = ({ children }) => {
   return (
@@ -20,6 +21,9 @@ const MainLayout = ({ children }) => {
 
       {/* 3. Footer Component */}
       <Footer />
+      
+      {/* 4. Chat Widget */}
+      <ChatWidget />
     </div>
   );
 };
