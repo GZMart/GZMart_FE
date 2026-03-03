@@ -10,6 +10,7 @@ import { paymentService } from '@services/api/paymentService';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
+import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
 import locationService from '@services/api/locationService';
 import { Modal, Form } from 'react-bootstrap';
 import toast, { Toaster } from 'react-hot-toast';
@@ -660,23 +661,22 @@ const ProfilePage = () => {
 
   // Pro Max Badge Logic
   const getStatusBadge = (status) => {
-    let badgeClass = styles.badgeInfo;
-    switch (status) {
-      case 'completed':
-        badgeClass = styles.badgeSuccess;
-        break;
-      case 'pending':
-        badgeClass = styles.badgeWarning;
-        break;
-      case 'cancelled':
-        badgeClass = styles.badgeDanger;
-        break;
-      case 'processing':
-        badgeClass = styles.badgeInfo;
-        break;
-    }
+    const statusConfig = {
+      pending: { class: styles.badgeWarning, text: 'Chờ xử lý' },
+      processing: { class: styles.badgeInfo, text: 'Đang xử lý' },
+      confirmed: { class: styles.badgeInfo, text: 'Đã xác nhận' },
+      packing: { class: styles.badgeInfo, text: 'Đang đóng gói' },
+      shipping: { class: styles.badgeInfo, text: 'Đang giao hàng' },
+      shipped: { class: styles.badgeInfo, text: 'Đang giao hàng' },
+      delivered: { class: styles.badgeSuccess, text: 'Đã giao hàng' },
+      delivered_pending_confirmation: { class: styles.badgeSuccess, text: 'Đã giao hàng' },
+      completed: { class: styles.badgeSuccess, text: 'Hoàn thành' },
+      cancelled: { class: styles.badgeDanger, text: 'Đã hủy' },
+      refunded: { class: styles.badgeWarning, text: 'Đã hoàn tiền' },
+    };
 
-    return <span className={`${styles.badge} ${badgeClass}`}>{status}</span>;
+    const config = statusConfig[status] || { class: styles.badgeInfo, text: status };
+    return <span className={`${styles.badge} ${config.class}`}>{config.text}</span>;
   };
 
   const renderOrdersTab = () => (
@@ -752,6 +752,40 @@ const ProfilePage = () => {
                       <td>{getStatusBadge(order.status)}</td>
                       <td>{formatCurrency(order.totalPrice)}</td>
                       <td>
+                        {[
+                          'confirmed',
+                          'processing',
+                          'packing',
+                          'shipping',
+                          'shipped',
+                          'delivered',
+                          'delivered_pending_confirmation',
+                        ].includes(order.status) && (
+                          <button
+                            className={`${styles.badge} ${styles.badgeSuccess}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/buyer/orders/${order._id}`);
+                            }}
+                            style={{
+                              cursor: 'pointer',
+                              border: 'none',
+                              transition: 'all 0.2s ease',
+                              backgroundColor: '#10B981',
+                              color: 'white',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            📍 Track Order
+                          </button>
+                        )}
                         {order.paymentMethod === 'payos' && order.paymentStatus === 'pending' && (
                           <button
                             className={`${styles.badge} ${styles.badgeWarning}`}
@@ -1017,35 +1051,16 @@ const ProfilePage = () => {
               )}
 
               {detailsTab === 'shipment' && (
-                <div
-                  style={{
-                    padding: '4rem',
-                    textAlign: 'center',
-                    background: 'white',
-                    borderRadius: '16px',
-                    border: '1px solid #f3f4f6',
-                  }}
-                >
-                  <h4 style={{ marginBottom: '1rem' }}>Shipment Status</h4>
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      padding: '0.5rem 1rem',
-                      background: '#EFF6FF',
-                      color: '#2563EB',
-                      borderRadius: '99px',
-                      fontWeight: '600',
-                      marginBottom: '1rem',
+                <div>
+                  {/* Use OrderTrackingEnhanced component for map and tracking steps */}
+                  <OrderTrackingEnhanced
+                    order={selectedOrderDetails}
+                    onOrderUpdate={(updatedData) => {
+                      console.log('Order updated in ProfilePage:', updatedData);
+                      // Refresh order details
+                      handleOrderClick(selectedOrderDetails._id);
                     }}
-                  >
-                    {selectedOrderDetails.status.toUpperCase()}
-                  </div>
-                  <p style={{ color: '#6B7280' }}>
-                    Tracking Number:{' '}
-                    <span style={{ fontFamily: 'monospace', color: '#111827' }}>
-                      {selectedOrderDetails.trackingNumber || 'Pending Assignment'}
-                    </span>
-                  </p>
+                  />
                 </div>
               )}
 

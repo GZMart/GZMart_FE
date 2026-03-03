@@ -18,7 +18,11 @@ const PaymentSuccessPage = () => {
 
   useEffect(() => {
     const verifyPayment = async () => {
+      console.log('[PaymentSuccess] ========== START ==========');
+      console.log('[PaymentSuccess] OrderCode from URL:', orderCode);
+
       if (!orderCode) {
+        console.error('[PaymentSuccess] No orderCode provided!');
         setStatus('error');
         setMessage('Invalid payment information');
         return;
@@ -26,28 +30,41 @@ const PaymentSuccessPage = () => {
 
       try {
         // Wait a bit for webhook to process
+        console.log('[PaymentSuccess] Waiting 2 seconds for webhook...');
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Check payment status
-        const response = await paymentService.getPaymentStatus(orderCode);
+        // Check payment status from PayOS directly
+        console.log('[PaymentSuccess] Calling checkPaymentFromPayOS API...');
+        const response = await paymentService.checkPaymentFromPayOS(orderCode);
+        console.log('[PaymentSuccess] API Response:', response);
 
         if (response.success) {
+          console.log('[PaymentSuccess] Payment verification successful!');
+          console.log('[PaymentSuccess] Order data:', response.data);
           setStatus('success');
           setMessage('Payment successful! Redirecting to order details...');
 
           // Redirect to orders page after 2 seconds
+          console.log('[PaymentSuccess] Will redirect to orders page in 2 seconds...');
           setTimeout(() => {
+            console.log('[PaymentSuccess] Redirecting now...');
             navigate(BUYER_ROUTES.ORDERS);
           }, 2000);
         } else {
+          console.error('[PaymentSuccess] Payment verification failed:', response);
           setStatus('error');
           setMessage('Payment verification failed. Please contact support.');
         }
       } catch (error) {
-        console.error('Payment verification error:', error);
+        console.error('[PaymentSuccess] ========== ERROR ==========');
+        console.error('[PaymentSuccess] Error message:', error.message);
+        console.error('[PaymentSuccess] Error response:', error.response?.data);
+        console.error('[PaymentSuccess] Full error:', error);
         setStatus('error');
         setMessage(error.message || 'Failed to verify payment. Please check your orders.');
       }
+
+      console.log('[PaymentSuccess] ========== END ==========');
     };
 
     verifyPayment();

@@ -1,181 +1,230 @@
 {
-    "header": {
-        "welcome_msg": "Bán buôn & Bán lẻ Trực tiếp Thời trang Quảng Châu!",
-        "deliver_to": "Giao đến",
-        "track_order": "Theo dõi đơn hàng",
-        "all_offers": "Tất cả ưu đãi",
-        "search_placeholder": "Tìm kiếm các kiểu dáng thịnh hành, váy, áo khoác...",
-        "wishlist": "Yêu thích",
-        "cart": "Giỏ hàng",
-        "login": "Đăng nhập",
-        "dashboard": "Bảng điều khiển",
-        "profile": "Hồ sơ",
-        "logout": "Đăng xuất",
-        "language": "Ngôn ngữ",
-        "search_results": {
-            "products": "SẢN PHẨM",
-            "categories": "DANH MỤC",
-            "brands": "THƯƠNG HIỆU"
-        }
-    },
-    "categories": {
-        "new_arrivals": "Hàng mới về",
-        "womens_fashion": "Thời trang nữ",
-        "mens_fashion": "Thời trang nam",
-        "dresses_gowns": "Váy & Đầm dạ hội",
-        "coord_sets": "Đồ bộ",
-        "coats_blazers": "Áo khoác & Blazer",
-        "bags_accessories": "Túi & Phụ kiện",
-        "footwear": "Giày dép"
-    },
-    "auth": {
-        "login_failed": "Đăng nhập thất bại",
-        "google_login_failed": "Đăng nhập Google thất bại",
-        "facebook_login_failed": "Đăng nhập Facebook thất bại",
-        "register_failed": "Đăng ký thất bại",
-        "refresh_token_failed": "Làm mới thất bại",
-        "get_user_failed": "Lấy thông tin người dùng thất bại",
-        "update_profile_failed": "Cập nhật hồ sơ thất bại",
-        "change_password_failed": "Đổi mật khẩu thất bại",
-        "set_password_failed": "Đặt mật khẩu thất bại",
-        "forgot_password_failed": "Gửi email khôi phục thất bại",
-        "reset_password_failed": "Đặt lại mật khẩu thất bại",
-        "verify_email_failed": "Xác thực email thất bại",
-        "resend_verification_failed": "Gửi lại email xác thực thất bại"
-    },
-    "login_page": {
-        "welcome_title": "Chào mừng trở lại",
-        "welcome_subtitle": "Đăng nhập vào tài khoản của bạn",
-        "email_placeholder": "Nhập địa chỉ email của bạn",
-        "password_placeholder": "Nhập mật khẩu của bạn",
-        "remember_me": "Ghi nhớ đăng nhập",
-        "forgot_password": "Quên mật khẩu?",
-        "login_button": "Đăng nhập",
-        "logging_in": "Đang đăng nhập...",
-        "or_divider": "Hoặc",
-        "login_google": "Đăng nhập bằng Google",
-        "login_facebook": "Đăng nhập bằng Facebook",
-        "first_time_question": "Lần đầu đến đây?",
-        "signup_link": "Đăng ký",
-        "back_button": "Quay lại",
-        "success_login": "Đăng nhập thành công!",
-        "validation": {
-            "invalid_email": "Email không hợp lệ",
-            "required_email": "Vui lòng nhập email",
-            "required_password": "Vui lòng nhập mật khẩu"
-        },
-        "errors": {
-            "default_login_failed": "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
-            "google_no_email": "Không thể lấy email từ Google",
-            "facebook_no_email": "Không thể lấy email từ Facebook",
-            "google_login_error": "Lỗi đăng nhập Google",
-            "facebook_login_error": "Lỗi đăng nhập Facebook"
-        }
-    },
-    "forgot_password_page": {
-        "title": "Quên Mật Khẩu",
-        "subtitle": "Nhập email của bạn để đặt lại mật khẩu",
-        "email_placeholder": "Nhập địa chỉ email của bạn",
-        "submit_button": "Gửi liên kết đặt lại mật khẩu",
-        "submitting": "Đang gửi...",
-        "back_to_login": "Quay lại Đăng nhập",
-        "success_title": "Kiểm tra email của bạn",
-        "success_message": "Chúng tôi đã gửi liên kết đặt lại mật khẩu tới {{email}}.",
-        "error_message": "Gửi liên kết thất bại. Vui lòng thử lại.",
-        "validation": {
-            "invalid_email": "Email không hợp lệ",
-            "required_email": "Vui lòng nhập email"
-        }
-    },
-    "reset_password_page": {
-        "title": "Đặt lại Mật khẩu",
-        "subtitle": "Nhập mật khẩu mới của bạn bên dưới",
-        "password_placeholder": "Mật khẩu mới",
-        "confirm_password_placeholder": "Xác nhận mật khẩu mới",
-        "submit_button": "Đặt lại Mật khẩu",
-        "submitting": "Đang xử lý...",
-        "success_message": "Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập.",
-        "errors": {
-            "user_not_found": "Không tìm thấy địa chỉ email này.",
-            "missing_token": "Thiếu mã xác thực đặt lại mật khẩu.",
-            "default": "Đặt lại mật khẩu thất bại. Mã có thể không hợp lệ hoặc đã hết hạn."
-        },
-        "validation": {
-            "password_min": "Mật khẩu phải có ít nhất 6 ký tự",
-            "required_password": "Vui lòng nhập mật khẩu",
-            "password_match": "Mật khẩu không khớp",
-            "required_confirm_password": "Vui lòng xác nhận mật khẩu"
-        }
-    },
-    "common": {
-        "error": "Lỗi",
-        "success": "Thành công",
-        "loading": "Đang tải...",
-        "email": "Email",
-        "password": "Mật khẩu",
-        "submit": "Gửi"
-    },
-    "register_page": {
-        "title": "Tạo tài khoản",
-        "subtitle": "Tham gia ngay hôm nay",
-        "already_have_account": "Đã có tài khoản?",
-        "login_link": "Đăng nhập",
-        "full_name_label": "Họ và tên",
-        "full_name_placeholder": "Nhập họ và tên đầy đủ",
-        "email_label": "Email",
-        "email_placeholder": "Nhập địa chỉ email",
-        "password_label": "Mật khẩu",
-        "password_placeholder": "Nhập mật khẩu",
-        "confirm_password_label": "Xác nhận mật khẩu",
-        "confirm_password_placeholder": "Nhập lại mật khẩu",
-        "signup_button": "Đăng ký",
-        "signing_up": "Đang đăng ký...",
-        "or_divider": "Hoặc",
-        "signup_google": "Đăng ký bằng Google",
-        "signup_facebook": "Đăng ký bằng Facebook",
-        "back": "Quay lại",
-        "success_message": "Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.",
-        "validation": {
-            "invalid_email": "Email không hợp lệ",
-            "required_email": "Vui lòng nhập email",
-            "required_fullname": "Vui lòng nhập họ và tên",
-            "min_fullname": "Họ tên phải có ít nhất 2 ký tự",
-            "required_password": "Vui lòng nhập mật khẩu!",
-            "min_password": "Mật khẩu phải có ít nhất 8 ký tự!",
-            "uppercase": "Mật khẩu phải chứa ít nhất một chữ hoa!",
-            "lowercase": "Mật khẩu phải chứa ít nhất một chữ thường!",
-            "number": "Mật khẩu phải chứa ít nhất một số!",
-            "special_char": "Mật khẩu phải chứa ít nhất một ký tự đặc biệt (@$!%*?&#)!",
-            "required_confirm_password": "Vui lòng xác nhận mật khẩu",
-            "password_match": "Mật khẩu không khớp"
-        },
-        "errors": {
-            "default": "Đăng ký thất bại. Vui lòng thử lại.",
-            "google_signup_failed": "Đăng ký Google thất bại",
-            "facebook_signup_failed": "Đăng ký Facebook thất bại",
-            "pending_feature": "Tính năng đang được phát triển"
-        }
-    },
-    "otp_page": {
-        "title": "Xác thực Email",
-        "subtitle": "Nhập mã 4 chữ số",
-        "instruction": "Nhập mã 4 chữ số bạn nhận được trong email.",
-        "resend_button": "Gửi lại mã",
-        "sending": "Đang gửi...",
-        "resend_timer": "Gửi lại sau",
-        "submit_button": "Tiếp tục",
-        "verifying": "Đang xác thực...",
-        "back": "Quay lại",
-        "success_message": "Xác thực thành công!",
-        "resend_success": "OTP đã được gửi lại vào email của bạn",
-        "validation": {
-            "required_otp": "Vui lòng nhập đủ 4 chữ số",
-            "invalid_email": "Email không hợp lệ"
-        },
-        "errors": {
-            "default": "Xác thực OTP thất bại",
-            "resend_failed": "Gửi lại OTP thất bại",
-            "invalid_email_redirect": "Email không hợp lệ. Vui lòng đăng ký lại."
-        }
+  "header": {
+    "welcome_msg": "Bán buôn & Bán lẻ Trực tiếp Thời trang Quảng Châu!",
+    "deliver_to": "Giao đến",
+    "track_order": "Theo dõi đơn hàng",
+    "all_offers": "Tất cả ưu đãi",
+    "search_placeholder": "Tìm kiếm các kiểu dáng thịnh hành, váy, áo khoác...",
+    "wishlist": "Yêu thích",
+    "cart": "Giỏ hàng",
+    "login": "Đăng nhập",
+    "dashboard": "Bảng điều khiển",
+    "profile": "Hồ sơ",
+    "logout": "Đăng xuất",
+    "language": "Ngôn ngữ",
+    "login_required_title": "Yêu cầu đăng nhập",
+    "login_required_wishlist_msg": "Vui lòng đăng nhập để xem danh sách yêu thích",
+    "login_required_cart_msg": "Vui lòng đăng nhập để xem giỏ hàng",
+    "cancel": "Hủy",
+    "go_to_login": "Đến trang đăng nhập",
+    "search_results": {
+      "products": "SẢN PHẨM",
+      "categories": "DANH MỤC",
+      "brands": "THƯƠNG HIỆU"
     }
+  },
+  "footer": {
+    "customer_supports": "Hỗ trợ khách hàng:",
+    "phone": "(+84) 905-363636",
+    "address": "Khu đô thị FPT City, P. Hòa Hải, Q. Ngũ Hành Sơn, TP. Đà Nẵng",
+    "email": "gzmart@gmail.com",
+    "top_categories": "Danh mục nổi bật",
+    "computer_laptop": "Máy tính & Laptop",
+    "smartphone": "Điện thoại thông minh",
+    "accessories": "Phụ kiện",
+    "headphone": "Tai nghe",
+    "camera_photo": "Máy ảnh & Ảnh",
+    "tv_homes": "TV & Nhà cửa",
+    "browse_all_product": "Xem tất cả sản phẩm",
+    "quick_links": "Liên kết nhanh",
+    "shop_product": "Cửa hàng",
+    "shopping_cart": "Giỏ hàng",
+    "wishlist": "Yêu thích",
+    "refund_policy": "Chính sách hoàn tiền",
+    "shipping_policy": "Chính sách vận chuyển",
+    "privacy_policy": "Chính sách bảo mật",
+    "terms_of_service": "Điều khoản dịch vụ",
+    "faq": "Câu hỏi thường gặp",
+    "how_we_can_help": "Chúng tôi có thể giúp bạn",
+    "download_app": "Tải ứng dụng",
+    "get_it_now": "Tải ngay",
+    "google_play": "Google Play",
+    "app_store": "App Store",
+    "popular_tag": "Thẻ phổ biến",
+    "tags": {
+      "game": "Game",
+      "iphone": "iPhone",
+      "tv": "TV",
+      "asus_laptops": "Laptop Asus",
+      "macbook": "Macbook",
+      "ssd": "SSD",
+      "graphics_card": "Card đồ họa",
+      "power_bank": "Pin dự phòng",
+      "smart_tv": "Smart TV",
+      "speaker": "Loa",
+      "tablet": "Máy tính bảng",
+      "microwave": "Lò vi sóng",
+      "samsung": "Samsung"
+    }
+  },
+  "categories": {
+    "new_arrivals": "Hàng mới về",
+    "womens_fashion": "Thời trang nữ",
+    "mens_fashion": "Thời trang nam",
+    "dresses_gowns": "Váy & Đầm dạ hội",
+    "coord_sets": "Đồ bộ",
+    "coats_blazers": "Áo khoác & Blazer",
+    "bags_accessories": "Túi & Phụ kiện",
+    "footwear": "Giày dép"
+  },
+  "auth": {
+    "login_failed": "Đăng nhập thất bại",
+    "google_login_failed": "Đăng nhập Google thất bại",
+    "facebook_login_failed": "Đăng nhập Facebook thất bại",
+    "register_failed": "Đăng ký thất bại",
+    "refresh_token_failed": "Làm mới thất bại",
+    "get_user_failed": "Lấy thông tin người dùng thất bại",
+    "update_profile_failed": "Cập nhật hồ sơ thất bại",
+    "change_password_failed": "Đổi mật khẩu thất bại",
+    "set_password_failed": "Đặt mật khẩu thất bại",
+    "forgot_password_failed": "Gửi email khôi phục thất bại",
+    "reset_password_failed": "Đặt lại mật khẩu thất bại",
+    "verify_email_failed": "Xác thực email thất bại",
+    "resend_verification_failed": "Gửi lại email xác thực thất bại"
+  },
+  "login_page": {
+    "welcome_title": "Chào mừng trở lại",
+    "welcome_subtitle": "Đăng nhập vào tài khoản của bạn",
+    "email_placeholder": "Nhập địa chỉ email của bạn",
+    "password_placeholder": "Nhập mật khẩu của bạn",
+    "remember_me": "Ghi nhớ đăng nhập",
+    "forgot_password": "Quên mật khẩu?",
+    "login_button": "Đăng nhập",
+    "logging_in": "Đang đăng nhập...",
+    "or_divider": "Hoặc",
+    "login_google": "Đăng nhập bằng Google",
+    "login_facebook": "Đăng nhập bằng Facebook",
+    "first_time_question": "Lần đầu đến đây?",
+    "signup_link": "Đăng ký",
+    "back_button": "Quay lại",
+    "success_login": "Đăng nhập thành công!",
+    "validation": {
+      "invalid_email": "Email không hợp lệ",
+      "required_email": "Vui lòng nhập email",
+      "required_password": "Vui lòng nhập mật khẩu"
+    },
+    "errors": {
+      "default_login_failed": "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+      "google_no_email": "Không thể lấy email từ Google",
+      "facebook_no_email": "Không thể lấy email từ Facebook",
+      "google_login_error": "Lỗi đăng nhập Google",
+      "facebook_login_error": "Lỗi đăng nhập Facebook"
+    }
+  },
+  "forgot_password_page": {
+    "title": "Quên Mật Khẩu",
+    "subtitle": "Nhập email của bạn để đặt lại mật khẩu",
+    "email_placeholder": "Nhập địa chỉ email của bạn",
+    "submit_button": "Gửi liên kết đặt lại mật khẩu",
+    "submitting": "Đang gửi...",
+    "back_to_login": "Quay lại Đăng nhập",
+    "success_title": "Kiểm tra email của bạn",
+    "success_message": "Chúng tôi đã gửi liên kết đặt lại mật khẩu tới {{email}}.",
+    "error_message": "Gửi liên kết thất bại. Vui lòng thử lại.",
+    "validation": {
+      "invalid_email": "Email không hợp lệ",
+      "required_email": "Vui lòng nhập email"
+    }
+  },
+  "reset_password_page": {
+    "title": "Đặt lại Mật khẩu",
+    "subtitle": "Nhập mật khẩu mới của bạn bên dưới",
+    "password_placeholder": "Mật khẩu mới",
+    "confirm_password_placeholder": "Xác nhận mật khẩu mới",
+    "submit_button": "Đặt lại Mật khẩu",
+    "submitting": "Đang xử lý...",
+    "success_message": "Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập.",
+    "errors": {
+      "user_not_found": "Không tìm thấy địa chỉ email này.",
+      "missing_token": "Thiếu mã xác thực đặt lại mật khẩu.",
+      "default": "Đặt lại mật khẩu thất bại. Mã có thể không hợp lệ hoặc đã hết hạn."
+    },
+    "validation": {
+      "password_min": "Mật khẩu phải có ít nhất 6 ký tự",
+      "required_password": "Vui lòng nhập mật khẩu",
+      "password_match": "Mật khẩu không khớp",
+      "required_confirm_password": "Vui lòng xác nhận mật khẩu"
+    }
+  },
+  "common": {
+    "error": "Lỗi",
+    "success": "Thành công",
+    "loading": "Đang tải...",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Gửi"
+  },
+  "register_page": {
+    "title": "Tạo tài khoản",
+    "subtitle": "Tham gia ngay hôm nay",
+    "already_have_account": "Đã có tài khoản?",
+    "login_link": "Đăng nhập",
+    "full_name_label": "Họ và tên",
+    "full_name_placeholder": "Nhập họ và tên đầy đủ",
+    "email_label": "Email",
+    "email_placeholder": "Nhập địa chỉ email",
+    "password_label": "Mật khẩu",
+    "password_placeholder": "Nhập mật khẩu",
+    "confirm_password_label": "Xác nhận mật khẩu",
+    "confirm_password_placeholder": "Nhập lại mật khẩu",
+    "signup_button": "Đăng ký",
+    "signing_up": "Đang đăng ký...",
+    "or_divider": "Hoặc",
+    "signup_google": "Đăng ký bằng Google",
+    "signup_facebook": "Đăng ký bằng Facebook",
+    "back": "Quay lại",
+    "success_message": "Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.",
+    "validation": {
+      "invalid_email": "Email không hợp lệ",
+      "required_email": "Vui lòng nhập email",
+      "required_fullname": "Vui lòng nhập họ và tên",
+      "min_fullname": "Họ tên phải có ít nhất 2 ký tự",
+      "required_password": "Vui lòng nhập mật khẩu!",
+      "min_password": "Mật khẩu phải có ít nhất 8 ký tự!",
+      "uppercase": "Mật khẩu phải chứa ít nhất một chữ hoa!",
+      "lowercase": "Mật khẩu phải chứa ít nhất một chữ thường!",
+      "number": "Mật khẩu phải chứa ít nhất một số!",
+      "special_char": "Mật khẩu phải chứa ít nhất một ký tự đặc biệt (@$!%*?&#)!",
+      "required_confirm_password": "Vui lòng xác nhận mật khẩu",
+      "password_match": "Mật khẩu không khớp"
+    },
+    "errors": {
+      "default": "Đăng ký thất bại. Vui lòng thử lại.",
+      "google_signup_failed": "Đăng ký Google thất bại",
+      "facebook_signup_failed": "Đăng ký Facebook thất bại",
+      "pending_feature": "Tính năng đang được phát triển"
+    }
+  },
+  "otp_page": {
+    "title": "Xác thực Email",
+    "subtitle": "Nhập mã 4 chữ số",
+    "instruction": "Nhập mã 4 chữ số bạn nhận được trong email.",
+    "resend_button": "Gửi lại mã",
+    "sending": "Đang gửi...",
+    "resend_timer": "Gửi lại sau",
+    "submit_button": "Tiếp tục",
+    "verifying": "Đang xác thực...",
+    "back": "Quay lại",
+    "success_message": "Xác thực thành công!",
+    "resend_success": "OTP đã được gửi lại vào email của bạn",
+    "validation": {
+      "required_otp": "Vui lòng nhập đủ 4 chữ số",
+      "invalid_email": "Email không hợp lệ"
+    },
+    "errors": {
+      "default": "Xác thực OTP thất bại",
+      "resend_failed": "Gửi lại OTP thất bại",
+      "invalid_email_redirect": "Email không hợp lệ. Vui lòng đăng ký lại."
+    }
+  }
 }

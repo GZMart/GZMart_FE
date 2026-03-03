@@ -1,0 +1,24 @@
+.orders-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.orders-page .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.orders-page .ant-table {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .orders-page {
+    padding: 16px;
+  }
+
+  .orders-page .ant-table {
+    overflow-x: auto;
+  }
+}

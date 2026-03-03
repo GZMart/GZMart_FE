@@ -1,6 +1,6 @@
 import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from 'react-bootstrap';
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
 import { orderService } from '@services/api/orderService';
@@ -18,7 +18,11 @@ import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
  */
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const cartItems = useSelector(selectCartItems);
+  const location = useLocation();
+  const allCartItems = useSelector(selectCartItems);
+
+  // Use selected items from CartPage if available, otherwise use all items
+  const cartItems = location.state?.selectedItems || allCartItems;
 
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -177,6 +181,7 @@ const CheckoutPage = () => {
         const response = await orderService.previewOrder({
           city,
           voucherIds: getSelectedVoucherIds(),
+          cartItemIds: cartItems.map((item) => item._id || item.id),
         });
         if (response.success) {
           setOrderSummary(response.data);
@@ -242,6 +247,7 @@ const CheckoutPage = () => {
         paymentMethod,
         notes: '',
         voucherIds: getSelectedVoucherIds(),
+        cartItemIds: cartItems.map((item) => item._id || item.id),
       };
 
       try {
@@ -693,11 +699,11 @@ const CheckoutPage = () => {
                 {shopVouchers.map((v) => (
                   <div
                     key={v._id}
-                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
-                      }`}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${
+                      !v.eligible ? 'opacity-50' : ''
+                    }`}
                     style={{
-                      backgroundColor:
-                        selectedShopVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
+                      backgroundColor: selectedShopVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
                       border:
                         selectedShopVoucherId === v._id
                           ? '1px solid #ee4d2d'
@@ -708,9 +714,7 @@ const CheckoutPage = () => {
                     }}
                     onClick={() => {
                       if (!v.eligible) return;
-                      setSelectedShopVoucherId(
-                        selectedShopVoucherId === v._id ? null : v._id,
-                      );
+                      setSelectedShopVoucherId(selectedShopVoucherId === v._id ? null : v._id);
                     }}
                   >
                     <Form.Check
@@ -718,7 +722,7 @@ const CheckoutPage = () => {
                       name="shopVoucher"
                       checked={selectedShopVoucherId === v._id}
                       disabled={!v.eligible}
-                      onChange={() => { }}
+                      onChange={() => {}}
                       style={{ marginTop: '2px' }}
                     />
                     <div className="flex-grow-1">
@@ -764,11 +768,11 @@ const CheckoutPage = () => {
                 {productVouchers.map((v) => (
                   <div
                     key={v._id}
-                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
-                      }`}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${
+                      !v.eligible ? 'opacity-50' : ''
+                    }`}
                     style={{
-                      backgroundColor:
-                        selectedProductVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
+                      backgroundColor: selectedProductVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
                       border:
                         selectedProductVoucherId === v._id
                           ? '1px solid #ee4d2d'
@@ -780,7 +784,7 @@ const CheckoutPage = () => {
                     onClick={() => {
                       if (!v.eligible) return;
                       setSelectedProductVoucherId(
-                        selectedProductVoucherId === v._id ? null : v._id,
+                        selectedProductVoucherId === v._id ? null : v._id
                       );
                     }}
                   >
@@ -789,7 +793,7 @@ const CheckoutPage = () => {
                       name="productVoucher"
                       checked={selectedProductVoucherId === v._id}
                       disabled={!v.eligible}
-                      onChange={() => { }}
+                      onChange={() => {}}
                       style={{ marginTop: '2px' }}
                     />
                     <div className="flex-grow-1">
