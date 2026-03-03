@@ -2,29 +2,32 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import { Image } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
+import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import { productService } from '../../services/api';
 import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
 
-const shippingMethods = [
+const getShippingMethods = (t) => [
   {
-    name: 'Free Shipping',
-    description: 'Delivery 5-7 business days',
+    name: t('product_details.shipping_method.free.name'),
+    description: t('product_details.shipping_method.free.description'),
     icon: 'bi-truck',
   },
   {
-    name: 'Express Shipping',
-    description: 'Delivery 2-3 business days',
+    name: t('product_details.shipping_method.express.name'),
+    description: t('product_details.shipping_method.express.description'),
     icon: 'bi-lightning',
   },
   {
-    name: 'Store Pickup',
-    description: 'Available at select locations',
+    name: t('product_details.shipping_method.pickup.name'),
+    description: t('product_details.shipping_method.pickup.description'),
     icon: 'bi-shop',
   },
 ];
@@ -78,6 +81,7 @@ const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]); // [tier0_index, tier1_index]
@@ -143,15 +147,8 @@ const ProductDetailsPage = () => {
           // Ensure other fields are preserved
           models: productData.models || [],
           price: productData.originalPrice || 0, // Base price
-          // Add mock data for missing optional fields
-          flashSale: productData.flashSale || {
-            timeText: 'FLASH SALE STARTS IN 21:00, TODAY'
-          },
-          shopVouchers: productData.shopVouchers || [
-            { discount: 'Save 10k' }
-          ],
-          shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
-          warranty: productData.warranty || 'Free return within 15 days • Warranty included'
+          // Default optional fields
+          descriptionText: productData.description ? productData.description.split('\n') : [],
         };
 
         setProduct(transformed);
@@ -282,11 +279,11 @@ const ProductDetailsPage = () => {
     // Validate Selection
     if (product.tier_variations?.length > 0) {
       if (selectedTierIndex.some((idx) => idx === null || idx === undefined)) {
-        toast.error('Please select all options');
+        toast.error(t('product_details.toast_select_all'));
         return;
       }
       if (!activeModel) {
-        toast.error('Selected variation is unavailable');
+        toast.error(t('product_details.toast_unavailable'));
         return;
       }
     }
@@ -299,7 +296,7 @@ const ProductDetailsPage = () => {
         : { data: { available: true } };
 
       if (!stockCheck.data?.available) {
-        toast.error(`Insufficient stock! Available: ${stockCheck.data?.currentStock || 0}`);
+        toast.error(`${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`);
         setAddingToCart(false);
         return;
       }
@@ -339,10 +336,10 @@ const ProductDetailsPage = () => {
         })
       ).unwrap();
 
-      toast.success('Added to cart successfully!');
+      toast.success(t('product_details.toast_add_cart_success'));
     } catch (err) {
       console.error('Add to cart error:', err);
-      toast.error(typeof err === 'string' ? err : 'Failed to add to cart');
+      toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
     } finally {
       setAddingToCart(false);
     }
@@ -369,16 +366,18 @@ const ProductDetailsPage = () => {
         const response = await favouriteService.removeFromFavourites(product._id);
         console.log('Remove response:', response);
         setIsFavourite(false);
-        toast.success('Removed from favourites');
+        setProduct((prev) => ({ ...prev, wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1) }));
+        toast.success(t('product_details.toast_wishlist_remove'));
       } else {
         const response = await favouriteService.addToFavourites(product._id);
         console.log('Add response:', response);
         setIsFavourite(true);
-        toast.success('Added to favourites');
+        setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
+        toast.success(t('product_details.toast_wishlist_add'));
       }
     } catch (error) {
       console.error('Error toggling favourite:', error);
-      toast.error(error.response?.data?.message || 'Failed to update favourites');
+      toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
     } finally {
       setFavouriteLoading(false);
     }
@@ -397,8 +396,8 @@ const ProductDetailsPage = () => {
   if (error || !product) {
     return (
       <div className={styles.notFound}>
-        <h2>{error || 'Product Not Found'}</h2>
-        <button onClick={() => navigate('/products')}>Back to Products</button>
+        <h2>{error || t('product_details.err_product_not_found')}</h2>
+        <button onClick={() => navigate('/products')}>{t('product_details.back_to_products')}</button>
       </div>
     );
   }
@@ -409,8 +408,8 @@ const ProductDetailsPage = () => {
     <div className={styles.productDetailsPage}>
       <Breadcrumb
         items={[
-          { label: 'Home', path: '/', icon: 'bi-house' },
-          { label: 'Shop', path: '/products' },
+          { label: t('product_details.breadcrumb_home'), path: '/', icon: 'bi-house' },
+          { label: t('product_details.breadcrumb_shop'), path: '/products' },
           {
             label: typeof product.category === 'string' ? product.category : product.category?.name,
             path: `/products?category=${product.categoryId}`,
@@ -422,10 +421,20 @@ const ProductDetailsPage = () => {
       <div className={styles.productContainer}>
         {/* Images */}
         <div className={styles.imageSection}>
-          <div className={styles.mainImage}>
-            <img src={productImages[selectedImage]} alt={product.name} />
+          <div className={styles.mainImage} style={{ position: 'relative' }}>
+            <Image.PreviewGroup items={productImages}>
+              <Image 
+                src={productImages[selectedImage]} 
+                alt={product.name}
+                width="100%"
+                style={{ objectFit: 'cover', borderRadius: '12px', minHeight: '300px' }}
+              />
+            </Image.PreviewGroup>
             {product.badge && (
-              <span className={`${styles.badge} ${styles[product.badgeColor]}`}>
+              <span 
+                className={`${styles.badge} ${styles[product.badgeColor]}`}
+                style={{ zIndex: 10, position: 'absolute', top: '15px', left: '15px' }}
+              >
                 {product.badge}
               </span>
             )}
@@ -437,7 +446,7 @@ const ProductDetailsPage = () => {
                 className={`${styles.thumbnail} ${selectedImage === index ? styles.active : ''}`}
                 onClick={() => setSelectedImage(index)}
               >
-                <img src={img} alt="" />
+                <img src={img} alt={`Thumbnail ${index + 1}`} />
               </div>
             ))}
           </div>
@@ -455,7 +464,8 @@ const ProductDetailsPage = () => {
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
-            <span className={styles.reviewCount}>({product.reviewCount || 0} Reviews)</span>
+            <span className={styles.reviewCount}>({product.reviewCount || 0} {t('product_details.reviews')})</span>
+            <span className={styles.soldCount} style={{marginLeft: 15, color: '#666'}}>{t('product_details.stat_sold')} {product.sold || 0}</span>
           </div>
 
           {/* Price & Discount Section */}
@@ -476,7 +486,7 @@ const ProductDetailsPage = () => {
           </div>
 
           {/* Flash Sale Section */}
-          {product.flashSale && (
+          {product.isTrending && (
             <div className={styles.flashSaleSection}>
               <i className="bi bi-lightning-fill"></i>
               <span className={styles.flashSaleLabel}>FLASH SALE</span>
@@ -503,19 +513,19 @@ const ProductDetailsPage = () => {
             <div className={styles.shippingInfoItem}>
               <i className="bi bi-truck"></i>
               <div>
-                <div className={styles.shippingTitle}>Shipping</div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_shipping')}</div>
                 {product.shippingInfo ? (
                   <div className={styles.shippingDetail}>{product.shippingInfo}</div>
                 ) : (
-                  <div className={styles.shippingDetail}>Delivery in 2-3 days • Free shipping</div>
+                  <div className={styles.shippingDetail}>{t('product_details.default_shipping_detail')}</div>
                 )}
               </div>
             </div>
             <div className={styles.shippingInfoItem}>
               <i className="bi bi-shield-check"></i>
               <div>
-                <div className={styles.shippingTitle}>Warranty</div>
-                <div className={styles.shippingDetail}>{product.warranty || 'Free return within 15 days'}</div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
+                <div className={styles.shippingDetail}>{product.warranty || t('product_details.default_warranty_detail')}</div>
               </div>
             </div>
           </div>
@@ -545,7 +555,7 @@ const ProductDetailsPage = () => {
                         }
                       }}
                       disabled={isDisabled}
-                      title={isDisabled ? 'Out of Stock' : option}
+                      title={isDisabled ? t('product_details.stat_status_inactive') : option}
                     >
                       {option}
                     </button>
@@ -572,42 +582,51 @@ const ProductDetailsPage = () => {
                 onClick={handleAddToCart}
                 disabled={addingToCart || currentStock <= 0}
               >
-                {addingToCart ? 'Adding...' : 'Add to Cart'}
+                {addingToCart ? t('product_details.loading') : t('product_details.btn_add_to_cart')}
               </button>
               <button
                 className={styles.buyBtn}
                 onClick={handleBuyNow}
                 disabled={addingToCart || currentStock <= 0}
               >
-                Buy Now
+                {t('product_details.btn_buy_now')}
               </button>
               <button
                 className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
                 onClick={handleToggleFavourite}
                 disabled={favouriteLoading}
-                title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+                title={isFavourite ? t('product_details.toast_wishlist_remove') : t('product_details.toast_wishlist_add')}
               >
                 <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {favouriteLoading ? 'Loading...' : isFavourite ? 'Saved' : 'Save'}
+                {favouriteLoading ? t('product_details.loading') : isFavourite ? t('product_details.toast_wishlist_remove') : t('product_details.favorite')}
               </button>
             </div>
-            {currentStock <= 0 && <div className="text-danger mt-2">Out of Stock</div>}
+            {currentStock <= 0 && <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>}
             {currentStock > 0 && currentStock < 10 && (
-              <div className="text-warning mt-2">Only {currentStock} left!</div>
+              <div className="text-warning mt-2">{t('product_details.only_left', { stock: currentStock })}</div>
             )}
           </div>
 
           {/* Meta Info */}
           <div className={styles.metaInfo}>
             <div className={styles.metaItem}>
-              <span>Stock:</span> {currentStock}
+              <span>{t('product_details.label_stock')}:</span> {currentStock}
             </div>
             <div className={styles.metaItem}>
-              <span>SKU:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
+              <span>{t('product_details.label_sku')}:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
           </div>
+
+
         </div>
       </div>
+
+      {/* Shop Info Section - Shopee Style */}
+      {(product.sellerId || true) && (
+        <div className={styles.shopSection}>
+          <ShopInfoCard seller={product.sellerId} showViewShop={true} />
+        </div>
+      )}
 
       {/* Product Details Tabs */}
       <div className={styles.detailsSection}>
@@ -616,45 +635,45 @@ const ProductDetailsPage = () => {
             className={`${styles.tab} ${activeTab === 'description' ? styles.active : ''}`}
             onClick={() => setActiveTab('description')}
           >
-            DESCRIPTION
+            {t('product_details.tab_description_upper')}
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'additional' ? styles.active : ''}`}
             onClick={() => setActiveTab('additional')}
           >
-            ADDITIONAL INFORMATION
+            {t('product_details.tab_additional_upper')}
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'review' ? styles.active : ''}`}
             onClick={() => setActiveTab('review')}
           >
-            REVIEW
+            {t('product_details.tab_review_upper')}
           </button>
         </div>
 
         <div className={styles.tabContent}>
           {activeTab === 'description' && (
             <div className={styles.description}>
-              <h3>Description</h3>
+              <h3>{t('product_details.title_description')}</h3>
               {product.descriptionText?.map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
-              )) || <p>No description available.</p>}
+              )) || <p>{t('product_details.no_description')}</p>}
 
               <div className={styles.features}>
-                <h4>Feature</h4>
+                <h4>{t('product_details.title_features')}</h4>
                 <div className={styles.featureGrid}>
                   {product.features?.map((feature, index) => (
                     <div key={index} className={styles.featureItem}>
                       <i className="bi bi-check-circle-fill"></i>
                       <span>{feature}</span>
                     </div>
-                  )) || <p>No features available.</p>}
+                  )) || <p>{t('product_details.no_features')}</p>}
                 </div>
               </div>
 
               <div className={styles.shippingInfo}>
-                <h4>Shipping Information</h4>
-                {shippingMethods.map((method, index) => (
+                <h4>{t('product_details.title_shipping_info')}</h4>
+                {getShippingMethods(t).map((method, index) => (
                   <div key={index} className={styles.shippingItem}>
                     <i className={`bi ${method.icon}`}></i>
                     <div>
@@ -669,7 +688,7 @@ const ProductDetailsPage = () => {
 
           {activeTab === 'additional' && (
             <div className={styles.additionalInfo}>
-              <h3>Additional Information</h3>
+              <h3>{t('product_details.title_additional_info')}</h3>
               <table className={styles.infoTable}>
                 <tbody>
                   {product.attributes
@@ -682,7 +701,7 @@ const ProductDetailsPage = () => {
                     ))}
                   {product.tier_variations?.length > 0 && (
                     <tr>
-                      <td className={styles.label}>Available Variations</td>
+                      <td className={styles.label}>{t('product_details.label_available_variations')}</td>
                       <td className={styles.value}>
                         {product.tier_variations.map((tier, idx) => (
                           <div key={idx}>
@@ -737,7 +756,7 @@ const ProductDetailsPage = () => {
 
           {activeTab === 'review' && (
             <div className={styles.reviews}>
-              <h3>Customer Reviews</h3>
+              <h3>{t('product_details.title_customer_reviews')}</h3>
               <div className={styles.reviewSummary}>
                 <div className={styles.averageRating}>
                   <div className={styles.ratingNumber}>{product.rating}</div>
@@ -745,7 +764,7 @@ const ProductDetailsPage = () => {
                     {'★'.repeat(Math.floor(product.rating))}
                     {'☆'.repeat(5 - Math.floor(product.rating))}
                   </div>
-                  <div className={styles.totalReviews}>{product.reviews} Reviews</div>
+                  <div className={styles.totalReviews}>{product.reviews} {t('product_details.total_reviews')}</div>
                 </div>
               </div>
               <div className={styles.reviewList}>
@@ -761,7 +780,7 @@ const ProductDetailsPage = () => {
                     </div>
                   ))
                 ) : (
-                  <p>No reviews yet.</p>
+                  <p>{t('product_details.no_reviews')}</p>
                 )}
               </div>
             </div>
@@ -772,8 +791,8 @@ const ProductDetailsPage = () => {
       {/* Frequently Bought Together */}
       <div className={styles.frequentlyBought}>
         <div className={styles.sectionHeader}>
-          <h2>FREQUENTLY BOUGHT TOGETHER</h2>
-          <button className={styles.viewAllBtn}>VIEW ALL</button>
+          <h2>{t('product_details.frequently_bought')}</h2>
+          <button className={styles.viewAllBtn}>{t('product_details.view_all')}</button>
         </div>
         <div className={styles.productGrid}>
           {frequentlyBought.map((item) => (
@@ -785,8 +804,8 @@ const ProductDetailsPage = () => {
       {/* Related Products */}
       <div className={styles.relatedProducts}>
         <div className={styles.sectionHeader}>
-          <h2>RELATED PRODUCTS</h2>
-          <button className={styles.viewAllBtn}>VIEW ALL</button>
+          <h2>{t('product_details.related_products')}</h2>
+          <button className={styles.viewAllBtn}>{t('product_details.view_all')}</button>
         </div>
         <div className={styles.productGrid}>
           {relatedProducts.slice(0, 4).map((item) => (

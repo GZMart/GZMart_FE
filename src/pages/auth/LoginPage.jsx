@@ -116,17 +116,14 @@ const LoginPage = () => {
           // But Redux state update should be enough usually. 
           // Keeping the reload logic if it was requested or beneficial for avatar sync
           
-          if (result.isNewUser) {
-             navigate('/set-password');
+          // Redirect based on role or default to Home
+          const user = result.user;
+          if (user?.role === 'seller') {
+            navigate('/seller/dashboard');
+          } else if (user?.role === 'admin') {
+            navigate('/admin/dashboard');
           } else {
-             const user = result.user;
-             if (user?.role === 'seller') {
-                navigate('/seller/dashboard');
-              } else if (user?.role === 'admin') {
-                navigate('/admin/dashboard');
-              } else {
-                navigate(PUBLIC_ROUTES.HOME);
-              }
+            navigate(PUBLIC_ROUTES.HOME);
           }
         } else {
            toast.error(resultAction.payload || t('login_page.errors.google_login_error'));

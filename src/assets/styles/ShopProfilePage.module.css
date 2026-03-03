@@ -1,0 +1,96 @@
+.shopProfilePage {
+  min-height: calc(100vh - 140px);
+  background-color: #f5f5f5;
+  padding-bottom: 40px;
+}
+
+/* Navigation Tabs */
+.tabsContainer {
+  margin-bottom: 30px;
+}
+
+.shopTabs {
+  display: flex;
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.tabItem {
+  flex: 1;
+  min-width: 150px;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 3px solid transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.tabItem:last-child {
+  border-right: none;
+}
+
+.tabItem:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.tabItem.active {
+  background-color: white;
+  color: #0066ff;
+  border-bottom-color: #0066ff;
+}
+
+/* Main Content Sections */
+.productsSection {
+  margin-bottom: 30px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #757575;
+  margin: 0;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+
+.sectionTitle.fire {
+  color: #ff4444;
+  /* Keep fire icon red but maybe slightly softer */
+}
+
+.sectionTitle.fire i {
+  margin-right: 5px;
+}
+
+.viewAllBtn {
+  color: #0066ff;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.viewAllBtn:hover {
+  text-decoration: underline;
+}

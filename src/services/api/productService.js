@@ -57,6 +57,16 @@ export const productService = {
   },
 
   /**
+   * Get products by seller ID
+   * @param {string} sellerId - Seller ID
+   * @param {object} params - Query parameters
+   * @returns {Promise} Products by seller
+   */
+  getProductsBySeller: async (sellerId, params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/seller/${sellerId}`, { params });
+  },
+
+  /**
    * Legacy method - alias for getByCategory
    */
   getProductsByCategory: async (categoryId, params = {}) => {

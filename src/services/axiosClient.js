@@ -105,7 +105,8 @@ axiosClient.interceptors.response.use(
     }
 
     // Handle 401 Unauthorized - Token expired
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip retry for change-password endpoint as 401 might mean incorrect password (due to backend issue)
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('change-password')) {
       originalRequest._retry = true;
 
       try {
