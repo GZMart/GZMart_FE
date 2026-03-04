@@ -28,43 +28,64 @@ const PaymentSuccessPage = () => {
         return;
       }
 
-      try {
-        // Wait a bit for webhook to process
-        console.log('[PaymentSuccess] Waiting 2 seconds for webhook...');
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      // FIX BUG 6: Use polling with retry instead of fixed 2-second wait
+      const MAX_RETRIES = 10; // Try 10 times
+      const RETRY_INTERVAL = 2000; // Every 2 seconds
+      let retryCount = 0;
 
-        // Check payment status from PayOS directly
-        console.log('[PaymentSuccess] Calling checkPaymentFromPayOS API...');
-        const response = await paymentService.checkPaymentFromPayOS(orderCode);
-        console.log('[PaymentSuccess] API Response:', response);
+      const pollPaymentStatus = async () => {
+        try {
+          console.log(
+            `[PaymentSuccess] Checking payment status (Attempt ${retryCount + 1}/${MAX_RETRIES})...`
+          );
 
-        if (response.success) {
-          console.log('[PaymentSuccess] Payment verification successful!');
-          console.log('[PaymentSuccess] Order data:', response.data);
-          setStatus('success');
-          setMessage('Payment successful! Redirecting to order details...');
+          const response = await paymentService.checkPaymentFromPayOS(orderCode);
+          console.log('[PaymentSuccess] API Response:', response);
 
-          // Redirect to orders page after 2 seconds
-          console.log('[PaymentSuccess] Will redirect to orders page in 2 seconds...');
-          setTimeout(() => {
-            console.log('[PaymentSuccess] Redirecting now...');
-            navigate(BUYER_ROUTES.ORDERS);
-          }, 2000);
-        } else {
-          console.error('[PaymentSuccess] Payment verification failed:', response);
-          setStatus('error');
-          setMessage('Payment verification failed. Please contact support.');
+          if (response.success && response.data?.localPaymentStatus === 'paid') {
+            console.log('[PaymentSuccess] Payment verified successfully!');
+            setStatus('success');
+            setMessage('Payment successful! Redirecting to order details...');
+
+            // Redirect to orders page after 2 seconds
+            setTimeout(() => {
+              navigate(BUYER_ROUTES.ORDERS);
+            }, 2000);
+            return true; // Stop polling
+          }
+
+          // If still pending and we have retries left
+          if (retryCount < MAX_RETRIES - 1) {
+            retryCount++;
+            setMessage(`Verifying payment... (${retryCount}/${MAX_RETRIES})`);
+            setTimeout(pollPaymentStatus, RETRY_INTERVAL);
+            return false; // Continue polling
+          } else {
+            // Max retries reached
+            console.warn('[PaymentSuccess] Max retries reached, payment still pending');
+            setStatus('error');
+            setMessage('Payment verification timeout. Please check your orders page.');
+            return true; // Stop polling
+          }
+        } catch (error) {
+          console.error('[PaymentSuccess] Error during polling:', error);
+
+          // If error and we have retries left, continue polling
+          if (retryCount < MAX_RETRIES - 1) {
+            retryCount++;
+            setTimeout(pollPaymentStatus, RETRY_INTERVAL);
+            return false;
+          } else {
+            // Max retries reached
+            setStatus('error');
+            setMessage(error.message || 'Failed to verify payment. Please check your orders.');
+            return true;
+          }
         }
-      } catch (error) {
-        console.error('[PaymentSuccess] ========== ERROR ==========');
-        console.error('[PaymentSuccess] Error message:', error.message);
-        console.error('[PaymentSuccess] Error response:', error.response?.data);
-        console.error('[PaymentSuccess] Full error:', error);
-        setStatus('error');
-        setMessage(error.message || 'Failed to verify payment. Please check your orders.');
-      }
+      };
 
-      console.log('[PaymentSuccess] ========== END ==========');
+      // Start polling
+      pollPaymentStatus();
     };
 
     verifyPayment();

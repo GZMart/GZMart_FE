@@ -11,7 +11,8 @@ import {
 } from '@ant-design/icons';
 import { io } from 'socket.io-client';
 import DeliveryTrackingMap from './DeliveryTrackingMap';
-import './OrderTrackingEnhanced.css';
+import { orderService } from '@services/api/orderService';
+import '../../assets/styles/OrderTrackingEnhanced.module.css';
 
 const { TextArea } = Input;
 
@@ -30,16 +31,53 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   useEffect(() => {
     if (!order?._id) return;
 
-    // Connect to backend socket
+    // FIX BUG 12: Connect to backend socket with reconnection handling
     const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
 
     socketRef.current = socket;
 
+    // Connection event handlers
+    socket.on('connect', () => {
+      // Socket connected
+    });
+
+    socket.on('disconnect', (reason) => {
+      if (reason === 'io server disconnect') {
+        // Server disconnected, manually reconnect
+        socket.connect();
+      }
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+      // Reconnected
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      // Reconnection attempt
+    });
+
+    socket.on('reconnect_error', (error) => {
+      console.error('[Socket] Reconnection error:', error);
+    });
+
+    socket.on('reconnect_failed', () => {
+      console.error('[Socket] Reconnection failed after all attempts');
+      message.error('Lost connection to server. Please refresh the page.');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('[Socket] Connection error:', error);
+    });
+
     // Listen for order status changes
     socket.on(`order:status:${order._id}`, (data) => {
-      console.log('Order status update:', data);
       setCurrentStatus(data.status);
       if (onOrderUpdate) {
         onOrderUpdate(data);
@@ -48,7 +86,6 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
     // Listen for shipping started event
     socket.on(`order:shipping:${order._id}`, (data) => {
-      console.log('Shipping started:', data);
       setCurrentStatus('shipping');
       setShowMap(true);
 
@@ -60,10 +97,9 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
     // Listen for delivery arrival
     socket.on(`order:arrived:${order._id}`, (data) => {
-      console.log('Order arrived:', data);
       setCurrentStatus('delivered');
       setShowMap(false);
-      message.success('Đơn hàng đã được giao đến địa chỉ của bạn!');
+      message.success('Order has been delivered to your address!');
     });
 
     // Cleanup on unmount
@@ -76,7 +112,6 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   useEffect(() => {
     if (showMap && mapRef.current && !mapAnimation) {
       // This is a placeholder - replace with actual map library (Google Maps, Leaflet, etc.)
-      console.log('Map should be initialized here');
     }
   }, [showMap, mapAnimation]);
 
@@ -110,9 +145,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
         // Update marker position (interpolate between start and end)
         const lat = seller.lat + (buyer.lat - seller.lat) * progress;
         const lng = seller.lng + (buyer.lng - seller.lng) * progress;
-
-        // Update marker on map (mock)
-        console.log(`Vehicle at: ${lat}, ${lng} (${(progress * 100).toFixed(2)}%)`);
+        // Position updated
       }
     }, 1000); // Update every second
 
@@ -123,33 +156,17 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   const handleConfirmReceipt = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-      const response = await fetch(`${apiUrl}/api/orders/${order._id}/confirm-receipt`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to confirm receipt');
-      }
-
-      const data = await response.json();
-      message.success('Đã xác nhận nhận hàng thành công!');
+      const response = await orderService.confirmReceipt(order._id);
+      message.success('Receipt confirmed successfully!');
       setCurrentStatus('completed');
       setShowReviewModal(true);
 
       if (onOrderUpdate) {
-        onOrderUpdate(data.data);
+        onOrderUpdate(response.data);
       }
     } catch (error) {
       console.error('Error confirming receipt:', error);
-      message.error('Không thể xác nhận nhận hàng. Vui lòng thử lại!');
+      message.error('Unable to confirm receipt. Please try again!');
     } finally {
       setLoading(false);
     }
@@ -160,12 +177,11 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     try {
       setLoading(true);
       // TODO: Implement review API call
-      console.log('Submit review:', reviewData);
-      message.success('Cảm ơn bạn đã đánh giá!');
+      message.success('Thank you for your review!');
       setShowReviewModal(false);
     } catch (error) {
       console.error('Error submitting review:', error);
-      message.error('Không thể gửi đánh giá. Vui lòng thử lại!');
+      message.error('Unable to submit review. Please try again!');
     } finally {
       setLoading(false);
     }
@@ -183,24 +199,45 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
   const normalizedStatus = normalizeStatus(currentStatus);
 
-  // Generate mock coordinates if order is shipping but has no tracking data
-  const getMockCoordinates = () => ({
-    seller: {
-      lat: 16.0471, // Da Nang - Hai Chau District (downtown)
-      lng: 108.2062,
-      address: 'Quận Hải Châu, Đà Nẵng',
-    },
-    buyer: {
-      lat: 16.0878, // Da Nang - Son Tra District
-      lng: 108.2429,
-      address: order?.shippingAddress?.fullAddress || 'Quận Sơn Trà, Đà Nẵng',
-    },
-  });
+  // Get coordinates from order data (real GPS from user location or fallback to mock)
+  const getCoordinates = () => {
+    // Try to get real GPS from trackingCoordinates or populated user data
+    const hasSellerGPS =
+      order?.trackingCoordinates?.seller?.lat && order?.trackingCoordinates?.seller?.lng;
+    const hasBuyerGPS = order?.userId?.location?.lat && order?.userId?.location?.lng;
+
+    return {
+      seller: hasSellerGPS
+        ? {
+            lat: order.trackingCoordinates.seller.lat,
+            lng: order.trackingCoordinates.seller.lng,
+            address: order.trackingCoordinates.seller.address || 'Seller Address',
+          }
+        : {
+            lat: 16.0471, // Da Nang - Hai Chau District (fallback)
+            lng: 108.2062,
+            address: 'Hai Chau District, Da Nang (Demo)',
+          },
+      buyer: hasBuyerGPS
+        ? {
+            lat: order.userId.location.lat,
+            lng: order.userId.location.lng,
+            address: order.userId.location.address || order.shippingAddress || 'Buyer Address',
+          }
+        : {
+            lat: 16.0878, // Da Nang - Son Tra District (fallback)
+            lng: 108.2429,
+            address: order?.shippingAddress || 'Son Tra District, Da Nang (Demo)',
+          },
+      usingRealGPS: hasSellerGPS && hasBuyerGPS,
+    };
+  };
 
   // Check if map should be shown
   useEffect(() => {
     if (currentStatus === 'shipping' || currentStatus === 'shipped') {
-      const coordinates = order?.trackingCoordinates || getMockCoordinates();
+      // Priority: trackingCoordinates from order > real GPS from user location > mock data
+      const coordinates = order?.trackingCoordinates || getCoordinates();
 
       setShowMap(true);
       startMapAnimation(
@@ -211,33 +248,33 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
         60
       );
     }
-  }, [currentStatus, order?.trackingCoordinates]);
+  }, [currentStatus, order?.trackingCoordinates, order?.userId?.location]);
 
   // Define steps for the stepper
   const steps = [
     {
-      title: 'Đã nhận đơn',
+      title: 'Confirmed',
       status: 'confirmed',
       icon: <CheckCircleOutlined />,
-      description: 'Người bán đã nhận đơn hàng',
+      description: 'Seller confirmed',
     },
     {
-      title: 'Đã gói hàng',
+      title: 'Packed',
       status: 'packing',
       icon: <InboxOutlined />,
-      description: 'Đơn hàng đã được đóng gói',
+      description: 'Ready to ship',
     },
     {
-      title: 'Đang giao hàng',
+      title: 'Shipping',
       status: 'shipping',
       icon: <TruckOutlined />,
-      description: 'Đơn hàng đang trên đường giao đến bạn',
+      description: 'On the way',
     },
     {
-      title: 'Đã đến nơi',
+      title: 'Delivered',
       status: 'delivered',
       icon: <CheckCircleOutlined />,
-      description: 'Đơn hàng đã được giao đến địa chỉ',
+      description: 'Arrived at address',
     },
   ];
 
@@ -269,7 +306,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
   return (
     <div className="order-tracking-enhanced">
-      <Card title="🚚 Trạng thái đơn hàng" className="tracking-card">
+      <Card title="🚚 Order Status" className="tracking-card">
         {/* Show pending status notice if order is still pending */}
         {(currentStatus === 'pending' || currentStatus === 'processing') && (
           <div
@@ -282,7 +319,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
             }}
           >
             <ClockCircleOutlined style={{ color: '#fa8c16', marginRight: 8 }} />
-            <strong>Chờ xác nhận:</strong> Đơn hàng của bạn đang chờ người bán xác nhận
+            <strong>Awaiting Confirmation:</strong> Your order is awaiting seller confirmation
           </div>
         )}
 
@@ -309,9 +346,9 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
             }}
           >
             <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 24, marginRight: 8 }} />
-            <strong style={{ color: '#52c41a' }}>Đơn hàng đã hoàn thành!</strong>
+            <strong style={{ color: '#52c41a' }}>Order Completed!</strong>
             <p style={{ margin: '8px 0 0 0', color: '#595959' }}>
-              Cảm ơn bạn đã mua hàng. Hẹn gặp lại!
+              Thank you for your purchase. See you again!
             </p>
           </div>
         )}
@@ -327,8 +364,8 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
                 marginBottom: 12,
               }}
             >
-              <h3 style={{ margin: 0 }}>🚚 Theo dõi vận chuyển</h3>
-              {!order?.trackingCoordinates && (
+              <h3 style={{ margin: 0 }}>🚚 Track Delivery</h3>
+              {!order?.trackingCoordinates && !getCoordinates().usingRealGPS && (
                 <span
                   style={{
                     fontSize: 12,
@@ -339,7 +376,21 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
                     border: '1px solid #ffd591',
                   }}
                 >
-                  📍 Demo Mode
+                  📍 Demo Mode (Mock GPS)
+                </span>
+              )}
+              {!order?.trackingCoordinates && getCoordinates().usingRealGPS && (
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: '#52c41a',
+                    background: '#f6ffed',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    border: '1px solid #b7eb8f',
+                  }}
+                >
+                  📍 Real GPS
                 </span>
               )}
             </div>
@@ -347,13 +398,35 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
               sellerCoords={mapAnimation.start}
               buyerCoords={mapAnimation.end}
               duration={mapAnimation.duration}
-              onDeliveryComplete={() => {
-                console.log('Delivery animation completed');
+              onDeliveryComplete={async () => {
+                // Call API to mark order as delivered
+                try {
+                  const response = await orderService.markAsDelivered(order._id);
+
+                  if (response.success) {
+                    message.success('Đơn hàng đã được giao thành công! 🎉');
+                    setCurrentStatus('delivered');
+
+                    // Notify parent component
+                    if (onOrderUpdate) {
+                      onOrderUpdate(response.data);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error marking order as delivered:', error);
+                  // Don't show error message to user as backend timer will handle it
+                  // Just log for debugging
+                }
               }}
             />
-            {!order?.trackingCoordinates && (
+            {!order?.trackingCoordinates && !getCoordinates().usingRealGPS && (
               <p style={{ marginTop: 12, fontSize: 13, color: '#8c8c8c', textAlign: 'center' }}>
-                ℹ️ Đang dùng mock GPS (Quận Hải Châu → Quận Sơn Trà, Đà Nẵng)
+                ℹ️ Using mock GPS coordinates (Hai Chau → Son Tra, Da Nang)
+              </p>
+            )}
+            {!order?.trackingCoordinates && getCoordinates().usingRealGPS && (
+              <p style={{ marginTop: 12, fontSize: 13, color: '#52c41a', textAlign: 'center' }}>
+                ✓ Using real GPS from user addresses
               </p>
             )}
           </Card>
@@ -363,7 +436,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
         <div className="action-buttons" style={{ marginTop: 24, textAlign: 'center' }}>
           {currentStatus === 'delivered' && (
             <Button type="primary" size="large" onClick={handleConfirmReceipt} loading={loading}>
-              Đã nhận được hàng
+              Confirm Receipt
             </Button>
           )}
         </div>
@@ -371,27 +444,27 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
       {/* Review Modal */}
       <Modal
-        title="Đánh giá sản phẩm"
+        title="Rate Product"
         open={showReviewModal}
         onOk={handleSubmitReview}
         onCancel={() => setShowReviewModal(false)}
-        okText="Gửi đánh giá"
-        cancelText="Bỏ qua"
+        okText="Submit Review"
+        cancelText="Skip"
         confirmLoading={loading}
       >
         <div style={{ padding: '20px 0' }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 8 }}>Đánh giá của bạn:</label>
+            <label style={{ display: 'block', marginBottom: 8 }}>Your Rating:</label>
             <Rate
               value={reviewData.rating}
               onChange={(value) => setReviewData({ ...reviewData, rating: value })}
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: 8 }}>Nhận xét:</label>
+            <label style={{ display: 'block', marginBottom: 8 }}>Comment:</label>
             <TextArea
               rows={4}
-              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."
+              placeholder="Share your experience about the product..."
               value={reviewData.comment}
               onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
             />

@@ -11,18 +11,18 @@ const initialState = {
 
 // Async Thunks
 
-export const fetchCart = createAsyncThunk(
-  'cart/fetchCart',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await cartService.getCart();
-      // Backend returns: { success: true, data: { items: [...], totalPrice: ... } }
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.message || 'Failed to fetch cart');
-    }
+export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, { rejectWithValue }) => {
+  try {
+    console.log('[CART-DEBUG] 🛒 fetchCart action started - calling API...');
+    const response = await cartService.getCart();
+    console.log('[CART-DEBUG] ✅ fetchCart API success:', response);
+    // Backend returns: { success: true, data: { items: [...], totalPrice: ... } }
+    return response.data;
+  } catch (error) {
+    console.log('[CART-DEBUG] ❌ fetchCart API failed:', error.message);
+    return rejectWithValue(error.message || 'Failed to fetch cart');
   }
-);
+});
 
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
@@ -32,12 +32,12 @@ export const addToCart = createAsyncThunk(
         productId: product._id || product.id,
         quantity,
         color,
-        size
+        size,
       };
       await cartService.addToCart(payload);
       // Refresh cart to get latest state and stock info
       dispatch(fetchCart());
-      return; 
+      return;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to add item to cart');
     }
@@ -75,7 +75,7 @@ const mapCartItem = (backendItem) => ({
   id: backendItem._id, // CartItem ID
   productId: backendItem.productId._id, // Actual Product ID
   name: backendItem.productId.name,
-  image: backendItem.image || backendItem.productId.images?.[0], 
+  image: backendItem.image || backendItem.productId.images?.[0],
   price: backendItem.price,
   quantity: backendItem.quantity,
   color: backendItem.color,
@@ -137,25 +137,23 @@ const cartSlice = createSlice({
       });
 
     // updateQuantity
-    builder
-      .addCase(updateQuantity.fulfilled, (state, action) => {
-        const { itemId, quantity, total } = action.payload;
-        const item = state.items.find((i) => i.id === itemId);
-        if (item) {
-          item.quantity = quantity;
-        }
-        state.totalPrice = total;
-        state.totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
-      });
+    builder.addCase(updateQuantity.fulfilled, (state, action) => {
+      const { itemId, quantity, total } = action.payload;
+      const item = state.items.find((i) => i.id === itemId);
+      if (item) {
+        item.quantity = quantity;
+      }
+      state.totalPrice = total;
+      state.totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
+    });
 
     // removeFromCart
-    builder
-      .addCase(removeFromCart.fulfilled, (state, action) => {
-        const { itemId, total } = action.payload;
-        state.items = state.items.filter((i) => i.id !== itemId);
-        state.totalPrice = total;
-        state.totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
-      });
+    builder.addCase(removeFromCart.fulfilled, (state, action) => {
+      const { itemId, total } = action.payload;
+      state.items = state.items.filter((i) => i.id !== itemId);
+      state.totalPrice = total;
+      state.totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
+    });
   },
 });
 

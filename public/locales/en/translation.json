@@ -10,6 +10,7 @@
     "login": "Login",
     "dashboard": "Dashboard",
     "profile": "Profile",
+    "change_password": "Change Password",
     "logout": "Logout",
     "language": "Language",
     "login_required_title": "Login Required",

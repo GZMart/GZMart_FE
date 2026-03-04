@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import './DeliveryTrackingMap.css';
+import '../../assets/styles/DeliveryTrackingMap.module.css';
 
 // Fix Leaflet default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
