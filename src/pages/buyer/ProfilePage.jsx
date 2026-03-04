@@ -12,6 +12,7 @@ import {
 } from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
+import { reviewService } from '@services/api';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
@@ -579,14 +580,18 @@ const ProfilePage = () => {
   };
 
   const handleOpenReviewModal = (order) => {
+    // Just pass orderId - ReviewModal will fetch order details to get product info
     setReviewingOrder(order);
     setShowReviewModal(true);
   };
 
   const handleReviewSubmit = async (reviewData) => {
-    if (!reviewingOrder) return;
-
-    setReviewSubmitting(true);
+    // Note: This function is called from ReviewModal component
+    // The ReviewModal component handles the actual API call using reviewService
+    // This function just closes the modal after successful submission
+    setShowReviewModal(false);
+    setReviewingOrder(null);
+    
     try {
       // TODO: Replace with actual API call
       // const response = await orderService.submitReview(reviewingOrder._id, reviewData);
@@ -601,11 +606,12 @@ const ProfilePage = () => {
       toast.success('Review submitted successfully');
       setShowReviewModal(false);
       setReviewingOrder(null);
+      // Optional: Refresh order list after successful review submission
+      //if (activeTab === 'orders') {
+        //await fetchOrders(pagination.page);
+      //}
     } catch (error) {
-      console.error('Failed to submit review:', error);
-      toast.error('Failed to submit review. Please try again.');
-    } finally {
-      setReviewSubmitting(false);
+      console.error('Error after review submission:', error);
     }
   };
 
@@ -1058,7 +1064,7 @@ const ProfilePage = () => {
                               e.currentTarget.style.boxShadow = 'none';
                             }}
                           >
-                            Add Review
+                            Rate
                           </button>
                         )}
                       </td>
@@ -1839,6 +1845,7 @@ const ProfilePage = () => {
         onSubmit={handleReviewSubmit}
         orderNumber={reviewingOrder?.orderNumber}
         isSubmitting={reviewSubmitting}
+        orderId={reviewingOrder?._id}
       />
 
       {/* Return/Refund Request Modal */}
