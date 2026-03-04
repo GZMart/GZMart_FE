@@ -1,13 +1,12 @@
 .breadcrumb {
   background: #f9fafb;
   padding: 10px 0;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  /* padding: 0 20px; */
 }
 
 .breadcrumbList {

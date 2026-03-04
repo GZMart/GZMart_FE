@@ -34,6 +34,11 @@
   gap: 40px;
   margin-top: 30px;
   margin-bottom: 50px;
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); */
 }
 
 /* Image Section */
@@ -190,7 +195,7 @@
   flex-wrap: wrap;
   gap: 15px 30px;
   padding: 15px 0;
-  border-bottom: 1px solid #e0e0e0;
+  /* border-bottom: 1px solid #e0e0e0; */
 }
 
 .metaItem {
@@ -258,6 +263,10 @@
   color: #ff4444;
 }
 
+.currentPriceFlashSale {
+  color: #ee4d2d !important;
+}
+
 .originalPrice {
   font-size: 20px;
   color: #999;
@@ -273,11 +282,44 @@
   font-weight: 600;
 }
 
+.flashSaleContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.flashSaleInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flashSaleLabel {
+  font-weight: 600;
+  color: #ee4d2d;
+}
+
+.flashSaleIcon {
+  font-size: 18px;
+  color: #ee4d2d;
+}
+
+.flashSaleTimer {
+  background-color: #fef1ed;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ee4d2d;
+}
+
 /* Rating Section */
 .ratingSection {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
   padding: 15px 0;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -290,14 +332,24 @@
 }
 
 .ratingValue {
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
+  font-weight: 700;
+  color: #ff4444;
+  font-size: 20px;
+  /* min-width: 50px; */
 }
 
 .reviewCount {
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
+  border-left: 1px solid #e0e0e0;
+  padding-left: 15px;
+}
+
+.soldCount {
+  color: #666;
+  font-size: 13px;
+  border-left: 1px solid #e0e0e0;
+  padding-left: 15px;
 }
 
 /* Flash Sale Section */
@@ -952,6 +1004,131 @@
   border-radius: 4px;
 }
 
+/* Share Section */
+.shareSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  margin-top: 10px;
+}
+
+.shareLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.shareButtons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.shareButton {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  background: white;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 20px;
+  padding: 0;
+  gap: 0;
+}
+
+.shareButton:hover {
+  border-color: #0066ff;
+  color: #0066ff;
+  background-color: #f0f8ff;
+  transform: translateY(-2px);
+}
+
+.shareButton.facebook {
+  color: #1877f2;
+}
+
+.shareButton.facebook:hover {
+  border-color: #1877f2;
+  background-color: #f0f4ff;
+}
+
+.shareButton.messenger {
+  color: #00b2ff;
+}
+
+.shareButton.messenger:hover {
+  border-color: #00b2ff;
+  background-color: #f0f8ff;
+}
+
+.shareButton.x {
+  color: #000;
+}
+
+.shareButton.x:hover {
+  border-color: #000;
+  background-color: #f5f5f5;
+}
+
+.favouriteSpacer {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.saveLabel {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.shareButton.unfavourite {
+  /* background-color: #ff4757; */
+  border-color: #ff4757;
+  color: #ff4757;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.shareButton.unfavourite:hover {
+  background-color: #ff2f43;
+  color: white;
+  border-color: #ff2f43;
+  transform: translateY(-2px);
+}
+
+.shareButton.isFavourite {
+  color: white;
+  background-color: #ff2f43;
+  border-color: #ff2f43;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.shareButton.isFavourite i {
+  font-size: 20px;
+}
+
+.shareButton.isFavourite:hover {
+  background-color: white;
+  border-color: #ff2f43;
+  color: #ff2f43;
+  transform: translateY(-2px);
+}
+
 /* Actions Section */
 .actionsSection {
   display: flex;
@@ -999,6 +1176,14 @@
   gap: 10px;
   flex: 1;
   flex-wrap: wrap;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .actionButtons button {
@@ -1054,8 +1239,11 @@
   background-color: white;
   color: #ff4757;
   border: 2px solid #ff4757;
-  min-width: 120px !important;
+  min-width: 100px !important;
   flex: 0 0 auto;
+  height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
 }
 
 .favouriteBtn:hover {
@@ -1116,7 +1304,7 @@
   align-items: center;
   gap: 15px;
   padding: 15px 0;
-  border-bottom: 1px solid #e0e0e0;
+  /* border-bottom: 1px solid #e0e0e0; */
 }
 
 .shareLabel {
@@ -1371,68 +1559,6 @@
 
 .specTable .value {
   color: #333;
-}
-
-/* Reviews Tab */
-.reviewSummary {
-  margin-bottom: 30px;
-  padding: 25px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.averageRating .ratingNumber {
-  font-size: 48px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.averageRating .stars {
-  font-size: 24px;
-  color: #ffa500;
-  margin-bottom: 10px;
-  justify-content: center;
-}
-
-.totalReviews {
-  color: #666;
-  font-size: 14px;
-}
-
-.reviewList {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.reviewItem {
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-}
-
-.reviewHeader {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.reviewDate {
-  color: #999;
-  font-size: 14px;
-}
-
-.reviewRating {
-  color: #ffa500;
-  margin-bottom: 10px;
-}
-
-.reviewItem p {
-  color: #666;
-  line-height: 1.6;
-  margin: 0;
 }
 
 /* Tier / Variant Sections */

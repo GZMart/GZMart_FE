@@ -14,6 +14,7 @@ export { default as searchService } from './searchService';
 export { default as purchaseOrderService } from './purchaseOrderService';
 export { default as inventoryService } from './inventoryService';
 export { default as landedCostService } from './landedCostService';
+export { default as reviewService } from './reviewService';
 
 // TODO: Add more services as needed
 // export { default as orderService } from './orderService';
