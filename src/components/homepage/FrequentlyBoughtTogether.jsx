@@ -2,12 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { Star, Heart, Eye, ShoppingCart } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { productService } from '../../services/api';
 import { PUBLIC_ROUTES } from '../../constants/routes';
 
 // Helper to format price
 const formatPrice = (price) => {
+  if (!price && price !== 0) return '0';
   return new Intl.NumberFormat('vi-VN').format(price);
+};
+
+// Helper to calculate discount percentage
+const calculateDiscount = (originalPrice, salePrice) => {
+  if (!originalPrice || !salePrice || originalPrice <= salePrice) return 0;
+  return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+};
+
+// Helper to get product image
+const getProductImage = (product) => {
+  if (product?.images?.length > 0) return product.images[0];
+  if (product?.image) return product.image;
+  if (product?.models?.length > 0 && product.models[0]?.image) return product.models[0].image;
+  return 'https://via.placeholder.com/400x400?text=No+Image';
+};
+
+// Helper to get product price (sale price or regular price)
+const getProductPrice = (product) => {
+  // Try to get first active model
+  const activeModel = product?.models?.find((m) => m.isActive) || product?.models?.[0];
+
+  if (activeModel) {
+    return {
+      price: activeModel.salePrice || activeModel.price || 0,
+      originalPrice: activeModel.salePrice ? activeModel.price : null,
+      stock: activeModel.stock || 0,
+    };
+  }
+
+  return {
+    price: product?.price || 0,
+    originalPrice: product?.originalPrice || null,
+    stock: product?.stock || 0,
+  };
 };
 
 const FrequentlyBoughtTogether = () => {
@@ -18,7 +54,8 @@ const FrequentlyBoughtTogether = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await productService.getAll({ limit: 8, status: 'active' });
+        // Use trending products instead of getAll for better relevance
+        const response = await productService.getTrendingProducts(9);
         const apiData = Array.isArray(response) ? response : response.data || [];
         setProducts(apiData);
       } catch (err) {
@@ -60,12 +97,20 @@ const FrequentlyBoughtTogether = () => {
   }
 
   // Safe check: need at least 1 product
-  if (!products[0]) {
+  if (!products || products.length === 0 || !products[0]) {
     return (
       <section className="py-5">
         <Container>
           <div className="d-flex align-items-center justify-content-between mb-3">
             <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
+            <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
+              <Button
+                className="fw-bold px-4 border-0 text-dark"
+                style={{ backgroundColor: '#FFC107', borderRadius: '4px' }}
+              >
+                VIEW ALL
+              </Button>
+            </Link>
           </div>
           <hr className="my-4 text-secondary opacity-25" />
           <div className="text-center py-5">
@@ -77,45 +122,62 @@ const FrequentlyBoughtTogether = () => {
   }
 
   // Transform API data to component format
+  const mainProduct = products[0];
+  const mainPriceInfo = getProductPrice(mainProduct);
+  const mainDiscount = calculateDiscount(mainPriceInfo.originalPrice, mainPriceInfo.price);
+
   const MAIN_PRODUCT = {
-    id: products[0]._id,
-    title: products[0].name,
-    image: products[0].images?.[0] || products[0].image || 'https://via.placeholder.com/500',
-    description: products[0].description || 'Featured product',
-    rating: products[0].rating || 5,
-    reviews: products[0].sold || 0,
-    price: formatPrice(products[0].price),
-    originalPrice: products[0].originalPrice ? formatPrice(products[0].originalPrice) : null,
+    id: mainProduct._id,
+    title: mainProduct.name,
+    image: getProductImage(mainProduct),
+    description: mainProduct.description || 'Featured trending product',
+    rating: mainProduct.rating || 5,
+    reviews: mainProduct.sold || mainProduct.reviewCount || 0,
+    price: mainPriceInfo.price,
+    originalPrice: mainPriceInfo.originalPrice,
+    stock: mainPriceInfo.stock,
     badges: [
-      products[0].discount && {
-        text: `${products[0].discount}% OFF`,
+      mainDiscount > 0 && {
+        text: `${mainDiscount}% OFF`,
         bg: 'warning',
         color: 'dark',
       },
-      products[0].isFeatured && { text: 'BEST SELLER', bg: 'danger', color: 'white' },
+      mainProduct.isFeatured && { text: 'BEST SELLER', bg: 'danger', color: 'white' },
+      mainProduct.isNew && { text: 'NEW', bg: 'success', color: 'white' },
     ].filter(Boolean),
   };
 
-  const SIDE_PRODUCTS = products.slice(1, 8).map((product) => ({
-    id: product._id,
-    title: product.name,
-    image: product.images?.[0] || product.image || 'https://via.placeholder.com/300',
-    price: formatPrice(product.price),
-    originalPrice: product.originalPrice ? formatPrice(product.originalPrice) : null,
-    badges: [
-      product.stock === 0 && { text: 'SOLD OUT', bg: 'secondary', color: 'white' },
-      product.discount && { text: `${product.discount}% OFF`, bg: 'warning', color: 'dark' },
-      product.isHot && { text: 'HOT', bg: 'danger', color: 'white' },
-    ].filter(Boolean),
-    isSoldOut: product.stock === 0,
-  }));
+  const SIDE_PRODUCTS = products.slice(1, 9).map((product) => {
+    const priceInfo = getProductPrice(product);
+    const discount = calculateDiscount(priceInfo.originalPrice, priceInfo.price);
+
+    return {
+      id: product._id,
+      title: product.name,
+      image: getProductImage(product),
+      price: priceInfo.price,
+      originalPrice: priceInfo.originalPrice,
+      stock: priceInfo.stock,
+      badges: [
+        priceInfo.stock === 0 && { text: 'SOLD OUT', bg: 'secondary', color: 'white' },
+        discount > 0 && { text: `${discount}% OFF`, bg: 'warning', color: 'dark' },
+        product.isHot && { text: 'HOT', bg: 'danger', color: 'white' },
+        product.isNew && { text: 'NEW', bg: 'success', color: 'white' },
+      ].filter(Boolean),
+      isSoldOut: priceInfo.stock === 0,
+    };
+  });
 
   const MainProductItem = ({ product }) => (
     <Link
       to={`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', product.id)}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
-      <div className="h-100 p-4 d-flex flex-column">
+      <motion.div
+        className="h-100 p-4 d-flex flex-column"
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="d-flex flex-column gap-1 position-absolute m-3 z-1">
           {product.badges.map((badge, idx) => (
             <Badge
@@ -137,7 +199,7 @@ const FrequentlyBoughtTogether = () => {
             src={product.image}
             alt={product.title}
             className="img-fluid"
-            style={{ maxHeight: '100%', width: '100%', objectFit: 'cover' }}
+            style={{ maxHeight: '100%', width: '100%', objectFit: 'contain' }}
           />
         </div>
 
@@ -157,13 +219,25 @@ const FrequentlyBoughtTogether = () => {
           <h5 className="fw-bold mb-2 lh-base">{product.title}</h5>
 
           <div className="mb-3">
-            <span className="text-decoration-line-through text-secondary me-2">
-              {product.originalPrice}₫
-            </span>
-            <span className="fw-bold fs-4 text-primary">{product.price}₫</span>
+            {product.originalPrice && (
+              <span className="text-decoration-line-through text-secondary me-2">
+                {formatPrice(product.originalPrice)}₫
+              </span>
+            )}
+            <span className="fw-bold fs-4 text-primary">{formatPrice(product.price)}₫</span>
           </div>
 
-          <p className="text-secondary small mb-4">{product.description}</p>
+          <p
+            className="text-secondary small mb-4"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {product.description}
+          </p>
 
           <div className="mt-auto d-flex gap-2 w-100">
             <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
@@ -173,15 +247,16 @@ const FrequentlyBoughtTogether = () => {
               variant="primary"
               className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
               style={{ backgroundColor: '#007bff' }}
+              disabled={product.stock === 0}
             >
-              <ShoppingCart size={18} /> ADD TO CART
+              <ShoppingCart size={18} /> {product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
             </Button>
             <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
               <Eye size={20} />
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </Link>
   );
 
@@ -190,13 +265,17 @@ const FrequentlyBoughtTogether = () => {
       to={`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', product.id)}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
-      <div className="h-100 p-3 d-flex flex-column position-relative">
+      <motion.div
+        className="h-100 p-3 d-flex flex-column position-relative"
+        whileHover={{ y: -5 }}
+        transition={{ duration: 0.2 }}
+      >
         {product.badges.length > 0 && (
           <div className="position-absolute top-0 start-0 m-2 z-1">
             <Badge
               bg={product.badges[0].bg}
               text={product.badges[0].color}
-              className="rounded-1 px-2 py-1 fw-bold"
+              className="rounded-1 px-2 py-1 fw-bold small"
             >
               {product.badges[0].text}
             </Badge>
@@ -204,13 +283,13 @@ const FrequentlyBoughtTogether = () => {
         )}
 
         <div
-          className="d-flex align-items-center justify-content-center mb-3"
-          style={{ height: '220px' }}
+          className="d-flex align-items-center justify-content-center mb-3 bg-light rounded"
+          style={{ height: '200px', overflow: 'hidden' }}
         >
           <img
             src={product.image}
-            className="w-100 h-100"
-            style={{ objectFit: 'cover' }}
+            className="img-fluid"
+            style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
             alt={product.title}
           />
         </div>
@@ -224,7 +303,7 @@ const FrequentlyBoughtTogether = () => {
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
-              minHeight: '45px',
+              minHeight: '42px',
             }}
             title={product.title}
           >
@@ -233,14 +312,16 @@ const FrequentlyBoughtTogether = () => {
 
           <div className="mt-auto">
             {product.originalPrice && (
-              <span className="text-decoration-line-through text-secondary me-2 small">
-                {product.originalPrice}₫
-              </span>
+              <div className="mb-1">
+                <span className="text-decoration-line-through text-secondary me-2 small">
+                  {formatPrice(product.originalPrice)}₫
+                </span>
+              </div>
             )}
-            <span className="fw-bold text-primary">{product.price}₫</span>
+            <span className="fw-bold text-primary fs-6">{formatPrice(product.price)}₫</span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </Link>
   );
 
@@ -249,17 +330,27 @@ const FrequentlyBoughtTogether = () => {
       <Container>
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
-          <Button
-            className="fw-bold px-4 border-0 text-dark"
-            style={{ backgroundColor: '#FFC107', borderRadius: '4px' }}
-          >
-            VIEW ALL
-          </Button>
+          <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+              whileTap={{ scale: 0.95 }}
+              className="d-flex align-items-center justify-content-center px-4 py-2 rounded fw-bold text-dark border-0"
+              style={{ backgroundColor: '#FFC107' }}
+            >
+              VIEW ALL
+            </motion.button>
+          </Link>
         </div>
 
         <hr className="my-4 text-secondary opacity-25" />
 
-        <div className="border border-light-subtle">
+        <motion.div
+          className="border border-light-subtle rounded"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
           <Row className="g-0">
             <Col lg={3} md={12} className="border-end border-light-subtle">
               <MainProductItem product={MAIN_PRODUCT} />
@@ -285,7 +376,7 @@ const FrequentlyBoughtTogether = () => {
               </Row>
             </Col>
           </Row>
-        </div>
+        </motion.div>
       </Container>
     </section>
   );

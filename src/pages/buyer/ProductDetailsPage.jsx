@@ -10,6 +10,7 @@ import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import ProductReviewSection from '../../components/buyer/ProductReviewSection';
+import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
 import * as favouriteService from '../../services/api/favouriteService';
@@ -362,7 +363,9 @@ const ProductDetailsPage = () => {
         : { data: { available: true } };
 
       if (!stockCheck.data?.available) {
-        toast.error(`${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`);
+        toast.error(
+          `${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`
+        );
         setAddingToCart(false);
         return;
       }
@@ -375,7 +378,7 @@ const ProductDetailsPage = () => {
         product.tier_variations.forEach((tier, idx) => {
           const selectedOption = tier.options[selectedTierIndex[idx]];
           const tierNameLower = tier.name.toLowerCase();
-          
+
           if (
             tierNameLower.includes('color') ||
             tierNameLower.includes('màu') ||
@@ -439,7 +442,10 @@ const ProductDetailsPage = () => {
       if (isFavourite) {
         await favouriteService.removeFromFavourites(product._id);
         setIsFavourite(false);
-        setProduct((prev) => ({ ...prev, wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1) }));
+        setProduct((prev) => ({
+          ...prev,
+          wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1),
+        }));
         toast.success(t('product_details.toast_wishlist_remove'));
       } else {
         await favouriteService.addToFavourites(product._id);
@@ -469,7 +475,9 @@ const ProductDetailsPage = () => {
     return (
       <div className={styles.notFound}>
         <h2>{error || t('product_details.err_product_not_found')}</h2>
-        <button onClick={() => navigate('/products')}>{t('product_details.back_to_products')}</button>
+        <button onClick={() => navigate('/products')}>
+          {t('product_details.back_to_products')}
+        </button>
       </div>
     );
   }
@@ -483,11 +491,14 @@ const ProductDetailsPage = () => {
           { label: t('product_details.breadcrumb_home'), path: '/', icon: 'bi-house' },
           { label: t('product_details.breadcrumb_shop'), path: '/products' },
           {
-            label: typeof product.category === 'string' ? product.category : product.category?.name,
-            path: `/products?category=${product.categoryId}`,
+            label:
+              typeof product.category === 'string'
+                ? product.category
+                : product.category?.name || 'Products',
+            path: `/products?category=${product.categoryId || ''}`,
           },
           { label: product.name },
-        ]}
+        ].filter((item) => item.label)}
       />
 
       <div className={styles.productContainer}>
@@ -495,15 +506,15 @@ const ProductDetailsPage = () => {
         <div className={styles.imageSection}>
           <div className={styles.mainImage} style={{ position: 'relative' }}>
             <Image.PreviewGroup items={productImages}>
-              <Image 
-                src={productImages[selectedImage]} 
+              <Image
+                src={productImages[selectedImage]}
                 alt={product.name}
                 width="100%"
                 style={{ objectFit: 'cover', borderRadius: '12px', minHeight: '300px' }}
               />
             </Image.PreviewGroup>
             {product.badge && (
-              <span 
+              <span
                 className={`${styles.badge} ${styles[product.badgeColor]}`}
                 style={{ zIndex: 10, position: 'absolute', top: '15px', left: '15px' }}
               >
@@ -582,7 +593,10 @@ const ProductDetailsPage = () => {
           <div className={styles.ratingSection}>
             <div className={styles.ratingStars}>
               {[...Array(5)].map((_, i) => (
-                <i key={i} className={`bi ${i < Math.floor(product.rating || 0) ? 'bi-star-fill' : 'bi-star'}`}></i>
+                <i
+                  key={i}
+                  className={`bi ${i < Math.floor(product.rating || 0) ? 'bi-star-fill' : 'bi-star'}`}
+                ></i>
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
@@ -671,7 +685,9 @@ const ProductDetailsPage = () => {
                 {product.shippingInfo ? (
                   <div className={styles.shippingDetail}>{product.shippingInfo}</div>
                 ) : (
-                  <div className={styles.shippingDetail}>{t('product_details.default_shipping_detail')}</div>
+                  <div className={styles.shippingDetail}>
+                    {t('product_details.default_shipping_detail')}
+                  </div>
                 )}
               </div>
             </div>
@@ -679,7 +695,9 @@ const ProductDetailsPage = () => {
               <i className="bi bi-shield-check"></i>
               <div>
                 <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
-                <div className={styles.shippingDetail}>{product.warranty || t('product_details.default_warranty_detail')}</div>
+                <div className={styles.shippingDetail}>
+                  {product.warranty || t('product_details.default_warranty_detail')}
+                </div>
               </div>
             </div>
           </div>
@@ -746,9 +764,13 @@ const ProductDetailsPage = () => {
                 {t('product_details.btn_buy_now')}
               </button>
             </div>
-            {currentStock <= 0 && <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>}
+            {currentStock <= 0 && (
+              <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
+            )}
             {currentStock > 0 && currentStock < 10 && (
-              <div className="text-warning mt-2">{t('product_details.only_left', { stock: currentStock })}</div>
+              <div className="text-warning mt-2">
+                {t('product_details.only_left', { stock: currentStock })}
+              </div>
             )}
           </div>
 
@@ -758,11 +780,10 @@ const ProductDetailsPage = () => {
               <span>{t('product_details.label_stock')}:</span> {currentStock}
             </div>
             <div className={styles.metaItem}>
-              <span>{t('product_details.label_sku')}:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
+              <span>{t('product_details.label_sku')}:</span>{' '}
+              {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
           </div>
-
-
         </div>
       </div>
 
@@ -846,7 +867,9 @@ const ProductDetailsPage = () => {
                     ))}
                   {product.tier_variations?.length > 0 && (
                     <tr>
-                      <td className={styles.label}>{t('product_details.label_available_variations')}</td>
+                      <td className={styles.label}>
+                        {t('product_details.label_available_variations')}
+                      </td>
                       <td className={styles.value}>
                         {product.tier_variations.map((tier, idx) => (
                           <div key={idx}>

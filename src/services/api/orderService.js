@@ -30,9 +30,19 @@ export const orderService = {
   previewOrder: async (data) => {
     return await api.post('/api/orders/preview', data);
   },
-  
+
   // Get invoice
   getInvoice: async (id) => {
-     return await api.get(`/api/orders/${id}/invoice`);
-  }
+    return await api.get(`/api/orders/${id}/invoice`);
+  },
+
+  // Mark order as delivered (when map animation completes)
+  markAsDelivered: async (id) => {
+    return await api.put(`/api/orders/${id}/mark-delivered`);
+  },
+
+  // Confirm receipt (delivered -> completed)
+  confirmReceipt: async (id) => {
+    return await api.put(`/api/orders/${id}/confirm-receipt`);
+  },
 };

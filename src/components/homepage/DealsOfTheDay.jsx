@@ -44,7 +44,7 @@ const formatCountdown = (endDate) => {
 const ProductCard = ({ product }) => {
   return (
     <Link
-      to={`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', product.id)}`}
+      to={`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', product.productId || product.id)}`}
       style={{ textDecoration: 'none' }}
     >
       <motion.div
@@ -217,7 +217,8 @@ const DealsOfTheDay = () => {
           });
 
           return {
-            id: product?._id || flashSale._id,
+            id: flashSale._id, // Use flashSale._id for unique key (handles multiple variants of same product)
+            productId: product?._id, // Keep product ID for navigation
             name: product?.name || 'Product',
             image: product?.images?.[0] || variantModel?.image || '',
             price: formatPrice(flashSale.salePrice || variantModel?.price || 0),

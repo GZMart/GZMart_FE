@@ -16,6 +16,10 @@ export const getAuthToken = () => {
 
 export const setAuthToken = (token) => {
   try {
+    console.log(
+      '[AUTH-DEBUG] 🔑 setAuthToken called:',
+      token ? 'Setting new token' : 'Removing token'
+    );
     if (token) {
       localStorage.setItem(AUTH_TOKEN_KEY, token);
     } else {
@@ -73,6 +77,8 @@ export const setUserData = (userData) => {
 // Clear all auth data
 export const clearAuthData = () => {
   try {
+    console.log('[AUTH-DEBUG] 🗑️ clearAuthData called - Removing all auth tokens');
+    console.trace('[AUTH-DEBUG] Stack trace:'); // Show where clearAuthData was called from
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_DATA_KEY);

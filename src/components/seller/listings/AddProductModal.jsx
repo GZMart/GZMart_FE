@@ -545,7 +545,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
         formDataToSend.append('description', formData.description.trim());
         formDataToSend.append('categoryId', formData.categoryId);
         formDataToSend.append('originalPrice', parseFloat(formData.originalPrice));
-        formDataToSend.append('status', 'draft');
+        // formDataToSend.append('status', 'draft');
 
         // Append tags
         if (formData.tags) {
@@ -633,7 +633,7 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
                 }))
               : [],
           models: productModels,
-          status: 'draft',
+          // status: 'draft',
         };
 
         if (import.meta.env.DEV) {
