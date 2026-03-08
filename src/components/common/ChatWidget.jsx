@@ -4,6 +4,8 @@ import { Button, Badge, Form, InputGroup, Image } from 'react-bootstrap';
 import socketService from '../../services/socketService';
 import aiChatService from '../../services/aiChatService';
 import axios from 'axios';
+import { toast } from 'react-toastify';
+import { getAuthToken } from '../../utils/storage';
 import styles from '../../assets/styles/common/ChatWidget.module.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -103,12 +105,50 @@ const ChatWidget = () => {
               scrollToBottom();
           }
       }
-  }, [isOpen, isAuthenticated, activeChatId]);
+
+      const handleOpenChatWithShop = async (event) => {
+          const { shopId } = event.detail;
+          
+          // Mở widget ngay lập tức
+          setIsOpen(true);
+          setIsMinimized(false);
+
+          try {
+              // Gọi API để tìm hoặc tạo conversation với shop
+              const res = await axios.post(`${API_URL}/api/chat/conversation`, {
+                  userId: user._id,
+                  shopId: shopId
+              }, {
+                  headers: { Authorization: `Bearer ${getAuthToken()}` }
+              });
+              
+              const conversation = res.data;
+              
+              // Cập nhật danh sách các conversation trước (chạy ngầm)
+              fetchConversations();
+              
+              // Kích hoạt conversation vừa chọn bằng object trực tiếp
+              handleSelectChat(conversation._id, conversation);
+
+          } catch (error) {
+              console.error('Error opening chat with shop:', error);
+              const errMsg = error.response?.data?.message || 'Không thể tạo đoạn chat. Vui lòng thử lại.';
+              toast.error(errMsg); // Use alert for immediate feedback, or we can use toast if imported.
+          }
+      };
+
+      window.addEventListener('openChatWithShop', handleOpenChatWithShop);
+
+      return () => {
+          window.removeEventListener('openChatWithShop', handleOpenChatWithShop);
+      };
+
+  }, [isOpen, isAuthenticated, user]); // Xóa activeChatId khỏi dependency để tránh re-bind liên tục
 
   const fetchConversations = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/chat/conversations`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
       setConversations(response.data);
     } catch (error) {
@@ -120,7 +160,7 @@ const ChatWidget = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/api/chat/messages/${conversationId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
       setMessages(response.data);
       setLoading(false);
@@ -131,13 +171,13 @@ const ChatWidget = () => {
     }
   };
 
-  const handleSelectChat = (id) => {
+  const handleSelectChat = (id, convObj = null) => {
     setActiveChatId(id);
     if (id === 'ai') {
         setActiveConversation(null);
         scrollToBottomAi();
     } else {
-        const conv = conversations.find(c => c._id === id);
+        const conv = convObj || conversations.find(c => c._id === id);
         if (conv) {
             setActiveConversation(conv);
             socketService.joinConversation(conv._id);
@@ -161,8 +201,6 @@ const ChatWidget = () => {
     };
 
     socketService.sendMessage(messageData);
-    // Optimistic update
-    setMessages(prev => [...prev, { ...messageData, timestamp: new Date().toISOString() }]); 
     setNewMessage('');
     scrollToBottom();
   };
@@ -218,7 +256,7 @@ const ChatWidget = () => {
     );
   };
 
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = () => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   const scrollToBottomAi = () => setTimeout(() => aiMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
   const filteredConversations = conversations.filter(c => {
@@ -416,18 +454,32 @@ const ChatWidget = () => {
                                             <i className="bi bi-chat-square-dots fs-1 opacity-25"></i>
                                             <p className="mt-2 text-dark">Bắt đầu cuộc trò chuyện</p>
                                         </div>
-                                    ) : (
-                                        messages.map((msg, idx) => (
-                                            <div key={idx} className={`d-flex mb-3 ${msg.sender._id === user._id || msg.sender === user._id ? 'justify-content-end' : 'justify-content-start'}`}>
-                                                <div className={`${styles['message-bubble']} ${msg.sender._id === user._id || msg.sender === user._id ? styles['message-user'] : styles['message-other']}`}>
-                                                     <div>{msg.content}</div>
-                                                     <div className="text-end mt-1 opacity-75" style={{fontSize: '0.65rem'}}>
-                                                        {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                     ) : (
+                                         messages.map((msg, idx) => {
+                                             const isMe = msg.sender._id === user._id || msg.sender === user._id;
+                                             return (
+                                                 <div key={idx} className={`d-flex mb-3 ${isMe ? 'justify-content-end' : 'justify-content-start'}`}>
+                                                     {!isMe && (
+                                                         <div className="me-2 d-flex align-items-end">
+                                                             <Image 
+                                                                 src={msg.sender?.avatar || activeConversation?.participants?.find(p => p._id !== user._id)?.avatar || 'https://via.placeholder.com/28'} 
+                                                                 roundedCircle 
+                                                                 width={28} 
+                                                                 height={28}
+                                                                 className="border bg-white"
+                                                             />
+                                                         </div>
+                                                     )}
+                                                     <div className={`${styles['message-bubble']} ${isMe ? styles['message-user'] : styles['message-other']}`}>
+                                                          <div>{msg.content}</div>
+                                                          <div className="text-end mt-1 opacity-75" style={{fontSize: '0.65rem'}}>
+                                                             {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                          </div>
                                                      </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
+                                                 </div>
+                                             );
+                                         })
+                                     )}
                                     <div ref={messagesEndRef} />
                                 </>
                              )}
