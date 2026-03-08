@@ -1,6 +1,6 @@
 import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from 'react-bootstrap';
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
 import { orderService } from '@services/api/orderService';
@@ -21,7 +21,11 @@ import { Modal } from 'react-bootstrap';
  */
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const cartItems = useSelector(selectCartItems);
+  const location = useLocation();
+  const allCartItems = useSelector(selectCartItems);
+
+  // Use selected items from CartPage if available, otherwise use all items
+  const cartItems = location.state?.selectedItems || allCartItems;
 
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -116,16 +120,17 @@ const CheckoutPage = () => {
             }
           } else if (currentAddressValue && list.length > 0) {
             // Try to match current address to an ID for radio button sync
-            const match = list.find(a =>
-              [a.details, a.street, a.wardName].filter(Boolean).join(', ') === currentAddressValue
+            const match = list.find(
+              (a) =>
+                [a.details, a.street, a.wardName].filter(Boolean).join(', ') === currentAddressValue
             );
             if (match) {
               setSelectedAddressId(match._id);
               // Also sync state/country if they are missing or to ensure consistency for previewOrder
-              setCustomerInfo(prev => ({
+              setCustomerInfo((prev) => ({
                 ...prev,
                 state: match.provinceName || prev.state,
-                country: match.country || 'Vietnam'
+                country: match.country || 'Vietnam',
               }));
             }
           }
@@ -407,6 +412,7 @@ const CheckoutPage = () => {
         const response = await orderService.previewOrder({
           city,
           voucherIds: getSelectedVoucherIds(),
+          cartItemIds: cartItems.map((item) => item._id || item.id),
         });
         if (response.success) {
           setOrderSummary(response.data);
@@ -455,11 +461,14 @@ const CheckoutPage = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('[CHECKOUT-DEBUG] 📝 handleSubmit called, currentStep:', currentStep);
+
     if (currentStep === 1) {
       handleNext();
     } else if (currentStep === 2) {
       handleNext();
     } else if (currentStep === 3) {
+      console.log('[CHECKOUT-DEBUG] 🛒 Step 3 - Creating order...');
       setIsProcessing(true);
       const orderData = {
         shippingAddress: `${customerInfo.address}, ${customerInfo.state}, ${customerInfo.country}`,
@@ -467,10 +476,14 @@ const CheckoutPage = () => {
         paymentMethod,
         notes: '',
         voucherIds: getSelectedVoucherIds(),
+        cartItemIds: cartItems.map((item) => item._id || item.id),
       };
 
       try {
+        console.log('[CHECKOUT-DEBUG] 📤 Calling orderService.createOrder with:', orderData);
         const response = await orderService.createOrder(orderData);
+        console.log('[CHECKOUT-DEBUG] ✅ Order created successfully:', response);
+
         if (response.success) {
           const orderId = response.data._id;
 
@@ -494,6 +507,7 @@ const CheckoutPage = () => {
           }
 
           // For other payment methods (COD, VNPay), go to confirmation page
+          console.log('[CHECKOUT-DEBUG] 🧭 Navigating to order confirmation:', orderId);
           navigate(BUYER_ROUTES.ORDER_CONFIRMATION.replace(':orderId', orderId));
         }
       } catch (error) {
@@ -518,20 +532,20 @@ const CheckoutPage = () => {
             <div
               style={{
                 height: '4px',
-                background: 'repeating-linear-gradient(45deg, #0D6EFD, #0D6EFD 33px, #fff 33px, #fff 46px, #405cbf 46px, #405cbf 79px, #fff 79px, #fff 92px)'
+                background:
+                  'repeating-linear-gradient(45deg, #0D6EFD, #0D6EFD 33px, #fff 33px, #fff 46px, #405cbf 46px, #405cbf 79px, #fff 79px, #fff 92px)',
               }}
             />
             <Card.Body className="p-4">
               <div className="d-flex align-items-start gap-3">
-                <div
-                  className="mt-1"
-                  style={{ color: '#0D6EFD', fontSize: '1.2rem' }}
-                >
+                <div className="mt-1" style={{ color: '#0D6EFD', fontSize: '1.2rem' }}>
                   <i className="bi bi-geo-alt-fill"></i>
                 </div>
                 <div className="flex-grow-1">
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="fw-bold mb-0" style={{ color: '#0D6EFD' }}>Shipping Address</h5>
+                    <h5 className="fw-bold mb-0" style={{ color: '#0D6EFD' }}>
+                      Shipping Address
+                    </h5>
                     <Button
                       variant="link"
                       className="text-decoration-none p-0 fw-bold"
@@ -548,9 +562,7 @@ const CheckoutPage = () => {
                     <span className="fw-bold text-dark fs-5">
                       {customerInfo.firstName} {customerInfo.lastName}
                     </span>
-                    <span className="text-secondary fs-5">
-                      (+84) {customerInfo.phone}
-                    </span>
+                    <span className="text-secondary fs-5">(+84) {customerInfo.phone}</span>
                   </div>
                   <p className="mb-0 text-muted fs-5 lh-base">
                     {customerInfo.address}, {customerInfo.state}, {customerInfo.country}
@@ -870,7 +882,9 @@ const CheckoutPage = () => {
 
   // Render Voucher Section
   const renderVoucherSection = () => {
-    const shopVouchers = applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private');
+    const shopVouchers = applicableVouchers.filter(
+      (v) => v.type === 'shop' || v.type === 'private'
+    );
     const productVouchers = applicableVouchers.filter((v) => v.type === 'product');
     const hasVouchers = shopVouchers.length > 0 || productVouchers.length > 0;
 
@@ -900,11 +914,11 @@ const CheckoutPage = () => {
                 {shopVouchers.map((v) => (
                   <div
                     key={v._id}
-                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
-                      }`}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${
+                      !v.eligible ? 'opacity-50' : ''
+                    }`}
                     style={{
-                      backgroundColor:
-                        selectedShopVoucherId === v._id ? '#e7f1ff' : '#f8f9fa',
+                      backgroundColor: selectedShopVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
                       border:
                         selectedShopVoucherId === v._id
                           ? '1px solid #0D6EFD'
@@ -914,12 +928,8 @@ const CheckoutPage = () => {
                       transition: 'all 0.15s',
                     }}
                     onClick={() => {
-                      if (!v.eligible) {
-                        return;
-                      }
-                      setSelectedShopVoucherId(
-                        selectedShopVoucherId === v._id ? null : v._id,
-                      );
+                      if (!v.eligible) return;
+                      setSelectedShopVoucherId(selectedShopVoucherId === v._id ? null : v._id);
                     }}
                   >
                     <Form.Check
@@ -927,7 +937,7 @@ const CheckoutPage = () => {
                       name="shopVoucher"
                       checked={selectedShopVoucherId === v._id}
                       disabled={!v.eligible}
-                      onChange={() => { }}
+                      onChange={() => {}}
                       style={{ marginTop: '2px' }}
                     />
                     <div className="flex-grow-1">
@@ -973,11 +983,11 @@ const CheckoutPage = () => {
                 {productVouchers.map((v) => (
                   <div
                     key={v._id}
-                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${!v.eligible ? 'opacity-50' : ''
-                      }`}
+                    className={`d-flex align-items-start gap-2 p-2 rounded mb-1 ${
+                      !v.eligible ? 'opacity-50' : ''
+                    }`}
                     style={{
-                      backgroundColor:
-                        selectedProductVoucherId === v._id ? '#e7f1ff' : '#f8f9fa',
+                      backgroundColor: selectedProductVoucherId === v._id ? '#fff5f0' : '#f8f9fa',
                       border:
                         selectedProductVoucherId === v._id
                           ? '1px solid #0D6EFD'
@@ -991,7 +1001,7 @@ const CheckoutPage = () => {
                         return;
                       }
                       setSelectedProductVoucherId(
-                        selectedProductVoucherId === v._id ? null : v._id,
+                        selectedProductVoucherId === v._id ? null : v._id
                       );
                     }}
                   >
@@ -1000,7 +1010,7 @@ const CheckoutPage = () => {
                       name="productVoucher"
                       checked={selectedProductVoucherId === v._id}
                       disabled={!v.eligible}
-                      onChange={() => { }}
+                      onChange={() => {}}
                       style={{ marginTop: '2px' }}
                     />
                     <div className="flex-grow-1">
@@ -1151,7 +1161,11 @@ const CheckoutPage = () => {
             style={{ backgroundColor: '#0D6EFD', borderColor: '#0D6EFD' }}
           >
             {isProcessing ? (
-              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span
+                className="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
             ) : (
               <i className="bi bi-gift me-2"></i>
             )}
@@ -1221,7 +1235,11 @@ const CheckoutPage = () => {
       >
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="fw-bold fs-4">
-            {addressModalView === 'list' ? 'My Addresses' : addressModalView === 'edit' ? 'Update Address' : 'New Address'}
+            {addressModalView === 'list'
+              ? 'My Addresses'
+              : addressModalView === 'edit'
+                ? 'Update Address'
+                : 'New Address'}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-4 pt-2">
@@ -1292,11 +1310,15 @@ const CheckoutPage = () => {
                       </div>
                       <div className="ms-4">
                         <p className="text-muted mb-2 fs-6">
-                          {addr.details}<br />
+                          {addr.details}
+                          <br />
                           {addr.street}, {addr.wardName}, {addr.provinceName}
                         </p>
                         {addr.isDefault && (
-                          <Badge bg="transparent" className="border border-danger text-danger rounded-0 px-2 py-1 small">
+                          <Badge
+                            bg="transparent"
+                            className="border border-danger text-danger rounded-0 px-2 py-1 small"
+                          >
                             Default
                           </Badge>
                         )}
@@ -1353,8 +1375,10 @@ const CheckoutPage = () => {
                       className="py-2"
                     >
                       <option value="">Province/City</option>
-                      {provinces.map(p => (
-                        <option key={p.code} value={p.code}>{p.name}</option>
+                      {provinces.map((p) => (
+                        <option key={p.code} value={p.code}>
+                          {p.name}
+                        </option>
                       ))}
                     </Form.Select>
                   </Form.Group>
@@ -1369,8 +1393,10 @@ const CheckoutPage = () => {
                       disabled={!addressForm.provinceCode}
                     >
                       <option value="">Ward/Commune</option>
-                      {wards.map(w => (
-                        <option key={w.code} value={w.code}>{w.name}</option>
+                      {wards.map((w) => (
+                        <option key={w.code} value={w.code}>
+                          {w.name}
+                        </option>
                       ))}
                     </Form.Select>
                   </Form.Group>

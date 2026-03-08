@@ -9,7 +9,9 @@ import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
+import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import { productService } from '../../services/api';
+import { flashsaleService } from '../../services/api/flashsaleService';
 import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
@@ -91,6 +93,8 @@ const ProductDetailsPage = () => {
   const [showSizeChart, setShowSizeChart] = useState(false);
 
   const [product, setProduct] = useState(null);
+  const [flashSale, setFlashSale] = useState(null);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [activeModel, setActiveModel] = useState(null); // The specifically selected variant
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [frequentlyBought, setFrequentlyBought] = useState([]);
@@ -112,6 +116,31 @@ const ProductDetailsPage = () => {
         setLoading(true);
         setError(null);
 
+        const fetchFlashSale = async (productId) => {
+          if (!productId) return null;
+          try {
+            // First try to fetch from getActive
+            const response = await flashsaleService.getActive();
+            const allFlashSales = Array.isArray(response) ? response : response.data?.data || response.data || [];
+            
+            // Find flash sale for this product
+            const flashSale = allFlashSales.find(fs => {
+              const prodId = fs.productId?._id || fs.productId?.id || fs.productId;
+              return prodId === productId;
+            });
+            
+            if (flashSale) {
+              console.log('✅ Flash sale found for product:', flashSale);
+              return flashSale;
+            }
+            
+            return null;
+          } catch (err) {
+            console.error('Error fetching flash sales:', err);
+            return null;
+          }
+        };
+
         const [productResponse, relatedResponse, frequentlyBoughtResponse] = await Promise.all([
           productService.getById(id),
           productService.getRelatedProducts(id, 8).catch(() => ({ data: [] })),
@@ -121,6 +150,15 @@ const ProductDetailsPage = () => {
         if (!isMounted) return;
 
         const productData = productResponse.data?.data || productResponse.data || productResponse;
+        
+        // Fetch flash sale data by matching product ID
+        console.log('🔍 Product ID:', productData?._id);
+        const flashSaleData = await fetchFlashSale(productData?._id);
+        if (flashSaleData) {
+          setFlashSale(flashSaleData);
+        } else {
+          console.log('⚠️ No active flash sale found for this product');
+        }
 
         if (!productData || !productData._id) {
           setError('Product not found');
@@ -143,12 +181,19 @@ const ProductDetailsPage = () => {
         const transformed = {
           ...productData,
           id: productData._id,
-          tier_variations: tiers, // Key fix: Map 'tiers' to 'tier_variations'
-          // Ensure other fields are preserved
+          tier_variations: tiers,
           models: productData.models || [],
-          price: productData.originalPrice || 0, // Base price
-          // Default optional fields
-          descriptionText: productData.description ? productData.description.split('\n') : [],
+          price: productData.originalPrice || 0,
+          flashSale: productData.flashSale || {
+            timeText: 'FLASH SALE STARTS IN 21:00, TODAY'
+          },
+          shopVouchers: productData.shopVouchers || [
+            { discount: 'Save 10k' }
+          ],
+          shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
+          warranty: productData.warranty || 'Free return within 15 days • Warranty included',
+          soldCount: productData.soldCount || productData.sold || 0,
+          wishlistCount: productData.wishlistCount || productData.favoriteCount || 0,
         };
 
         setProduct(transformed);
@@ -193,25 +238,46 @@ const ProductDetailsPage = () => {
     };
   }, [id]);
 
+  // Update countdown timer
+  useEffect(() => {
+    if (!flashSale || !flashSale.endAt) return;
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const end = new Date(flashSale.endAt);
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown({ days, hours, minutes, seconds });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [flashSale]);
+
   // Check if product is in favourites
   useEffect(() => {
     const checkFavouriteStatus = async () => {
       if (user && product?._id) {
         try {
           const response = await favouriteService.checkInFavourites(product._id);
-          console.log('Check favourite response:', response);
-
-          // Backend: { success: true, data: { isInFavourites: true/false } }
-          // axiosClient unwraps to: { success: true, data: { isInFavourites: true/false } }
-          // But based on the screenshot, response is already the data object: { isInFavourites: true }
           const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
-          console.log('Setting isFavourite to:', isInFav);
           setIsFavourite(isInFav);
         } catch (error) {
           console.error('Error checking favourite status:', error);
         }
       } else {
-        console.log('Skipping favourite check:', { user: !!user, productId: product?._id });
+        setIsFavourite(false);
       }
     };
     checkFavouriteStatus();
@@ -296,7 +362,9 @@ const ProductDetailsPage = () => {
         : { data: { available: true } };
 
       if (!stockCheck.data?.available) {
-        toast.error(`${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`);
+        toast.error(
+          `${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`
+        );
         setAddingToCart(false);
         return;
       }
@@ -309,7 +377,7 @@ const ProductDetailsPage = () => {
         product.tier_variations.forEach((tier, idx) => {
           const selectedOption = tier.options[selectedTierIndex[idx]];
           const tierNameLower = tier.name.toLowerCase();
-          
+
           if (
             tierNameLower.includes('color') ||
             tierNameLower.includes('màu') ||
@@ -354,6 +422,14 @@ const ProductDetailsPage = () => {
     navigate('/cart');
   };
 
+  const formatSavedCount = (count) => {
+    if (!count) return 0;
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1).replace('.0', '') + 'k';
+    }
+    return count;
+  };
+
   const handleToggleFavourite = async () => {
     if (!user) {
       setShowLoginModal(true);
@@ -363,14 +439,15 @@ const ProductDetailsPage = () => {
     try {
       setFavouriteLoading(true);
       if (isFavourite) {
-        const response = await favouriteService.removeFromFavourites(product._id);
-        console.log('Remove response:', response);
+        await favouriteService.removeFromFavourites(product._id);
         setIsFavourite(false);
-        setProduct((prev) => ({ ...prev, wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1) }));
+        setProduct((prev) => ({
+          ...prev,
+          wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1),
+        }));
         toast.success(t('product_details.toast_wishlist_remove'));
       } else {
-        const response = await favouriteService.addToFavourites(product._id);
-        console.log('Add response:', response);
+        await favouriteService.addToFavourites(product._id);
         setIsFavourite(true);
         setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
         toast.success(t('product_details.toast_wishlist_add'));
@@ -397,7 +474,9 @@ const ProductDetailsPage = () => {
     return (
       <div className={styles.notFound}>
         <h2>{error || t('product_details.err_product_not_found')}</h2>
-        <button onClick={() => navigate('/products')}>{t('product_details.back_to_products')}</button>
+        <button onClick={() => navigate('/products')}>
+          {t('product_details.back_to_products')}
+        </button>
       </div>
     );
   }
@@ -411,11 +490,14 @@ const ProductDetailsPage = () => {
           { label: t('product_details.breadcrumb_home'), path: '/', icon: 'bi-house' },
           { label: t('product_details.breadcrumb_shop'), path: '/products' },
           {
-            label: typeof product.category === 'string' ? product.category : product.category?.name,
-            path: `/products?category=${product.categoryId}`,
+            label:
+              typeof product.category === 'string'
+                ? product.category
+                : product.category?.name || 'Products',
+            path: `/products?category=${product.categoryId || ''}`,
           },
           { label: product.name },
-        ]}
+        ].filter((item) => item.label)}
       />
 
       <div className={styles.productContainer}>
@@ -423,15 +505,15 @@ const ProductDetailsPage = () => {
         <div className={styles.imageSection}>
           <div className={styles.mainImage} style={{ position: 'relative' }}>
             <Image.PreviewGroup items={productImages}>
-              <Image 
-                src={productImages[selectedImage]} 
+              <Image
+                src={productImages[selectedImage]}
                 alt={product.name}
                 width="100%"
                 style={{ objectFit: 'cover', borderRadius: '12px', minHeight: '300px' }}
               />
             </Image.PreviewGroup>
             {product.badge && (
-              <span 
+              <span
                 className={`${styles.badge} ${styles[product.badgeColor]}`}
                 style={{ zIndex: 10, position: 'absolute', top: '15px', left: '15px' }}
               >
@@ -450,6 +532,56 @@ const ProductDetailsPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Share Section */}
+          <div className={styles.shareSection}>
+            <span className={styles.shareLabel}>Share:</span>
+            <div className={styles.shareButtons}>
+              <button
+                className={`${styles.shareButton} ${styles.facebook}`}
+                title="Share on Facebook"
+                onClick={() => {
+                  const url = `https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-facebook"></i>
+              </button>
+              <button
+                className={`${styles.shareButton} ${styles.messenger}`}
+                title="Share via Messenger"
+                onClick={() => {
+                  const url = `https://www.messenger.com/share?link=${window.location.href}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-chat-dots"></i>
+              </button>
+              <button
+                className={`${styles.shareButton} ${styles.x}`}
+                title="Share on X (Twitter)"
+                onClick={() => {
+                  const url = `https://twitter.com/intent/tweet?url=${window.location.href}&text=${product.name}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-twitter-x"></i>
+              </button>
+            </div>
+            <div className={styles.favouriteSpacer}>
+              <button
+                className={`${styles.shareButton} ${!isFavourite ? styles.unfavourite : styles.isFavourite}`}
+                onClick={handleToggleFavourite}
+                disabled={favouriteLoading}
+                title={isFavourite ? 'Remove from saved' : 'Save this product'}
+              >
+                <i className={`bi bi-heart`}></i>
+              </button>
+              <span className={styles.saveLabel}>
+                {isFavourite ? `Saved (${formatSavedCount(product.wishlistCount)})` : `Save (${formatSavedCount(product.wishlistCount)})`}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Info */}
@@ -460,33 +592,79 @@ const ProductDetailsPage = () => {
           <div className={styles.ratingSection}>
             <div className={styles.ratingStars}>
               {[...Array(5)].map((_, i) => (
-                <i key={i} className={`bi ${i < Math.floor(product.rating || 0) ? 'bi-star-fill' : 'bi-star'}`}></i>
+                <i
+                  key={i}
+                  className={`bi ${i < Math.floor(product.rating || 0) ? 'bi-star-fill' : 'bi-star'}`}
+                ></i>
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
-            <span className={styles.reviewCount}>({product.reviewCount || 0} {t('product_details.reviews')})</span>
-            <span className={styles.soldCount} style={{marginLeft: 15, color: '#666'}}>{t('product_details.stat_sold')} {product.sold || 0}</span>
+            <span className={styles.reviewCount}>
+             // ({product.reviewCount || 0} {t('product_details.reviews')})
+          //  </span>
+          //  <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
+            //  {t('product_details.stat_sold')} {product.sold || 0}
+              {product.reviewCount 
+                ? product.reviewCount >= 1000 
+                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k` 
+                  : product.reviewCount
+                : '0'} Rating
+            </span>
+            <span className={styles.soldCount}>
+              {product.sold 
+                ? product.sold >= 1000 
+                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+` 
+                  : `${product.sold}+`
+                : '0+'} Sold
+            </span>
           </div>
 
           {/* Price & Discount Section */}
           <div className={styles.priceSection}>
+            {flashSale && (flashSale.status === 'active' || !flashSale.status) && (
+              <div className={styles.flashSaleContainer}>
+                <div className={styles.flashSaleInfo}>
+                  <i className={`bi bi-lightning-fill ${styles.flashSaleIcon}`}></i>
+                  <span className={styles.flashSaleLabel}>FLASH SALE</span>
+                </div>
+                <div className={styles.flashSaleTimer}>
+                  {countdown.days}d : {countdown.hours}h : {countdown.minutes}m : {countdown.seconds}s
+                </div>
+              </div>
+            )}
             <div className={styles.priceRow}>
-              <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
-              {product.originalPrice > currentPrice && (
+              {flashSale && (flashSale.status === 'active' || !flashSale.status) ? (
                 <>
+                  <span className={`${styles.currentPrice} ${styles.currentPriceFlashSale}`}>
+                    {formatCurrency(flashSale.salePrice)}
+                  </span>
                   <span className={styles.originalPrice}>
                     {formatCurrency(product.originalPrice)}
                   </span>
                   <span className={styles.discount}>
-                    -{Math.round((1 - currentPrice / product.originalPrice) * 100)}%
+                    -{Math.round((1 - flashSale.salePrice / product.originalPrice) * 100)}%
                   </span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
+                  {product.originalPrice > currentPrice && (
+                    <>
+                      <span className={styles.originalPrice}>
+                        {formatCurrency(product.originalPrice)}
+                      </span>
+                      <span className={styles.discount}>
+                        -{Math.round((1 - currentPrice / product.originalPrice) * 100)}%
+                      </span>
+                    </>
+                  )}
                 </>
               )}
             </div>
           </div>
 
           {/* Flash Sale Section */}
-          {product.isTrending && (
+          {product.isTrending && product.flashSale && (
             <div className={styles.flashSaleSection}>
               <i className="bi bi-lightning-fill"></i>
               <span className={styles.flashSaleLabel}>FLASH SALE</span>
@@ -517,7 +695,9 @@ const ProductDetailsPage = () => {
                 {product.shippingInfo ? (
                   <div className={styles.shippingDetail}>{product.shippingInfo}</div>
                 ) : (
-                  <div className={styles.shippingDetail}>{t('product_details.default_shipping_detail')}</div>
+                  <div className={styles.shippingDetail}>
+                    {t('product_details.default_shipping_detail')}
+                  </div>
                 )}
               </div>
             </div>
@@ -525,7 +705,9 @@ const ProductDetailsPage = () => {
               <i className="bi bi-shield-check"></i>
               <div>
                 <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
-                <div className={styles.shippingDetail}>{product.warranty || t('product_details.default_warranty_detail')}</div>
+                <div className={styles.shippingDetail}>
+                  {product.warranty || t('product_details.default_warranty_detail')}
+                </div>
               </div>
             </div>
           </div>
@@ -595,15 +777,27 @@ const ProductDetailsPage = () => {
                 className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
                 onClick={handleToggleFavourite}
                 disabled={favouriteLoading}
-                title={isFavourite ? t('product_details.toast_wishlist_remove') : t('product_details.toast_wishlist_add')}
+                title={
+                  isFavourite
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.toast_wishlist_add')
+                }
               >
                 <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {favouriteLoading ? t('product_details.loading') : isFavourite ? t('product_details.toast_wishlist_remove') : t('product_details.favorite')}
+                {favouriteLoading
+                  ? t('product_details.loading')
+                  : isFavourite
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.favorite')}
               </button>
             </div>
-            {currentStock <= 0 && <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>}
+            {currentStock <= 0 && (
+              <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
+            )}
             {currentStock > 0 && currentStock < 10 && (
-              <div className="text-warning mt-2">{t('product_details.only_left', { stock: currentStock })}</div>
+              <div className="text-warning mt-2">
+                {t('product_details.only_left', { stock: currentStock })}
+              </div>
             )}
           </div>
 
@@ -613,11 +807,10 @@ const ProductDetailsPage = () => {
               <span>{t('product_details.label_stock')}:</span> {currentStock}
             </div>
             <div className={styles.metaItem}>
-              <span>{t('product_details.label_sku')}:</span> {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
+              <span>{t('product_details.label_sku')}:</span>{' '}
+              {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
           </div>
-
-
         </div>
       </div>
 
@@ -701,7 +894,9 @@ const ProductDetailsPage = () => {
                     ))}
                   {product.tier_variations?.length > 0 && (
                     <tr>
-                      <td className={styles.label}>{t('product_details.label_available_variations')}</td>
+                      <td className={styles.label}>
+                        {t('product_details.label_available_variations')}
+                      </td>
                       <td className={styles.value}>
                         {product.tier_variations.map((tier, idx) => (
                           <div key={idx}>
@@ -764,7 +959,9 @@ const ProductDetailsPage = () => {
                     {'★'.repeat(Math.floor(product.rating))}
                     {'☆'.repeat(5 - Math.floor(product.rating))}
                   </div>
-                  <div className={styles.totalReviews}>{product.reviews} {t('product_details.total_reviews')}</div>
+                  <div className={styles.totalReviews}>
+                    {product.reviews} {t('product_details.total_reviews')}
+                  </div>
                 </div>
               </div>
               <div className={styles.reviewList}>
@@ -784,6 +981,7 @@ const ProductDetailsPage = () => {
                 )}
               </div>
             </div>
+            //<ProductReviewSection product={product} />
           )}
         </div>
       </div>

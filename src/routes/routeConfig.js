@@ -23,7 +23,7 @@ const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPag
 
 // Buyer Pages
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
-const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage'));
+// const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage')); // Removed: Use ProfilePage tab=orders
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
@@ -242,9 +242,17 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
   },
+  // Removed: Use /buyer/profile?tab=orders instead (BUYER_ROUTES.ORDERS)
+  // {
+  //   path: '/buyer/orders',
+  //   element: OrdersPage,
+  //   protected: true,
+  //   allowedRoles: [USER_ROLES.BUYER],
+  //   layout: 'main',
+  // },
   {
-    path: '/buyer/orders',
-    element: OrdersPage,
+    path: '/buyer/orders/:orderId',
+    element: TrackOrderDetailsPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',

@@ -24,14 +24,20 @@ const OrderConfirmationPage = () => {
   const paymentStatus = searchParams.get('status');
 
   useEffect(() => {
+    console.log('[CHECKOUT-DEBUG] 📄 OrderConfirmationPage mounted, orderId:', orderId);
+
     const fetchOrder = async () => {
       try {
+        console.log('[CHECKOUT-DEBUG] 📥 Fetching order details for:', orderId);
         const response = await orderService.getOrderById(orderId);
         if (response.success) {
+          console.log('[CHECKOUT-DEBUG] ✅ Order details fetched successfully');
           setOrder(response.data);
+          console.log('[CART-DEBUG] 🔄 Calling fetchCart() from OrderConfirmationPage');
           dispatch(fetchCart());
         }
       } catch (err) {
+        console.log('[CHECKOUT-DEBUG] ❌ Error fetching order:', err.message);
         setError(err.message || 'Failed to load order details');
       } finally {
         setLoading(false);

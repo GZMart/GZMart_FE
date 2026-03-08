@@ -46,6 +46,29 @@ const axiosClient = axios.create({
   },
 });
 
+// Global flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  console.log('[AUTH-DEBUG] 📦 processQueue called:', {
+    queueLength: failedQueue.length,
+    hasError: !!error,
+    hasToken: !!token,
+    errorMessage: error?.message,
+  });
+
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
 // Request interceptor - Add auth token to requests
 axiosClient.interceptors.request.use(
   (config) => {
@@ -106,36 +129,91 @@ axiosClient.interceptors.response.use(
 
     // Handle 401 Unauthorized - Token expired
     // Skip retry for change-password endpoint as 401 might mean incorrect password (due to backend issue)
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('change-password')) {
+    // Also skip retry for refresh-token endpoint to avoid infinite loops
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('change-password') &&
+      !originalRequest.url?.includes('refresh-token')
+    ) {
+      console.log('[AUTH-DEBUG] 🔴 401 Error detected:', {
+        url: originalRequest.url,
+        isRefreshing,
+        queueLength: failedQueue.length,
+        timestamp: new Date().toISOString(),
+      });
+
+      // If already refreshing, queue this request
+      if (isRefreshing) {
+        console.log('[AUTH-DEBUG] 📝 Queueing request (refresh in progress):', originalRequest.url);
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axiosClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+
+      console.log('[AUTH-DEBUG] 🔄 Starting token refresh...');
 
       try {
         // Attempt to refresh token
         const refreshToken = getRefreshToken();
 
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
-            refreshToken,
-          });
+        if (!refreshToken) {
+          console.log('[AUTH-DEBUG] ❌ No refresh token available');
+          throw new Error('No refresh token available');
+        }
 
-          const newToken = response.data?.token || response.data?.data?.token;
+        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
+          refreshToken,
+        });
 
-          if (newToken) {
-            setAuthToken(newToken);
+        const newToken = response.data?.token || response.data?.data?.token;
 
-            // Retry original request with new token
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return axiosClient(originalRequest);
-          }
+        if (newToken) {
+          console.log(
+            '[AUTH-DEBUG] ✅ Token refresh successful, processing',
+            failedQueue.length,
+            'queued requests'
+          );
+          setAuthToken(newToken);
+
+          // Process queued requests
+          processQueue(null, newToken);
+
+          // Retry original request with new token
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axiosClient(originalRequest);
+        } else {
+          throw new Error('No token in refresh response');
         }
       } catch (refreshError) {
+        console.log('[AUTH-DEBUG] 💥 Token refresh FAILED:', refreshError.message);
+        console.log('[AUTH-DEBUG] 🚪 Calling clearAuthData() and redirecting to login...');
+
+        // Process queue with error
+        processQueue(refreshError, null);
+
         // Refresh failed - logout user
+        console.error('Token refresh failed, logging out:', refreshError.message);
         clearAuthData();
+
         // Only redirect if not already on login page
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
+
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 

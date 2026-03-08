@@ -39,7 +39,10 @@ const OrderSummary = ({
     if (onCheckout) {
       onCheckout({ includeGiftBox, total });
     } else {
-      navigate(BUYER_ROUTES.CHECKOUT);
+      // Pass selected items to checkout page
+      navigate(BUYER_ROUTES.CHECKOUT, {
+        state: { selectedItems },
+      });
     }
   };
 

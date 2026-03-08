@@ -18,36 +18,74 @@ const PaymentSuccessPage = () => {
 
   useEffect(() => {
     const verifyPayment = async () => {
+      console.log('[PaymentSuccess] ========== START ==========');
+      console.log('[PaymentSuccess] OrderCode from URL:', orderCode);
+
       if (!orderCode) {
+        console.error('[PaymentSuccess] No orderCode provided!');
         setStatus('error');
         setMessage('Invalid payment information');
         return;
       }
 
-      try {
-        // Wait a bit for webhook to process
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      // FIX BUG 6: Use polling with retry instead of fixed 2-second wait
+      const MAX_RETRIES = 10; // Try 10 times
+      const RETRY_INTERVAL = 2000; // Every 2 seconds
+      let retryCount = 0;
 
-        // Check payment status
-        const response = await paymentService.getPaymentStatus(orderCode);
+      const pollPaymentStatus = async () => {
+        try {
+          console.log(
+            `[PaymentSuccess] Checking payment status (Attempt ${retryCount + 1}/${MAX_RETRIES})...`
+          );
 
-        if (response.success) {
-          setStatus('success');
-          setMessage('Payment successful! Redirecting to order details...');
+          const response = await paymentService.checkPaymentFromPayOS(orderCode);
+          console.log('[PaymentSuccess] API Response:', response);
 
-          // Redirect to orders page after 2 seconds
-          setTimeout(() => {
-            navigate(BUYER_ROUTES.ORDERS);
-          }, 2000);
-        } else {
-          setStatus('error');
-          setMessage('Payment verification failed. Please contact support.');
+          if (response.success && response.data?.localPaymentStatus === 'paid') {
+            console.log('[PaymentSuccess] Payment verified successfully!');
+            setStatus('success');
+            setMessage('Payment successful! Redirecting to order details...');
+
+            // Redirect to orders page after 2 seconds
+            setTimeout(() => {
+              navigate(BUYER_ROUTES.ORDERS);
+            }, 2000);
+            return true; // Stop polling
+          }
+
+          // If still pending and we have retries left
+          if (retryCount < MAX_RETRIES - 1) {
+            retryCount++;
+            setMessage(`Verifying payment... (${retryCount}/${MAX_RETRIES})`);
+            setTimeout(pollPaymentStatus, RETRY_INTERVAL);
+            return false; // Continue polling
+          } else {
+            // Max retries reached
+            console.warn('[PaymentSuccess] Max retries reached, payment still pending');
+            setStatus('error');
+            setMessage('Payment verification timeout. Please check your orders page.');
+            return true; // Stop polling
+          }
+        } catch (error) {
+          console.error('[PaymentSuccess] Error during polling:', error);
+
+          // If error and we have retries left, continue polling
+          if (retryCount < MAX_RETRIES - 1) {
+            retryCount++;
+            setTimeout(pollPaymentStatus, RETRY_INTERVAL);
+            return false;
+          } else {
+            // Max retries reached
+            setStatus('error');
+            setMessage(error.message || 'Failed to verify payment. Please check your orders.');
+            return true;
+          }
         }
-      } catch (error) {
-        console.error('Payment verification error:', error);
-        setStatus('error');
-        setMessage(error.message || 'Failed to verify payment. Please check your orders.');
-      }
+      };
+
+      // Start polling
+      pollPaymentStatus();
     };
 
     verifyPayment();
