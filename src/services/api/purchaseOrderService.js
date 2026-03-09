@@ -1,7 +1,7 @@
 import { api } from '../axiosClient';
-import { API_VERSION } from '@constants';
 
-const BASE_URL = `${API_VERSION}/purchase-orders`;
+const BASE_URL = '/api/purchase-orders';
+const SUPPLIER_URL = '/api/purchase-orders/suppliers';
 
 /**
  * Purchase Order API Service (ERP Module)
@@ -140,6 +140,82 @@ export const purchaseOrderService = {
       params,
       responseType: 'blob',
     });
+  },
+
+  /**
+   * Complete purchase order (mark goods as received, updates inventory)
+   * @param {string} id - PO ID
+   * @returns {Promise} Completion response
+   */
+  completePurchaseOrder: async (id) => {
+    return api.post(`${BASE_URL}/${id}/complete`);
+  },
+
+  /**
+   * Preview landed cost calculation
+   * @param {object} poData - PO data for calculation
+   * @returns {Promise} Landed cost preview
+   */
+  calculateLandedCost: async (poData) => {
+    return api.post(`${BASE_URL}/calculate`, poData);
+  },
+
+  // ─── Supplier Methods ─────────────────────────────────────────────────────
+
+  /**
+   * Get all suppliers
+   * @param {object} params - Query parameters (status, search, limit, etc.)
+   * @returns {Promise} Suppliers list
+   */
+  getSuppliers: async (params = {}) => {
+    return api.get(SUPPLIER_URL, { params });
+  },
+
+  /**
+   * Get supplier by ID
+   * @param {string} id - Supplier ID
+   * @returns {Promise} Supplier details
+   */
+  getSupplierById: async (id) => {
+    return api.get(`${SUPPLIER_URL}/${id}`);
+  },
+
+  /**
+   * Create new supplier
+   * @param {object} supplierData - Supplier data
+   * @returns {Promise} Created supplier
+   */
+  createSupplier: async (supplierData) => {
+    return api.post(SUPPLIER_URL, supplierData);
+  },
+
+  /**
+   * Update supplier
+   * @param {string} id - Supplier ID
+   * @param {object} supplierData - Updated supplier data
+   * @returns {Promise} Updated supplier
+   */
+  updateSupplier: async (id, supplierData) => {
+    return api.put(`${SUPPLIER_URL}/${id}`, supplierData);
+  },
+
+  /**
+   * Delete supplier
+   * @param {string} id - Supplier ID
+   * @returns {Promise} Deletion response
+   */
+  deleteSupplier: async (id) => {
+    return api.delete(`${SUPPLIER_URL}/${id}`);
+  },
+
+  /**
+   * Get supplier purchase history
+   * @param {string} id - Supplier ID
+   * @param {object} params - Query parameters
+   * @returns {Promise} Purchase history
+   */
+  getSupplierPurchaseHistory: async (id, params = {}) => {
+    return api.get(`${SUPPLIER_URL}/${id}/purchase-history`, { params });
   },
 };
 

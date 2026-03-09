@@ -39,6 +39,7 @@ const SupplierDetailPage = lazy(() => import('@pages/erp/SupplierDetailPage'));
 const PurchaseOrdersPage = lazy(() => import('@pages/erp/PurchaseOrdersPage'));
 const CreatePurchaseOrderPage = lazy(() => import('@pages/erp/CreatePurchaseOrderPage'));
 const PurchaseOrderDetailPage = lazy(() => import('@pages/erp/PurchaseOrderDetailPage'));
+const EditPurchaseOrderPage = lazy(() => import('@pages/erp/EditPurchaseOrderPage'));
 
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
@@ -312,6 +313,13 @@ export const routeConfig = [
   {
     path: '/erp/purchase-orders/create',
     element: CreatePurchaseOrderPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/purchase-orders/:id/edit',
+    element: EditPurchaseOrderPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',

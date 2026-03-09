@@ -65,6 +65,18 @@ export const cancelPurchaseOrder = createAsyncThunk(
   }
 );
 
+export const updatePurchaseOrder = createAsyncThunk(
+  'erp/updatePurchaseOrder',
+  async ({ id, updateData }, { rejectWithValue }) => {
+    try {
+      const response = await erpService.updatePurchaseOrder(id, updateData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 // ============================================================
 // ASYNC THUNKS - Suppliers
 // ============================================================
@@ -170,6 +182,21 @@ export const fetchProfitLossReport = createAsyncThunk(
 );
 
 // ============================================================
+// ASYNC THUNKS - My Products (Listing Picker)
+// ============================================================
+
+export const fetchMyProducts = createAsyncThunk(
+  'erp/fetchMyProducts',
+  async (params, { rejectWithValue }) => {
+    try {
+      return await erpService.getMyProducts(params);
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// ============================================================
 // SLICE
 // ============================================================
 
@@ -183,6 +210,10 @@ const initialState = {
   suppliers: [],
   currentSupplier: null,
   suppliersPagination: null,
+
+  // My Products (for Listing Picker in CreatePO)
+  myProducts: [],
+  myProductsLoading: false,
 
   // Inventory
   lowStockItems: [],
@@ -275,6 +306,23 @@ const erpSlice = createSlice({
         }
       })
 
+      .addCase(updatePurchaseOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updatePurchaseOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.purchaseOrders.findIndex((po) => po._id === action.payload._id);
+        if (index !== -1) {
+          state.purchaseOrders[index] = action.payload;
+        }
+        state.currentPurchaseOrder = action.payload;
+      })
+      .addCase(updatePurchaseOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // ============================================================
       // Suppliers
       // ============================================================
@@ -327,6 +375,20 @@ const erpSlice = createSlice({
 
       .addCase(fetchProfitLossReport.fulfilled, (state, action) => {
         state.profitLossReport = action.payload;
+      })
+
+      // ============================================================
+      // My Products (Listing Picker)
+      // ============================================================
+      .addCase(fetchMyProducts.pending, (state) => {
+        state.myProductsLoading = true;
+      })
+      .addCase(fetchMyProducts.fulfilled, (state, action) => {
+        state.myProductsLoading = false;
+        state.myProducts = action.payload?.data || action.payload || [];
+      })
+      .addCase(fetchMyProducts.rejected, (state) => {
+        state.myProductsLoading = false;
       });
   },
 });

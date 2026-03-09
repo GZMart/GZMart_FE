@@ -53,7 +53,7 @@ const ERPDashboard = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Tổng Quan ERP / Sourcing</h1>
+        <h1>ERP / Sourcing Dashboard</h1>
       </div>
 
       {/* Stats Cards */}
@@ -70,9 +70,9 @@ const ERPDashboard = () => {
             </svg>
           </div>
           <div className={styles.statContent}>
-            <h3>Đơn mua hàng</h3>
+            <h3>Purchase Orders</h3>
             <p className={styles.statValue}>{purchaseOrders.length}</p>
-            <p className={styles.statDetail}>{statusCounts.pending} đang chờ xử lý</p>
+            <p className={styles.statDetail}>{statusCounts.pending} pending</p>
           </div>
         </div>
 
@@ -88,9 +88,9 @@ const ERPDashboard = () => {
             </svg>
           </div>
           <div className={styles.statContent}>
-            <h3>Giá trị tồn kho</h3>
+            <h3>Inventory Value</h3>
             <p className={styles.statValue}>{formatCurrency(inventoryValuation?.totalValue)}</p>
-            <p className={styles.statDetail}>{inventoryValuation?.totalItems || 0} sản phẩm</p>
+            <p className={styles.statDetail}>{inventoryValuation?.totalItems || 0} products</p>
           </div>
         </div>
 
@@ -106,9 +106,9 @@ const ERPDashboard = () => {
             </svg>
           </div>
           <div className={styles.statContent}>
-            <h3>Cảnh báo hàng thấp</h3>
+            <h3>Low Stock Alerts</h3>
             <p className={styles.statValue}>{lowStockItems.length}</p>
-            <p className={styles.statDetail}>Cần đặt hàng bổ sung</p>
+            <p className={styles.statDetail}>Restock needed</p>
           </div>
         </div>
 
@@ -124,43 +124,43 @@ const ERPDashboard = () => {
             </svg>
           </div>
           <div className={styles.statContent}>
-            <h3>Tổng số lượng</h3>
+            <h3>Total Units</h3>
             <p className={styles.statValue}>{inventoryValuation?.totalUnits || 0}</p>
-            <p className={styles.statDetail}>Đơn vị sản phẩm</p>
+            <p className={styles.statDetail}>Product units</p>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className={styles.quickActions}>
-        <h2>Thao tác nhanh</h2>
+        <h2>Quick Actions</h2>
         <div className={styles.actionGrid}>
           <Link to="/erp/purchase-orders/create" className={styles.actionCard}>
             <div className={styles.actionIcon} style={{ background: '#3b82f6' }}>
               +
             </div>
-            <p>Tạo đơn mua hàng</p>
+            <p>Create Order</p>
           </Link>
 
           <Link to="/erp/suppliers/create" className={styles.actionCard}>
             <div className={styles.actionIcon} style={{ background: '#10b981' }}>
               +
             </div>
-            <p>Thêm nhà cung cấp</p>
+            <p>Add Supplier</p>
           </Link>
 
           <Link to="/erp/inventory" className={styles.actionCard}>
             <div className={styles.actionIcon} style={{ background: '#f59e0b' }}>
               📊
             </div>
-            <p>Xem tồn kho</p>
+            <p>View Inventory</p>
           </Link>
 
           <Link to="/erp/reports" className={styles.actionCard}>
             <div className={styles.actionIcon} style={{ background: '#6366f1' }}>
               📈
             </div>
-            <p>Báo cáo P&L</p>
+            <p>P&L Report</p>
           </Link>
         </div>
       </div>
@@ -169,9 +169,9 @@ const ERPDashboard = () => {
       {lowStockItems.length > 0 && (
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
-            <h2>⚠️ Cảnh báo hàng sắp hết</h2>
+            <h2>⚠️ Low Stock Warning</h2>
             <Link to="/erp/inventory" className={styles.linkButton}>
-              Xem tất cả →
+              View all →
             </Link>
           </div>
           <div className={styles.tableContainer}>
@@ -179,10 +179,10 @@ const ERPDashboard = () => {
               <thead>
                 <tr>
                   <th>SKU</th>
-                  <th>Tên sản phẩm</th>
-                  <th>Tồn kho hiện tại</th>
-                  <th>Ngưỡng cảnh báo</th>
-                  <th>Giá vốn</th>
+                  <th>Product Name</th>
+                  <th>Current Stock</th>
+                  <th>Alert Threshold</th>
+                  <th>Cost Price</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,20 +206,20 @@ const ERPDashboard = () => {
       {/* Recent Purchase Orders */}
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2>Đơn mua hàng gần đây</h2>
+          <h2>Recent Purchase Orders</h2>
           <Link to="/erp/purchase-orders" className={styles.linkButton}>
-            Xem tất cả →
+            View all →
           </Link>
         </div>
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Mã đơn</th>
-                <th>Nhà cung cấp</th>
-                <th>Ngày tạo</th>
-                <th>Tổng tiền</th>
-                <th>Trạng thái</th>
+                <th>Order Number</th>
+                <th>Supplier</th>
+                <th>Created At</th>
+                <th>Total Amount</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
