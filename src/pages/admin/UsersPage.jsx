@@ -195,53 +195,70 @@ const UsersPage = () => {
 
   return (
     <div className={styles.usersPage}>
+      {/* Header */}
       <div className={styles.header}>
-        <h1>User Management</h1>
-        <Button type="primary" icon={<ReloadOutlined />} onClick={fetchUsers}>
+        <div className={styles.headerLeft}>
+          <div className={styles.headerIcon}>
+            <i className="bi bi-people" />
+          </div>
+          <div>
+            <h1>User Management</h1>
+            <p className={styles.subtitle}>Manage buyers, sellers and admins</p>
+          </div>
+        </div>
+        <Button
+          type="primary"
+          icon={<ReloadOutlined />}
+          onClick={fetchUsers}
+          style={{ background: '#4f46e5', borderColor: '#4f46e5' }}
+        >
           Refresh
         </Button>
       </div>
 
-      <div className={styles.filters}>
-        <Input
-          placeholder="Search by name or email"
-          prefix={<SearchOutlined />}
-          allowClear
-          value={searchInput}
-          onChange={handleSearchChange}
-          style={{ width: 300 }}
-        />
-        <Select
-          placeholder="Filter by role"
-          allowClear
-          style={{ width: 150 }}
-          onChange={(value) => handleFilterChange('role', value)}
-        >
-          <Option value="buyer">Buyer</Option>
-          <Option value="seller">Seller</Option>
-          <Option value="admin">Admin</Option>
-        </Select>
-        <Select
-          placeholder="Filter by ban status"
-          allowClear
-          style={{ width: 150 }}
-          onChange={(value) => handleFilterChange('isActive', value)}
-        >
-          <Option value="true">Active</Option>
-          <Option value="false">Banned</Option>
-        </Select>
-      </div>
+      {/* Table card */}
+      <div className={styles.tableWrap}>
+        {/* Filter bar */}
+        <div className={styles.filterBar}>
+          <Input
+            placeholder="Search by name or email"
+            prefix={<SearchOutlined style={{ color: '#9ca3af' }} />}
+            allowClear
+            value={searchInput}
+            onChange={handleSearchChange}
+            style={{ width: 280 }}
+          />
+          <Select
+            placeholder="Filter by role"
+            allowClear
+            style={{ width: 150 }}
+            onChange={(value) => handleFilterChange('role', value)}
+          >
+            <Option value="buyer">Buyer</Option>
+            <Option value="seller">Seller</Option>
+            <Option value="admin">Admin</Option>
+          </Select>
+          <Select
+            placeholder="Filter by status"
+            allowClear
+            style={{ width: 150 }}
+            onChange={(value) => handleFilterChange('isActive', value)}
+          >
+            <Option value="true">Active</Option>
+            <Option value="false">Banned</Option>
+          </Select>
+        </div>
 
-      <Table
-        columns={columns}
-        dataSource={users}
-        loading={loading}
-        pagination={pagination}
-        onChange={handleTableChange}
-        rowKey="_id"
-        scroll={{ x: 1200 }}
-        responsive={['sm']}
-      />
+        <Table
+          columns={columns}
+          dataSource={users}
+          loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
+          rowKey="_id"
+          scroll={{ x: 1200 }}
+        />
+      </div>
     </div>
   );
 };

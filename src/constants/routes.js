@@ -89,11 +89,21 @@ export const ADMIN_ROUTES = {
 
   // System Configuration
   SYSTEM_CONFIG: '/admin/config',
+  SITE_SETTINGS: '/admin/site-settings',
+  PAYMENT_SETTINGS: '/admin/payment-settings',
 
   // Marketing
   SYSTEM_VOUCHERS: '/admin/system-vouchers',
   SYSTEM_VOUCHER_CREATE: '/admin/system-vouchers/create',
   SYSTEM_VOUCHER_EDIT: '/admin/system-vouchers/:id/edit',
+
+  // Content
+  PAGES: '/admin/pages',
+  BANNERS: '/admin/banners',
+
+  // Monitoring
+  ACTIVITY_LOGS: '/admin/activity-logs',
+  SYSTEM_HEALTH: '/admin/system-health',
 };
 
 // Error Routes

@@ -1,386 +1,193 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Nav } from 'react-bootstrap';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { ADMIN_ROUTES } from '@constants/routes';
+import styles from '@assets/styles/admin/AdminLayout.module.css';
 
-/**
- * Admin Layout - For Admin pages
- */
+const NAV_ITEMS = [
+  {
+    section: 'OVERVIEW',
+    items: [
+      { to: ADMIN_ROUTES.DASHBOARD, icon: 'bi bi-speedometer2', label: 'Dashboard' },
+    ],
+  },
+  {
+    section: 'USER MANAGEMENT',
+    items: [
+      { to: ADMIN_ROUTES.USERS, icon: 'bi bi-people', label: 'Users' },
+    ],
+  },
+  {
+    section: 'CATALOG',
+    items: [
+      { to: ADMIN_ROUTES.CATEGORIES, icon: 'bi bi-folder', label: 'Categories' },
+      { to: ADMIN_ROUTES.ATTRIBUTES, icon: 'bi bi-tags', label: 'Attributes' },
+    ],
+  },
+  {
+    section: 'MARKETING',
+    items: [
+      { to: ADMIN_ROUTES.SYSTEM_VOUCHERS, icon: 'bi bi-gift', label: 'System Vouchers', matchPrefix: true },
+    ],
+  },
+  {
+    section: 'SYSTEM',
+    items: [
+      { to: ADMIN_ROUTES.SYSTEM_CONFIG, icon: 'bi bi-gear', label: 'Configuration' },
+      { to: ADMIN_ROUTES.SITE_SETTINGS, icon: 'bi bi-globe', label: 'Site Settings' },
+      { to: ADMIN_ROUTES.PAYMENT_SETTINGS, icon: 'bi bi-credit-card', label: 'Payment Settings' },
+    ],
+  },
+  {
+    section: 'CONTENT',
+    items: [
+      { to: ADMIN_ROUTES.PAGES, icon: 'bi bi-file-earmark', label: 'Pages' },
+      { to: ADMIN_ROUTES.BANNERS, icon: 'bi bi-image', label: 'Banners' },
+    ],
+  },
+  {
+    section: 'ERP MONITORING',
+    items: [
+      {
+        to: '/erp/dashboard',
+        icon: 'bi bi-eye',
+        label: 'ERP Overview',
+        matchPrefix: true,
+        matchPath: '/erp',
+        badge: 'VIEW ONLY',
+      },
+    ],
+  },
+  {
+    section: 'MONITORING',
+    items: [
+      { to: ADMIN_ROUTES.ACTIVITY_LOGS, icon: 'bi bi-activity', label: 'Activity Logs' },
+      { to: ADMIN_ROUTES.SYSTEM_HEALTH, icon: 'bi bi-heart-pulse', label: 'System Health' },
+    ],
+  },
+];
+
+const PAGE_TITLES = {
+  [ADMIN_ROUTES.DASHBOARD]: 'Dashboard',
+  [ADMIN_ROUTES.USERS]: 'User Management',
+  [ADMIN_ROUTES.CATEGORIES]: 'Categories',
+  [ADMIN_ROUTES.ATTRIBUTES]: 'Attributes',
+  [ADMIN_ROUTES.SYSTEM_VOUCHERS]: 'System Vouchers',
+  [ADMIN_ROUTES.SYSTEM_CONFIG]: 'Configuration',
+  [ADMIN_ROUTES.SITE_SETTINGS]: 'Site Settings',
+  [ADMIN_ROUTES.PAYMENT_SETTINGS]: 'Payment Settings',
+  [ADMIN_ROUTES.PAGES]: 'Pages',
+  [ADMIN_ROUTES.BANNERS]: 'Banners',
+  [ADMIN_ROUTES.ACTIVITY_LOGS]: 'Activity Logs',
+  [ADMIN_ROUTES.SYSTEM_HEALTH]: 'System Health',
+};
+
 const AdminLayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const isActive = (item) => {
+    if (item.matchPath) return location.pathname.includes(item.matchPath);
+    if (item.matchPrefix) return location.pathname.startsWith(item.to);
+    return location.pathname === item.to;
+  };
+
+  const pageTitle =
+    Object.entries(PAGE_TITLES).find(([route]) =>
+      location.pathname === route || location.pathname.startsWith(route + '/')
+    )?.[1] ??
+    (location.pathname.includes('/erp') ? 'ERP Overview' : 'Admin');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
-    <div className="admin-layout d-flex flex-column" style={{ minHeight: '100vh' }}>
-      {/* Top Navigation Bar */}
-      <header className="admin-header bg-dark text-white shadow-sm">
-        <Container fluid>
-          <nav className="navbar navbar-dark py-2">
-            <Link className="navbar-brand fw-bold" to={ADMIN_ROUTES.DASHBOARD}>
-              <i className="bi bi-shield-lock me-2"></i>
-              GZMart Admin
-            </Link>
-            <div className="ms-auto d-flex align-items-center">
-              <div className="dropdown">
-                <button
-                  className="btn btn-link text-white dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                >
-                  <i className="bi bi-bell"></i>
-                  <span className="badge bg-warning ms-1">5</span>
-                </button>
-              </div>
-              <div className="dropdown ms-3">
-                <button
-                  className="btn btn-link text-white dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                >
-                  <i className="bi bi-person-circle"></i> Admin
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <Link className="dropdown-item" to={ADMIN_ROUTES.PROFILE}>
-                      Profile
-                    </Link>
-                  </li>
-                  <li>
-                    <Link className="dropdown-item" to={ADMIN_ROUTES.SITE_SETTINGS}>
-                      Settings
-                    </Link>
-                  </li>
-                  <li>
-                    <hr className="dropdown-divider" />
-                  </li>
-                  <li>
-                    <button className="dropdown-item">Logout</button>
-                  </li>
-                </ul>
-              </div>
+    <div className={styles.shell}>
+      {/* ── Sidebar ── */}
+      <aside className={styles.sidebar}>
+        {/* Brand */}
+        <Link className={styles.brand} to={ADMIN_ROUTES.DASHBOARD}>
+          <span className={styles.brandIcon}>
+            <i className="bi bi-shield-lock" />
+          </span>
+          <span>
+            <div className={styles.brandName}>GZMart</div>
+            <div className={styles.brandSub}>Admin Portal</div>
+          </span>
+        </Link>
+
+        {/* Nav */}
+        <nav className={styles.navArea}>
+          {NAV_ITEMS.map((group) => (
+            <div key={group.section}>
+              <div className={styles.sectionLabel}>{group.section}</div>
+              {group.items.map((item) => {
+                const active = isActive(item);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
+                  >
+                    <span className={styles.navIcon}>
+                      <i className={item.icon} />
+                    </span>
+                    {item.label}
+                    {item.badge && (
+                      <span className={styles.navBadge}>{item.badge}</span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
-          </nav>
-        </Container>
+          ))}
+        </nav>
+
+        {/* Footer — user card */}
+        <div className={styles.sidebarFooter}>
+          <div className={styles.userCard}>
+            <div className={styles.userAvatar}>A</div>
+            <div className={styles.userInfo}>
+              <div className={styles.userName}>Administrator</div>
+              <div className={styles.userRole}>Super Admin</div>
+            </div>
+            <button
+              className={styles.logoutBtn}
+              title="Logout"
+              onClick={handleLogout}
+            >
+              <i className="bi bi-box-arrow-right" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Topbar ── */}
+      <header className={styles.topbar}>
+        <span className={styles.topbarTitle}>{pageTitle}</span>
+        <div className={styles.topbarRight}>
+          {/* Notifications */}
+          <button className={styles.topbarIconBtn} title="Notifications">
+            <i className="bi bi-bell" />
+            <span className={styles.topbarBadge} />
+          </button>
+
+          <div className={styles.topbarDivider} />
+
+          {/* User menu */}
+          <button className={styles.topbarUserBtn}>
+            <div className={styles.topbarAvatar}>A</div>
+            <span className={styles.topbarUserName}>Admin</span>
+            <i className={`bi bi-chevron-down ${styles.topbarChevron}`} />
+          </button>
+        </div>
       </header>
 
-      {/* Main Content Area with Sidebar */}
-      <div className="admin-body flex-grow-1">
-        <Container fluid>
-          <Row>
-            {/* Sidebar */}
-            <Col
-              md={2}
-              className="admin-sidebar bg-white border-end p-0"
-              style={{ borderColor: '#e5e7eb' }}
-            >
-              <Nav className="flex-column py-3" style={{ fontSize: '14px' }}>
-                {/* Dashboard */}
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.DASHBOARD}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.DASHBOARD ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.DASHBOARD ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-speedometer2"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Dashboard
-                </Nav.Link>
-
-                {/* User Management Section */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  USER MANAGEMENT
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.USERS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.USERS ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.USERS ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-people" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Users
-                </Nav.Link>
-
-                {/* Catalog Section */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  CATALOG
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.CATEGORIES}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.CATEGORIES ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.CATEGORIES ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-folder" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Categories
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.ATTRIBUTES}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.ATTRIBUTES ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.ATTRIBUTES ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-tags" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Attributes
-                </Nav.Link>
-
-                {/* Marketing Section */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  MARKETING
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.SYSTEM_VOUCHERS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS)
-                      ? '#0066cc'
-                      : '#6b7280',
-                    fontWeight: location.pathname.includes(ADMIN_ROUTES.SYSTEM_VOUCHERS)
-                      ? '500'
-                      : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-gift" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  System Vouchers
-                </Nav.Link>
-
-                {/* System Section */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  SYSTEM
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.SYSTEM_CONFIG}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.SYSTEM_CONFIG ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.SYSTEM_CONFIG ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-gear" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Configuration
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.SITE_SETTINGS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.SITE_SETTINGS ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.SITE_SETTINGS ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-globe" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Site Settings
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.PAYMENT_SETTINGS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color:
-                      location.pathname === ADMIN_ROUTES.PAYMENT_SETTINGS ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.PAYMENT_SETTINGS ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-credit-card"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Payment Settings
-                </Nav.Link>
-
-                {/* Content Section */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  CONTENT
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.PAGES}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.PAGES ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.PAGES ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-file-earmark"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Pages
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.BANNERS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.BANNERS ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.BANNERS ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-image" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Banners
-                </Nav.Link>
-
-                {/* ERP Monitoring Section - Admin View Only */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  ERP MONITORING
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to="/erp/dashboard"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname.includes('/erp') ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname.includes('/erp') ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-eye" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  ERP Overview
-                  <span
-                    className="badge bg-secondary ms-2"
-                    style={{ fontSize: '9px', padding: '2px 6px' }}
-                  >
-                    VIEW ONLY
-                  </span>
-                </Nav.Link>
-
-                {/* Monitoring Section */}
-                <div
-                  className="px-4 mb-2 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  MONITORING
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.ACTIVITY_LOGS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.ACTIVITY_LOGS ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.ACTIVITY_LOGS ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-activity"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Activity Logs
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to={ADMIN_ROUTES.SYSTEM_HEALTH}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === ADMIN_ROUTES.SYSTEM_HEALTH ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === ADMIN_ROUTES.SYSTEM_HEALTH ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-heart-pulse"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  System Health
-                </Nav.Link>
-              </Nav>
-            </Col>
-
-            {/* Main Content */}
-            <Col md={10} className="admin-content p-4">
-              {children || <Outlet />}
-            </Col>
-          </Row>
-        </Container>
-      </div>
+      {/* ── Main content ── */}
+      <main className={styles.main}>
+        {children || <Outlet />}
+      </main>
     </div>
   );
 };
