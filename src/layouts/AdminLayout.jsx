@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { ADMIN_ROUTES } from '@constants/routes';
@@ -84,12 +85,13 @@ const PAGE_TITLES = {
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
 
-  const isActive = (item) => {
+  const isActive = useCallback((item) => {
     if (item.matchPath) return location.pathname.includes(item.matchPath);
     if (item.matchPrefix) return location.pathname.startsWith(item.to);
     return location.pathname === item.to;
-  };
+  }, [location.pathname]);
 
   const pageTitle =
     Object.entries(PAGE_TITLES).find(([route]) =>
@@ -102,16 +104,20 @@ const AdminLayout = ({ children }) => {
     navigate('/login');
   };
 
+  const sidebarClass = `${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`;
+  const mainClass = `${styles.main} ${collapsed ? styles.mainCollapsed : ''}`;
+  const topbarClass = `${styles.topbar} ${collapsed ? styles.topbarCollapsed : ''}`;
+
   return (
     <div className={styles.shell}>
       {/* ── Sidebar ── */}
-      <aside className={styles.sidebar}>
+      <aside className={sidebarClass}>
         {/* Brand */}
-        <Link className={styles.brand} to={ADMIN_ROUTES.DASHBOARD}>
+        <Link className={styles.brand} to={ADMIN_ROUTES.DASHBOARD} title="GZMart Admin">
           <span className={styles.brandIcon}>
             <i className="bi bi-shield-lock" />
           </span>
-          <span>
+          <span className={styles.brandText}>
             <div className={styles.brandName}>GZMart</div>
             <div className={styles.brandSub}>Admin Portal</div>
           </span>
@@ -129,11 +135,12 @@ const AdminLayout = ({ children }) => {
                     key={item.to}
                     to={item.to}
                     className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
+                    title={collapsed ? item.label : undefined}
                   >
                     <span className={styles.navIcon}>
                       <i className={item.icon} />
                     </span>
-                    {item.label}
+                    <span className={styles.navLabel}>{item.label}</span>
                     {item.badge && (
                       <span className={styles.navBadge}>{item.badge}</span>
                     )}
@@ -146,7 +153,7 @@ const AdminLayout = ({ children }) => {
 
         {/* Footer — user card */}
         <div className={styles.sidebarFooter}>
-          <div className={styles.userCard}>
+          <div className={styles.userCard} title={collapsed ? 'Administrator' : undefined}>
             <div className={styles.userAvatar}>A</div>
             <div className={styles.userInfo}>
               <div className={styles.userName}>Administrator</div>
@@ -164,8 +171,18 @@ const AdminLayout = ({ children }) => {
       </aside>
 
       {/* ── Topbar ── */}
-      <header className={styles.topbar}>
+      <header className={topbarClass}>
+        {/* Collapse toggle */}
+        <button
+          className={styles.collapseBtn}
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <i className={`bi ${collapsed ? 'bi-layout-sidebar' : 'bi-layout-sidebar-reverse'}`} />
+        </button>
+
         <span className={styles.topbarTitle}>{pageTitle}</span>
+
         <div className={styles.topbarRight}>
           {/* Notifications */}
           <button className={styles.topbarIconBtn} title="Notifications">
@@ -185,7 +202,7 @@ const AdminLayout = ({ children }) => {
       </header>
 
       {/* ── Main content ── */}
-      <main className={styles.main}>
+      <main className={mainClass}>
         {children || <Outlet />}
       </main>
     </div>
