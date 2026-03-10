@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from '../../assets/styles/ShopInfoCard.module.css';
 
-const ShopInfoCard = ({ seller, showViewShop = true }) => {
+const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onToggleFollow }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -58,8 +58,12 @@ const ShopInfoCard = ({ seller, showViewShop = true }) => {
               </>
             ) : (
               <>
-                <button className={styles.btnViewShop}>
-                  <i className="bi bi-person-plus-fill"></i> {t('product_details.btn_follow')}
+                <button 
+                  className={`${styles.btnViewShop} ${isFollowing ? styles.following : ''}`} 
+                  onClick={onToggleFollow}
+                >
+                  <i className={`bi ${isFollowing ? 'bi-person-check-fill' : 'bi-person-plus-fill'}`}></i> 
+                  {isFollowing ? t('product_details.btn_following', 'Đang Theo Dõi') : t('product_details.btn_follow', 'Theo Dõi')}
                 </button>
                 <button className={styles.btnChat} onClick={handleChatClick}>
                   <i className="bi bi-chat-dots"></i> {t('product_details.btn_chat', 'Chat')}
