@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import Pagination from '../../components/common/Pagination';
-import { productService } from '../../services/api';
+import { productService, followService } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
 import styles from '../../assets/styles/ShopProfilePage.module.css';
 
@@ -19,6 +21,8 @@ const ShopProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('ALL');
+  const [isFollowing, setIsFollowing] = useState(false);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   
   const [pagination, setPagination] = useState({
     page: 1,
@@ -30,6 +34,47 @@ const ShopProfilePage = () => {
   useEffect(() => {
     fetchShopData();
   }, [id, pagination.page]);
+
+  useEffect(() => {
+    if (isAuthenticated && id) {
+      checkFollowStatus();
+    }
+  }, [id, isAuthenticated]);
+
+  const checkFollowStatus = async () => {
+    try {
+      const res = await followService.checkFollowStatus(id);
+      // `res` is the response data body: { success: true, data: { isFollowing: true } }
+      setIsFollowing(res.data?.isFollowing || false);
+    } catch (error) {
+      console.error('Failed to check follow status:', error);
+    }
+  };
+
+  const handleToggleFollow = async () => {
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để theo dõi shop');
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      const res = await followService.toggleFollow(id);
+      const isNowFollowing = res.data?.isFollowing;
+      setIsFollowing(isNowFollowing);
+      
+      setSeller(prev => ({
+        ...prev,
+        followerCount: isNowFollowing 
+          ? (prev.followerCount || 0) + 1 
+          : Math.max(0, (prev.followerCount || 1) - 1)
+      }));
+      
+      toast.success(res.message || (isNowFollowing ? 'Đã theo dõi' : 'Đã bỏ theo dõi'));
+    } catch (error) {
+      toast.error(error.message || 'Có lỗi xảy ra');
+    }
+  };
 
   const fetchShopData = async () => {
     try {
@@ -94,7 +139,12 @@ const ShopProfilePage = () => {
     <>
       <div>
         <Container className="mt-4 mb-3">
-          <ShopInfoCard seller={seller} showViewShop={false} />
+          <ShopInfoCard 
+            seller={seller} 
+            showViewShop={false} 
+            isFollowing={isFollowing}
+            onToggleFollow={handleToggleFollow}
+          />
         </Container>
       </div>
       
