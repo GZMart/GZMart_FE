@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -9,7 +9,7 @@ import { getProductImages } from '@utils/data/ProductsPage_MockData';
 import * as favouriteService from '@services/api/favouriteService';
 import styles from '@assets/styles/ProductListItem.module.css';
 
-const ProductListItem = ({ product }) => {
+const ProductListItem = React.forwardRef(({ product }, ref) => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [isFav, setIsFav] = useState(false);
@@ -99,7 +99,7 @@ const ProductListItem = ({ product }) => {
     }
   };
   return (
-    <div className={styles.productListItem} onClick={handleCardClick} role="link" tabIndex={0}>
+    <div className={styles.productListItem} onClick={handleCardClick} role="link" tabIndex={0} ref={ref}>
       <div className={styles.imageWrapper}>
         <img src={productImage} alt={product.name} className={styles.productImage} />
         {isFlashSale ? (
@@ -220,7 +220,10 @@ const ProductListItem = ({ product }) => {
       </div>
     </div>
   );
-};
+});
+
+// Give the component a display name for debugging since it's wrapped in forwardRef
+ProductListItem.displayName = 'ProductListItem';
 
 ProductListItem.propTypes = {
   product: PropTypes.shape({
