@@ -1,419 +1,203 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Nav } from 'react-bootstrap';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { SELLER_ROUTES } from '@constants/routes';
+import { logoutUser } from '@store/slices/authSlice';
+import styles from '@assets/styles/layouts/ERPLayout.module.css';
 
-/**
- * ERP Layout - For Seller pages
- */
+const NAV_GROUPS = [
+  {
+    label: 'STORE',
+    items: [
+      { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
+      { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
+      { to: '/seller/listings', icon: 'bi-grid-3x3-gap-fill', label: 'Listings' },
+      { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
+      { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
+      { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
+    ],
+  },
+  {
+    label: 'MARKETING',
+    items: [
+      { to: '/seller/vouchers', icon: 'bi-ticket-perforated', label: 'Vouchers' },
+      { to: '/seller/promotions', icon: 'bi-megaphone', label: 'Promotions' },
+    ],
+  },
+  {
+    label: 'ERP',
+    items: [
+      { to: '/erp/dashboard', icon: 'bi-bar-chart-line', label: 'ERP Dashboard' },
+      { to: '/erp/suppliers', icon: 'bi-truck', label: 'Suppliers' },
+      { to: '/erp/purchase-orders', icon: 'bi-file-earmark-text', label: 'Purchase Orders' },
+    ],
+  },
+  {
+    label: 'SETTINGS',
+    items: [
+      { to: SELLER_ROUTES.PROFILE, icon: 'bi-person', label: 'Profile' },
+      { to: '/seller/billing', icon: 'bi-credit-card', label: 'Billing' },
+    ],
+  },
+];
+
 const ERPLayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth?.user);
+  const [collapsed, setCollapsed] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const isActive = (to) => {
+    if (to === SELLER_ROUTES.DASHBOARD) return location.pathname === to;
+    return location.pathname.startsWith(to);
+  };
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    navigate('/login');
+  };
 
   return (
-    <div className="erp-layout d-flex flex-column" style={{ minHeight: '100vh' }}>
-      {/* Top Navigation Bar */}
-      <header className="erp-header bg-primary text-white shadow-sm">
-        <Container fluid>
-          <nav className="navbar navbar-dark py-2">
-            <Link className="navbar-brand fw-bold" to={SELLER_ROUTES.DASHBOARD}>
-              <i className="bi bi-box-seam me-2"></i>
-              Seller Portal
-            </Link>
-            <div className="ms-auto d-flex align-items-center">
-              <div className="dropdown">
-                <button
-                  className="btn btn-link text-white dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
+    <div className={styles.shell}>
+      {/* ─── Sidebar ──────────────────────────────────────────────── */}
+      <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
+        {/* Brand */}
+        <div className={styles.brand}>
+          <div className={styles.brandLogo}>
+            <i className="bi bi-bag-heart-fill" />
+          </div>
+          {!collapsed && (
+            <div className={styles.brandText}>
+              <span className={styles.brandName}>GZMart</span>
+              <span className={styles.brandSub}>Seller Portal</span>
+            </div>
+          )}
+          {!collapsed && (
+            <button
+              className={styles.collapseBtn}
+              onClick={() => setCollapsed((c) => !c)}
+              title="Collapse sidebar"
+            >
+              <i className="bi bi-chevron-left" />
+            </button>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className={styles.nav}>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className={styles.navGroup}>
+              {!collapsed && <span className={styles.navGroupLabel}>{group.label}</span>}
+              {group.items.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`${styles.navItem} ${isActive(item.to) ? styles.navItemActive : ''}`}
+                  title={collapsed ? item.label : undefined}
                 >
-                  <i className="bi bi-bell"></i>
-                  <span className="badge bg-danger ms-1">3</span>
-                </button>
-                {/* Notifications dropdown */}
+                  <i className={`bi ${item.icon} ${styles.navIcon}`} />
+                  {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
+                  {isActive(item.to) && !collapsed && <span className={styles.navActiveDot} />}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* User profile pill at bottom */}
+        {!collapsed && (
+          <div className={styles.sidebarFooter}>
+            <div className={styles.userPill}>
+              <div className={styles.userAvatar}>
+                {user?.name?.[0]?.toUpperCase() || 'S'}
               </div>
-              <div className="dropdown ms-3">
-                <button
-                  className="btn btn-link text-white dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                >
-                  <i className="bi bi-person-circle"></i> Seller
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <Link className="dropdown-item" to={SELLER_ROUTES.PROFILE}>
-                      Profile
-                    </Link>
-                  </li>
-                  <li>
-                    <Link className="dropdown-item" to={SELLER_ROUTES.SETTINGS}>
-                      Settings
-                    </Link>
-                  </li>
-                  <li>
-                    <hr className="dropdown-divider" />
-                  </li>
-                  <li>
-                    <button className="dropdown-item">Logout</button>
-                  </li>
-                </ul>
+              <div className={styles.userInfo}>
+                <span className={styles.userName}>{user?.name || 'Seller'}</span>
+                <span className={styles.userEmail}>{user?.email || ''}</span>
               </div>
             </div>
-          </nav>
-        </Container>
-      </header>
+          </div>
+        )}
+      </aside>
 
-      {/* Main Content Area with Sidebar */}
-      <div className="erp-body flex-grow-1">
-        <Container fluid>
-          <Row>
-            {/* Sidebar */}
-            <Col
-              md={2}
-              className="erp-sidebar bg-white border-end p-0"
-              style={{ borderColor: '#e5e7eb' }}
-            >
-              <Nav className="flex-column py-3" style={{ fontSize: '14px' }}>
-                {/* Header Section */}
-                <div
-                  className="px-4 mb-3 mt-1"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  ORDER MANAGER
+      {/* ─── Main panel ───────────────────────────────────────────── */}
+      <div className={styles.panel}>
+        {/* Top bar */}
+        <header className={styles.topbar}>
+          {/* Page context breadcrumb */}
+          <div className={styles.topbarLeft}>
+            {collapsed && (
+              <button
+                className={styles.iconBtn}
+                onClick={() => setCollapsed(false)}
+                title="Expand sidebar"
+                style={{ marginRight: 8 }}
+              >
+                <i className="bi bi-layout-sidebar" />
+              </button>
+            )}
+            <span className={styles.topbarRoute}>
+              {location.pathname.split('/').filter(Boolean).join(' / ')}
+            </span>
+          </div>
+
+          <div className={styles.topbarRight}>
+            {/* Notification bell */}
+            <div className={styles.topbarAction}>
+              <button
+                className={styles.iconBtn}
+                onClick={() => { setNotifOpen((o) => !o); setProfileOpen(false); }}
+              >
+                <i className="bi bi-bell" />
+                <span className={styles.badge}>3</span>
+              </button>
+              {notifOpen && (
+                <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
+                  <div className={styles.dropdownHeader}>Notifications</div>
+                  {['New order #1042', 'Flash sale ends in 2h', 'Return request pending'].map((n) => (
+                    <div key={n} className={styles.dropdownItem}>{n}</div>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                <Nav.Link
-                  as={Link}
-                  to={SELLER_ROUTES.DASHBOARD}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === SELLER_ROUTES.DASHBOARD ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === SELLER_ROUTES.DASHBOARD ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-speedometer2"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Dashboard
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to={SELLER_ROUTES.ORDERS}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === SELLER_ROUTES.ORDERS ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === SELLER_ROUTES.ORDERS ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-cart3" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Orders
-                </Nav.Link>
-
-                {/* Listings */}
-                <Nav.Link
-                  as={Link}
-                  to="/seller/listings"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/listings' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/listings' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-list-ul"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Listings
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/returns"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/returns' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/returns' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-arrow-return-left"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Returns
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/flash-sales"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/flash-sales' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/flash-sales' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-lightning-fill"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Flash Sales
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/invoices"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/invoices' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/invoices' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-receipt"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Invoice
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/messages"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/messages' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/messages' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-chat-dots"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Messages
-                </Nav.Link>
-
-                <div
-                  className="px-4 mb-3 mt-4"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  MARKETING CHANNEL
+            {/* Profile dropdown */}
+            <div className={styles.topbarAction}>
+              <button
+                className={styles.avatarBtn}
+                onClick={() => { setProfileOpen((o) => !o); setNotifOpen(false); }}
+              >
+                <div className={styles.topAvatar}>
+                  {user?.name?.[0]?.toUpperCase() || 'S'}
                 </div>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/vouchers"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname.includes('/seller/vouchers') ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname.includes('/seller/vouchers') ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-ticket-perforated"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Vouchers
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/promotions"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname.includes('/seller/promotions') ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname.includes('/seller/promotions') ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-megaphone"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Promotions
-                </Nav.Link>
-
-                <hr className="my-3 mx-3" style={{ borderColor: '#e5e7eb', opacity: 1 }} />
-
-                {/* ERP Section - Seller Back Office */}
-                <div
-                  className="px-4 mb-3 mt-2"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  ERP - BACK OFFICE
+                <i className="bi bi-chevron-down" style={{ fontSize: '11px', marginLeft: '4px' }} />
+              </button>
+              {profileOpen && (
+                <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
+                  <Link to={SELLER_ROUTES.PROFILE} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                    <i className="bi bi-person me-2" /> Profile
+                  </Link>
+                  <Link to="/seller/billing" className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                    <i className="bi bi-credit-card me-2" /> Billing
+                  </Link>
+                  <div className={styles.dropdownDivider} />
+                  <button className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`} onClick={handleLogout}>
+                    <i className="bi bi-box-arrow-right me-2" /> Logout
+                  </button>
                 </div>
+              )}
+            </div>
+          </div>
+        </header>
 
-                <Nav.Link
-                  as={Link}
-                  to="/erp/dashboard"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/erp/dashboard' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/erp/dashboard' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-grid-3x3-gap"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  ERP Dashboard
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/erp/suppliers"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname.includes('/erp/suppliers') ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname.includes('/erp/suppliers') ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-truck" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Suppliers
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/erp/purchase-orders"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname.includes('/erp/purchase-orders')
-                      ? '#0066cc'
-                      : '#6b7280',
-                    fontWeight: location.pathname.includes('/erp/purchase-orders') ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-file-earmark-text"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Purchase Orders
-                </Nav.Link>
-
-                <hr className="my-3 mx-3" style={{ borderColor: '#e5e7eb', opacity: 1 }} />
-
-                <div
-                  className="px-4 mb-2"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  SETTINGS
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to={SELLER_ROUTES.PROFILE}
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === SELLER_ROUTES.PROFILE ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === SELLER_ROUTES.PROFILE ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-person" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Profile
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/billing"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/billing' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/billing' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-credit-card"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Billing
-                </Nav.Link>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/pricing-plans"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/pricing-plans' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/pricing-plans' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i className="bi bi-tag" style={{ fontSize: '18px', marginRight: '12px' }}></i>
-                  Pricing Plans
-                </Nav.Link>
-
-                <hr className="my-3 mx-3" style={{ borderColor: '#e5e7eb', opacity: 1 }} />
-
-                <div
-                  className="px-4 mb-2"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#9ca3af',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  HELP
-                </div>
-
-                <Nav.Link
-                  as={Link}
-                  to="/seller/help-center"
-                  className="px-4 py-2 d-flex align-items-center"
-                  style={{
-                    color: location.pathname === '/seller/help-center' ? '#0066cc' : '#6b7280',
-                    fontWeight: location.pathname === '/seller/help-center' ? '500' : '400',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <i
-                    className="bi bi-question-circle"
-                    style={{ fontSize: '18px', marginRight: '12px' }}
-                  ></i>
-                  Help Center
-                </Nav.Link>
-              </Nav>
-            </Col>
-
-            {/* Main Content */}
-            <Col md={10} className="erp-content p-4" style={{ backgroundColor: '#fafafa' }}>
-              {children || <Outlet />}
-            </Col>
-          </Row>
-        </Container>
+        {/* Page content */}
+        <main className={styles.content}>
+          {children || <Outlet />}
+        </main>
       </div>
     </div>
   );

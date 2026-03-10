@@ -27,57 +27,29 @@ const FlashDealsPage = () => {
       try {
         setLoading(true);
 
-        // Use flashsaleService.getActive() to get active flash sales
-        const response = await flashsaleService.getActive();
+        // Fetch both flash sales and active deals in parallel
+        const [flashSaleRes, dealsRes] = await Promise.allSettled([
+          flashsaleService.getActive(),
+          dealService.getActiveDeals({ limit: 100 }),
+        ]);
 
-        if (import.meta.env.DEV) {
-          console.log('📦 Flash Sales API Response:', response);
-          console.log('📦 Response type:', typeof response);
-          console.log('📦 Response keys:', response ? Object.keys(response) : 'null');
-        }
-
-        // Handles multiple response structures:
-        // Case 1: { success: true, data: [...] }
-        // Case 2: { data: [...] }
-        // Case 3: [...] (direct array)
+        // ── Parse flash sales ────────────────────────────────────────────────
         let flashSalesData = [];
-
-        if (Array.isArray(response)) {
-          // Direct array response
-          flashSalesData = response;
-        } else if (response?.data) {
-          // Has data property
-          if (Array.isArray(response.data)) {
-            flashSalesData = response.data;
-          } else if (Array.isArray(response.data?.data)) {
-            flashSalesData = response.data.data;
+        if (flashSaleRes.status === 'fulfilled') {
+          const response = flashSaleRes.value;
+          if (Array.isArray(response)) {
+            flashSalesData = response;
+          } else if (response?.data) {
+            flashSalesData = Array.isArray(response.data)
+              ? response.data
+              : response.data?.data || [];
           }
         }
 
-        if (import.meta.env.DEV) {
-          console.log('✅ Flash Sales Data (count):', flashSalesData.length);
-          console.log('✅ First flash sale sample:', flashSalesData[0]);
-        }
-
-        if (flashSalesData.length === 0) {
-          if (import.meta.env.DEV) {
-            console.warn('⚠️ Backend returned empty data array - no flash sales available');
-          }
-          setProducts([]);
-          setLoading(false);
-          return;
-        }
-
-        // Group flash sales by product + campaign so each product only appears once
+        // Group flash sales by product + campaign so each product appears once
         const grouped = {};
         flashSalesData
-          .filter((flashSale) => {
-            const hasProduct = flashSale && flashSale.productId;
-            if (!hasProduct) {
-              console.warn('⚠️ Flash sale missing productId:', flashSale);
-            }
-            return hasProduct;
-          })
+          .filter((fs) => fs && fs.productId)
           .forEach((flashSale) => {
             const pid =
               typeof flashSale.productId === 'object'
@@ -90,14 +62,10 @@ const FlashDealsPage = () => {
             grouped[groupKey].deals.push(flashSale);
           });
 
-        // Transform each group into one product card (cheapest deal as representative)
         const productsFromFlashSales = Object.values(grouped).map(({ product, deals }) => {
-          // Pick the deal with the lowest sale price as the representative
           const rep = deals.reduce((best, d) =>
             (d.salePrice || Infinity) < (best.salePrice || Infinity) ? d : best
           );
-
-          // Find the variant model for the representative deal
           let variantModel = null;
           if (rep.variantSku && product.models) {
             variantModel = product.models.find((m) => m.sku === rep.variantSku);
@@ -105,12 +73,10 @@ const FlashDealsPage = () => {
           if (!variantModel) {
             variantModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
           }
-
           const totalSold = deals.reduce((s, d) => s + (d.soldQuantity || 0), 0);
           const totalQty = deals.reduce((s, d) => s + (d.totalQuantity || 0), 0);
           const priceMin = Math.min(...deals.map((d) => d.salePrice || 0));
           const priceMax = Math.max(...deals.map((d) => d.salePrice || 0));
-
           return {
             id: product._id,
             name: product.name,
@@ -139,7 +105,6 @@ const FlashDealsPage = () => {
             categoryId:
               typeof product.category === 'object' ? product.category?._id : product.categoryId,
             tier_variations: product.tier_variations,
-            // Flash Sale specific fields
             flashSaleId: rep._id,
             dealId: rep._id,
             dealType: 'flash_sale',
@@ -157,21 +122,74 @@ const FlashDealsPage = () => {
           };
         });
 
-        setProducts(productsFromFlashSales);
-
-        if (import.meta.env.DEV) {
-          console.log('📊 Transformed Products from Flash Sales:', productsFromFlashSales.length);
+        // ── Parse active deals (special, limited_time, clearance, etc.) ─────
+        let dealsData = [];
+        if (dealsRes.status === 'fulfilled') {
+          const response = dealsRes.value;
+          if (Array.isArray(response)) {
+            dealsData = response;
+          } else if (response?.data) {
+            dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+          }
         }
-      } catch (error) {
-        console.error('❌ Error fetching flash sales:', error);
 
-        if (import.meta.env.DEV) {
-          console.error('❌ Error details:', {
-            message: error?.message,
-            response: error?.response?.data,
-            status: error?.response?.status,
+        // Filter out flash_sale types (already shown above) and deals without product
+        const flashSaleProductIds = new Set(productsFromFlashSales.map((p) => p.id));
+        const productsFromDeals = dealsData
+          .filter((deal) => deal && deal.productId && deal.type !== 'flash_sale')
+          .filter((deal) => {
+            const pid = typeof deal.productId === 'object' ? deal.productId._id : deal.productId;
+            return !flashSaleProductIds.has(pid);
+          })
+          .map((deal) => {
+            const product = deal.productId;
+            const pid = typeof product === 'object' ? product._id : product;
+            return {
+              id: pid,
+              name: product.name,
+              description: product.description,
+              image:
+                product.images?.[0] ||
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+              images: product.images || [],
+              price: deal.dealPrice || deal.discountedPrice || product.price || 0,
+              originalPrice: product.originalPrice || product.price || 0,
+              discount: deal.discountPercent || 0,
+              rating: product.rating || 5,
+              reviews: product.reviewCount || product.sold || 0,
+              sold: deal.soldCount || 0,
+              stock: deal.quantityLimit != null ? deal.quantityLimit - (deal.soldCount || 0) : null,
+              brand: typeof product.brand === 'object' ? product.brand?.name : product.brand,
+              category:
+                typeof product.category === 'object' ? product.category?.name : product.category,
+              categoryId:
+                typeof product.category === 'object' ? product.category?._id : product.categoryId,
+              tier_variations: product.tier_variations || [],
+              dealId: deal._id,
+              dealType: deal.type,
+              dealStatus: deal.status,
+              dealStartDate: deal.startDate,
+              dealEndDate: deal.endDate,
+              dealSoldCount: deal.soldCount || 0,
+              dealQuantityLimit: deal.quantityLimit,
+              dealPriceMin: deal.discountedMinPrice || deal.dealPrice || 0,
+              dealPriceMax: deal.discountedMaxPrice || deal.dealPrice || 0,
+              purchaseLimit: deal.purchaseLimitPerUser,
+              campaignTitle: deal.title,
+            };
           });
+
+        const allProducts = [...productsFromFlashSales, ...productsFromDeals];
+
+        if (import.meta.env.DEV) {
+          console.log('📊 Flash Sale products:', productsFromFlashSales.length);
+          console.log('📊 Deal products:', productsFromDeals.length);
+          console.log('📊 Total products:', allProducts.length);
         }
+
+        setProducts(allProducts);
+      } catch (error) {
+        console.error('❌ Error fetching deals:', error);
         setProducts([]);
       } finally {
         setLoading(false);
