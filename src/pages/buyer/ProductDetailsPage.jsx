@@ -122,18 +122,18 @@ const ProductDetailsPage = () => {
             // First try to fetch from getActive
             const response = await flashsaleService.getActive();
             const allFlashSales = Array.isArray(response) ? response : response.data?.data || response.data || [];
-            
+
             // Find flash sale for this product
             const flashSale = allFlashSales.find(fs => {
               const prodId = fs.productId?._id || fs.productId?.id || fs.productId;
               return prodId === productId;
             });
-            
+
             if (flashSale) {
               console.log('✅ Flash sale found for product:', flashSale);
               return flashSale;
             }
-            
+
             return null;
           } catch (err) {
             console.error('Error fetching flash sales:', err);
@@ -150,7 +150,7 @@ const ProductDetailsPage = () => {
         if (!isMounted) return;
 
         const productData = productResponse.data?.data || productResponse.data || productResponse;
-        
+
         // Fetch flash sale data by matching product ID
         console.log('🔍 Product ID:', productData?._id);
         const flashSaleData = await fetchFlashSale(productData?._id);
@@ -211,12 +211,18 @@ const ProductDetailsPage = () => {
         // Transform related & freq bought ... (Use existing logic or simplify)
         const processRelated = (res) => {
           const list = Array.isArray(res) ? res : res.data || [];
-          return list.map((p) => ({
-            ...p,
-            id: p._id,
-            image:
-              p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
-          }));
+          return list.map((p) => {
+            const minModelPrice = p.models?.length > 0
+              ? Math.min(...p.models.map(m => m.price))
+              : p.originalPrice;
+            return {
+              ...p,
+              id: p._id,
+              image:
+                p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+              price: minModelPrice ?? p.originalPrice ?? 0,
+            };
+          });
         };
 
         setRelatedProducts(processRelated(relatedResponse));
@@ -604,16 +610,16 @@ const ProductDetailsPage = () => {
           //  </span>
           //  <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
             //  {t('product_details.stat_sold')} {product.sold || 0}
-              {product.reviewCount 
-                ? product.reviewCount >= 1000 
-                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k` 
+              {product.reviewCount
+                ? product.reviewCount >= 1000
+                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
                   : product.reviewCount
                 : '0'} Rating
             </span>
             <span className={styles.soldCount}>
-              {product.sold 
-                ? product.sold >= 1000 
-                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+` 
+              {product.sold
+                ? product.sold >= 1000
+                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+`
                   : `${product.sold}+`
                 : '0+'} Sold
             </span>
