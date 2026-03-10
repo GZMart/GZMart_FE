@@ -54,53 +54,43 @@ const ProductCard = ({ product }) => {
       >
         <div className="p-3">
           <div
-            className="d-flex align-items-center justify-content-center"
+            className="position-relative w-100"
             style={{
-              backgroundColor: '#FAFAFA',
-              padding: '10px',
-              borderRadius: '24px',
+              backgroundColor: '#ECEDEF',
+              borderRadius: '16px',
+              height: '240px',
+              overflow: 'hidden',
             }}
           >
-            <div
-              className="position-relative w-100 d-flex align-items-center justify-content-center"
-              style={{
-                backgroundColor: '#ECEDEF',
-                borderRadius: '16px',
-                height: '240px',
-                overflow: 'hidden',
-                padding: '24px',
-              }}
-            >
-              {product.isNew && (
-                <span
-                  className="position-absolute fw-bold text-white px-3 py-1"
-                  style={{
-                    backgroundColor: '#FFC107',
-                    top: '0',
-                    left: '0',
-                    borderRadius: '16px 0 16px 0',
-                    fontSize: '0.85rem',
-                    zIndex: 2,
-                  }}
-                >
-                  New
-                </span>
-              )}
-
-              <motion.img
-                whileHover={{ scale: 1.1 }}
-                transition={{ duration: 0.3 }}
-                src={product.image}
-                alt={product.name}
-                className="img-fluid"
+            {product.isNew && (
+              <span
+                className="position-absolute fw-bold text-white px-3 py-1"
                 style={{
-                  maxHeight: '100%',
-                  maxWidth: '100%',
-                  objectFit: 'contain',
-                  borderRadius: '16px',
+                  backgroundColor: '#FFC107',
+                  top: '0',
+                  left: '0',
+                  borderRadius: '16px 0 16px 0',
+                  fontSize: '0.85rem',
+                  zIndex: 2,
                 }}
-              />
-            </div>
+              >
+                New
+              </span>
+            )}
+
+            <motion.img
+              whileHover={{ scale: 1.08 }}
+              transition={{ duration: 0.3 }}
+              src={product.image}
+              alt={product.name}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '16px',
+                display: 'block',
+              }}
+            />
           </div>
         </div>
 
@@ -165,41 +155,39 @@ const DealsOfTheDay = () => {
     const fetchDeals = async () => {
       try {
         setLoading(true);
-        const response = await flashsaleService.getActive();
 
-        console.log('🔍 DealsOfTheDay - Full API Response:', response);
-        console.log('🔍 DealsOfTheDay - Response.data:', response.data);
+        const [flashSaleRes, dealsRes] = await Promise.allSettled([
+          flashsaleService.getActive(),
+          dealService.getActiveDeals({ limit: 20 }),
+        ]);
 
-        // Handle response structure
+        // ── Parse flash sales ────────────────────────────────────
         let flashSalesData = [];
-        if (Array.isArray(response)) {
-          flashSalesData = response;
-        } else if (response?.data) {
-          flashSalesData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        if (flashSaleRes.status === 'fulfilled') {
+          const response = flashSaleRes.value;
+          if (Array.isArray(response)) {
+            flashSalesData = response;
+          } else if (response?.data) {
+            flashSalesData = Array.isArray(response.data)
+              ? response.data
+              : response.data?.data || [];
+          }
         }
 
-        console.log('🔍 DealsOfTheDay - Flash Sales Data:', flashSalesData);
-        console.log('🔍 DealsOfTheDay - First Flash Sale:', flashSalesData[0]);
-
-        // Filter for today's deals only
+        // Filter flash sales active today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const todayDeals = flashSalesData.filter((flashSale) => {
-          const startDate = new Date(flashSale.startAt);
-          const endDate = new Date(flashSale.endAt);
-          // Include if deal is active today (started before tomorrow and ends after today)
+        const todayFlashSales = flashSalesData.filter((fs) => {
+          const startDate = new Date(fs.startAt);
+          const endDate = new Date(fs.endAt);
           return startDate < tomorrow && endDate > today;
         });
 
-        console.log('🔍 Today Deals Count:', todayDeals.length);
-
-        const transformedDeals = todayDeals.map((flashSale) => {
+        const transformedFlashSales = todayFlashSales.map((flashSale) => {
           const product = flashSale.productId;
-
-          // Find the variant model by SKU or use first model
           let variantModel = null;
           if (flashSale.variantSku && product?.models) {
             variantModel = product.models.find((m) => m.sku === flashSale.variantSku);
@@ -207,18 +195,9 @@ const DealsOfTheDay = () => {
           if (!variantModel) {
             variantModel = product?.models?.find((m) => m.isActive) || product?.models?.[0] || {};
           }
-
-          console.log('🔍 Flash Sale transform:', {
-            flashSaleId: flashSale._id,
-            productName: product?.name,
-            variantSku: flashSale.variantSku,
-            salePrice: flashSale.salePrice,
-            originalPrice: variantModel?.price,
-          });
-
           return {
-            id: flashSale._id, // Use flashSale._id for unique key (handles multiple variants of same product)
-            productId: product?._id, // Keep product ID for navigation
+            id: flashSale._id,
+            productId: product?._id,
             name: product?.name || 'Product',
             image: product?.images?.[0] || variantModel?.image || '',
             price: formatPrice(flashSale.salePrice || variantModel?.price || 0),
@@ -232,11 +211,49 @@ const DealsOfTheDay = () => {
           };
         });
 
-        setDeals(transformedDeals.slice(0, 4));
+        // ── Parse active deals (special, daily_deal, etc.) ───────
+        let dealsData = [];
+        if (dealsRes.status === 'fulfilled') {
+          const response = dealsRes.value;
+          if (Array.isArray(response)) {
+            dealsData = response;
+          } else if (response?.data) {
+            dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+          }
+        }
 
-        // Find nearest end date
-        if (transformedDeals.length > 0) {
-          const sortedByEndDate = [...transformedDeals].sort(
+        const flashSaleProductIds = new Set(transformedFlashSales.map((p) => String(p.productId)));
+
+        const transformedDeals = dealsData
+          .filter((deal) => deal && deal.productId && deal.type !== 'flash_sale')
+          .filter((deal) => {
+            const pid = typeof deal.productId === 'object' ? deal.productId._id : deal.productId;
+            return !flashSaleProductIds.has(String(pid));
+          })
+          .map((deal) => {
+            const product = deal.productId;
+            const pid = typeof product === 'object' ? product._id : product;
+            const salePrice = deal.dealPrice || deal.discountedPrice || product?.price || 0;
+            return {
+              id: deal._id,
+              productId: pid,
+              name: product?.name || 'Product',
+              image: product?.images?.[0] || '',
+              price: formatPrice(salePrice),
+              originalPrice: product?.originalPrice || product?.price,
+              discount: deal.discountPercent || 0,
+              dealEndsIn: getTimeRemaining(deal.endDate),
+              endDate: deal.endDate,
+              isNew: product?.isNew || false,
+            };
+          });
+
+        const allDeals = [...transformedFlashSales, ...transformedDeals];
+        setDeals(allDeals);
+
+        // Find nearest end date for countdown
+        if (allDeals.length > 0) {
+          const sortedByEndDate = [...allDeals].sort(
             (a, b) => new Date(a.endDate) - new Date(b.endDate)
           );
           setNearestEndDate(sortedByEndDate[0].endDate);
@@ -343,7 +360,7 @@ const DealsOfTheDay = () => {
             {deals.map((product) => (
               <motion.div
                 key={product.id}
-                className="col-12 col-sm-6 col-lg-3"
+                className="col-12 col-sm-6 col-md-4 col-lg-3"
                 variants={itemVariants}
               >
                 <ProductCard product={product} />
