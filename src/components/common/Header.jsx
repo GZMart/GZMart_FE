@@ -26,6 +26,7 @@ import {
 
 import enFlag from '../../assets/svg/language/en.svg';
 import viFlag from '../../assets/svg/language/vi.svg';
+import NotificationBell from './NotificationBell';
 
 // Fashion categories data from Guangzhou market
 const FAKE_CATEGORIES_DATA = [
@@ -1352,6 +1353,8 @@ const Header = () => {
               <div className="d-flex align-items-center gap-1 cursor-pointer">
                 <Truck size={14} /> <span>{t('header.track_order')}</span>
               </div>
+              <span className="text-secondary">|</span>
+              <NotificationBell />
               <span className="text-secondary">|</span>
               <div className="d-flex align-items-center gap-1 cursor-pointer">
                 <Tag size={14} /> <span>{t('header.all_offers')}</span>
