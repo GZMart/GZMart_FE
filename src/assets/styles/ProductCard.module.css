@@ -99,6 +99,25 @@
   opacity: 1;
 }
 
+/* Combo Promotion Tag */
+.comboTag {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(245, 124, 0, 0.35);
+  text-transform: uppercase;
+}
 .actionBtn {
   width: 36px;
   height: 36px;

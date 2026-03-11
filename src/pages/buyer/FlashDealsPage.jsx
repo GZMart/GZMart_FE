@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
@@ -9,7 +9,8 @@ import { dealService, flashsaleService } from '../../services/api';
 
 const FlashDealsPage = () => {
   const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(12);
+  const itemsPerPage = 12;
+  const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('discount');
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
@@ -302,7 +303,25 @@ const FlashDealsPage = () => {
   }, [filteredProducts, sortBy]);
 
   const totalProducts = filteredProducts.length;
-  const displayedProducts = sortedProducts.slice(0, itemsToShow);
+  const displayedProducts = sortedProducts.slice(0, page * itemsPerPage);
+
+  // Infinite Scroll Observer
+  const observer = useRef();
+  const lastElementRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && displayedProducts.length < totalProducts) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, displayedProducts.length, totalProducts]
+  );
 
   // Toggle filter
   const toggleFilter = (filterType, value) => {
@@ -317,6 +336,7 @@ const FlashDealsPage = () => {
     if (setter) {
       setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
     }
+    setPage(1);
   };
 
   const toggleSection = (section) => {
@@ -328,12 +348,14 @@ const FlashDealsPage = () => {
 
   const handleApplyPriceFilter = () => {
     setPriceRange(tempPriceRange);
+    setPage(1);
   };
 
   const handleResetPriceFilter = () => {
     const defaultRange = { min: 0, max: 10000000 };
     setTempPriceRange(defaultRange);
     setPriceRange(defaultRange);
+    setPage(1);
   };
 
   if (loading) {
@@ -536,21 +558,7 @@ const FlashDealsPage = () => {
                 </div>
 
                 <div className={styles.infoText}>
-                  Showing 1 - {displayedProducts.length} of {totalProducts} deals
-                </div>
-
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>Show:</label>
-                  <select
-                    className={styles.filterSelect}
-                    value={itemsToShow}
-                    onChange={(e) => setItemsToShow(Number(e.target.value))}
-                  >
-                    <option value={12}>12</option>
-                    <option value={24}>24</option>
-                    <option value={48}>48</option>
-                    <option value={96}>96</option>
-                  </select>
+                  Showing {displayedProducts.length} of {totalProducts} deals
                 </div>
 
                 <div className={styles.filterGroup}>
@@ -558,7 +566,10 @@ const FlashDealsPage = () => {
                   <select
                     className={styles.filterSelect}
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setPage(1);
+                    }}
                   >
                     <option value="discount">Discount: High to Low</option>
                     <option value="ending-soon">Ending Soon</option>
@@ -573,27 +584,44 @@ const FlashDealsPage = () => {
             {/* Product Grid/List */}
             {viewMode === 'grid' ? (
               <div className={styles.productGrid}>
-                {displayedProducts.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.id}`}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <ProductCard product={product} />
-                  </Link>
-                ))}
+                {displayedProducts.map((product, index) => {
+                  const isLast = index === displayedProducts.length - 1;
+                  return (
+                    <Link
+                      key={product.id}
+                      to={`/product/${product.id}`}
+                      style={{ textDecoration: 'none' }}
+                      ref={isLast ? lastElementRef : null}
+                    >
+                      <ProductCard product={product} />
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className={styles.productList}>
-                {displayedProducts.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.id}`}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <ProductListItem product={product} />
-                  </Link>
-                ))}
+                {displayedProducts.map((product, index) => {
+                  const isLast = index === displayedProducts.length - 1;
+                  return (
+                    <Link
+                      key={product.id}
+                      to={`/product/${product.id}`}
+                      style={{ textDecoration: 'none' }}
+                      ref={isLast ? lastElementRef : null}
+                    >
+                      <ProductListItem product={product} />
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Loading More Indicator */}
+            {displayedProducts.length < totalProducts && (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
               </div>
             )}
 
