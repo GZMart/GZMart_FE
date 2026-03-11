@@ -1,29 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import { ChevronLeft, ChevronRight, Ticket, Bookmark, BookmarkCheck } from 'lucide-react';
 import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import Pagination from '../../components/common/Pagination';
 import { productService, followService } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
+import voucherService from '../../services/api/voucherService';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ShopProfilePage.module.css';
+
+const normalizeProduct = (p) => {
+  const minModelPrice = p.models?.length > 0
+    ? Math.min(...p.models.map(m => m.price))
+    : p.originalPrice;
+  return {
+    ...p,
+    id: p._id || p.id,
+    image: p.images?.[0] || p.tiers?.[0]?.images?.[0] || '',
+    price: minModelPrice ?? p.originalPrice ?? 0,
+  };
+};
 
 const ShopProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  
+
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('ALL');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [vouchers, setVouchers] = useState([]);
+  const voucherScrollRef = useRef(null);
   const { isAuthenticated } = useSelector((state) => state.auth);
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -41,6 +57,12 @@ const ShopProfilePage = () => {
     }
   }, [id, isAuthenticated]);
 
+  useEffect(() => {
+    if (id) {
+      fetchShopVouchers();
+    }
+  }, [id]);
+
   const checkFollowStatus = async () => {
     try {
       const res = await followService.checkFollowStatus(id);
@@ -57,19 +79,19 @@ const ShopProfilePage = () => {
       navigate('/login');
       return;
     }
-    
+
     try {
       const res = await followService.toggleFollow(id);
       const isNowFollowing = res.data?.isFollowing;
       setIsFollowing(isNowFollowing);
-      
+
       setSeller(prev => ({
         ...prev,
-        followerCount: isNowFollowing 
-          ? (prev.followerCount || 0) + 1 
+        followerCount: isNowFollowing
+          ? (prev.followerCount || 0) + 1
           : Math.max(0, (prev.followerCount || 1) - 1)
       }));
-      
+
       toast.success(res.message || (isNowFollowing ? 'Đã theo dõi' : 'Đã bỏ theo dõi'));
     } catch (error) {
       toast.error(error.message || 'Có lỗi xảy ra');
@@ -80,17 +102,17 @@ const ShopProfilePage = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await productService.getProductsBySeller(id, {
         page: pagination.page,
         limit: pagination.limit
       });
-      
+
       const responseData = response.data?.data || response.data || response;
       if (responseData) {
         setSeller(responseData.seller);
-        setProducts(responseData.products || []);
-        
+        setProducts((responseData.products || []).map(normalizeProduct));
+
         // Match the pagination structure from the backend
         const pageData = response.data?.pagination || response.pagination;
         if (pageData) {
@@ -113,6 +135,47 @@ const ShopProfilePage = () => {
     if (newPage >= 1 && newPage <= pagination.pages) {
       setPagination(prev => ({ ...prev, page: newPage }));
       window.scrollTo(0, 0);
+    }
+  };
+
+  const fetchShopVouchers = async () => {
+    try {
+      const res = await voucherService.getShopVouchers(id);
+      setVouchers(res.data?.data || res.data || []);
+    } catch {
+      // Silent fail - vouchers are optional
+    }
+  };
+
+  const handleSaveVoucher = async (voucherId) => {
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để lưu voucher');
+      navigate('/login');
+      return;
+    }
+    try {
+      const voucher = vouchers.find((v) => v._id === voucherId);
+      if (voucher?.isSaved) {
+        await voucherService.unsaveVoucher(voucherId);
+        setVouchers((prev) => prev.map((v) => v._id === voucherId ? { ...v, isSaved: false } : v));
+        toast.success('Đã bỏ lưu voucher');
+      } else {
+        await voucherService.saveVoucher(voucherId);
+        setVouchers((prev) => prev.map((v) => v._id === voucherId ? { ...v, isSaved: true } : v));
+        toast.success('Đã lưu voucher!');
+      }
+    } catch {
+      toast.error('Không thể lưu voucher');
+    }
+  };
+
+  const scrollVouchers = (direction) => {
+    if (voucherScrollRef.current) {
+      const scrollAmount = 260;
+      voucherScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -139,26 +202,91 @@ const ShopProfilePage = () => {
     <>
       <div>
         <Container className="mt-4 mb-3">
-          <ShopInfoCard 
-            seller={seller} 
-            showViewShop={false} 
+          {seller.profileImage && (
+            <div className={styles.shopBanner}>
+              <img src={seller.profileImage} alt={`${seller.fullName} shop banner`} className={styles.shopBannerImg} />
+            </div>
+          )}
+          <ShopInfoCard
+            seller={seller}
+            showViewShop={false}
             isFollowing={isFollowing}
             onToggleFollow={handleToggleFollow}
           />
         </Container>
       </div>
-      
+
+      {/* Voucher Carousel */}
+      {vouchers.length > 0 && (
+        <div className={styles.voucherSection}>
+          <Container>
+            <div className={styles.voucherHeader}>
+              <div className={styles.voucherTitle}>
+                <Ticket size={20} />
+                <span>Shop Vouchers</span>
+              </div>
+            </div>
+            <div className={styles.voucherCarouselWrapper}>
+              <button className={`${styles.voucherArrow} ${styles.voucherArrowLeft}`} onClick={() => scrollVouchers('left')}>
+                <ChevronLeft size={20} />
+              </button>
+              <div className={styles.voucherCarousel} ref={voucherScrollRef}>
+                {vouchers.map((v) => {
+                  const usagePercent = v.usageLimit > 0 ? Math.round((v.usageCount / v.usageLimit) * 100) : 0;
+                  const endDate = new Date(v.endTime);
+                  const formattedEnd = `${String(endDate.getDate()).padStart(2, '0')}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${endDate.getFullYear()}`;
+                  return (
+                    <div key={v._id} className={styles.voucherCard}>
+                      <div className={styles.voucherLeft}>
+                        <div className={styles.voucherDiscount}>
+                          {v.discountType === 'percent'
+                            ? `${v.discountValue}% Off`
+                            : `${formatCurrency(v.discountValue)} Off`}
+                        </div>
+                        <div className={styles.voucherCondition}>
+                          Min. Order {formatCurrency(v.minBasketPrice)}
+                          {v.maxDiscountAmount && ` | Max ${formatCurrency(v.maxDiscountAmount)}`}
+                        </div>
+                      </div>
+                      <div className={styles.voucherRight}>
+                        <button
+                          className={`${styles.voucherSaveBtn} ${v.isSaved ? styles.voucherSaved : ''}`}
+                          onClick={() => handleSaveVoucher(v._id)}
+                          title={v.isSaved ? 'Saved' : 'Save voucher'}
+                        >
+                          {v.isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                        </button>
+                      </div>
+                      <div className={styles.voucherFooter}>
+                        <div className={styles.voucherUsageBar}>
+                          <div className={styles.voucherUsageFill} style={{ width: `${usagePercent}%` }} />
+                        </div>
+                        <span className={styles.voucherUsageText}>{usagePercent}% used</span>
+                        <span className={styles.voucherExpiry}>Exp: {formattedEnd}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button className={`${styles.voucherArrow} ${styles.voucherArrowRight}`} onClick={() => scrollVouchers('right')}>
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </Container>
+        </div>
+      )}
+
       <div className={styles.shopProfilePage}>
         <div className={styles.tabsContainer}>
           <Container>
             <div className={styles.shopTabs}>
-              <button 
+              <button
                 className={`${styles.tabItem} ${activeTab === 'HOME' ? styles.active : ''}`}
                 onClick={() => setActiveTab('HOME')}
               >
                 {t('product_details.tab_home', 'Dạo')}
               </button>
-              <button 
+              <button
                 className={`${styles.tabItem} ${activeTab === 'ALL' ? styles.active : ''}`}
                 onClick={() => setActiveTab('ALL')}
               >
@@ -244,10 +372,10 @@ const ShopProfilePage = () => {
                     </Col>
                   ))}
                 </Row>
-                
+
                 {pagination.pages > 1 && (
                   <div className="mt-5 d-flex justify-content-center">
-                    <Pagination 
+                    <Pagination
                       currentPage={pagination.page}
                       totalPages={pagination.pages}
                       onPageChange={handlePageChange}

@@ -60,6 +60,7 @@ const ShopProgramForm = lazy(() => import('@pages/seller/promotions/ShopProgramF
 const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboPromotionForm'));
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
+const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -276,6 +277,13 @@ export const routeConfig = [
   {
     path: '/seller/dashboard',
     element: SellerDashboard,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/profile',
+    element: SellerProfilePage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
