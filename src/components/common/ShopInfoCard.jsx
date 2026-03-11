@@ -15,11 +15,11 @@ const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onTogg
 
   const handleChatClick = () => {
     if (!sellerId) return;
-    
+
     // Dispatch custom event that ChatWidget listens to
     console.log('ShopInfoCard: Dispatching openChatWithShop for:', sellerId);
-    const event = new CustomEvent('openChatWithShop', { 
-        detail: { shopId: sellerId } 
+    const event = new CustomEvent('openChatWithShop', {
+      detail: { shopId: sellerId }
     });
     window.dispatchEvent(event);
   };
@@ -40,8 +40,11 @@ const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onTogg
         </div>
         <div className={styles.shopProfileInfo}>
           <div className={styles.shopName}>{seller.fullName || 'Shop'}</div>
+          {seller.aboutMe && (
+            <div className={styles.shopDescription}>{seller.aboutMe}</div>
+          )}
           <div className={styles.shopOnlineStatus}>
-              {seller.createdAt ? `${t('product_details.shop_joined')} ${Math.max(1, Math.floor((new Date() - new Date(seller.createdAt)) / (1000 * 60 * 60 * 24 * 30)))} ${t('product_details.shop_months_ago')}` : ''}
+            {seller.createdAt ? `${t('product_details.shop_joined')} ${Math.max(1, Math.floor((new Date() - new Date(seller.createdAt)) / (1000 * 60 * 60 * 24 * 30)))} ${t('product_details.shop_months_ago')}` : ''}
           </div>
           <div className={styles.shopActions}>
             {showViewShop ? (
@@ -58,11 +61,11 @@ const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onTogg
               </>
             ) : (
               <>
-                <button 
-                  className={`${styles.btnViewShop} ${isFollowing ? styles.following : ''}`} 
+                <button
+                  className={`${styles.btnViewShop} ${isFollowing ? styles.following : ''}`}
                   onClick={onToggleFollow}
                 >
-                  <i className={`bi ${isFollowing ? 'bi-person-check-fill' : 'bi-person-plus-fill'}`}></i> 
+                  <i className={`bi ${isFollowing ? 'bi-person-check-fill' : 'bi-person-plus-fill'}`}></i>
                   {isFollowing ? t('product_details.btn_following', 'Đang Theo Dõi') : t('product_details.btn_follow', 'Theo Dõi')}
                 </button>
                 <button className={styles.btnChat} onClick={handleChatClick}>
@@ -97,7 +100,7 @@ const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onTogg
           <i className="bi bi-star statIcon"></i>
           <span className={styles.statLabel}>{t('product_details.shop_stat_rating')}:</span>
           <span className={styles.statValue}>
-            {seller.rating !== undefined ? seller.rating.toFixed(1) : '0.0'} 
+            {seller.rating !== undefined ? seller.rating.toFixed(1) : '0.0'}
             {seller.ratingCount > 0 ? ` (${seller.ratingCount} ${t('product_details.shop_stat_rating')})` : ''}
           </span>
         </div>

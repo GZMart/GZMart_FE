@@ -26,6 +26,15 @@ const voucherService = {
 
   // Validate a voucher code manually entered by buyer
   validateCode: async (code) => await api.post('/api/vouchers/validate-code', { code }),
+
+  // Get active public vouchers for a shop (buyer browsing)
+  getShopVouchers: async (shopId) => await api.get(`/api/vouchers/shop/${shopId}`),
+
+  // Save/claim a voucher
+  saveVoucher: async (id) => await api.post(`/api/vouchers/${id}/save`),
+
+  // Remove saved voucher
+  unsaveVoucher: async (id) => await api.delete(`/api/vouchers/${id}/save`),
 };
 
 export default voucherService;
