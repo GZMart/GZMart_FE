@@ -11,8 +11,29 @@ import axiosClient from '../axiosClient';
  * @param {string} reviewData.orderId - Order ID for verified purchase (optional)
  */
 const createReview = async (reviewData) => {
-  const response = await axiosClient.post('/api/reviews', reviewData);
-  return response.data;
+  console.log('🔵 [ADD RATING API] Request:', {
+    endpoint: 'POST /api/reviews',
+    data: reviewData,
+    timestamp: new Date().toISOString(),
+  });
+
+  try {
+    const response = await axiosClient.post('/api/reviews', reviewData);
+    console.log('✅ [ADD RATING API] Response:', {
+      status: response.status,
+      data: response.data,
+      timestamp: new Date().toISOString(),
+    });
+    return response.data;
+  } catch (error) {
+    console.error('❌ [ADD RATING API] Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      timestamp: new Date().toISOString(),
+    });
+    throw error;
+  }
 };
 
 /**

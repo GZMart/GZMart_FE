@@ -1367,10 +1367,16 @@ const Header = () => {
           <div className="row align-items-center gy-3">
             {/* Logo & Menu */}
             <div className="col-6 col-lg-3 d-flex align-items-center gap-3">
-              <button className="btn btn-light bg-light rounded px-3 py-2 d-flex align-items-center justify-content-center">
-                <AlignLeft size={24} className="text-dark" />
-              </button>
-              <Link to={PUBLIC_ROUTES.HOME} className="text-decoration-none text-dark">
+              <Link
+                to={PUBLIC_ROUTES.HOME}
+                className="text-decoration-none text-dark d-flex align-items-center gap-2"
+              >
+                <img
+                  src="/logo.png"
+                  alt="GZMart"
+                  style={{ height: '90px', objectFit: 'contain' }}
+                />
+                <span className="text-secondary mx-1">|</span>
                 <h2 className="h3 fw-bolder mb-0 tracking-tight">GZMart</h2>
               </Link>
               <div className="d-none d-xl-block">

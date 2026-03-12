@@ -26,7 +26,29 @@ const rmaService = {
    * @param {Array<Object>} data.items - Items to return
    */
   createReturnRequest: async (data) => {
-    return axiosClient.post('/api/rma/requests', data);
+    console.log('🔵 [RETURN/REFUND REQUEST API] Request:', {
+      endpoint: 'POST /api/rma/requests',
+      data: data,
+      timestamp: new Date().toISOString(),
+    });
+
+    try {
+      const response = await axiosClient.post('/api/rma/requests', data);
+      console.log('✅ [RETURN/REFUND REQUEST API] Response:', {
+        status: response.status,
+        data: response.data,
+        timestamp: new Date().toISOString(),
+      });
+      return response;
+    } catch (error) {
+      console.error('❌ [RETURN/REFUND REQUEST API] Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        timestamp: new Date().toISOString(),
+      });
+      throw error;
+    }
   },
 
   /**
