@@ -121,19 +121,21 @@ const ProductDetailsPage = () => {
           try {
             // First try to fetch from getActive
             const response = await flashsaleService.getActive();
-            const allFlashSales = Array.isArray(response) ? response : response.data?.data || response.data || [];
-            
+            const allFlashSales = Array.isArray(response)
+              ? response
+              : response.data?.data || response.data || [];
+
             // Find flash sale for this product
-            const flashSale = allFlashSales.find(fs => {
+            const flashSale = allFlashSales.find((fs) => {
               const prodId = fs.productId?._id || fs.productId?.id || fs.productId;
               return prodId === productId;
             });
-            
+
             if (flashSale) {
               console.log('✅ Flash sale found for product:', flashSale);
               return flashSale;
             }
-            
+
             return null;
           } catch (err) {
             console.error('Error fetching flash sales:', err);
@@ -150,7 +152,7 @@ const ProductDetailsPage = () => {
         if (!isMounted) return;
 
         const productData = productResponse.data?.data || productResponse.data || productResponse;
-        
+
         // Fetch flash sale data by matching product ID
         console.log('🔍 Product ID:', productData?._id);
         const flashSaleData = await fetchFlashSale(productData?._id);
@@ -185,11 +187,9 @@ const ProductDetailsPage = () => {
           models: productData.models || [],
           price: productData.originalPrice || 0,
           flashSale: productData.flashSale || {
-            timeText: 'FLASH SALE STARTS IN 21:00, TODAY'
+            timeText: 'FLASH SALE STARTS IN 21:00, TODAY',
           },
-          shopVouchers: productData.shopVouchers || [
-            { discount: 'Save 10k' }
-          ],
+          shopVouchers: productData.shopVouchers || [{ discount: 'Save 10k' }],
           shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
           warranty: productData.warranty || 'Free return within 15 days • Warranty included',
           soldCount: productData.soldCount || productData.sold || 0,
@@ -578,7 +578,9 @@ const ProductDetailsPage = () => {
                 <i className={`bi bi-heart`}></i>
               </button>
               <span className={styles.saveLabel}>
-                {isFavourite ? `Saved (${formatSavedCount(product.wishlistCount)})` : `Save (${formatSavedCount(product.wishlistCount)})`}
+                {isFavourite
+                  ? `Saved (${formatSavedCount(product.wishlistCount)})`
+                  : `Save (${formatSavedCount(product.wishlistCount)})`}
               </span>
             </div>
           </div>
@@ -600,22 +602,25 @@ const ProductDetailsPage = () => {
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.reviewCount}>
-             // ({product.reviewCount || 0} {t('product_details.reviews')})
-          //  </span>
-          //  <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
-            //  {t('product_details.stat_sold')} {product.sold || 0}
-              {product.reviewCount 
-                ? product.reviewCount >= 1000 
-                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k` 
+              // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
+            </span>
+            //{' '}
+            <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
+              // {t('product_details.stat_sold')} {product.sold || 0}
+              {product.reviewCount
+                ? product.reviewCount >= 1000
+                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
                   : product.reviewCount
-                : '0'} Rating
+                : '0'}{' '}
+              Rating
             </span>
             <span className={styles.soldCount}>
-              {product.sold 
-                ? product.sold >= 1000 
-                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+` 
+              {product.sold
+                ? product.sold >= 1000
+                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+`
                   : `${product.sold}+`
-                : '0+'} Sold
+                : '0+'}{' '}
+              Sold
             </span>
           </div>
 
@@ -628,7 +633,8 @@ const ProductDetailsPage = () => {
                   <span className={styles.flashSaleLabel}>FLASH SALE</span>
                 </div>
                 <div className={styles.flashSaleTimer}>
-                  {countdown.days}d : {countdown.hours}h : {countdown.minutes}m : {countdown.seconds}s
+                  {countdown.days}d : {countdown.hours}h : {countdown.minutes}m :{' '}
+                  {countdown.seconds}s
                 </div>
               </div>
             )}
@@ -949,40 +955,7 @@ const ProductDetailsPage = () => {
             </div>
           )}
 
-          {activeTab === 'review' && (
-            <div className={styles.reviews}>
-              <h3>{t('product_details.title_customer_reviews')}</h3>
-              <div className={styles.reviewSummary}>
-                <div className={styles.averageRating}>
-                  <div className={styles.ratingNumber}>{product.rating}</div>
-                  <div className={styles.stars}>
-                    {'★'.repeat(Math.floor(product.rating))}
-                    {'☆'.repeat(5 - Math.floor(product.rating))}
-                  </div>
-                  <div className={styles.totalReviews}>
-                    {product.reviews} {t('product_details.total_reviews')}
-                  </div>
-                </div>
-              </div>
-              <div className={styles.reviewList}>
-                {product.productReviews?.length > 0 ? (
-                  product.productReviews.map((review) => (
-                    <div key={review.id} className={styles.reviewItem}>
-                      <div className={styles.reviewHeader}>
-                        <strong>{review.author}</strong>
-                        <span className={styles.reviewDate}>{review.date}</span>
-                      </div>
-                      <div className={styles.reviewRating}>{'★'.repeat(review.rating)}</div>
-                      <p>{review.comment}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p>{t('product_details.no_reviews')}</p>
-                )}
-              </div>
-            </div>
-            //<ProductReviewSection product={product} />
-          )}
+          {activeTab === 'review' && <ProductReviewSection product={product} />}
         </div>
       </div>
 
