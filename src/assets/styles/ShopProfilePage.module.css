@@ -7,16 +7,18 @@
 
 .shopBannerImg {
   width: 100%;
-  height: 220px;
-  object-fit: cover;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
   display: block;
+  background: #f8f8f8;
 }
 
 /* ═══════════════════════════════════════
    Voucher Carousel (Shopee-style)
    ═══════════════════════════════════════ */
 .voucherSection {
-  background: #fff;
+  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
   border-bottom: 1px solid #f0f0f0;
   padding: 16px 0;
 }
@@ -38,7 +40,7 @@
 }
 
 .voucherTitle svg {
-  color: #0d6efd;
+  color: #B13C36;
 }
 
 .voucherCarouselWrapper {
@@ -62,18 +64,22 @@
 .voucherCard {
   flex: 0 0 280px;
   scroll-snap-align: start;
-  border: 1px solid #e0e7ff;
-  border-radius: 8px;
+  border: 1px solid rgba(177, 60, 54, 0.2);
+  border-radius: 12px;
   padding: 16px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   flex-wrap: wrap;
   position: relative;
-  transition: box-shadow 0.2s;
+  transition: all 0.3s ease;
 }
 
 .voucherCard:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(177, 60, 54, 0.2);
+  transform: translateY(-2px);
+  border-color: rgba(177, 60, 54, 0.4);
 }
 
 .voucherCard::before {
@@ -83,8 +89,8 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #0d6efd;
-  border-radius: 8px 0 0 8px;
+  background: #B13C36;
+  border-radius: 12px 0 0 12px;
 }
 
 .voucherLeft {
@@ -96,7 +102,7 @@
 .voucherDiscount {
   font-size: 16px;
   font-weight: 700;
-  color: #0d6efd;
+  color: #B13C36;
   margin-bottom: 6px;
 }
 
@@ -118,9 +124,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f6ff;
-  color: #0d6efd;
-  border: 1.5px solid #cce0ff;
+  background: rgba(177, 60, 54, 0.1);
+  color: #B13C36;
+  border: 1.5px solid rgba(177, 60, 54, 0.3);
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
@@ -129,22 +135,29 @@
 }
 
 .voucherSaveBtn:hover {
-  background: #0d6efd;
+  background: #B13C36;
   color: #fff;
-  border-color: #0d6efd;
+  border-color: #B13C36;
   transform: scale(1.1);
 }
 
-.voucherSaved {
-  background: #0d6efd;
+.useVoucherBtn {
+  background: #B13C36;
   color: #fff;
-  border-color: #0d6efd;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(177, 60, 54, 0.2);
 }
 
-.voucherSaved:hover {
-  background: #0b5ed7;
-  border-color: #0b5ed7;
-  transform: scale(1.1);
+.useVoucherBtn:hover {
+  background: #8E302B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(177, 60, 54, 0.3);
 }
 
 .voucherFooter {
@@ -163,14 +176,14 @@
 
 .voucherUsageFill {
   height: 100%;
-  background: #0d6efd;
+  background: #B13C36;
   border-radius: 2px;
   transition: width 0.3s;
 }
 
 .voucherUsageText {
   font-size: 11px;
-  color: #0d6efd;
+  color: #B13C36;
 }
 
 .voucherExpiry {
@@ -256,8 +269,8 @@
 
 .tabItem.active {
   background-color: white;
-  color: #0066ff;
-  border-bottom-color: #0066ff;
+  color: #B13C36;
+  border-bottom-color: #B13C36;
 }
 
 /* Main Content Sections */
@@ -283,8 +296,7 @@
 }
 
 .sectionTitle.fire {
-  color: #ff4444;
-  /* Keep fire icon red but maybe slightly softer */
+  color: #B13C36;
 }
 
 .sectionTitle.fire i {
@@ -292,7 +304,7 @@
 }
 
 .viewAllBtn {
-  color: #0066ff;
+  color: #B13C36;
   background: transparent;
   border: none;
   font-size: 14px;
@@ -300,8 +312,53 @@
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  transition: color 0.2s;
 }
 
 .viewAllBtn:hover {
+  color: #8E302B;
   text-decoration: underline;
+}
+
+/* Active Voucher Filter Banner */
+.activeFilterBanner {
+  background: #fff5f5;
+  border: 1px solid rgba(177, 60, 54, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #B13C36;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.activeFilterBanner div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterCondition {
+  color: #5a5a5a;
+  font-size: 13px;
+}
+
+.clearFilterBtn {
+  background: transparent;
+  color: #B13C36;
+  border: 1px solid #B13C36;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clearFilterBtn:hover {
+  background: #B13C36;
+  color: #fff;
 }
