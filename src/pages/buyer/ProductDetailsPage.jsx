@@ -10,8 +10,10 @@ import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import ProductReviewSection from '../../components/buyer/ProductReviewSection';
+import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
+import promotionBuyerService from '../../services/api/promotionBuyerService';
 import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
@@ -94,6 +96,7 @@ const ProductDetailsPage = () => {
 
   const [product, setProduct] = useState(null);
   const [flashSale, setFlashSale] = useState(null);
+  const [promotions, setPromotions] = useState(null);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [activeModel, setActiveModel] = useState(null); // The specifically selected variant
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -121,9 +124,7 @@ const ProductDetailsPage = () => {
           try {
             // First try to fetch from getActive
             const response = await flashsaleService.getActive();
-            const allFlashSales = Array.isArray(response)
-              ? response
-              : response.data?.data || response.data || [];
+            const allFlashSales = Array.isArray(response) ? response : response.data?.data || response.data || [];
 
             // Find flash sale for this product
             const flashSale = allFlashSales.find((fs) => {
@@ -143,10 +144,11 @@ const ProductDetailsPage = () => {
           }
         };
 
-        const [productResponse, relatedResponse, frequentlyBoughtResponse] = await Promise.all([
+        const [productResponse, relatedResponse, frequentlyBoughtResponse, promotionsResponse] = await Promise.all([
           productService.getById(id),
           productService.getRelatedProducts(id, 8).catch(() => ({ data: [] })),
           productService.getFeaturedProducts(4).catch(() => ({ data: [] })),
+          promotionBuyerService.getProductPromotions(id).catch(() => ({ data: null })),
         ]);
 
         if (!isMounted) return;
@@ -211,16 +213,28 @@ const ProductDetailsPage = () => {
         // Transform related & freq bought ... (Use existing logic or simplify)
         const processRelated = (res) => {
           const list = Array.isArray(res) ? res : res.data || [];
-          return list.map((p) => ({
-            ...p,
-            id: p._id,
-            image:
-              p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
-          }));
+          return list.map((p) => {
+            const minModelPrice = p.models?.length > 0
+              ? Math.min(...p.models.map(m => m.price))
+              : p.originalPrice;
+            return {
+              ...p,
+              id: p._id,
+              image:
+                p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+              price: minModelPrice ?? p.originalPrice ?? 0,
+            };
+          });
         };
 
         setRelatedProducts(processRelated(relatedResponse));
         setFrequentlyBought(processRelated(frequentlyBoughtResponse));
+
+        // Set promotions data
+        const promoData = promotionsResponse?.data || promotionsResponse;
+        if (promoData) {
+          setPromotions(promoData);
+        }
       } catch (err) {
         if (isMounted) {
           console.error('Error fetching product:', err);
@@ -586,11 +600,12 @@ const ProductDetailsPage = () => {
           </div>
         </div>
 
-        {/* Info */}
+           {/* Info */}
         <div className={styles.infoSection}>
+          {/* 1. Product Title */}
           <h1 className={styles.productTitle}>{product.name}</h1>
 
-          {/* Rating Section */}
+          {/* 2. Rating Bar */}
           <div className={styles.ratingSection}>
             <div className={styles.ratingStars}>
               {[...Array(5)].map((_, i) => (
@@ -601,6 +616,7 @@ const ProductDetailsPage = () => {
               ))}
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
+            <span className={styles.ratingDivider}>|</span>
             <span className={styles.reviewCount}>
               // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
             </span>
@@ -612,8 +628,9 @@ const ProductDetailsPage = () => {
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
                   : product.reviewCount
                 : '0'}{' '}
-              Rating
+              Ratings
             </span>
+            <span className={styles.ratingDivider}>|</span>
             <span className={styles.soldCount}>
               {product.sold
                 ? product.sold >= 1000
@@ -624,7 +641,7 @@ const ProductDetailsPage = () => {
             </span>
           </div>
 
-          {/* Price & Discount Section */}
+          {/* 3. Price Section */}
           <div className={styles.priceSection}>
             {flashSale && (flashSale.status === 'active' || !flashSale.status) && (
               <div className={styles.flashSaleContainer}>
@@ -651,6 +668,18 @@ const ProductDetailsPage = () => {
                     -{Math.round((1 - flashSale.salePrice / product.originalPrice) * 100)}%
                   </span>
                 </>
+              ) : promotions?.shopProgram && promotions.shopProgram.salePrice < promotions.shopProgram.originalPrice ? (
+                <>
+                  <span className={styles.currentPrice}>
+                    {formatCurrency(promotions.shopProgram.salePrice)}
+                  </span>
+                  <span className={styles.originalPrice}>
+                    {formatCurrency(promotions.shopProgram.originalPrice)}
+                  </span>
+                  <span className={styles.discount}>
+                    -{promotions.shopProgram.discount}%
+                  </span>
+                </>
               ) : (
                 <>
                   <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
@@ -669,56 +698,47 @@ const ProductDetailsPage = () => {
             </div>
           </div>
 
-          {/* Flash Sale Section */}
-          {product.isTrending && product.flashSale && (
-            <div className={styles.flashSaleSection}>
-              <i className="bi bi-lightning-fill"></i>
-              <span className={styles.flashSaleLabel}>FLASH SALE</span>
-              <span className={styles.flashSaleTime}>{product.flashSale.timeText}</span>
-            </div>
-          )}
-
-          {/* Voucher Section */}
-          {product.shopVouchers && product.shopVouchers.length > 0 && (
-            <div className={styles.voucherSection}>
-              <div className={styles.voucherLabel}>Shop Vouchers</div>
-              <div className={styles.voucherItems}>
-                {product.shopVouchers.map((voucher, idx) => (
-                  <div key={idx} className={styles.voucherItem}>
-                    <span className={styles.voucherDiscount}>{voucher.discount}</span>
-                  </div>
-                ))}
+          {/* 4. Deals & Offers — compact grouped section */}
+          {((product.shopVouchers && product.shopVouchers.length > 0) ||
+            promotions?.comboPromotions?.length > 0 ||
+            promotions?.addOnDeals?.length > 0) && (
+            <div className={styles.dealsSection}>
+              <div className={styles.dealsSectionHeader}>
+                <i className="bi bi-tag-fill"></i>
+                <span>Deals & Offers</span>
               </div>
-            </div>
-          )}
 
-          {/* Shipping Info */}
-          <div className={styles.shippingInfoSection}>
-            <div className={styles.shippingInfoItem}>
-              <i className="bi bi-truck"></i>
-              <div>
-                <div className={styles.shippingTitle}>{t('product_details.tab_shipping')}</div>
-                {product.shippingInfo ? (
-                  <div className={styles.shippingDetail}>{product.shippingInfo}</div>
-                ) : (
-                  <div className={styles.shippingDetail}>
-                    {t('product_details.default_shipping_detail')}
+              {/* Vouchers — horizontal compact row */}
+              {product.shopVouchers && product.shopVouchers.length > 0 && (
+                <div className={styles.voucherRow}>
+                  <span className={styles.voucherRowLabel}>Vouchers:</span>
+                  <div className={styles.voucherChips}>
+                    {product.shopVouchers.map((voucher, idx) => (
+                      <span key={idx} className={styles.voucherChip}>
+                        {voucher.discount}
+                      </span>
+                    ))}
                   </div>
-                )}
-              </div>
-            </div>
-            <div className={styles.shippingInfoItem}>
-              <i className="bi bi-shield-check"></i>
-              <div>
-                <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
-                <div className={styles.shippingDetail}>
-                  {product.warranty || t('product_details.default_warranty_detail')}
                 </div>
-              </div>
-            </div>
-          </div>
+              )}
 
-          {/* Tiers / Variants Selection - Compact */}
+              {/* Combo Promotions — inline */}
+              {promotions?.comboPromotions?.length > 0 && (
+                <div className={styles.dealItem}>
+                  <ComboPromotionBanner combos={promotions.comboPromotions} />
+                </div>
+              )}
+
+              {/* Add-on Deals — inline */}
+              {promotions?.addOnDeals?.length > 0 && (
+                <div className={styles.dealItem}>
+                  <AddOnDealCards deals={promotions.addOnDeals} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 5. Variant Selection */}
           {product.tier_variations?.map((tier, tierIdx) => (
             <div key={tierIdx} className={styles.tierSection}>
               <div className={styles.tierHeader}>
@@ -753,7 +773,7 @@ const ProductDetailsPage = () => {
             </div>
           ))}
 
-          {/* Quantity & Actions */}
+          {/* 6. Quantity & Actions */}
           <div className={styles.actionsSection}>
             <div className={styles.quantitySelector}>
               <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
@@ -807,7 +827,29 @@ const ProductDetailsPage = () => {
             )}
           </div>
 
-          {/* Meta Info */}
+          {/* 7. Shipping & Warranty — compact */}
+          <div className={styles.shippingInfoSection}>
+            <div className={styles.shippingInfoItem}>
+              <i className="bi bi-truck"></i>
+              <div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_shipping')}</div>
+                <div className={styles.shippingDetail}>
+                  {product.shippingInfo || t('product_details.default_shipping_detail')}
+                </div>
+              </div>
+            </div>
+            <div className={styles.shippingInfoItem}>
+              <i className="bi bi-shield-check"></i>
+              <div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
+                <div className={styles.shippingDetail}>
+                  {product.warranty || t('product_details.default_warranty_detail')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 8. Meta Info */}
           <div className={styles.metaInfo}>
             <div className={styles.metaItem}>
               <span>{t('product_details.label_stock')}:</span> {currentStock}
@@ -820,10 +862,26 @@ const ProductDetailsPage = () => {
         </div>
       </div>
 
-      {/* Shop Info Section - Shopee Style */}
+      {/* Shop Info Section */}
       {(product.sellerId || true) && (
         <div className={styles.shopSection}>
-          <ShopInfoCard seller={product.sellerId} showViewShop={true} />
+          <ShopInfoCard
+            seller={product.sellerId}
+            showViewShop={true}
+            productInfo={{
+              productId: product._id,
+              name: product.name,
+              image: product.images?.[0] || '',
+              price: currentPrice,
+              originalPrice: product.originalPrice || null,
+              variant: selectedTierIndex.length > 0
+                ? product.tier_variations?.map((t, i) => t.options[selectedTierIndex[i]]).filter(Boolean).join(' - ')
+                : null,
+              slug: product.slug || product._id,
+              rating: product.rating || 0,
+              hasVoucher: product.shopVouchers && product.shopVouchers.length > 0
+            }}
+          />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -9,7 +9,7 @@ import { getProductImages } from '@utils/data/ProductsPage_MockData';
 import * as favouriteService from '@services/api/favouriteService';
 import styles from '@assets/styles/ProductCard.module.css';
 
-const ProductCard = ({ product }) => {
+const ProductCard = React.forwardRef(({ product }, ref) => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [isFav, setIsFav] = useState(false);
@@ -100,7 +100,7 @@ const ProductCard = ({ product }) => {
     : 0;
 
   return (
-    <div className={styles.productCard} onClick={handleCardClick} role="link" tabIndex={0}>
+    <div className={styles.productCard} onClick={handleCardClick} role="link" tabIndex={0} ref={ref}>
       {/* Discount Badge */}
       {discountPercentage > 0 && (
         <div className={styles.discountBadge}>-{discountPercentage}%</div>
@@ -134,6 +134,15 @@ const ProductCard = ({ product }) => {
             <i className={`bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}`}></i>
           </button>
         </div>
+        {/* Combo Promotion Tag */}
+        {product.comboPromotion && (
+          <div className={styles.comboTag}>
+            <i className="bi bi-tags-fill"></i>
+            {product.comboPromotion.comboType === 'percent'
+              ? `Combo -${product.comboPromotion.bestDiscount}%`
+              : 'Combo Deal'}
+          </div>
+        )}
       </div>
 
       {/* Product Info */}
@@ -222,7 +231,10 @@ const ProductCard = ({ product }) => {
       </div>
     </div>
   );
-};
+});
+
+// Give the component a display name for debugging since it's wrapped in forwardRef
+ProductCard.displayName = 'ProductCard';
 
 ProductCard.propTypes = {
   product: PropTypes.shape({
@@ -245,6 +257,13 @@ ProductCard.propTypes = {
     dealEndDate: PropTypes.string,
     dealSoldCount: PropTypes.number,
     dealQuantityLimit: PropTypes.number,
+    // Promotion fields
+    promotionType: PropTypes.string,
+    comboPromotion: PropTypes.shape({
+      name: PropTypes.string,
+      comboType: PropTypes.string,
+      bestDiscount: PropTypes.number,
+    }),
   }).isRequired,
 };
 

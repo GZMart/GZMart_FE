@@ -69,6 +69,17 @@
     margin-bottom: 12px;
 }
 
+.shopDescription {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .shopActions {
     display: flex;
     gap: 12px;

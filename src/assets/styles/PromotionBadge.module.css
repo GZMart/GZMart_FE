@@ -1,0 +1,230 @@
+/* ===== Promotion Badge Components ===== */
+
+/* --- Shared Section Header --- */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary, #1a1a2e);
+  margin-bottom: 10px;
+}
+
+.sectionHeader i {
+  font-size: 16px;
+}
+
+/* --- Combo Promotion --- */
+.comboSection {
+  background: linear-gradient(135deg, #fff7ed, #fff3e0);
+  border: 1px solid #ffe0b2;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.comboSection .sectionHeader {
+  color: #e65100;
+}
+
+.comboCard {
+  margin-bottom: 8px;
+}
+
+.comboCard:last-child {
+  margin-bottom: 0;
+}
+
+.comboName {
+  font-size: 13px;
+  color: #6d4c41;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.comboTiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tierBadge {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ffcc80;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #e65100;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tierBadge:hover {
+  background: #fff3e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(230, 81, 0, 0.12);
+}
+
+/* --- Add-on Deal --- */
+.addonSection {
+  background: linear-gradient(135deg, #f3e5f5, #fce4ec);
+  border: 1px solid #e1bee7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.addonSection .sectionHeader {
+  color: #ad1457;
+}
+
+.addonDeal {
+  margin-bottom: 10px;
+}
+
+.addonDeal:last-child {
+  margin-bottom: 0;
+}
+
+.addonDealName {
+  font-size: 13px;
+  color: #6a1b9a;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.addonItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.addonItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #f3e5f5;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.addonItem:hover {
+  border-color: #ce93d8;
+  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.1);
+  transform: translateY(-1px);
+}
+
+.addonImageWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f5f5f5;
+}
+
+.addonImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.addonImagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bdbdbd;
+  font-size: 20px;
+}
+
+.addonInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.addonProductName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a2e);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.addonPricing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.addonSalePrice {
+  font-size: 14px;
+  font-weight: 700;
+  color: #d32f2f;
+}
+
+.addonOriginalPrice {
+  font-size: 12px;
+  color: #9e9e9e;
+  text-decoration: line-through;
+}
+
+.addonSavings {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: #d32f2f;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.addonLimit {
+  font-size: 11px;
+  color: #9e9e9e;
+  margin-top: 2px;
+}
+
+/* --- Shop Program Price Override (used in ProductDetailsPage) --- */
+.shopProgramContainer {
+  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+  border: 1px solid #c8e6c9;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.shopProgramHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.shopProgramLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.shopProgramLabel i {
+  font-size: 14px;
+}
+
+.shopProgramCountdown {
+  font-size: 12px;
+  color: #558b2f;
+  font-weight: 500;
+}
