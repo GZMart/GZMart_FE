@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
+import { PUBLIC_ROUTES, BUYER_ROUTES, SELLER_ROUTES, ADMIN_ROUTES } from '@constants/routes';
+import { USER_ROLES } from '@constants';
 import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/authSlice';
 import { selectCartTotalItems, fetchCart } from '@store/slices/cartSlice';
 import { searchService } from '@services/api';
@@ -1713,7 +1714,13 @@ const Header = () => {
                       }}
                     >
                       <Link
-                        to={BUYER_ROUTES.DASHBOARD}
+                        to={
+                          user?.role === USER_ROLES.ADMIN
+                            ? ADMIN_ROUTES.DASHBOARD
+                            : user?.role === USER_ROLES.SELLER
+                              ? SELLER_ROUTES.DASHBOARD
+                              : BUYER_ROUTES.DASHBOARD
+                        }
                         className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
                         style={{
                           transition: 'background-color 0.2s',

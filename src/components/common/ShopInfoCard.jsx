@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from '../../assets/styles/ShopInfoCard.module.css';
 
-const ShopInfoCard = ({ seller, showViewShop = true }) => {
+const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onToggleFollow }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -12,6 +12,17 @@ const ShopInfoCard = ({ seller, showViewShop = true }) => {
   }
 
   const sellerId = seller._id || seller.id;
+
+  const handleChatClick = () => {
+    if (!sellerId) return;
+
+    // Dispatch custom event that ChatWidget listens to
+    console.log('ShopInfoCard: Dispatching openChatWithShop for:', sellerId);
+    const event = new CustomEvent('openChatWithShop', {
+      detail: { shopId: sellerId }
+    });
+    window.dispatchEvent(event);
+  };
 
   return (
     <div className={styles.shopInfoCard}>
@@ -29,24 +40,38 @@ const ShopInfoCard = ({ seller, showViewShop = true }) => {
         </div>
         <div className={styles.shopProfileInfo}>
           <div className={styles.shopName}>{seller.fullName || 'Shop'}</div>
+          {seller.aboutMe && (
+            <div className={styles.shopDescription}>{seller.aboutMe}</div>
+          )}
           <div className={styles.shopOnlineStatus}>
-              {seller.createdAt ? `${t('product_details.shop_joined')} ${Math.max(1, Math.floor((new Date() - new Date(seller.createdAt)) / (1000 * 60 * 60 * 24 * 30)))} ${t('product_details.shop_months_ago')}` : ''}
+            {seller.createdAt ? `${t('product_details.shop_joined')} ${Math.max(1, Math.floor((new Date() - new Date(seller.createdAt)) / (1000 * 60 * 60 * 24 * 30)))} ${t('product_details.shop_months_ago')}` : ''}
           </div>
           <div className={styles.shopActions}>
-            <button className={styles.btnViewShop}>
-              <i className="bi bi-person-plus-fill"></i> {t('product_details.btn_follow')}
-            </button>
             {showViewShop ? (
-              <button
-                className={styles.btnChat}
-                onClick={() => navigate(`/shop/${sellerId}`)}
-              >
-                <i className="bi bi-shop"></i> {t('product_details.btn_view_shop')}
-              </button>
+              <>
+                <button className={styles.btnViewShop} onClick={handleChatClick}>
+                  <i className="bi bi-chat-dots-fill"></i> {t('product_details.btn_chat', 'Chat')}
+                </button>
+                <button
+                  className={styles.btnChat}
+                  onClick={() => navigate(`/shop/${sellerId}`)}
+                >
+                  <i className="bi bi-shop"></i> {t('product_details.btn_view_shop')}
+                </button>
+              </>
             ) : (
-              <button className={styles.btnChat}>
-                <i className="bi bi-chat-dots"></i> Chat
-              </button>
+              <>
+                <button
+                  className={`${styles.btnViewShop} ${isFollowing ? styles.following : ''}`}
+                  onClick={onToggleFollow}
+                >
+                  <i className={`bi ${isFollowing ? 'bi-person-check-fill' : 'bi-person-plus-fill'}`}></i>
+                  {isFollowing ? t('product_details.btn_following', 'Đang Theo Dõi') : t('product_details.btn_follow', 'Theo Dõi')}
+                </button>
+                <button className={styles.btnChat} onClick={handleChatClick}>
+                  <i className="bi bi-chat-dots"></i> {t('product_details.btn_chat', 'Chat')}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -75,7 +100,7 @@ const ShopInfoCard = ({ seller, showViewShop = true }) => {
           <i className="bi bi-star statIcon"></i>
           <span className={styles.statLabel}>{t('product_details.shop_stat_rating')}:</span>
           <span className={styles.statValue}>
-            {seller.rating !== undefined ? seller.rating.toFixed(1) : '0.0'} 
+            {seller.rating !== undefined ? seller.rating.toFixed(1) : '0.0'}
             {seller.ratingCount > 0 ? ` (${seller.ratingCount} ${t('product_details.shop_stat_rating')})` : ''}
           </span>
         </div>

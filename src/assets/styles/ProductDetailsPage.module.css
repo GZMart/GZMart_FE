@@ -419,6 +419,81 @@
   font-size: 13px;
 }
 
+/* Rating Divider */
+.ratingDivider {
+  color: #d0d0d0;
+  font-size: 14px;
+  user-select: none;
+}
+
+/* Deals & Offers Section */
+.dealsSection {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dealsSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.dealsSectionHeader i {
+  color: #ee4d2d;
+  font-size: 14px;
+}
+
+.dealItem {
+  /* Reset nested component margins to fit inside grouped section */
+}
+
+.dealItem > div {
+  margin-bottom: 0;
+}
+
+/* Voucher Row (compact horizontal) */
+.voucherRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.voucherRowLabel {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.voucherChips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  overflow-x: auto;
+}
+
+.voucherChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: #fff0f0;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  color: #ee4d2d;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 /* Shipping Info Section */
 .shippingInfoSection {
   display: flex;

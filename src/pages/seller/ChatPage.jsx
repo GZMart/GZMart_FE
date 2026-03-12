@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { Container, Row, Col, ListGroup, Form, Button, Image, InputGroup } from 'react-bootstrap';
 import socketService from '../../services/socketService';
 import axios from 'axios';
+import { getAuthToken } from '../../utils/storage';
 import './ChatPage.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -46,7 +47,7 @@ const ChatPage = () => {
   const fetchConversations = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/chat/conversations`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
       setConversations(response.data);
     } catch (error) {
@@ -61,7 +62,7 @@ const ChatPage = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/api/chat/messages/${conv._id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
       setMessages(response.data);
       setLoading(false);

@@ -39,6 +39,7 @@ const SupplierDetailPage = lazy(() => import('@pages/erp/SupplierDetailPage'));
 const PurchaseOrdersPage = lazy(() => import('@pages/erp/PurchaseOrdersPage'));
 const CreatePurchaseOrderPage = lazy(() => import('@pages/erp/CreatePurchaseOrderPage'));
 const PurchaseOrderDetailPage = lazy(() => import('@pages/erp/PurchaseOrderDetailPage'));
+const EditPurchaseOrderPage = lazy(() => import('@pages/erp/EditPurchaseOrderPage'));
 
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
@@ -59,6 +60,7 @@ const ShopProgramForm = lazy(() => import('@pages/seller/promotions/ShopProgramF
 const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboPromotionForm'));
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
+const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -279,6 +281,13 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
+  {
+    path: '/seller/profile',
+    element: SellerProfilePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
 
   // ERP Routes (Mini-ERP/Sourcing Module) - Admin & Seller only
   {
@@ -312,6 +321,13 @@ export const routeConfig = [
   {
     path: '/erp/purchase-orders/create',
     element: CreatePurchaseOrderPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/erp/purchase-orders/:id/edit',
+    element: EditPurchaseOrderPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',

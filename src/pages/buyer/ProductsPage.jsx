@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
@@ -6,6 +6,7 @@ import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
 import Pagination from '@components/common/Pagination';
 import { productService } from '../../services/api';
+import promotionBuyerService from '../../services/api/promotionBuyerService';
 
 
 const locations = [
@@ -79,6 +80,10 @@ const ProductsPage = () => {
   // Temporary filter states (before Apply)
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
+  // Infinite scroll
+  const loaderRef = useRef(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
   // Memoize filters to prevent unnecessary API calls
   const apiFilters = useMemo(() => {
     const searchQuery = searchParams.get('q');
@@ -131,7 +136,11 @@ const ProductsPage = () => {
 
     const fetchProducts = async () => {
       try {
-        setLoading(true);
+        if (page === 1) {
+          setLoading(true);
+        } else {
+          setIsFetchingMore(true);
+        }
         const response = await productService.getProductsAdvanced(apiFilters);
 
         if (!isMounted) return;
@@ -166,10 +175,63 @@ const ProductsPage = () => {
           };
         });
 
-        setProducts(transformed);
+        if (page === 1) {
+          setProducts(transformed);
+        } else {
+          setProducts((prev) => {
+            const currentIds = new Set(prev.map(p => p.id));
+            const newProducts = transformed.filter(p => !currentIds.has(p.id));
+            return [...prev, ...newProducts];
+          });
+        }
+        
         setTotalCount(response.count || response.pagination?.total || 0);
         setTotalPages(response.pagination?.pages || Math.ceil((response.count || 0) / itemsToShow));
         setLoading(false);
+        setIsFetchingMore(false);
+
+        // Fetch promotions for all visible products
+        const productIds = transformed.map((p) => p.id).filter(Boolean);
+        if (productIds.length > 0) {
+          try {
+            const promoResponse = await promotionBuyerService.getProductPromotionsBatch(productIds);
+            const promoMap = promoResponse?.data || promoResponse;
+            if (promoMap && typeof promoMap === 'object') {
+              setProducts((prev) =>
+                prev.map((p) => {
+                  const promo = promoMap[p.id];
+                  if (!promo) return p;
+
+                  const updated = { ...p };
+
+                  // Shop program price override
+                  if (promo.shopProgram && promo.shopProgram.salePrice < promo.shopProgram.originalPrice) {
+                    updated.price = promo.shopProgram.salePrice;
+                    updated.originalPrice = promo.shopProgram.originalPrice;
+                    updated.promotionType = 'shopProgram';
+                  }
+
+                  // Combo promotion info
+                  if (promo.comboPromotions && promo.comboPromotions.length > 0) {
+                    const combo = promo.comboPromotions[0];
+                    const bestTier = combo.tiers?.reduce((best, t) =>
+                      (t.value > (best?.value || 0)) ? t : best, null
+                    );
+                    updated.comboPromotion = {
+                      name: combo.name,
+                      comboType: combo.comboType,
+                      bestDiscount: bestTier?.value || 0,
+                    };
+                  }
+
+                  return updated;
+                })
+              );
+            }
+          } catch (promoErr) {
+            console.error('Error fetching batch promotions:', promoErr);
+          }
+        }
       } catch (err) {
         if (isMounted) {
           console.error('❌ Error fetching products:', err);
@@ -178,6 +240,7 @@ const ProductsPage = () => {
       } finally {
         if (isMounted) {
           setLoading(false);
+          setIsFetchingMore(false);
         }
       }
     };
@@ -186,7 +249,7 @@ const ProductsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [apiFilters, searchParams, selectedBrands, itemsToShow]);
+  }, [apiFilters, searchParams, selectedBrands, itemsToShow, page]);
 
   // Fetch available brands for filter
   useEffect(() => {
@@ -292,6 +355,7 @@ const ProductsPage = () => {
 
     const setter = setters[filterType];
     setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+    setPage(1); // Reset page when filter changes
   };
 
   const toggleSection = (section) => {
@@ -303,18 +367,39 @@ const ProductsPage = () => {
 
   const handleApplyPriceFilter = () => {
     setPriceRange(tempPriceRange);
+    setPage(1);
   };
 
   const handleResetPriceFilter = () => {
     const defaultRange = { min: 0, max: 10000000 };
     setTempPriceRange(defaultRange);
     setPriceRange(defaultRange);
+    setPage(1);
   };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // Reset page when search query changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  // Infinite Scroll Observer
+  const observer = useRef();
+  const lastElementRef = useCallback(
+    (node) => {
+      // Don't trigger if currently loading new page or first load
+      if (loading || isFetchingMore) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && page < totalPages) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, isFetchingMore, page, totalPages]
+  );
 
   return (
     <div className={styles.productsPage}>
@@ -575,7 +660,7 @@ const ProductsPage = () => {
                 </div>
 
                 <div className={styles.infoText}>
-                  Showing 1 - {displayedProducts.length} of {totalProducts} items
+                  Showing {displayedProducts.length} of {totalProducts} items
                 </div>
 
                 <div className={styles.filterGroup}>
@@ -608,7 +693,7 @@ const ProductsPage = () => {
             </div>
 
             {/* Product Grid/List */}
-            {loading ? (
+            {loading && page === 1 ? (
               <div className={styles.productGrid}>
                 {[...Array(itemsToShow)].map((_, i) => (
                   <SkeletonCard key={i} />
@@ -622,23 +707,32 @@ const ProductsPage = () => {
               </div>
             ) : viewMode === 'grid' ? (
               <div className={styles.productGrid}>
-                {displayedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+                {displayedProducts.map((product, index) => {
+                  if (index === displayedProducts.length - 1) {
+                    return <ProductCard ref={lastElementRef} key={`${product.id}-${index}`} product={product} />;
+                  }
+                  return <ProductCard key={`${product.id}-${index}`} product={product} />;
+                })}
               </div>
             ) : (
               <div className={styles.productList}>
-                {displayedProducts.map((product) => (
-                  <ProductListItem key={product.id} product={product} />
-                ))}
+                {displayedProducts.map((product, index) => {
+                  if (index === displayedProducts.length - 1) {
+                    return <ProductListItem ref={lastElementRef} key={`${product.id}-${index}`} product={product} />;
+                  }
+                  return <ProductListItem key={`${product.id}-${index}`} product={product} />;
+                })}
               </div>
             )}
 
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+            {/* Loading More Indicator */}
+            {isFetchingMore && (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            )}
           </main>
         </div>
       </div>

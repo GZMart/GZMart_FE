@@ -106,10 +106,10 @@ const AdminDashboard = () => {
     // Map overview stats with icons
     const statsWithIcons = data.overviewStats.map((stat, index) => {
       const icons = [
-        { icon: <DollarOutlined />, color: '#3f8600', prefix: '₫' },
-        { icon: <ShoppingCartOutlined />, color: '#1890ff', prefix: '' },
-        { icon: <UserOutlined />, color: '#722ed1', prefix: '' },
-        { icon: <AppstoreOutlined />, color: '#eb2f96', prefix: '' },
+        { icon: <DollarOutlined />, color: '#4f46e5', prefix: '₫' },
+        { icon: <ShoppingCartOutlined />, color: '#0891b2', prefix: '' },
+        { icon: <UserOutlined />, color: '#16a34a', prefix: '' },
+        { icon: <AppstoreOutlined />, color: '#d97706', prefix: '' },
       ];
       return {
         ...stat,
@@ -220,14 +220,21 @@ const AdminDashboard = () => {
   return (
     <div className={styles.adminDashboard}>
       <div className={styles.header}>
-        <h1>Admin Dashboard</h1>
-        <p>Welcome back! Here's what's happening with your store today.</p>
+        <div className={styles.headerLeft}>
+          <div className={styles.headerIcon}>
+            <i className="bi bi-speedometer2" />
+          </div>
+          <div>
+            <h1>Admin Dashboard</h1>
+            <p>Welcome back! Here&apos;s what&apos;s happening with your store today.</p>
+          </div>
+        </div>
         <Button
           type="primary"
           icon={<ReloadOutlined spin={refreshing} />}
           onClick={handleRefresh}
           loading={refreshing}
-          style={{ marginTop: '10px' }}
+          style={{ background: '#4f46e5', borderColor: '#4f46e5' }}
         >
           Refresh
         </Button>

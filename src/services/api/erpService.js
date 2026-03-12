@@ -4,8 +4,27 @@ import axiosClient from '../axiosClient';
  * ===================================================================
  * ERP / SOURCING API SERVICE
  * Handles Supplier, Purchase Order, Inventory, and Reporting APIs
+ *
+ * NOTE: axiosClient interceptor already unwraps response.data,
+ * so these functions return the parsed response directly.
  * ===================================================================
  */
+
+const PO_BASE  = '/api/purchase-orders';
+const SUP_BASE = '/api/purchase-orders/suppliers';
+const INV_BASE = '/api/purchase-orders/inventory';
+const REP_BASE = '/api/purchase-orders/reports';
+
+// ============================================================
+// SELLER PRODUCTS (for PO Listing Picker)
+// ============================================================
+
+/**
+ * Get seller's own product listings (to pre-fill PO items)
+ */
+export const getMyProducts = async (params = {}) => {
+  return axiosClient.get('/api/products/my-products', { params });
+};
 
 // ============================================================
 // PURCHASE ORDERS
@@ -15,50 +34,42 @@ import axiosClient from '../axiosClient';
  * Create new purchase order
  */
 export const createPurchaseOrder = async (orderData) => {
-  const response = await axiosClient.post('/purchase-orders', orderData);
-  return response.data;
+  return axiosClient.post(PO_BASE, orderData);
 };
 
 /**
  * Get all purchase orders with filters
  */
 export const getPurchaseOrders = async (params = {}) => {
-  const response = await axiosClient.get('/purchase-orders', { params });
-  return response.data;
+  return axiosClient.get(PO_BASE, { params });
 };
 
 /**
  * Get purchase order by ID
  */
 export const getPurchaseOrderById = async (id) => {
-  const response = await axiosClient.get(`/purchase-orders/${id}`);
-  return response.data;
+  return axiosClient.get(`${PO_BASE}/${id}`);
 };
 
 /**
  * Update purchase order
  */
 export const updatePurchaseOrder = async (id, updateData) => {
-  const response = await axiosClient.put(`/purchase-orders/${id}`, updateData);
-  return response.data;
+  return axiosClient.put(`${PO_BASE}/${id}`, updateData);
 };
 
 /**
  * Complete purchase order (nhập kho)
  */
 export const completePurchaseOrder = async (id) => {
-  const response = await axiosClient.post(`/purchase-orders/${id}/complete`);
-  return response.data;
+  return axiosClient.post(`${PO_BASE}/${id}/complete`);
 };
 
 /**
  * Cancel purchase order
  */
 export const cancelPurchaseOrder = async (id, cancelReason) => {
-  const response = await axiosClient.post(`/purchase-orders/${id}/cancel`, {
-    cancelReason,
-  });
-  return response.data;
+  return axiosClient.post(`${PO_BASE}/${id}/cancel`, { cancelReason });
 };
 
 // ============================================================
@@ -69,50 +80,42 @@ export const cancelPurchaseOrder = async (id, cancelReason) => {
  * Create new supplier
  */
 export const createSupplier = async (supplierData) => {
-  const response = await axiosClient.post('/purchase-orders/suppliers', supplierData);
-  return response.data;
+  return axiosClient.post(SUP_BASE, supplierData);
 };
 
 /**
  * Get all suppliers
  */
 export const getSuppliers = async (params = {}) => {
-  const response = await axiosClient.get('/purchase-orders/suppliers', { params });
-  return response.data;
+  return axiosClient.get(SUP_BASE, { params });
 };
 
 /**
  * Get supplier by ID
  */
 export const getSupplierById = async (id) => {
-  const response = await axiosClient.get(`/purchase-orders/suppliers/${id}`);
-  return response.data;
+  return axiosClient.get(`${SUP_BASE}/${id}`);
 };
 
 /**
  * Update supplier
  */
 export const updateSupplier = async (id, updateData) => {
-  const response = await axiosClient.put(`/purchase-orders/suppliers/${id}`, updateData);
-  return response.data;
+  return axiosClient.put(`${SUP_BASE}/${id}`, updateData);
 };
 
 /**
  * Delete supplier
  */
 export const deleteSupplier = async (id) => {
-  const response = await axiosClient.delete(`/purchase-orders/suppliers/${id}`);
-  return response.data;
+  return axiosClient.delete(`${SUP_BASE}/${id}`);
 };
 
 /**
  * Get supplier purchase history
  */
 export const getSupplierPurchaseHistory = async (id, params = {}) => {
-  const response = await axiosClient.get(`/purchase-orders/suppliers/${id}/purchase-history`, {
-    params,
-  });
-  return response.data;
+  return axiosClient.get(`${SUP_BASE}/${id}/purchase-history`, { params });
 };
 
 // ============================================================
@@ -123,20 +126,14 @@ export const getSupplierPurchaseHistory = async (id, params = {}) => {
  * Get low stock items
  */
 export const getLowStockItems = async (params = {}) => {
-  const response = await axiosClient.get('/purchase-orders/inventory/low-stock', {
-    params,
-  });
-  return response.data;
+  return axiosClient.get(`${INV_BASE}/low-stock`, { params });
 };
 
 /**
  * Get inventory valuation
  */
 export const getInventoryValuation = async (params = {}) => {
-  const response = await axiosClient.get('/purchase-orders/inventory/valuation', {
-    params,
-  });
-  return response.data;
+  return axiosClient.get(`${INV_BASE}/valuation`, { params });
 };
 
 // ============================================================
@@ -147,10 +144,9 @@ export const getInventoryValuation = async (params = {}) => {
  * Get Profit & Loss report
  */
 export const getProfitLossReport = async (startDate, endDate) => {
-  const response = await axiosClient.get('/purchase-orders/reports/profit-loss', {
+  return axiosClient.get(`${REP_BASE}/profit-loss`, {
     params: { startDate, endDate },
   });
-  return response.data;
 };
 
 export default {

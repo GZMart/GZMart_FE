@@ -980,14 +980,14 @@ const FlashSalesPage = () => {
       key: 'campaign',
       width: 220,
       render: (_, group) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{group.campaignTitle || group.productId?.name}</div>
+        <div className={styles.campaignCell}>
+          <span className={styles.campaignName}>{group.campaignTitle || group.productId?.name}</span>
           {group.campaignTitle && (
-            <div style={{ color: '#888', fontSize: 12 }}>{group.productId?.name}</div>
+            <span className={styles.campaignProduct}>{group.productId?.name}</span>
           )}
-          <Tag color="blue" style={{ marginTop: 4 }}>
+          <span className={styles.skuTag}>
             {group.skuCount} SKU{group.skuCount > 1 ? 's' : ''}
-          </Tag>
+          </span>
         </div>
       ),
     },
@@ -1009,24 +1009,26 @@ const FlashSalesPage = () => {
       ),
     },
     {
-      title: 'Total Qty',
+      title: 'Qty / Sold',
       key: 'quantity',
-      width: 140,
-      render: (_, group) => (
-        <div className={styles.quantityColumn}>
-          <span className={styles.sold}>
-            {group.soldQuantity} / {group.totalQuantity}
-          </span>
-          <div className={styles.progressBar}>
-            <div
-              className={styles.progress}
-              style={{
-                width: `${group.totalQuantity ? (group.soldQuantity / group.totalQuantity) * 100 : 0}%`,
-              }}
-            />
+      width: 150,
+      render: (_, group) => {
+        const pct = group.totalQuantity ? Math.round((group.soldQuantity / group.totalQuantity) * 100) : 0;
+        return (
+          <div className={styles.quantityColumn}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span className={styles.sold}>{group.soldQuantity} / {group.totalQuantity}</span>
+              <span style={{ fontSize: 11, color: pct > 50 ? '#059669' : '#94a3b8', fontWeight: 600 }}>{pct}%</span>
+            </div>
+            <div className={styles.progressBar}>
+              <div
+                className={styles.progress}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Time',
@@ -1034,8 +1036,8 @@ const FlashSalesPage = () => {
       width: 200,
       render: (_, group) => (
         <div className={styles.timeColumn}>
-          <div>Start: {dayjs(group.startAt).format('DD/MM HH:mm')}</div>
-          <div>End: {dayjs(group.endAt).format('DD/MM HH:mm')}</div>
+          <div><span className={styles.timeLabel}>Start</span> {dayjs(group.startAt).format('DD/MM HH:mm')}</div>
+          <div><span className={styles.timeLabel}>End&nbsp;&nbsp;</span> {dayjs(group.endAt).format('DD/MM HH:mm')}</div>
         </div>
       ),
     },
@@ -1044,8 +1046,14 @@ const FlashSalesPage = () => {
       key: 'status',
       width: 110,
       render: (_, group) => {
-        const cfg = statusConfig[group.status] || { color: 'default', label: group.status };
-        return <Tag color={cfg.color}>{cfg.label}</Tag>;
+        const s = group.status;
+        const cls =
+          s === 'active'                    ? styles.statusActive
+          : s === 'pending' || s === 'upcoming' ? styles.statusUpcoming
+          : s === 'cancelled'               ? styles.statusCancelled
+          : styles.statusEnded;
+        const label = statusConfig[s]?.label || s;
+        return <span className={cls}>{label}</span>;
       },
     },
     {
@@ -1254,221 +1262,219 @@ const FlashSalesPage = () => {
     });
   }, [filteredFlashSales]);
 
+  const STATUS_TABS_FS = [
+    { label: 'All', value: 'all' },
+    { label: 'Active', value: 'active' },
+    { label: 'Upcoming', value: 'pending' },
+    { label: 'Ended', value: 'expired' },
+    { label: 'Cancelled', value: 'cancelled' },
+  ];
+
+  const statIcons = [
+    /* Revenue */
+    <svg key="r" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    /* Orders */
+    <svg key="o" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+    /* Buyers */
+    <svg key="b" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    /* Sell Rate */
+    <svg key="s" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+  ];
+
   return (
     <div className={styles.container}>
-      {/* Header */}
+      {/* ── Header ──────────────────────────────────────────── */}
       <div className={styles.header}>
-        <h1 className={styles.title}>Flash Sale Management</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
+        <div>
+          <h1 className={styles.title}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84949" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Flash Sale Management
+          </h1>
+          <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+            {groupedFlashSales.length > 0
+              ? `${groupedFlashSales.length} campaign${groupedFlashSales.length > 1 ? 's' : ''} active`
+              : 'Manage and track your flash sale campaigns'}
+          </p>
+        </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleOpenCreateModal}
+          style={{ height: 38, borderRadius: 8, fontWeight: 600, paddingLeft: 16, paddingRight: 16 }}
+        >
           Create Flash Sale
         </Button>
       </div>
 
-      {/* Overview Stats Banner - Shopee style */}
-      <Card style={{ marginBottom: 12, background: '#fff' }} bodyStyle={{ padding: '16px 24px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <BarChartOutlined style={{ color: '#f5222d', fontSize: 16 }} />
-            <span style={{ fontWeight: 600, fontSize: 15 }}>Shop Flash Sale Overview</span>
-            <span style={{ color: '#8c8c8c', fontSize: 13 }}>
-              ({overviewRange[0].format('DD-MM-YYYY')} to {overviewRange[1].format('DD-MM-YYYY')}
-              GMT+7)
+      {/* ── Overview Stats ───────────────────────────────────── */}
+      <div className={styles.overviewCard} style={{ marginBottom: 16 }}>
+        <div className={styles.overviewHead}>
+          <div className={styles.overviewHeadLeft}>
+            <BarChartOutlined className={styles.overviewIcon} />
+            <span className={styles.overviewTitle}>Performance Overview</span>
+            <span className={styles.overviewSub}>
+              {overviewRange[0].format('DD/MM/YYYY')} – {overviewRange[1].format('DD/MM/YYYY')}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <DatePicker.RangePicker
-              size="small"
-              value={overviewRange}
-              onChange={(vals) => vals && setOverviewRange(vals)}
-              format="DD/MM/YYYY"
-              allowClear={false}
-              presets={[
-                {
-                  label: 'Last 7 days',
-                  value: [dayjs().subtract(6, 'day').startOf('day'), dayjs().endOf('day')],
-                },
-                {
-                  label: 'Last 30 days',
-                  value: [dayjs().subtract(29, 'day').startOf('day'), dayjs().endOf('day')],
-                },
-                { label: 'This month', value: [dayjs().startOf('month'), dayjs().endOf('day')] },
-              ]}
-            />
-          </div>
+          <DatePicker.RangePicker
+            size="small"
+            value={overviewRange}
+            onChange={(vals) => vals && setOverviewRange(vals)}
+            format="DD/MM/YYYY"
+            allowClear={false}
+            presets={[
+              { label: 'Last 7 days',  value: [dayjs().subtract(6, 'day').startOf('day'), dayjs().endOf('day')] },
+              { label: 'Last 30 days', value: [dayjs().subtract(29, 'day').startOf('day'), dayjs().endOf('day')] },
+              { label: 'This month',   value: [dayjs().startOf('month'), dayjs().endOf('day')] },
+            ]}
+          />
         </div>
-        <Row gutter={[0, 0]} style={{ borderTop: '1px solid #f0f0f0' }}>
+        <div className={styles.overviewStatsRow}>
           {[
-            {
-              label: 'Revenue',
-              value: `${overviewStats.revenue.toLocaleString('vi-VN')} ₫`,
-              pct: overviewStats.revenuePct,
-              tip: 'Total revenue from flash sales (sold quantity × flash sale price)',
-            },
-            {
-              label: 'Orders',
-              value: overviewStats.orders,
-              pct: overviewStats.ordersPct,
-              tip: 'Total number of products sold in flash sales',
-            },
-            {
-              label: 'Buyers',
-              value: overviewStats.buyers,
-              pct: overviewStats.buyersPct,
-              tip: 'Estimated buyers (based on sold quantity)',
-            },
-            {
-              label: 'Sell Rate',
-              value: `${overviewStats.sellRate} %`,
-              pct: overviewStats.sellRatePct,
-              tip: 'Average sell rate: sold / total flash sale quantity',
-            },
+            { label: 'Revenue',   value: `${overviewStats.revenue.toLocaleString('vi-VN')} ₫`, pct: overviewStats.revenuePct,  tip: 'Total revenue from flash sales (sold × sale price)' },
+            { label: 'Orders',    value: overviewStats.orders,                                    pct: overviewStats.ordersPct,   tip: 'Total products sold in flash sales' },
+            { label: 'Buyers',    value: overviewStats.buyers,                                    pct: overviewStats.buyersPct,   tip: 'Estimated buyers (based on sold quantity)' },
+            { label: 'Sell Rate', value: `${overviewStats.sellRate}%`,                            pct: overviewStats.sellRatePct, tip: 'Avg sell rate: sold / total flash sale qty' },
           ].map((item, idx) => (
-            <Col
-              xs={24}
-              sm={12}
-              md={6}
-              key={idx}
-              style={{
-                padding: '16px 24px',
-                borderRight: idx < 3 ? '1px solid #f0f0f0' : 'none',
-              }}
-            >
+            <div key={idx} className={styles.statCell}>
               <Tooltip title={item.tip}>
-                <div style={{ color: '#595959', fontSize: 13, marginBottom: 4, cursor: 'default' }}>
-                  {item.label} <span style={{ color: '#bfbfbf', fontSize: 11 }}>ⓘ</span>
+                <div className={styles.statCellLabel}>
+                  {statIcons[idx]}
+                  {item.label}
+                  <span className={styles.statCellInfo}>ⓘ</span>
                 </div>
               </Tooltip>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#262626', lineHeight: 1.3 }}>
-                {item.value}
-              </div>
-              <div style={{ marginTop: 6, fontSize: 12, color: '#8c8c8c' }}>
-                so với kỳ trước{' '}
+              <div className={styles.statCellValue}>{item.value}</div>
+              <div className={styles.statCellChange}>
+                vs. prev period{' '}
                 {item.pct > 0 ? (
-                  <span style={{ color: '#52c41a', fontWeight: 600 }}>
-                    <RiseOutlined /> +{item.pct}%
-                  </span>
+                  <span className={styles.changeUp}><RiseOutlined /> +{item.pct}%</span>
                 ) : item.pct < 0 ? (
-                  <span style={{ color: '#ff4d4f', fontWeight: 600 }}>
-                    <FallOutlined /> {item.pct}%
-                  </span>
+                  <span className={styles.changeDown}><FallOutlined /> {item.pct}%</span>
                 ) : (
-                  <span style={{ color: '#8c8c8c' }}>0.00%</span>
+                  <span className={styles.changeFlat}>—</span>
                 )}
               </div>
-            </Col>
+            </div>
           ))}
-        </Row>
-      </Card>
+        </div>
+      </div>
 
-      {/* Main content */}
-      <Card className={styles.card} style={{ marginBottom: 12 }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* ── Toolbar: tabs + search + date ───────────────────── */}
+      <div className={styles.toolbar}>
+        {/* Status tabs */}
+        <div className={styles.tabsGroup}>
+          {STATUS_TABS_FS.map((tab) => {
+            const count =
+              tab.value === 'all'
+                ? flashSales.length
+                : flashSales.filter((s) => s.status === tab.value || (tab.value === 'pending' && s.status === 'upcoming')).length;
+            return (
+              <button
+                key={tab.value}
+                className={`${styles.tab} ${statusFilter === tab.value ? styles.tabActive : ''}`}
+                onClick={() => setStatusFilter(tab.value)}
+              >
+                {tab.label}
+                <span className={styles.tabCount}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right: search + date range */}
+        <div className={styles.toolbarRight}>
           <Input
-            placeholder="Search by product name, SKU, campaign..."
-            prefix={<SearchOutlined />}
+            placeholder="Search campaigns, products, SKU…"
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             allowClear
-            style={{ maxWidth: 300 }}
-          />
-          <Select
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: 195 }}
-            options={[
-              { label: 'All Status', value: 'all' },
-              { label: 'Active', value: 'active' },
-              { label: 'Upcoming / Pending', value: 'pending' },
-              { label: 'Expired / Ended', value: 'expired' },
-              { label: 'Cancelled', value: 'cancelled' },
-            ]}
+            style={{ width: 250, borderRadius: 8 }}
           />
           <DatePicker.RangePicker
             value={dateRangeFilter}
             onChange={setDateRangeFilter}
-            placeholder={['Campaign start', 'Campaign end']}
+            placeholder={['Start date', 'End date']}
             allowClear
-            style={{ maxWidth: 280 }}
+            style={{ borderRadius: 8 }}
           />
           {hasActiveFilters && (
-            <Button
-              onClick={() => {
-                setSearchText('');
-                setStatusFilter('all');
-                setDateRangeFilter(null);
+            <button
+              onClick={() => { setSearchText(''); setStatusFilter('all'); setDateRangeFilter(null); }}
+              style={{
+                height: 32, padding: '0 12px', border: '1px solid #e2e8f0', background: '#fff',
+                borderRadius: 8, fontSize: 12, color: '#64748b', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
               }}
             >
-              Reset Filters
-            </Button>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Clear
+            </button>
           )}
         </div>
-      </Card>
+      </div>
 
-      <Card className={styles.card}>
+      {/* ── Campaign Table ───────────────────────────────────── */}
+      <div className={styles.tableSection}>
         <Spin spinning={loading}>
           {filteredFlashSales.length > 0 || loading ? (
             <Table
               columns={campaignColumns}
               dataSource={groupedFlashSales}
               rowKey="key"
+              className={styles.fsTable}
               pagination={{
                 current: pagination.page,
                 pageSize: pagination.limit,
                 total: groupedFlashSales.length,
                 showSizeChanger: true,
-                showTotal: (total) => `Total: ${total} campaign(s)`,
+                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} campaigns`,
+                style: { padding: '12px 16px', margin: 0 },
               }}
               onChange={handleTableChange}
-              size="small"
+              size="middle"
               onRow={(group) => ({
                 onClick: () => handleViewCampaign(group),
                 style: { cursor: 'pointer' },
               })}
               expandable={{
                 expandedRowRender: (group) => (
-                  <Table
-                    columns={variantColumns}
-                    dataSource={group.records}
-                    rowKey="_id"
-                    pagination={false}
-                    size="small"
-                    style={{ marginLeft: 48 }}
-                    onRow={(record) => ({
-                      onClick: () => handleViewDetail(record),
-                      style: { cursor: 'pointer' },
-                    })}
-                  />
+                  <div style={{ padding: '8px 0 8px 40px' }}>
+                    <Table
+                      columns={variantColumns}
+                      dataSource={group.records}
+                      rowKey="_id"
+                      pagination={false}
+                      size="small"
+                      onRow={(record) => ({
+                        onClick: () => handleViewDetail(record),
+                        style: { cursor: 'pointer' },
+                      })}
+                    />
+                  </div>
                 ),
                 rowExpandable: (group) => group.skuCount > 1,
               }}
             />
           ) : (
-            <Empty
-              description={
-                hasActiveFilters
-                  ? 'No matching flash sales found'
-                  : 'No flash sales yet. Create your first flash sale!'
-              }
-              style={{ padding: '48px 24px' }}
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '60px 20px', color: '#94a3b8' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#64748b' }}>
+                {hasActiveFilters ? 'No campaigns match your filter' : 'No flash sales yet'}
+              </p>
               {!hasActiveFilters && (
-                <div style={{ marginTop: '16px' }}>
-                  <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '12px' }}>
-                    💡 No flash sale data yet. Click &ldquo;Create Flash Sale&rdquo; to get started.
-                  </p>
-                </div>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}
+                  style={{ borderRadius: 8, marginTop: 4 }}>
+                  Create your first flash sale
+                </Button>
               )}
-            </Empty>
+            </div>
           )}
         </Spin>
-      </Card>
+      </div>
 
       {/* Create/Edit Flash Sale Campaign Modal - Shopee Style */}
       <Modal

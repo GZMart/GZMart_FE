@@ -128,11 +128,12 @@ axiosClient.interceptors.response.use(
     }
 
     // Handle 401 Unauthorized - Token expired
-    // Skip retry for change-password endpoint as 401 might mean incorrect password (due to backend issue)
+    // Skip retry for login/change-password endpoint as 401 might mean incorrect password (due to backend issue)
     // Also skip retry for refresh-token endpoint to avoid infinite loops
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
+      !originalRequest.url?.includes('login') &&
       !originalRequest.url?.includes('change-password') &&
       !originalRequest.url?.includes('refresh-token')
     ) {

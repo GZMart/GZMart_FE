@@ -17,10 +17,13 @@ export const categoryService = {
 
   /**
    * Get category tree (hierarchical)
+   * @param {boolean} includeAll - If true, include all statuses (admin)
    * @returns {Promise} Category tree
    */
-  getTree: async () => {
-    return await axiosClient.get(`${BASE_URL}/tree`);
+  getTree: async (includeAll = false) => {
+    return await axiosClient.get(`${BASE_URL}/tree`, {
+      params: includeAll ? { includeAll: 'true' } : {},
+    });
   },
 
   /**

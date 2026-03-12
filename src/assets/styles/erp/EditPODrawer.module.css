@@ -1,0 +1,186 @@
+/* ════════════════════════════════════════════════════════════════
+   Edit PO Slide-over Drawer
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Overlay ──────────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Drawer Panel ────────────────────────────────────────────── */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(680px, 100vw);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  background: #f1f5f9;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.12), -2px 0 8px rgba(0,0,0,0.06);
+  animation: slideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Drawer Header ───────────────────────────────────────────── */
+.drawerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border-bottom: 1.5px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.drawerHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.drawerIcon {
+  width: 36px;
+  height: 36px;
+  background: #eef2ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.drawerTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.drawerSubtitle {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.drawerCodeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.drawerCloseBtn {
+  width: 32px;
+  height: 32px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease, color 150ms ease;
+}
+.drawerCloseBtn:hover { background: #e2e8f0; color: #0f172a; }
+
+/* ── Drawer Body (scrollable) ────────────────────────────────── */
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling */
+.drawerBody::-webkit-scrollbar { width: 5px; }
+.drawerBody::-webkit-scrollbar-track { background: transparent; }
+.drawerBody::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+.drawerBody::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Drawer Footer (sticky save bar) ────────────────────────── */
+.drawerFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1.5px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+/* ── Submit Error Banner ─────────────────────────────────────── */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  font-size: 0.825rem;
+  color: #991b1b;
+  margin-bottom: 1rem;
+}
+
+/* ── Edit Banner ─────────────────────────────────────────────── */
+.editBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  background: linear-gradient(135deg, #fef3c7, #fffbeb);
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #d97706;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #92400e;
+  margin-bottom: 1rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .drawer {
+    width: 100vw;
+    animation: slideUp 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    top: auto;
+    height: 92dvh;
+    border-radius: 16px 16px 0 0;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .drawerBody { padding: 1rem; }
+  .drawerHeader { padding: 0.875rem 1rem; }
+  .drawerFooter { padding: 0.75rem 1rem; }
+}
