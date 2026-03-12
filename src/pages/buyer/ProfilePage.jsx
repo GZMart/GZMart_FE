@@ -13,7 +13,6 @@ import {
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
 import { reviewService } from '@services/api';
-import { reviewService } from '@services/api';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';

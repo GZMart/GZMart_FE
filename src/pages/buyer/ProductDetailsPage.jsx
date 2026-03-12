@@ -10,7 +10,6 @@ import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import ProductReviewSection from '../../components/buyer/ProductReviewSection';
-import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
 import * as favouriteService from '../../services/api/favouriteService';
