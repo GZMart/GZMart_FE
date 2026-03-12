@@ -859,7 +859,23 @@ const ProductDetailsPage = () => {
       {/* Shop Info Section */}
       {(product.sellerId || true) && (
         <div className={styles.shopSection}>
-          <ShopInfoCard seller={product.sellerId} showViewShop={true} />
+          <ShopInfoCard
+            seller={product.sellerId}
+            showViewShop={true}
+            productInfo={{
+              productId: product._id,
+              name: product.name,
+              image: product.images?.[0] || '',
+              price: currentPrice,
+              originalPrice: product.originalPrice || null,
+              variant: selectedTierIndex.length > 0
+                ? product.tier_variations?.map((t, i) => t.options[selectedTierIndex[i]]).filter(Boolean).join(' - ')
+                : null,
+              slug: product.slug || product._id,
+              rating: product.rating || 0,
+              hasVoucher: product.shopVouchers && product.shopVouchers.length > 0
+            }}
+          />
         </div>
       )}
 
