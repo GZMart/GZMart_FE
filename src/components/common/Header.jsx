@@ -26,6 +26,7 @@ import {
 
 import enFlag from '../../assets/svg/language/en.svg';
 import viFlag from '../../assets/svg/language/vi.svg';
+import NotificationBell from './NotificationBell';
 
 // Fashion categories data from Guangzhou market
 const FAKE_CATEGORIES_DATA = [
@@ -1140,13 +1141,14 @@ const Header = () => {
   }, []);
 
   // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   // Fetch cart data when user logs in (only when authentication state changes to true)
   const prevAuthRef = useRef(isAuthenticated);
@@ -1229,7 +1231,9 @@ const Header = () => {
 
   // Handle search submit (Enter key or Search button click)
   const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
 
     const trimmedQuery = searchQuery.trim();
     // Navigate to products page (with or without search query)
@@ -1341,22 +1345,15 @@ const Header = () => {
         className="text-light py-2 small d-none d-md-block"
       >
         <div className="container">
-          <div className="d-flex justify-content-between align-items-center text-nowrap">
-            {/* Theme specific welcome message */}
-            <div>{t('header.welcome_msg')}</div>
-            <div className="d-flex align-items-center justify-content-end gap-3">
-              <div className="d-flex align-items-center gap-1 cursor-pointer">
-                <MapPin size={14} /> <span>{t('header.deliver_to')}: 423651</span>
+          <div className="d-flex justify-content-center align-items-center text-nowrap">
+            {(!isAuthenticated || user?.role === USER_ROLES.BUYER) && (
+              <div>
+                Wanna become a seller?{' '}
+                <Link to={BUYER_ROUTES.SELLER_APPLICATION} className="text-warning text-decoration-none fw-bold ms-1" style={{ transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#ffc107'} onMouseLeave={(e) => e.target.style.color = ''}>
+                  Sent application here
+                </Link>
               </div>
-              <span className="text-secondary">|</span>
-              <div className="d-flex align-items-center gap-1 cursor-pointer">
-                <Truck size={14} /> <span>{t('header.track_order')}</span>
-              </div>
-              <span className="text-secondary">|</span>
-              <div className="d-flex align-items-center gap-1 cursor-pointer">
-                <Tag size={14} /> <span>{t('header.all_offers')}</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1367,10 +1364,16 @@ const Header = () => {
           <div className="row align-items-center gy-3">
             {/* Logo & Menu */}
             <div className="col-6 col-lg-3 d-flex align-items-center gap-3">
-              <button className="btn btn-light bg-light rounded px-3 py-2 d-flex align-items-center justify-content-center">
-                <AlignLeft size={24} className="text-dark" />
-              </button>
-              <Link to={PUBLIC_ROUTES.HOME} className="text-decoration-none text-dark">
+              <Link
+                to={PUBLIC_ROUTES.HOME}
+                className="text-decoration-none text-dark d-flex align-items-center gap-2"
+              >
+                <img
+                  src="/logo.png"
+                  alt="GZMart"
+                  style={{ height: '90px', objectFit: 'contain' }}
+                />
+                <span className="text-secondary mx-1">|</span>
                 <h2 className="h3 fw-bolder mb-0 tracking-tight">GZMart</h2>
               </Link>
               <div className="d-none d-xl-block">
@@ -1734,7 +1737,13 @@ const Header = () => {
                       </Link>
                       <div className="border-top my-1"></div>
                       <Link
-                        to={BUYER_ROUTES.PROFILE}
+                        to={
+                          user?.role === USER_ROLES.ADMIN
+                            ? ADMIN_ROUTES.PROFILE
+                            : user?.role === USER_ROLES.SELLER
+                              ? SELLER_ROUTES.PROFILE
+                              : BUYER_ROUTES.PROFILE
+                        }
                         className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
                         style={{
                           transition: 'background-color 0.2s',
@@ -1838,9 +1847,8 @@ const Header = () => {
                 <div
                   key={category.id}
                   onClick={() => handleCategoryClick(category)}
-                  className={`d-flex align-items-center gap-2 px-3 py-1 rounded-pill cursor-pointer border flex-shrink-0 ${
-                    isActive ? 'bg-dark text-white border-dark' : 'text-dark border-0'
-                  }`}
+                  className={`d-flex align-items-center gap-2 px-3 py-1 rounded-pill cursor-pointer border flex-shrink-0 ${isActive ? 'bg-dark text-white border-dark' : 'text-dark border-0'
+                    }`}
                   style={{
                     fontSize: '14px',
                     backgroundColor: isActive ? '#212529' : '#F3F9FB',
@@ -1922,11 +1930,10 @@ const Header = () => {
                             setActiveSubcategory(subcategory);
                             setActiveBrand(null); // Reset brand when changing subcategory
                           }}
-                          className={`d-flex align-items-center justify-content-between px-2 py-2 rounded ${
-                            activeSubcategory?.id === subcategory.id
-                              ? 'bg-dark text-white'
-                              : 'text-dark'
-                          }`}
+                          className={`d-flex align-items-center justify-content-between px-2 py-2 rounded ${activeSubcategory?.id === subcategory.id
+                            ? 'bg-dark text-white'
+                            : 'text-dark'
+                            }`}
                           style={{
                             cursor: 'pointer',
                             transition: 'all 0.2s',
@@ -1973,9 +1980,8 @@ const Header = () => {
                           <div
                             key={index}
                             onClick={() => setActiveBrand(brand)}
-                            className={`px-2 py-2 rounded ${
-                              activeBrand === brand ? 'bg-primary text-white' : 'text-dark'
-                            }`}
+                            className={`px-2 py-2 rounded ${activeBrand === brand ? 'bg-primary text-white' : 'text-dark'
+                              }`}
                             style={{
                               cursor: 'pointer',
                               transition: 'all 0.2s',
@@ -2244,9 +2250,9 @@ const Header = () => {
               <p className="text-center text-muted mb-4">
                 {loginModalType === 'wishlist'
                   ? t('header.login_required_wishlist_msg') ||
-                    'Please login to access your wishlist and save your favorite items.'
+                  'Please login to access your wishlist and save your favorite items.'
                   : t('header.login_required_cart_msg') ||
-                    'Please login to access your cart and continue shopping.'}
+                  'Please login to access your cart and continue shopping.'}
               </p>
 
               {/* Buttons */}

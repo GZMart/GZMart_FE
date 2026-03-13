@@ -5,14 +5,7 @@ import { orderService } from '../../services/api/orderService';
 import { toast } from 'react-toastify';
 import styles from '../../assets/styles/ProfilePage/ReviewModal.module.css';
 
-const ReviewModal = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  orderNumber,
-  isSubmitting,
-  orderId,
-}) => {
+const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, orderId }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -37,18 +30,17 @@ const ReviewModal = ({
       console.log('Calling orderService to get order details:', orderId);
       const response = await orderService.getOrderById(orderId);
       console.log('Order details response:', response);
-      
+
       const orderData = response.data || response;
       const firstItem = orderData.items?.[0];
-      
+
       // Extract productId from first populated item
       let actualProductId;
       if (firstItem?.productId) {
-        actualProductId = typeof firstItem.productId === 'string' 
-          ? firstItem.productId 
-          : firstItem.productId._id;
+        actualProductId =
+          typeof firstItem.productId === 'string' ? firstItem.productId : firstItem.productId._id;
         console.log('Extracted productId from order:', actualProductId);
-        
+
         // Now fetch the product
         await fetchProductById(actualProductId);
       }
@@ -76,7 +68,7 @@ const ReviewModal = ({
       _id: 'unknown',
       name: 'Product (Demo)',
       image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200',
-      category: 'Product'
+      category: 'Product',
     };
     console.log('Using mock product:', mockProduct);
     setProduct(mockProduct);
@@ -99,17 +91,36 @@ const ReviewModal = ({
     try {
       setSubmitting(true);
 
-      // Create review using API
-      await reviewService.createReview({
+      const reviewPayload = {
         productId: product?._id,
         rating,
         title: title || `${rating} Star Review`,
         content: comment,
         orderId,
         images: [],
+      };
+
+      console.log('🔵 [ReviewModal] Submitting review:', {
+        payload: reviewPayload,
+        productInfo: {
+          id: product?._id,
+          name: product?.name,
+        },
+        timestamp: new Date().toISOString(),
       });
 
+      // Create review using API
+      await reviewService.createReview(reviewPayload);
+
+      console.log('✅ [ReviewModal] Review submitted successfully');
       toast.success('Review submitted successfully!');
+
+      // Dispatch custom event to notify ProductReviewSection to refetch
+      const event = new CustomEvent('reviewSubmitted', {
+        detail: { productId: product?._id },
+      });
+      window.dispatchEvent(event);
+      console.log('📣 Dispatched reviewSubmitted event for product:', product?._id);
 
       // Call parent callback
       if (onSubmit) {
@@ -126,7 +137,12 @@ const ReviewModal = ({
       setComment('');
       onClose();
     } catch (error) {
-      console.error('Error submitting review:', error);
+      console.error('❌ [ReviewModal] Error submitting review:', {
+        error,
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       toast.error(error.response?.data?.message || 'Failed to submit review');
     } finally {
       setSubmitting(false);

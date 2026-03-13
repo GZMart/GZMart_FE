@@ -979,9 +979,17 @@ const FlashSalesPage = () => {
       title: 'Campaign / Product',
       key: 'campaign',
       width: 220,
+      sorter: (a, b) => {
+        const aName = a.campaignTitle || a.productId?.name || '';
+        const bName = b.campaignTitle || b.productId?.name || '';
+        return aName.localeCompare(bName);
+      },
+      showSorterTooltip: false,
       render: (_, group) => (
         <div className={styles.campaignCell}>
-          <span className={styles.campaignName}>{group.campaignTitle || group.productId?.name}</span>
+          <span className={styles.campaignName}>
+            {group.campaignTitle || group.productId?.name}
+          </span>
           {group.campaignTitle && (
             <span className={styles.campaignProduct}>{group.productId?.name}</span>
           )}
@@ -995,6 +1003,8 @@ const FlashSalesPage = () => {
       title: 'Price',
       key: 'price',
       width: 150,
+      sorter: (a, b) => (a.salePrice ?? 0) - (b.salePrice ?? 0),
+      showSorterTooltip: false,
       render: (_, group) => (
         <div className={styles.priceColumn}>
           <div className={styles.salePrice}>
@@ -1012,19 +1022,28 @@ const FlashSalesPage = () => {
       title: 'Qty / Sold',
       key: 'quantity',
       width: 150,
+      sorter: (a, b) => (a.soldQuantity ?? 0) - (b.soldQuantity ?? 0),
+      showSorterTooltip: false,
       render: (_, group) => {
-        const pct = group.totalQuantity ? Math.round((group.soldQuantity / group.totalQuantity) * 100) : 0;
+        const pct = group.totalQuantity
+          ? Math.round((group.soldQuantity / group.totalQuantity) * 100)
+          : 0;
         return (
           <div className={styles.quantityColumn}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span className={styles.sold}>{group.soldQuantity} / {group.totalQuantity}</span>
-              <span style={{ fontSize: 11, color: pct > 50 ? '#059669' : '#94a3b8', fontWeight: 600 }}>{pct}%</span>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+            >
+              <span className={styles.sold}>
+                {group.soldQuantity} / {group.totalQuantity}
+              </span>
+              <span
+                style={{ fontSize: 11, color: pct > 50 ? '#059669' : '#94a3b8', fontWeight: 600 }}
+              >
+                {pct}%
+              </span>
             </div>
             <div className={styles.progressBar}>
-              <div
-                className={styles.progress}
-                style={{ width: `${pct}%` }}
-              />
+              <div className={styles.progress} style={{ width: `${pct}%` }} />
             </div>
           </div>
         );
@@ -1034,10 +1053,18 @@ const FlashSalesPage = () => {
       title: 'Time',
       key: 'time',
       width: 200,
+      sorter: (a, b) => new Date(a.startAt) - new Date(b.startAt),
+      showSorterTooltip: false,
       render: (_, group) => (
         <div className={styles.timeColumn}>
-          <div><span className={styles.timeLabel}>Start</span> {dayjs(group.startAt).format('DD/MM HH:mm')}</div>
-          <div><span className={styles.timeLabel}>End&nbsp;&nbsp;</span> {dayjs(group.endAt).format('DD/MM HH:mm')}</div>
+          <div>
+            <span className={styles.timeLabel}>Start</span>{' '}
+            {dayjs(group.startAt).format('DD/MM HH:mm')}
+          </div>
+          <div>
+            <span className={styles.timeLabel}>End&nbsp;&nbsp;</span>{' '}
+            {dayjs(group.endAt).format('DD/MM HH:mm')}
+          </div>
         </div>
       ),
     },
@@ -1045,13 +1072,21 @@ const FlashSalesPage = () => {
       title: 'Status',
       key: 'status',
       width: 110,
+      sorter: (a, b) => {
+        const order = { active: 0, upcoming: 1, pending: 2, ended: 3, cancelled: 4, expired: 5 };
+        return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+      },
+      showSorterTooltip: false,
       render: (_, group) => {
         const s = group.status;
         const cls =
-          s === 'active'                    ? styles.statusActive
-          : s === 'pending' || s === 'upcoming' ? styles.statusUpcoming
-          : s === 'cancelled'               ? styles.statusCancelled
-          : styles.statusEnded;
+          s === 'active'
+            ? styles.statusActive
+            : s === 'pending' || s === 'upcoming'
+              ? styles.statusUpcoming
+              : s === 'cancelled'
+                ? styles.statusCancelled
+                : styles.statusEnded;
         const label = statusConfig[s]?.label || s;
         return <span className={cls}>{label}</span>;
       },
@@ -1272,13 +1307,68 @@ const FlashSalesPage = () => {
 
   const statIcons = [
     /* Revenue */
-    <svg key="r" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    <svg
+      key="r"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#e84949"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>,
     /* Orders */
-    <svg key="o" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+    <svg
+      key="o"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#2563eb"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>,
     /* Buyers */
-    <svg key="b" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    <svg
+      key="b"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#059669"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>,
     /* Sell Rate */
-    <svg key="s" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+    <svg
+      key="s"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#d97706"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>,
   ];
 
   return (
@@ -1287,7 +1377,18 @@ const FlashSalesPage = () => {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84949" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#e84949"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
             Flash Sale Management
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
@@ -1300,7 +1401,13 @@ const FlashSalesPage = () => {
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleOpenCreateModal}
-          style={{ height: 38, borderRadius: 8, fontWeight: 600, paddingLeft: 16, paddingRight: 16 }}
+          style={{
+            height: 38,
+            borderRadius: 8,
+            fontWeight: 600,
+            paddingLeft: 16,
+            paddingRight: 16,
+          }}
         >
           Create Flash Sale
         </Button>
@@ -1323,18 +1430,44 @@ const FlashSalesPage = () => {
             format="DD/MM/YYYY"
             allowClear={false}
             presets={[
-              { label: 'Last 7 days',  value: [dayjs().subtract(6, 'day').startOf('day'), dayjs().endOf('day')] },
-              { label: 'Last 30 days', value: [dayjs().subtract(29, 'day').startOf('day'), dayjs().endOf('day')] },
-              { label: 'This month',   value: [dayjs().startOf('month'), dayjs().endOf('day')] },
+              {
+                label: 'Last 7 days',
+                value: [dayjs().subtract(6, 'day').startOf('day'), dayjs().endOf('day')],
+              },
+              {
+                label: 'Last 30 days',
+                value: [dayjs().subtract(29, 'day').startOf('day'), dayjs().endOf('day')],
+              },
+              { label: 'This month', value: [dayjs().startOf('month'), dayjs().endOf('day')] },
             ]}
           />
         </div>
         <div className={styles.overviewStatsRow}>
           {[
-            { label: 'Revenue',   value: `${overviewStats.revenue.toLocaleString('vi-VN')} ₫`, pct: overviewStats.revenuePct,  tip: 'Total revenue from flash sales (sold × sale price)' },
-            { label: 'Orders',    value: overviewStats.orders,                                    pct: overviewStats.ordersPct,   tip: 'Total products sold in flash sales' },
-            { label: 'Buyers',    value: overviewStats.buyers,                                    pct: overviewStats.buyersPct,   tip: 'Estimated buyers (based on sold quantity)' },
-            { label: 'Sell Rate', value: `${overviewStats.sellRate}%`,                            pct: overviewStats.sellRatePct, tip: 'Avg sell rate: sold / total flash sale qty' },
+            {
+              label: 'Revenue',
+              value: `${overviewStats.revenue.toLocaleString('vi-VN')} ₫`,
+              pct: overviewStats.revenuePct,
+              tip: 'Total revenue from flash sales (sold × sale price)',
+            },
+            {
+              label: 'Orders',
+              value: overviewStats.orders,
+              pct: overviewStats.ordersPct,
+              tip: 'Total products sold in flash sales',
+            },
+            {
+              label: 'Buyers',
+              value: overviewStats.buyers,
+              pct: overviewStats.buyersPct,
+              tip: 'Estimated buyers (based on sold quantity)',
+            },
+            {
+              label: 'Sell Rate',
+              value: `${overviewStats.sellRate}%`,
+              pct: overviewStats.sellRatePct,
+              tip: 'Avg sell rate: sold / total flash sale qty',
+            },
           ].map((item, idx) => (
             <div key={idx} className={styles.statCell}>
               <Tooltip title={item.tip}>
@@ -1348,9 +1481,13 @@ const FlashSalesPage = () => {
               <div className={styles.statCellChange}>
                 vs. prev period{' '}
                 {item.pct > 0 ? (
-                  <span className={styles.changeUp}><RiseOutlined /> +{item.pct}%</span>
+                  <span className={styles.changeUp}>
+                    <RiseOutlined /> +{item.pct}%
+                  </span>
                 ) : item.pct < 0 ? (
-                  <span className={styles.changeDown}><FallOutlined /> {item.pct}%</span>
+                  <span className={styles.changeDown}>
+                    <FallOutlined /> {item.pct}%
+                  </span>
                 ) : (
                   <span className={styles.changeFlat}>—</span>
                 )}
@@ -1368,7 +1505,10 @@ const FlashSalesPage = () => {
             const count =
               tab.value === 'all'
                 ? flashSales.length
-                : flashSales.filter((s) => s.status === tab.value || (tab.value === 'pending' && s.status === 'upcoming')).length;
+                : flashSales.filter(
+                    (s) =>
+                      s.status === tab.value || (tab.value === 'pending' && s.status === 'upcoming')
+                  ).length;
             return (
               <button
                 key={tab.value}
@@ -1401,14 +1541,37 @@ const FlashSalesPage = () => {
           />
           {hasActiveFilters && (
             <button
-              onClick={() => { setSearchText(''); setStatusFilter('all'); setDateRangeFilter(null); }}
+              onClick={() => {
+                setSearchText('');
+                setStatusFilter('all');
+                setDateRangeFilter(null);
+              }}
               style={{
-                height: 32, padding: '0 12px', border: '1px solid #e2e8f0', background: '#fff',
-                borderRadius: 8, fontSize: 12, color: '#64748b', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
+                height: 32,
+                padding: '0 12px',
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                borderRadius: 8,
+                fontSize: 12,
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                whiteSpace: 'nowrap',
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
               Clear
             </button>
           )}
@@ -1458,16 +1621,38 @@ const FlashSalesPage = () => {
               }}
             />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '60px 20px', color: '#94a3b8' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 12,
+                padding: '60px 20px',
+                color: '#94a3b8',
+              }}
+            >
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#64748b' }}>
                 {hasActiveFilters ? 'No campaigns match your filter' : 'No flash sales yet'}
               </p>
               {!hasActiveFilters && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}
-                  style={{ borderRadius: 8, marginTop: 4 }}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleOpenCreateModal}
+                  style={{ borderRadius: 8, marginTop: 4 }}
+                >
                   Create your first flash sale
                 </Button>
               )}

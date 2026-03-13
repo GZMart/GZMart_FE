@@ -120,53 +120,48 @@ const FlashDealsPage = () => {
   }, [products]);
 
   // Filter products
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      // Deal Type filter
-      if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
-        return false;
-      }
-
-      // Only show active deals
-      if (product.dealStatus !== 'active') {
-        return false;
-      }
-
-      // Brand filter
-      if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
-        return false;
-      }
-
-      // Category filter
-      if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
-        return false;
-      }
-
-      // Price range filter
-      if (priceRange.min > 0 || priceRange.max < 10000000) {
-        if (product.price < priceRange.min || product.price > priceRange.max) {
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        // Deal Type filter
+        if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
           return false;
         }
-      }
 
-      // Discount filter
-      if (selectedDiscounts.length > 0) {
-        const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
-        if (product.discount < minDiscount) {
+        // Only show active deals
+        if (product.dealStatus !== 'active') {
           return false;
         }
-      }
 
-      return true;
-    });
-  }, [
-    products,
-    selectedDealTypes,
-    selectedBrands,
-    selectedCategories,
-    priceRange,
-    selectedDiscounts,
-  ]);
+        // Brand filter
+        if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
+          return false;
+        }
+
+        // Category filter
+        if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
+          return false;
+        }
+
+        // Price range filter
+        if (priceRange.min > 0 || priceRange.max < 10000000) {
+          if (product.price < priceRange.min || product.price > priceRange.max) {
+            return false;
+          }
+        }
+
+        // Discount filter
+        if (selectedDiscounts.length > 0) {
+          const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
+          if (product.discount < minDiscount) {
+            return false;
+          }
+        }
+
+        return true;
+      }),
+    [products, selectedDealTypes, selectedBrands, selectedCategories, priceRange, selectedDiscounts]
+  );
 
   // Sort products
   const sortedProducts = useMemo(() => {

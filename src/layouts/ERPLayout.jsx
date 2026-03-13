@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/layouts/ERPLayout.module.css';
+import NotificationBell from '@components/common/NotificationBell';
 
 const NAV_GROUPS = [
   {
@@ -12,7 +13,8 @@ const NAV_GROUPS = [
     items: [
       { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
       { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
-      { to: '/seller/listings', icon: 'bi-grid-3x3-gap-fill', label: 'Listings' },
+      { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
+      { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
       { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
       { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
@@ -23,14 +25,15 @@ const NAV_GROUPS = [
     items: [
       { to: '/seller/vouchers', icon: 'bi-ticket-perforated', label: 'Vouchers' },
       { to: '/seller/promotions', icon: 'bi-megaphone', label: 'Promotions' },
+      { to: '/seller/notifications', icon: 'bi-bell', label: 'Notifications' },
     ],
   },
   {
     label: 'ERP',
     items: [
-      { to: '/erp/dashboard', icon: 'bi-bar-chart-line', label: 'ERP Dashboard' },
-      { to: '/erp/suppliers', icon: 'bi-truck', label: 'Suppliers' },
-      { to: '/erp/purchase-orders', icon: 'bi-file-earmark-text', label: 'Purchase Orders' },
+      { to: '/seller/erp/dashboard', icon: 'bi-bar-chart-line', label: 'ERP Dashboard' },
+      { to: '/seller/erp/suppliers', icon: 'bi-truck', label: 'Suppliers' },
+      { to: '/seller/erp/purchase-orders', icon: 'bi-file-earmark-text', label: 'Purchase Orders' },
     ],
   },
   {
@@ -52,7 +55,9 @@ const ERPLayout = ({ children }) => {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (to) => {
-    if (to === SELLER_ROUTES.DASHBOARD) return location.pathname === to;
+    if (to === SELLER_ROUTES.DASHBOARD) {
+      return location.pathname === to;
+    }
     return location.pathname.startsWith(to);
   };
 
@@ -112,9 +117,7 @@ const ERPLayout = ({ children }) => {
         {!collapsed && (
           <div className={styles.sidebarFooter}>
             <div className={styles.userPill}>
-              <div className={styles.userAvatar}>
-                {user?.name?.[0]?.toUpperCase() || 'S'}
-              </div>
+              <div className={styles.userAvatar}>{user?.name?.[0]?.toUpperCase() || 'S'}</div>
               <div className={styles.userInfo}>
                 <span className={styles.userName}>{user?.name || 'Seller'}</span>
                 <span className={styles.userEmail}>{user?.email || ''}</span>
@@ -148,44 +151,42 @@ const ERPLayout = ({ children }) => {
           <div className={styles.topbarRight}>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
-              <button
-                className={styles.iconBtn}
-                onClick={() => { setNotifOpen((o) => !o); setProfileOpen(false); }}
-              >
-                <i className="bi bi-bell" />
-                <span className={styles.badge}>3</span>
-              </button>
-              {notifOpen && (
-                <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
-                  <div className={styles.dropdownHeader}>Notifications</div>
-                  {['New order #1042', 'Flash sale ends in 2h', 'Return request pending'].map((n) => (
-                    <div key={n} className={styles.dropdownItem}>{n}</div>
-                  ))}
-                </div>
-              )}
+              <NotificationBell />
             </div>
 
             {/* Profile dropdown */}
             <div className={styles.topbarAction}>
               <button
                 className={styles.avatarBtn}
-                onClick={() => { setProfileOpen((o) => !o); setNotifOpen(false); }}
+                onClick={() => {
+                  setProfileOpen((o) => !o);
+                  setNotifOpen(false);
+                }}
               >
-                <div className={styles.topAvatar}>
-                  {user?.name?.[0]?.toUpperCase() || 'S'}
-                </div>
+                <div className={styles.topAvatar}>{user?.name?.[0]?.toUpperCase() || 'S'}</div>
                 <i className="bi bi-chevron-down" style={{ fontSize: '11px', marginLeft: '4px' }} />
               </button>
               {profileOpen && (
                 <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
-                  <Link to={SELLER_ROUTES.PROFILE} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                  <Link
+                    to={SELLER_ROUTES.PROFILE}
+                    className={styles.dropdownItem}
+                    onClick={() => setProfileOpen(false)}
+                  >
                     <i className="bi bi-person me-2" /> Profile
                   </Link>
-                  <Link to="/seller/billing" className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                  <Link
+                    to="/seller/billing"
+                    className={styles.dropdownItem}
+                    onClick={() => setProfileOpen(false)}
+                  >
                     <i className="bi bi-credit-card me-2" /> Billing
                   </Link>
                   <div className={styles.dropdownDivider} />
-                  <button className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`} onClick={handleLogout}>
+                  <button
+                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                    onClick={handleLogout}
+                  >
                     <i className="bi bi-box-arrow-right me-2" /> Logout
                   </button>
                 </div>
@@ -195,9 +196,7 @@ const ERPLayout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className={styles.content}>
-          {children || <Outlet />}
-        </main>
+        <main className={styles.content}>{children || <Outlet />}</main>
       </div>
     </div>
   );

@@ -45,9 +45,15 @@ const AnimatedTruck = ({ route, duration, onComplete }) => {
   const [position, setPosition] = useState(route[0]);
   const [progress, setProgress] = useState(0);
   const map = useMap();
+  const hasCompletedRef = useRef(false); // Track if onComplete has been called
 
   useEffect(() => {
-    if (!route || route.length === 0) return;
+    if (!route || route.length === 0) {
+      return;
+    }
+
+    // Reset completion flag when starting new animation
+    hasCompletedRef.current = false;
 
     const startTime = Date.now();
     const endTime = startTime + duration * 1000;
@@ -81,7 +87,9 @@ const AnimatedTruck = ({ route, duration, onComplete }) => {
       } else {
         setPosition(route[route.length - 1]);
         setProgress(1);
-        if (onComplete) {
+        // Only call onComplete once
+        if (onComplete && !hasCompletedRef.current) {
+          hasCompletedRef.current = true;
           onComplete();
         }
       }
@@ -218,27 +226,21 @@ const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliv
       <div className="delivery-info">
         <div className="delivery-route">
           <div className="route-point">
-            <span className="route-icon seller">🏪</span>
             <div className="route-details">
-              <strong>Điểm xuất phát</strong>
+              <strong>Place of Departure</strong>
               <p>{sellerCoords.address}</p>
             </div>
           </div>
-          <div className="route-arrow">→</div>
           <div className="route-point">
-            <span className="route-icon buyer">🏠</span>
             <div className="route-details">
-              <strong>Điểm đến</strong>
+              <strong>Place of Delivery</strong>
               <p>{buyerCoords.address}</p>
             </div>
           </div>
         </div>
         <div className="estimated-time">
-          <strong>Thời gian dự kiến:</strong> ~{duration} giây (Demo)
+          <strong>Estimated Time:</strong> ~{duration} seconds (Demo)
           <br />
-          <span style={{ fontSize: 12, color: '#52c41a', marginTop: 4, display: 'inline-block' }}>
-            ✓ Đang dùng routing theo đường bộ thực tế
-          </span>
         </div>
       </div>
     </div>

@@ -74,7 +74,9 @@
 }
 .brandText {
   overflow: hidden;
-  transition: opacity var(--admin-transition), width var(--admin-transition);
+  transition:
+    opacity var(--admin-transition),
+    width var(--admin-transition);
   white-space: nowrap;
 }
 .sidebarCollapsed .brandText {
@@ -101,9 +103,16 @@
   overflow-x: hidden;
   padding: 8px 0 16px;
 }
-.navArea::-webkit-scrollbar { width: 4px; }
-.navArea::-webkit-scrollbar-track { background: transparent; }
-.navArea::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+.navArea::-webkit-scrollbar {
+  width: 4px;
+}
+.navArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.navArea::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 2px;
+}
 
 /* Section labels */
 .sectionLabel {
@@ -116,7 +125,9 @@
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity var(--admin-transition), height var(--admin-transition),
+  transition:
+    opacity var(--admin-transition),
+    height var(--admin-transition),
     padding var(--admin-transition);
 }
 .sectionLabel:first-child {
@@ -143,8 +154,12 @@
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s,
-    padding var(--admin-transition), margin var(--admin-transition);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    padding var(--admin-transition),
+    margin var(--admin-transition);
   white-space: nowrap;
   overflow: hidden;
   position: relative;
@@ -202,7 +217,9 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  transition: opacity var(--admin-transition), width var(--admin-transition);
+  transition:
+    opacity var(--admin-transition),
+    width var(--admin-transition);
   white-space: nowrap;
 }
 .sidebarCollapsed .navLabel {
@@ -245,7 +262,9 @@
   transition: background 0.15s;
   overflow: hidden;
 }
-.userCard:hover { background: #f5f5ff; }
+.userCard:hover {
+  background: #f5f5ff;
+}
 .sidebarCollapsed .userCard {
   justify-content: center;
 }
@@ -267,7 +286,9 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  transition: opacity var(--admin-transition), width var(--admin-transition);
+  transition:
+    opacity var(--admin-transition),
+    width var(--admin-transition);
 }
 .sidebarCollapsed .userInfo {
   opacity: 0;
@@ -301,11 +322,17 @@
   border-radius: 7px;
   color: var(--admin-text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, opacity var(--admin-transition);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    opacity var(--admin-transition);
   flex-shrink: 0;
   font-size: 0.875rem;
 }
-.logoutBtn:hover { background: #fef2f2; color: #ef4444; }
+.logoutBtn:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
 .sidebarCollapsed .logoutBtn {
   display: none;
 }
@@ -342,7 +369,9 @@
   border-radius: 8px;
   color: var(--admin-text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   font-size: 1.05rem;
   flex-shrink: 0;
 }
@@ -374,10 +403,15 @@
   border-radius: 9px;
   color: var(--admin-text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   font-size: 1rem;
 }
-.topbarIconBtn:hover { background: #f3f4f6; color: var(--admin-text-1); }
+.topbarIconBtn:hover {
+  background: #f3f4f6;
+  color: var(--admin-text-1);
+}
 .topbarBadge {
   position: absolute;
   top: 5px;
@@ -406,7 +440,9 @@
   transition: background 0.15s;
   color: var(--admin-text-1);
 }
-.topbarUserBtn:hover { background: #f3f4f6; }
+.topbarUserBtn:hover {
+  background: #f3f4f6;
+}
 .topbarAvatar {
   width: 30px;
   height: 30px;

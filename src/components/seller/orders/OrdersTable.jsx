@@ -102,9 +102,7 @@ const OrdersTable = ({
                       className="btn btn-outline-info"
                       title="Update Status"
                       onClick={() => onUpdateStatus(order._originalData)}
-                      disabled={
-                        order.status === 'completed' || order.status === 'cancelled'
-                      }
+                      disabled={order.status === 'completed' || order.status === 'cancelled'}
                     >
                       <i className="bi bi-pencil"></i>
                     </button>

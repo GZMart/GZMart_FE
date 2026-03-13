@@ -12,6 +12,7 @@ const ProductReviewSection = ({ product }) => {
   const [sortBy, setSortBy] = useState('recent');
   const [helpfulReviews, setHelpfulReviews] = useState(new Set());
   const [unhelpfulReviews, setUnhelpfulReviews] = useState(new Set());
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const reviewsPerPage = 5;
 
@@ -28,7 +29,7 @@ const ProductReviewSection = ({ product }) => {
         });
 
         console.log('Reviews API Response:', reviewsResponse);
-        
+
         let reviewsData = [];
         if (Array.isArray(reviewsResponse)) {
           // Response is already an array
@@ -37,7 +38,7 @@ const ProductReviewSection = ({ product }) => {
           // Response has data property
           reviewsData = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [];
         }
-        
+
         console.log('Processed reviews:', reviewsData);
         setReviews(reviewsData);
       } catch (error) {
@@ -51,7 +52,42 @@ const ProductReviewSection = ({ product }) => {
     if (product?._id) {
       fetchReviews();
     }
-  }, [product?._id, sortBy]);
+  }, [product?._id, sortBy, refreshTrigger]);
+
+  // Refetch reviews when window/tab gets focus (user comes back from another tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && product?._id) {
+        console.log('🔄 Tab became visible, refetching reviews...');
+        setRefreshTrigger((prev) => prev + 1);
+      }
+    };
+
+    const handleFocus = () => {
+      if (product?._id) {
+        console.log('🔄 Window focused, refetching reviews...');
+        setRefreshTrigger((prev) => prev + 1);
+      }
+    };
+
+    // Listen for custom review submitted event
+    const handleReviewSubmitted = (event) => {
+      if (event.detail?.productId === product?._id) {
+        console.log('🔄 Review submitted for this product, refetching...');
+        setRefreshTrigger((prev) => prev + 1);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('reviewSubmitted', handleReviewSubmitted);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('reviewSubmitted', handleReviewSubmitted);
+    };
+  }, [product?._id]);
 
   // Filter reviews based on selected filters
   const filteredReviews = useMemo(() => {
@@ -97,7 +133,9 @@ const ProductReviewSection = ({ product }) => {
 
   // Average rating
   const averageRating = useMemo(() => {
-    if (reviews.length === 0) return 0;
+    if (reviews.length === 0) {
+      return 0;
+    }
     const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0);
     return (sum / reviews.length).toFixed(1);
   }, [reviews]);
@@ -213,7 +251,11 @@ const ProductReviewSection = ({ product }) => {
           </div>
 
           <div className={styles.sortControls}>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.sortSelect}>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={styles.sortSelect}
+            >
               <option value="recent">Most Recent</option>
               <option value="helpful">Most Helpful</option>
               <option value="rating_high">Highest Rating</option>
@@ -231,13 +273,17 @@ const ProductReviewSection = ({ product }) => {
               <div className={styles.reviewHeader}>
                 <div className={styles.reviewerInfo}>
                   {review.userId?.avatar && (
-                    <img src={review.userId.avatar} alt={review.userId?.fullName} className={styles.reviewerAvatar} />
+                    <img
+                      src={review.userId.avatar}
+                      alt={review.userId?.fullName}
+                      className={styles.reviewerAvatar}
+                    />
                   )}
                   <div>
-                    <div className={styles.reviewerName}>{review.userId?.fullName || 'Anonymous'}</div>
-                    <p className={styles.reviewVariant}>
-                      Variant: {review.variant || 'N/A'}
-                    </p>
+                    <div className={styles.reviewerName}>
+                      {review.userId?.fullName || 'Anonymous'}
+                    </div>
+                    <p className={styles.reviewVariant}>Variant: {review.variant || 'N/A'}</p>
                   </div>
                 </div>
                 <span className={styles.reviewDate}>
@@ -251,14 +297,13 @@ const ProductReviewSection = ({ product }) => {
                 </span>
               </div>
 
-
               {/* Review Content Wrapper */}
               <div className={styles.reviewContentWrapper}>
                 <div>
                   {/* Rating */}
                   <div className={styles.reviewRating}>
-                      {'★'.repeat(review.rating)}
-                      {'☆'.repeat(5 - review.rating)}
+                    {'★'.repeat(review.rating)}
+                    {'☆'.repeat(5 - review.rating)}
                   </div>
 
                   {/* Review Title */}
@@ -272,43 +317,47 @@ const ProductReviewSection = ({ product }) => {
                     {review.images && review.images.length > 0 && (
                       <div className={styles.reviewImages}>
                         {review.images.map((image, index) => (
-                          <img key={index} src={image} alt={`Review ${index + 1}`} className={styles.reviewImage} />
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`Review ${index + 1}`}
+                            className={styles.reviewImage}
+                          />
                         ))}
                       </div>
                     )}
                   </div>
-
                 </div>
 
                 {/* Helpful Actions */}
                 <div className={styles.reviewActions}>
-                <button
-                  className={styles.helpfulButton}
-                  onClick={() => handleMarkHelpful(review._id)}
-                  title="Helpful"
-                  style={{
-                    backgroundColor: helpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                    borderColor: helpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
-                    color: helpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
-                  }}
-                >
-                  <i className="bi bi-hand-thumbs-up"></i>
-                  {review.helpful || 0}
-                </button>
-                <button
-                  className={styles.unhelpfulButton}
-                  onClick={() => handleMarkUnhelpful(review._id)}
-                  title="Not Helpful"
-                  style={{
-                    backgroundColor: unhelpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                    borderColor: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
-                    color: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
-                  }}
-                >
-                  <i className="bi bi-hand-thumbs-down"></i>
-                  {review.unhelpful || 0}
-                </button>
-              </div>
+                  <button
+                    className={styles.helpfulButton}
+                    onClick={() => handleMarkHelpful(review._id)}
+                    title="Helpful"
+                    style={{
+                      backgroundColor: helpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
+                      borderColor: helpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
+                      color: helpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
+                    }}
+                  >
+                    <i className="bi bi-hand-thumbs-up"></i>
+                    {review.helpful || 0}
+                  </button>
+                  <button
+                    className={styles.unhelpfulButton}
+                    onClick={() => handleMarkUnhelpful(review._id)}
+                    title="Not Helpful"
+                    style={{
+                      backgroundColor: unhelpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
+                      borderColor: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
+                      color: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
+                    }}
+                  >
+                    <i className="bi bi-hand-thumbs-down"></i>
+                    {review.unhelpful || 0}
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -334,4 +383,3 @@ const ProductReviewSection = ({ product }) => {
 };
 
 export default ProductReviewSection;
-

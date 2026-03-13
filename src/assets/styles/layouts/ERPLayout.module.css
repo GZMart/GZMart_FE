@@ -8,7 +8,12 @@
   display: flex;
   min-height: 100vh;
   background: #f8f9fa;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 /* ─── Sidebar ────────────────────────────────────────────────────── */
@@ -29,7 +34,9 @@
   scrollbar-width: none;
 }
 
-.sidebar::-webkit-scrollbar { display: none; }
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
 
 .sidebarCollapsed {
   width: 64px;
@@ -257,7 +264,6 @@
   align-items: center;
 }
 
-
 .topbarRoute {
   font-size: 12px;
   color: #9ca3af;
@@ -356,7 +362,7 @@
   background: #fff;
   border: 1px solid #e8ecf0;
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   min-width: 200px;
   z-index: 1000;
   overflow: hidden;
@@ -369,8 +375,14 @@
 }
 
 @keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dropdownHeader {

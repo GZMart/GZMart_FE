@@ -495,5 +495,25 @@
     "tab_all_products": "ALL PRODUCTS",
     "suggested_for_you": "SUGGESTED FOR YOU",
     "no_products": "This shop does not have any products yet."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "loading": "Loading...",
+    "empty": "No notifications",
+    "recent": "Recently Received Notifications",
+    "view_all": "View All",
+    "view_details": "View Details",
+    "page_title": "Your Notifications",
+    "page_subtitle": "Stay updated with your latest alerts and messages.",
+    "categories": {
+      "all": "All Notifications",
+      "order": "Order Updates",
+      "promotion": "Promotions",
+      "flash_sale": "Flash Sales",
+      "voucher": "Vouchers",
+      "wallet": "Wallet Updates",
+      "system": "System Updates"
+    }
   }
 }

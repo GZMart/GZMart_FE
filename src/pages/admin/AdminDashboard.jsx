@@ -200,7 +200,9 @@ const AdminDashboard = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        if (!status) return <Tag>Unknown</Tag>;
+        if (!status) {
+          return <Tag>Unknown</Tag>;
+        }
         const colors = {
           delivered: 'green',
           shipping: 'blue',

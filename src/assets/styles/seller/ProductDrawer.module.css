@@ -1,0 +1,915 @@
+/* ================================================================
+   AddProductModal.module.css — GZMart Seller Add/Edit Product
+   Design: Professional ERP modal — clean, sectioned, focused
+   ================================================================ */
+
+/* ── Modal layout ────────────────────────────────────────────────── */
+.modalHeader {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.125rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.modalTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.modalBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  letter-spacing: 0.3px;
+}
+
+.modalBody {
+  padding: 1.25rem 1.5rem;
+  background: #fafbfc;
+}
+
+.modalFooter {
+  border-top: 1px solid #e5e7eb;
+  padding: 0.875rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  background: #fff;
+}
+
+/* ── Section header ──────────────────────────────────────────────── */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 14px;
+  margin-top: 4px;
+}
+
+.sectionHeader::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.sectionNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1a56db;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Form elements ──────────────────────────────────────────────── */
+.formLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.lockIcon {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.formControl {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  width: 100%;
+  background: #fff;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  outline: none;
+}
+
+.formControl:focus {
+  border-color: #1a56db;
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.08);
+}
+
+.formControl:disabled,
+.formControl[readonly] {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.formControl.invalid {
+  border-color: #dc2626;
+}
+
+.formControl.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+}
+
+.invalidFeedback {
+  color: #dc2626;
+  font-size: 11.5px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.textMuted {
+  color: #6b7280;
+  font-size: 11.5px;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Stock locked help text */
+.stockLockedNote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 7px 10px;
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.stockLockedNote a {
+  color: #1a56db;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.stockLockedNote a:hover {
+  text-decoration: underline;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+.btnPrimary {
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  padding: 0 18px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #1447c7;
+  box-shadow: 0 2px 8px rgba(26, 86, 219, 0.28);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0 16px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Alerts ─────────────────────────────────────────────────────── */
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 13.5px;
+}
+
+.alertDanger {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.alertWarning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.saveBtnHint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* ── Product type tabs ──────────────────────────────────────────── */
+.productTypeTabs .nav-link {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-right: 6px;
+  transition: all 0.15s;
+  background: #fff;
+}
+
+.productTypeTabs .nav-link:hover {
+  background: #f8fafc;
+  border-color: #c7d2fe;
+}
+
+.productTypeTabs .nav-link.active {
+  background: #1a56db;
+  color: #fff;
+  border-color: #1a56db;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(26, 86, 219, 0.2);
+}
+
+.productTypeTabs .nav-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Image upload zone ──────────────────────────────────────────── */
+.uploadZone {
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.1s;
+  background: #fff;
+}
+
+.uploadZone:hover {
+  border-color: #1a56db;
+  background: #f0f4ff;
+  transform: translateY(-1px);
+}
+
+.uploadZone.active {
+  border-color: #1a56db;
+  background: #eff6ff;
+}
+
+/* ── Right panel ────────────────────────────────────────────────── */
+.rightPanel {
+  padding-left: 0;
+  border-left: none;
+}
+
+@media (min-width: 1200px) {
+  .rightPanel {
+    border-left: 1px solid #e5e7eb;
+    padding-left: 1.5rem !important;
+  }
+}
+
+/* ── Warning badge ──────────────────────────────────────────────── */
+.warningBadge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+  border: 1px solid #fde68a;
+}
+
+/* ── Modal dialog override ──────────────────────────────────────── */
+:global(.modal-dialog.modal-xl) {
+  max-width: 1100px;
+}
+
+/* ── Close button ───────────────────────────────────────────────── */
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s;
+  padding: 0;
+}
+.closeBtn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── Product type switcher ──────────────────────────────────────── */
+.typeSwitcher {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.typeBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.typeBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.7);
+  color: #334155;
+}
+.typeBtnActive {
+  background: #fff;
+  color: #1a56db;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.typeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Input with prefix adornment ───────────────────────────────── */
+.inputAddon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.addonPrefix {
+  position: absolute;
+  left: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  pointer-events: none;
+  z-index: 1;
+}
+.withPrefix {
+  padding-left: 22px !important;
+}
+
+/* ── Lock badge ─────────────────────────────────────────────────── */
+.lockBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ── Cost source badges ──────────────────────────────────────────── */
+.costSourceBadgePo {
+  display: inline-flex;
+  align-items: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+}
+
+.costSourceBadgeManual {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+}
+
+/* ── Optional badge ─────────────────────────────────────────────── */
+.optionalBadge {
+  display: inline-block;
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 0px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ── Mono input ─────────────────────────────────────────────────── */
+.monoInput {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Variant count badge ────────────────────────────────────────── */
+.variantCountBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+}
+.overLimitBadge {
+  color: #dc2626;
+  font-size: 11px;
+}
+
+/* ── Media blocks ───────────────────────────────────────────────── */
+.mediaBlock {
+  margin-bottom: 16px;
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.mediaBlockHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.mediaBlockTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.mediaBlockHint {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.mediaCount {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
+
+/* Upload zone */
+.uploadZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  background: #fafbfc;
+}
+.uploadZone:hover:not(.uploadDisabled) {
+  border-color: #1a56db;
+  background: #eff6ff;
+}
+.uploadDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.uploadZoneText {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.fileInputHidden {
+  display: none;
+}
+
+/* Size chart preview */
+.previewSingle {
+  position: relative;
+  display: inline-block;
+}
+.previewSingleImg {
+  width: 120px;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  display: block;
+}
+
+/* Image grid */
+.imageGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.imageThumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+.imageThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.primaryBadge {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  background: rgba(26, 86, 219, 0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.imageAddBtn {
+  width: 72px;
+  height: 72px;
+  border: 2px dashed #d1d5db;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  background: #fafbfc;
+}
+.imageAddBtn:hover:not(.uploadDisabled) {
+  border-color: #1a56db;
+  background: #eff6ff;
+}
+
+/* Remove button (×) */
+.removeBtn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.65);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  padding: 0;
+  z-index: 2;
+}
+.removeBtn:hover {
+  background: #dc2626;
+}
+
+/* Video list */
+.videoList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.videoItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 6px;
+}
+.videoPreview {
+  width: 80px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.videoName {
+  font-size: 11.5px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Spin animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinIcon {
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ================================================================
+   DRAWER — Full-height side panel (Option B)
+   Slides in from right side at 65% viewport width.
+   Z-index: backdrop 1050, panel 1055 (above Bootstrap Navbar ~1030)
+   ================================================================ */
+
+/* ── Backdrop ───────────────────────────────────────────────────── */
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 1050;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.drawerBackdropVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Panel ──────────────────────────────────────────────────────── */
+.drawerPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: 70%;
+  min-width: 760px;
+  max-width: 1080px;
+  background: #fff;
+  box-shadow:
+    -8px 0 40px rgba(15, 23, 42, 0.14),
+    -1px 0 0 rgba(15, 23, 42, 0.06);
+  z-index: 1055;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  overflow: hidden;
+}
+.drawerPanelOpen {
+  transform: translateX(0);
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 68px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  gap: 1rem;
+}
+.drawerHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.drawerHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.drawerCloseBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  padding: 0;
+}
+.drawerCloseBtn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.drawerTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+  margin: 0;
+  line-height: 1.3;
+}
+.drawerSubtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+  margin-top: 1px;
+}
+.editingBadge {
+  display: inline-flex;
+  align-items: center;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  letter-spacing: 0.2px;
+}
+.drawerSaveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  height: 38px;
+  padding: 0 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+  white-space: nowrap;
+}
+.drawerSaveBtn:hover:not(:disabled) {
+  background: #1447c7;
+  box-shadow: 0 2px 10px rgba(26, 86, 219, 0.3);
+}
+.drawerSaveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Scrollable body ────────────────────────────────────────────── */
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  background: #fafbfc;
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.drawerBody::-webkit-scrollbar {
+  width: 5px;
+}
+.drawerBody::-webkit-scrollbar-track {
+  background: transparent;
+}
+.drawerBody::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+.drawerBody::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+.drawerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  padding: 0.875rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+/* Prevent body scroll when drawer is open */
+:global(body.drawer-open) {
+  overflow: hidden;
+}
+
+/* ── Media row (horizontal 3-column layout) ─────────────────────── */
+.mediaRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.mediaRow .mediaBlock {
+  flex: 1;
+  min-width: 160px;
+}

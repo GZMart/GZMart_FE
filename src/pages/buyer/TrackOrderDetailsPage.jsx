@@ -39,7 +39,9 @@ const TrackOrderDetailsPage = () => {
   };
 
   const formatDate = (date) => {
-    if (!date) return '';
+    if (!date) {
+      return '';
+    }
     return new Date(date).toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
@@ -49,12 +51,11 @@ const TrackOrderDetailsPage = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
 
   const handleOrderUpdate = (updatedData) => {
     console.log('Order updated:', updatedData);

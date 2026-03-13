@@ -3,10 +3,12 @@ import PropTypes from 'prop-types';
 import { Modal, Form, Button, Alert, Upload, message } from 'antd';
 import { PictureOutlined, CloseOutlined } from '@ant-design/icons';
 import rmaService from '@services/api/rmaService';
+import { API_BASE_URL } from '@services/axiosClient';
 
 const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [requestType, setRequestType] = useState('refund');
   const [images, setImages] = useState([]);
@@ -47,15 +49,44 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
   };
 
   const handleImageUpload = (info) => {
+    console.log('🔵 [ReturnRequestModal] Upload status:', {
+      status: info.file.status,
+      fileName: info.file.name,
+      response: info.file.response,
+      error: info.file.error,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Track uploading state
+    if (info.file.status === 'uploading') {
+      setUploading(true);
+    }
+
     if (info.file.status === 'done') {
-      // Assuming your upload API returns { url: "..." }
-      const url = info.file.response?.url || info.file.response?.data?.url;
+      setUploading(false);
+
+      // Backend returns { success, message, data: { url } }
+      const url = info.file.response?.data?.url || info.file.response?.url;
+      console.log('✅ [ReturnRequestModal] Upload done, extracting URL:', {
+        fullResponse: info.file.response,
+        extractedUrl: url,
+      });
+
       if (url) {
         setImages((prev) => [...prev, url]);
-        message.success('Image uploaded successfully');
+        message.success(`Image uploaded successfully! (${images.length + 1}/5)`);
+      } else {
+        console.error('❌ [ReturnRequestModal] Upload response missing URL:', info.file.response);
+        message.error('Upload succeeded but URL not found in response');
       }
     } else if (info.file.status === 'error') {
-      message.error('Image upload failed');
+      setUploading(false);
+
+      console.error('❌ [ReturnRequestModal] Upload error:', {
+        error: info.file.error,
+        response: info.file.response,
+      });
+      message.error(`Upload failed: ${info.file.error?.message || 'Unknown error'}`);
     }
   };
 
@@ -78,15 +109,26 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
         type: requestType,
         reason: values.reason,
         description: values.description,
-        images: images,
+        images,
         items: order.items.map((item) => ({
           orderItemId: item._id,
           quantity: item.quantity, // Return all items by default
         })),
       };
 
+      console.log('🔵 [ReturnRequestModal] Submitting return/refund request:', {
+        requestData,
+        orderNumber: order.orderNumber,
+        imageCount: images.length,
+        timestamp: new Date().toISOString(),
+      });
+
       const response = await rmaService.createReturnRequest(requestData);
 
+      console.log(
+        '✅ [ReturnRequestModal] Return/refund request submitted successfully:',
+        response
+      );
       message.success(
         requestType === 'refund'
           ? 'Refund request submitted successfully!'
@@ -99,7 +141,13 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
 
       onHide();
     } catch (err) {
-      console.error('Error creating return request:', err);
+      console.error('❌ [ReturnRequestModal] Error creating return request:', {
+        error: err,
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        timestamp: new Date().toISOString(),
+      });
       setError(err.response?.data?.message || 'Failed to create return request');
     } finally {
       setLoading(false);
@@ -222,17 +270,53 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
           </Form.Item>
 
           {/* Image Upload */}
-          <Form.Item label="Evidence Photos" required>
+          <Form.Item
+            label="Evidence Photos"
+            required
+            help={`Upload up to 5 images as evidence. Supported formats: JPG, PNG, GIF (max 10MB each)`}
+          >
             <Upload
-              action={`${import.meta.env.VITE_API_URL}/api/upload/image`}
+              action={`${API_BASE_URL}/api/upload/single`}
+              name="image"
               headers={{
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
               }}
               onChange={handleImageUpload}
               showUploadList={false}
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              maxCount={5}
+              beforeUpload={(file) => {
+                const isImage = file.type.startsWith('image/');
+                if (!isImage) {
+                  message.error('You can only upload image files!');
+                  return Upload.LIST_IGNORE;
+                }
+                const isLt10M = file.size / 1024 / 1024 < 10;
+                if (!isLt10M) {
+                  message.error('Image must be smaller than 10MB!');
+                  return Upload.LIST_IGNORE;
+                }
+                console.log('🔵 [Upload] Starting upload:', {
+                  name: file.name,
+                  size: `${(file.size / 1024).toFixed(2)} KB`,
+                  type: file.type,
+                  uploadUrl: `${API_BASE_URL}/api/upload/single`,
+                });
+                return true;
+              }}
             >
-              <Button icon={<PictureOutlined />}>Upload Image</Button>
+              <Button
+                icon={<PictureOutlined />}
+                loading={uploading}
+                disabled={images.length >= 5 || uploading}
+                style={{ width: '100%' }}
+              >
+                {uploading
+                  ? 'Uploading...'
+                  : images.length === 0
+                    ? 'Upload Image'
+                    : `Upload More (${images.length}/5)`}
+              </Button>
             </Upload>
 
             {images.length > 0 && (

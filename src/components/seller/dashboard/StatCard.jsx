@@ -7,11 +7,7 @@ export function StatCard({ icon: IconComponent, label, value, trend, trendUp, fr
     <div className={styles.statCard}>
       <div className={styles.statHeader}>
         <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
-          {typeof IconComponent === 'string' ? (
-            IconComponent
-          ) : (
-            <IconComponent size={24} />
-          )}
+          {typeof IconComponent === 'string' ? IconComponent : <IconComponent size={24} />}
         </div>
       </div>
       <div className={styles.statLabel}>{label}</div>

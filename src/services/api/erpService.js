@@ -10,10 +10,11 @@ import axiosClient from '../axiosClient';
  * ===================================================================
  */
 
-const PO_BASE  = '/api/purchase-orders';
+const PO_BASE = '/api/purchase-orders';
 const SUP_BASE = '/api/purchase-orders/suppliers';
 const INV_BASE = '/api/purchase-orders/inventory';
 const REP_BASE = '/api/purchase-orders/reports';
+const XR_BASE = '/api/exchange-rate';
 
 // ============================================================
 // SELLER PRODUCTS (for PO Listing Picker)
@@ -22,9 +23,8 @@ const REP_BASE = '/api/purchase-orders/reports';
 /**
  * Get seller's own product listings (to pre-fill PO items)
  */
-export const getMyProducts = async (params = {}) => {
-  return axiosClient.get('/api/products/my-products', { params });
-};
+export const getMyProducts = async (params = {}) =>
+  axiosClient.get('/api/products/my-products', { params });
 
 // ============================================================
 // PURCHASE ORDERS
@@ -33,44 +33,34 @@ export const getMyProducts = async (params = {}) => {
 /**
  * Create new purchase order
  */
-export const createPurchaseOrder = async (orderData) => {
-  return axiosClient.post(PO_BASE, orderData);
-};
+export const createPurchaseOrder = async (orderData) => axiosClient.post(PO_BASE, orderData);
 
 /**
  * Get all purchase orders with filters
  */
-export const getPurchaseOrders = async (params = {}) => {
-  return axiosClient.get(PO_BASE, { params });
-};
+export const getPurchaseOrders = async (params = {}) => axiosClient.get(PO_BASE, { params });
 
 /**
  * Get purchase order by ID
  */
-export const getPurchaseOrderById = async (id) => {
-  return axiosClient.get(`${PO_BASE}/${id}`);
-};
+export const getPurchaseOrderById = async (id) => axiosClient.get(`${PO_BASE}/${id}`);
 
 /**
  * Update purchase order
  */
-export const updatePurchaseOrder = async (id, updateData) => {
-  return axiosClient.put(`${PO_BASE}/${id}`, updateData);
-};
+export const updatePurchaseOrder = async (id, updateData) =>
+  axiosClient.put(`${PO_BASE}/${id}`, updateData);
 
 /**
  * Complete purchase order (nhập kho)
  */
-export const completePurchaseOrder = async (id) => {
-  return axiosClient.post(`${PO_BASE}/${id}/complete`);
-};
+export const completePurchaseOrder = async (id) => axiosClient.post(`${PO_BASE}/${id}/complete`);
 
 /**
  * Cancel purchase order
  */
-export const cancelPurchaseOrder = async (id, cancelReason) => {
-  return axiosClient.post(`${PO_BASE}/${id}/cancel`, { cancelReason });
-};
+export const cancelPurchaseOrder = async (id, cancelReason) =>
+  axiosClient.post(`${PO_BASE}/${id}/cancel`, { cancelReason });
 
 // ============================================================
 // SUPPLIERS
@@ -79,44 +69,34 @@ export const cancelPurchaseOrder = async (id, cancelReason) => {
 /**
  * Create new supplier
  */
-export const createSupplier = async (supplierData) => {
-  return axiosClient.post(SUP_BASE, supplierData);
-};
+export const createSupplier = async (supplierData) => axiosClient.post(SUP_BASE, supplierData);
 
 /**
  * Get all suppliers
  */
-export const getSuppliers = async (params = {}) => {
-  return axiosClient.get(SUP_BASE, { params });
-};
+export const getSuppliers = async (params = {}) => axiosClient.get(SUP_BASE, { params });
 
 /**
  * Get supplier by ID
  */
-export const getSupplierById = async (id) => {
-  return axiosClient.get(`${SUP_BASE}/${id}`);
-};
+export const getSupplierById = async (id) => axiosClient.get(`${SUP_BASE}/${id}`);
 
 /**
  * Update supplier
  */
-export const updateSupplier = async (id, updateData) => {
-  return axiosClient.put(`${SUP_BASE}/${id}`, updateData);
-};
+export const updateSupplier = async (id, updateData) =>
+  axiosClient.put(`${SUP_BASE}/${id}`, updateData);
 
 /**
  * Delete supplier
  */
-export const deleteSupplier = async (id) => {
-  return axiosClient.delete(`${SUP_BASE}/${id}`);
-};
+export const deleteSupplier = async (id) => axiosClient.delete(`${SUP_BASE}/${id}`);
 
 /**
  * Get supplier purchase history
  */
-export const getSupplierPurchaseHistory = async (id, params = {}) => {
-  return axiosClient.get(`${SUP_BASE}/${id}/purchase-history`, { params });
-};
+export const getSupplierPurchaseHistory = async (id, params = {}) =>
+  axiosClient.get(`${SUP_BASE}/${id}/purchase-history`, { params });
 
 // ============================================================
 // INVENTORY MANAGEMENT
@@ -125,16 +105,14 @@ export const getSupplierPurchaseHistory = async (id, params = {}) => {
 /**
  * Get low stock items
  */
-export const getLowStockItems = async (params = {}) => {
-  return axiosClient.get(`${INV_BASE}/low-stock`, { params });
-};
+export const getLowStockItems = async (params = {}) =>
+  axiosClient.get(`${INV_BASE}/low-stock`, { params });
 
 /**
  * Get inventory valuation
  */
-export const getInventoryValuation = async (params = {}) => {
-  return axiosClient.get(`${INV_BASE}/valuation`, { params });
-};
+export const getInventoryValuation = async (params = {}) =>
+  axiosClient.get(`${INV_BASE}/valuation`, { params });
 
 // ============================================================
 // REPORTS
@@ -143,11 +121,31 @@ export const getInventoryValuation = async (params = {}) => {
 /**
  * Get Profit & Loss report
  */
-export const getProfitLossReport = async (startDate, endDate) => {
-  return axiosClient.get(`${REP_BASE}/profit-loss`, {
+export const getProfitLossReport = async (startDate, endDate) =>
+  axiosClient.get(`${REP_BASE}/profit-loss`, {
     params: { startDate, endDate },
   });
-};
+
+// ============================================================
+// EXCHANGE RATE
+// ============================================================
+
+/**
+ * Get the current active CNY→VND exchange rate
+ */
+export const getExchangeRate = async () => axiosClient.get(XR_BASE);
+
+/**
+ * Manually override the exchange rate (admin/manager)
+ * @param {Number} rate
+ * @param {String} [note]
+ */
+export const updateExchangeRate = async (rate, note) => axiosClient.put(XR_BASE, { rate, note });
+
+/**
+ * Force an immediate sync from external APIs (admin/manager)
+ */
+export const syncExchangeRate = async () => axiosClient.post(`${XR_BASE}/sync`);
 
 export default {
   // Purchase Orders
@@ -169,4 +167,8 @@ export default {
   getInventoryValuation,
   // Reports
   getProfitLossReport,
+  // Exchange Rate
+  getExchangeRate,
+  updateExchangeRate,
+  syncExchangeRate,
 };

@@ -58,7 +58,9 @@
   font-size: 0.875rem !important;
   padding: 8px 18px !important;
   box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35) !important;
-  transition: box-shadow 0.2s, transform 0.15s !important;
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s !important;
   cursor: pointer !important;
 }
 .btnAdd:hover {
@@ -90,11 +92,22 @@
   cursor: default;
   transition: transform 0.15s;
 }
-.statCard:hover { transform: translateY(-2px); }
+.statCard:hover {
+  transform: translateY(-2px);
+}
 
-.statTotal    { background: #f5f3ff; border-color: #ede9fe; }
-.statRequired { background: #fffbeb; border-color: #fde68a; }
-.statFilter   { background: #f0fdf4; border-color: #bbf7d0; }
+.statTotal {
+  background: #f5f3ff;
+  border-color: #ede9fe;
+}
+.statRequired {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.statFilter {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
 
 .statNum {
   font-size: 1.9rem;
@@ -102,15 +115,21 @@
   line-height: 1;
   margin-bottom: 2px;
 }
-.statTotal    .statNum { color: #4f46e5; }
-.statRequired .statNum { color: #d97706; }
-.statFilter   .statNum { color: #16a34a; }
+.statTotal .statNum {
+  color: #4f46e5;
+}
+.statRequired .statNum {
+  color: #d97706;
+}
+.statFilter .statNum {
+  color: #16a34a;
+}
 
 .statLabel {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .7px;
+  letter-spacing: 0.7px;
   color: #6b7280;
 }
 
@@ -119,7 +138,9 @@
   background: #fff;
   border-radius: 14px;
   border: 1px solid #f0f0f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
@@ -164,7 +185,9 @@
   font-size: 0.875rem !important;
   width: 220px !important;
   outline: none !important;
-  transition: border-color 0.15s, box-shadow 0.15s !important;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s !important;
   background: #fff !important;
   color: #111827 !important;
 }
@@ -203,13 +226,18 @@
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .btnClear:hover {
   background: #fef2f2;
   color: #dc2626;
 }
-.btnClear svg { width: 13px; height: 13px; }
+.btnClear svg {
+  width: 13px;
+  height: 13px;
+}
 
 .resultCount {
   font-size: 0.78rem;
@@ -259,12 +287,23 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.activeCatPillX:hover { background: #a5b4fc; }
-.activeCatPillX svg { width: 9px; height: 9px; }
+.activeCatPillX:hover {
+  background: #a5b4fc;
+}
+.activeCatPillX svg {
+  width: 9px;
+  height: 9px;
+}
 
 @keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Table ────────────────────────────────────────────────── */
@@ -287,21 +326,29 @@
   text-align: left;
   white-space: nowrap;
 }
-.table thead th.center { text-align: center; }
+.table thead th.center {
+  text-align: center;
+}
 
 .table tbody tr {
   border-bottom: 1px solid #f5f5f5;
   transition: background 0.12s;
 }
-.table tbody tr:last-child { border-bottom: none; }
-.table tbody tr:hover { background: #f8f8ff; }
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+.table tbody tr:hover {
+  background: #f8f8ff;
+}
 
 .table td {
   padding: 10px 14px;
   vertical-align: middle;
   color: #374151;
 }
-.table td.center { text-align: center; }
+.table td.center {
+  text-align: center;
+}
 
 /* Name cell */
 .attrName {
@@ -377,9 +424,15 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.pillYesRequired .pillDot { background: #d97706; }
-.pillYesFilter   .pillDot { background: #16a34a; }
-.pillNo          .pillDot { background: #d1d5db; }
+.pillYesRequired .pillDot {
+  background: #d97706;
+}
+.pillYesFilter .pillDot {
+  background: #16a34a;
+}
+.pillNo .pillDot {
+  background: #d1d5db;
+}
 
 /* Option tags in cell */
 .optionTagsCell {
@@ -410,7 +463,9 @@
   padding: 1px 8px;
   white-space: nowrap;
 }
-.emptyDash { color: #d1d5db; }
+.emptyDash {
+  color: #d1d5db;
+}
 
 /* Action buttons */
 .btnEdit {
@@ -424,13 +479,18 @@
   border-radius: 7px;
   cursor: pointer;
   color: #6366f1;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .btnEdit:hover {
   background: #eef2ff;
   color: #4f46e5;
 }
-.btnEdit svg { width: 15px; height: 15px; }
+.btnEdit svg {
+  width: 15px;
+  height: 15px;
+}
 
 .btnDelete {
   display: inline-flex;
@@ -443,13 +503,18 @@
   border-radius: 7px;
   cursor: pointer;
   color: #9ca3af;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .btnDelete:hover {
   background: #fef2f2;
   color: #ef4444;
 }
-.btnDelete svg { width: 15px; height: 15px; }
+.btnDelete svg {
+  width: 15px;
+  height: 15px;
+}
 
 .actionsCell {
   display: flex;
@@ -497,7 +562,9 @@
   margin-top: 4px !important;
   color: #fff !important;
   cursor: pointer !important;
-  transition: transform 0.15s, box-shadow 0.2s !important;
+  transition:
+    transform 0.15s,
+    box-shadow 0.2s !important;
   box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3) !important;
 }
 .emptyBtn:hover {
@@ -535,11 +602,21 @@
   border: 1px solid #fecaca;
   color: #dc2626;
 }
-.toast svg { width: 16px; height: 16px; flex-shrink: 0; }
+.toast svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Modal ────────────────────────────────────────────────── */
@@ -557,9 +634,18 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.modalHeaderIcon svg { width: 20px; height: 20px; }
-.modalIconAdd  { background: #eef2ff; color: #4f46e5; }
-.modalIconEdit { background: #fff7ed; color: #d97706; }
+.modalHeaderIcon svg {
+  width: 20px;
+  height: 20px;
+}
+.modalIconAdd {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.modalIconEdit {
+  background: #fff7ed;
+  color: #d97706;
+}
 
 .modalHeaderTitle {
   font-size: 1rem;
@@ -639,8 +725,13 @@
   transition: background 0.15s !important;
   white-space: nowrap !important;
 }
-.btnAddOpt:hover { background: #e0e7ff !important; }
-.btnAddOpt svg { width: 14px; height: 14px; }
+.btnAddOpt:hover {
+  background: #e0e7ff !important;
+}
+.btnAddOpt svg {
+  width: 14px;
+  height: 14px;
+}
 
 .optionTags {
   display: flex;
@@ -675,8 +766,14 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.btnRemoveOpt:hover { background: #fecaca; color: #dc2626; }
-.btnRemoveOpt svg { width: 10px; height: 10px; }
+.btnRemoveOpt:hover {
+  background: #fecaca;
+  color: #dc2626;
+}
+.btnRemoveOpt svg {
+  width: 10px;
+  height: 10px;
+}
 
 .optionsHint {
   font-size: 0.78rem;
@@ -689,7 +786,9 @@
   display: flex;
   gap: 12px;
 }
-.toggleDivider { display: none; }
+.toggleDivider {
+  display: none;
+}
 
 .toggleCard {
   flex: 1;
@@ -701,7 +800,10 @@
   border-radius: 12px;
   padding: 14px 16px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
   user-select: none;
 }
 .toggleCard:hover {
@@ -729,10 +831,14 @@
   border-radius: 11px;
   background: #d1d5db;
   flex-shrink: 0;
-  transition: background 0.25s cubic-bezier(.4,0,.2,1);
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.toggleCardRequired.toggleCardActive .switchTrack  { background: #d97706; }
-.toggleCardFilter.toggleCardActive   .switchTrack  { background: #16a34a; }
+.toggleCardRequired.toggleCardActive .switchTrack {
+  background: #d97706;
+}
+.toggleCardFilter.toggleCardActive .switchTrack {
+  background: #16a34a;
+}
 
 /* The knob */
 .switchTrack::after {
@@ -744,8 +850,8 @@
   height: 16px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
-  transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .toggleCardActive .switchTrack::after {
   transform: translateX(18px);
@@ -764,8 +870,12 @@
   line-height: 1.2;
   transition: color 0.2s;
 }
-.toggleCardRequired.toggleCardActive .switchLabel { color: #92400e; }
-.toggleCardFilter.toggleCardActive   .switchLabel { color: #166534; }
+.toggleCardRequired.toggleCardActive .switchLabel {
+  color: #92400e;
+}
+.toggleCardFilter.toggleCardActive .switchLabel {
+  color: #166534;
+}
 
 .switchHint {
   font-size: 0.72rem;
@@ -777,7 +887,7 @@
 .deleteModal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -790,7 +900,7 @@
   padding: 28px 28px 24px;
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
 .deleteModalIcon {
@@ -804,7 +914,10 @@
   color: #ef4444;
   margin-bottom: 16px;
 }
-.deleteModalIcon svg { width: 24px; height: 24px; }
+.deleteModalIcon svg {
+  width: 24px;
+  height: 24px;
+}
 .deleteModalTitle {
   font-size: 1.05rem;
   font-weight: 700;
@@ -840,7 +953,9 @@
   cursor: pointer !important;
   transition: background 0.15s !important;
 }
-.btnDeleteConfirm:hover { background: #dc2626 !important; }
+.btnDeleteConfirm:hover {
+  background: #dc2626 !important;
+}
 .btnDeleteCancel {
   display: inline-flex !important;
   align-items: center !important;
@@ -854,20 +969,43 @@
   cursor: pointer !important;
   transition: background 0.15s !important;
 }
-.btnDeleteCancel:hover { background: #e5e7eb !important; }
+.btnDeleteCancel:hover {
+  background: #e5e7eb !important;
+}
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .stats { gap: 8px; }
-  .h2 { font-size: 1.1rem; }
-  .searchInput { width: 160px !important; }
-  .filterSelect { min-width: 120px !important; }
-  .optionTagsCell { max-width: 140px; }
+  .stats {
+    gap: 8px;
+  }
+  .h2 {
+    font-size: 1.1rem;
+  }
+  .searchInput {
+    width: 160px !important;
+  }
+  .filterSelect {
+    min-width: 120px !important;
+  }
+  .optionTagsCell {
+    max-width: 140px;
+  }
 }
 @media (max-width: 576px) {
-  .toolbar { flex-direction: column; align-items: stretch; }
-  .filterBar { flex-direction: column; }
-  .searchInput { width: 100% !important; }
-  .filterSelect { width: 100% !important; }
-  .resultCount { margin-left: 0; }
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterBar {
+    flex-direction: column;
+  }
+  .searchInput {
+    width: 100% !important;
+  }
+  .filterSelect {
+    width: 100% !important;
+  }
+  .resultCount {
+    margin-left: 0;
+  }
 }

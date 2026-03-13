@@ -13,7 +13,9 @@ const chatSlice = createSlice({
   reducers: {
     toggleChat: (state) => {
       state.isOpen = !state.isOpen;
-      if (!state.isOpen) state.isMinimized = false;
+      if (!state.isOpen) {
+        state.isMinimized = false;
+      }
     },
     openChat: (state) => {
       state.isOpen = true;

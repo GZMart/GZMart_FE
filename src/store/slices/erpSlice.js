@@ -72,7 +72,7 @@ export const updatePurchaseOrder = createAsyncThunk(
       const response = await erpService.updatePurchaseOrder(id, updateData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.data || error.message);
     }
   }
 );
@@ -164,7 +164,7 @@ export const fetchInventoryValuation = createAsyncThunk(
       const response = await erpService.getInventoryValuation(params);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.data || error.message);
     }
   }
 );
@@ -174,6 +174,46 @@ export const fetchProfitLossReport = createAsyncThunk(
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
       const response = await erpService.getProfitLossReport(startDate, endDate);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// ============================================================
+// ASYNC THUNKS - Exchange Rate
+// ============================================================
+
+export const fetchExchangeRate = createAsyncThunk(
+  'erp/fetchExchangeRate',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await erpService.getExchangeRate();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const syncExchangeRate = createAsyncThunk(
+  'erp/syncExchangeRate',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await erpService.syncExchangeRate();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updateExchangeRate = createAsyncThunk(
+  'erp/updateExchangeRate',
+  async ({ rate, note }, { rejectWithValue }) => {
+    try {
+      const response = await erpService.updateExchangeRate(rate, note);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -218,6 +258,10 @@ const initialState = {
   // Inventory
   lowStockItems: [],
   inventoryValuation: null,
+
+  // Exchange Rate
+  exchangeRate: null, // full record from DB
+  exchangeRateSyncing: false,
 
   // Reports
   profitLossReport: null,
@@ -368,13 +412,42 @@ const erpSlice = createSlice({
       .addCase(fetchLowStockItems.fulfilled, (state, action) => {
         state.lowStockItems = action.payload.data;
       })
+      .addCase(fetchLowStockItems.rejected, (state) => {
+        state.lowStockItems = [];
+      })
 
       .addCase(fetchInventoryValuation.fulfilled, (state, action) => {
         state.inventoryValuation = action.payload;
       })
+      .addCase(fetchInventoryValuation.rejected, (state) => {
+        state.inventoryValuation = {
+          totalValue: 0,
+          totalItems: 0,
+          totalUnits: 0,
+          averageCostPerItem: 0,
+        };
+      })
 
       .addCase(fetchProfitLossReport.fulfilled, (state, action) => {
         state.profitLossReport = action.payload;
+      })
+
+      // ─── Exchange Rate ────────────────────────────────────────────────
+      .addCase(fetchExchangeRate.fulfilled, (state, action) => {
+        state.exchangeRate = action.payload;
+      })
+      .addCase(syncExchangeRate.pending, (state) => {
+        state.exchangeRateSyncing = true;
+      })
+      .addCase(syncExchangeRate.fulfilled, (state, action) => {
+        state.exchangeRateSyncing = false;
+        state.exchangeRate = action.payload;
+      })
+      .addCase(syncExchangeRate.rejected, (state) => {
+        state.exchangeRateSyncing = false;
+      })
+      .addCase(updateExchangeRate.fulfilled, (state, action) => {
+        state.exchangeRate = action.payload;
       })
 
       // ============================================================

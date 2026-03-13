@@ -65,7 +65,7 @@ const TopClothingBrand = () => {
           id: brand._id,
           brandName: brand.name,
           logoUrl:
-            brand.logo || brand.imageUrl || 'https://via.placeholder.com/150x50?text=' + brand.name,
+            brand.logo || brand.imageUrl || `https://via.placeholder.com/150x50?text=${brand.name}`,
           discount: `UP to ${brand.discount || 50}% OFF`,
           productImg: brand.featuredImage || brand.image || 'https://via.placeholder.com/300',
           ...COLOR_SCHEMES[index % COLOR_SCHEMES.length],
@@ -114,104 +114,102 @@ const TopClothingBrand = () => {
     );
   }
 
-  const BrandBannerCard = ({ item }) => {
-    return (
-      <motion.div
-        whileHover={{ y: -8, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
-        className="d-flex position-relative rounded-3 overflow-hidden h-100"
+  const BrandBannerCard = ({ item }) => (
+    <motion.div
+      whileHover={{ y: -8, boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+      className="d-flex position-relative rounded-3 overflow-hidden h-100"
+      style={{
+        backgroundColor: item.bgColor,
+        minHeight: '220px',
+        cursor: 'pointer',
+      }}
+    >
+      <div
+        className="position-absolute rounded-circle"
         style={{
-          backgroundColor: item.bgColor,
-          minHeight: '220px',
-          cursor: 'pointer',
+          width: '320px',
+          height: '320px',
+          backgroundColor: item.circleColor,
+          top: '-40px',
+          right: '-80px',
+          zIndex: 0,
+          pointerEvents: 'none',
         }}
+      />
+
+      <div
+        className="position-absolute rounded-circle"
+        style={{
+          width: '320px',
+          height: '320px',
+          border: `1px solid ${item.lineColor}`,
+          top: '-40px',
+          right: '20px',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div
+        className="d-flex flex-column justify-content-between p-4"
+        style={{ width: '55%', zIndex: 2 }}
       >
-        <div
-          className="position-absolute rounded-circle"
-          style={{
-            width: '320px',
-            height: '320px',
-            backgroundColor: item.circleColor,
-            top: '-40px',
-            right: '-80px',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div
-          className="position-absolute rounded-circle"
-          style={{
-            width: '320px',
-            height: '320px',
-            border: `1px solid ${item.lineColor}`,
-            top: '-40px',
-            right: '20px',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div
-          className="d-flex flex-column justify-content-between p-4"
-          style={{ width: '55%', zIndex: 2 }}
-        >
-          <div>
-            <span
-              className="badge rounded-1 px-3 py-2 fw-semibold"
-              style={{
-                backgroundColor: item.tagColor,
-                color: item.textColor,
-                fontSize: '0.9rem',
-                letterSpacing: '1px',
-              }}
-            >
-              {item.brandName.toUpperCase()}
-            </span>
-          </div>
-
-          <div className="my-3">
-            <img
-              src={item.logoUrl}
-              alt={item.brandName}
-              style={{
-                maxWidth: '100px',
-                maxHeight: '50px',
-                filter: item.id === 1 ? 'brightness(0) invert(1)' : 'none',
-              }}
-            />
-          </div>
-
-          <h5 className="fw-semibold m-0" style={{ color: item.textColor }}>
-            {item.discount}
-          </h5>
+        <div>
+          <span
+            className="badge rounded-1 px-3 py-2 fw-semibold"
+            style={{
+              backgroundColor: item.tagColor,
+              color: item.textColor,
+              fontSize: '0.9rem',
+              letterSpacing: '1px',
+            }}
+          >
+            {item.brandName.toUpperCase()}
+          </span>
         </div>
 
-        <div
-          className="position-absolute h-100 d-flex align-items-end justify-content-end"
-          style={{
-            width: '50%',
-            right: '15px',
-            bottom: '15px',
-            zIndex: 1,
-          }}
-        >
-          <motion.img
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            src={item.productImg}
-            alt="Product"
-            className="img-fluid"
+        <div className="my-3">
+          <img
+            src={item.logoUrl}
+            alt={item.brandName}
             style={{
-              height: '90%',
-              objectFit: 'contain',
-              position: 'relative',
+              maxWidth: '100px',
+              maxHeight: '50px',
+              filter: item.id === 1 ? 'brightness(0) invert(1)' : 'none',
             }}
           />
         </div>
-      </motion.div>
-    );
-  };
+
+        <h5 className="fw-semibold m-0" style={{ color: item.textColor }}>
+          {item.discount}
+        </h5>
+      </div>
+
+      <div
+        className="position-absolute h-100 d-flex align-items-end justify-content-end"
+        style={{
+          width: '50%',
+          right: '15px',
+          bottom: '15px',
+          zIndex: 1,
+        }}
+      >
+        <motion.img
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          src={item.productImg}
+          alt="Product"
+          className="img-fluid"
+          style={{
+            height: '90%',
+            objectFit: 'contain',
+            position: 'relative',
+          }}
+        />
+      </div>
+    </motion.div>
+  );
 
   return (
     <section className="py-5">

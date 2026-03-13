@@ -272,12 +272,16 @@ const HeroBanner = () => {
   }, [banners.length]);
 
   useEffect(() => {
-    if (loading || banners.length === 0) return;
+    if (loading || banners.length === 0) {
+      return;
+    }
     const interval = setInterval(() => handleNext(), 5000);
     return () => clearInterval(interval);
   }, [currentIndex, loading, banners, handleNext]);
 
-  if (loading || !banners.length) return null;
+  if (loading || !banners.length) {
+    return null;
+  }
 
   return (
     <>

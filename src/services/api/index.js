@@ -16,6 +16,9 @@ export { default as inventoryService } from './inventoryService';
 export { default as landedCostService } from './landedCostService';
 export { default as reviewService } from './reviewService';
 export { default as followService } from './follow.service';
+export { default as uploadService } from './uploadService';
+export * as sellerApplicationService from './sellerApplicationService';
+export { default as notificationAPI } from './notificationAPI';
 
 // TODO: Add more services as needed
 // export { default as orderService } from './orderService';

@@ -46,6 +46,7 @@ export const BUYER_ROUTES = {
   PAYMENT_METHODS: '/buyer/payment-methods',
   WALLET: '/buyer/wallet',
   NOTIFICATIONS: '/buyer/notifications',
+  SELLER_APPLICATION: '/buyer/seller-application',
 };
 
 // Seller (ERP) Routes
@@ -66,7 +67,7 @@ export const SELLER_ROUTES = {
   INVENTORY: '/seller/inventory',
 
   // Products
-  LISTINGS: '/seller/listings',
+  PRODUCTS: '/seller/products',
 
   // Returns
   RETURNS: '/seller/returns',
@@ -79,6 +80,7 @@ export const ADMIN_ROUTES = {
 
   // User Management
   USERS: '/admin/users',
+  SELLER_APPLICATIONS: '/admin/seller-applications',
   USER_DETAILS: '/admin/users/:id',
   USER_CREATE: '/admin/users/create',
   USER_EDIT: '/admin/users/:id/edit',

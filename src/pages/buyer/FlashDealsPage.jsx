@@ -235,48 +235,43 @@ const FlashDealsPage = () => {
   }, [products]);
 
   // Filter products
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      // Deal Type filter
-      if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
-        return false;
-      }
-
-      // Brand filter
-      if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
-        return false;
-      }
-
-      // Category filter
-      if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
-        return false;
-      }
-
-      // Price range filter
-      if (priceRange.min > 0 || priceRange.max < 10000000) {
-        if (product.price < priceRange.min || product.price > priceRange.max) {
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        // Deal Type filter
+        if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
           return false;
         }
-      }
 
-      // Discount filter
-      if (selectedDiscounts.length > 0) {
-        const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
-        if (product.discount < minDiscount) {
+        // Brand filter
+        if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
           return false;
         }
-      }
 
-      return true;
-    });
-  }, [
-    products,
-    selectedDealTypes,
-    selectedBrands,
-    selectedCategories,
-    priceRange,
-    selectedDiscounts,
-  ]);
+        // Category filter
+        if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
+          return false;
+        }
+
+        // Price range filter
+        if (priceRange.min > 0 || priceRange.max < 10000000) {
+          if (product.price < priceRange.min || product.price > priceRange.max) {
+            return false;
+          }
+        }
+
+        // Discount filter
+        if (selectedDiscounts.length > 0) {
+          const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
+          if (product.discount < minDiscount) {
+            return false;
+          }
+        }
+
+        return true;
+      }),
+    [products, selectedDealTypes, selectedBrands, selectedCategories, priceRange, selectedDiscounts]
+  );
 
   // Sort products
   const sortedProducts = useMemo(() => {
@@ -309,8 +304,12 @@ const FlashDealsPage = () => {
   const observer = useRef();
   const lastElementRef = useCallback(
     (node) => {
-      if (loading) return;
-      if (observer.current) observer.current.disconnect();
+      if (loading) {
+        return;
+      }
+      if (observer.current) {
+        observer.current.disconnect();
+      }
 
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && displayedProducts.length < totalProducts) {
@@ -318,7 +317,9 @@ const FlashDealsPage = () => {
         }
       });
 
-      if (node) observer.current.observe(node);
+      if (node) {
+        observer.current.observe(node);
+      }
     },
     [loading, displayedProducts.length, totalProducts]
   );

@@ -69,7 +69,9 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
-    if (!product.dealEndDate) return;
+    if (!product.dealEndDate) {
+      return;
+    }
 
     const updateTimer = () => {
       const now = new Date().getTime();
@@ -100,11 +102,15 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
     : 0;
 
   return (
-    <div className={styles.productCard} onClick={handleCardClick} role="link" tabIndex={0} ref={ref}>
+    <div
+      className={styles.productCard}
+      onClick={handleCardClick}
+      role="link"
+      tabIndex={0}
+      ref={ref}
+    >
       {/* Discount Badge */}
-      {discountPercentage > 0 && (
-        <div className={styles.discountBadge}>-{discountPercentage}%</div>
-      )}
+      {discountPercentage > 0 && <div className={styles.discountBadge}>-{discountPercentage}%</div>}
 
       {/* Badge */}
       {isFlashSale ? (
@@ -212,9 +218,7 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
             {[...Array(fullStars)].map((_, i) => (
               <i key={`full-${i}`} className={`bi bi-star-fill ${styles.starFilled}`}></i>
             ))}
-            {hasHalfStar && (
-              <i className={`bi bi-star-half ${styles.starFilled}`}></i>
-            )}
+            {hasHalfStar && <i className={`bi bi-star-half ${styles.starFilled}`}></i>}
             {[...Array(emptyStars)].map((_, i) => (
               <i key={`empty-${i}`} className={`bi bi-star ${styles.starEmpty}`}></i>
             ))}

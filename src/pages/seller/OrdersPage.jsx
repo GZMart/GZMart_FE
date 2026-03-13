@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Clock, Cog, Truck, CheckCircle, AlertCircle, XCircle, RefreshCw, CreditCard, Wallet } from 'lucide-react';
+import {
+  Clock,
+  Cog,
+  Truck,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  RefreshCw,
+  CreditCard,
+  Wallet,
+} from 'lucide-react';
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import { orderSellerService } from '../../services/api/orderSellerService';
 import { formatCurrency } from '../../utils/formatters';
@@ -15,7 +25,7 @@ const OrdersPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [filters, setFilters] = useState({
     status: searchParams.get('status') || 'all',
     paymentMethod: 'all',
@@ -49,12 +59,22 @@ const OrdersPage = () => {
     processing: { bg: '#D1ECF1', color: '#0C5460', label: 'Processing', icon: Cog },
     shipped: { bg: '#D4EDDA', color: '#155724', label: 'Shipped', icon: Truck },
     delivered: { bg: '#D4EDDA', color: '#155724', label: 'Delivered', icon: CheckCircle },
-    delivered_pending_confirmation: { bg: '#FFF3CD', color: '#856404', label: 'Pending Confirmation', icon: AlertCircle },
+    delivered_pending_confirmation: {
+      bg: '#FFF3CD',
+      color: '#856404',
+      label: 'Pending Confirmation',
+      icon: AlertCircle,
+    },
     completed: { bg: '#D4EDDA', color: '#155724', label: 'Completed', icon: CheckCircle },
     cancelled: { bg: '#F8D7DA', color: '#721C24', label: 'Cancelled', icon: XCircle },
     refunded: { bg: '#F8D7DA', color: '#721C24', label: 'Refunded', icon: XCircle },
     refund_pending: { bg: '#FFF3CD', color: '#856404', label: 'Refund Pending', icon: RefreshCw },
-    under_investigation: { bg: '#E2E3E5', color: '#383D41', label: 'Under Investigation', icon: AlertCircle },
+    under_investigation: {
+      bg: '#E2E3E5',
+      color: '#383D41',
+      label: 'Under Investigation',
+      icon: AlertCircle,
+    },
   };
 
   // Payment status tag styling
@@ -310,7 +330,9 @@ const OrdersPage = () => {
         <div className={styles.emptyState}>
           <div className={styles.emptyStateIcon}>📦</div>
           <div className={styles.emptyStateTitle}>No Orders Found</div>
-          <div className={styles.emptyStateText}>Try adjusting your filters or check back later</div>
+          <div className={styles.emptyStateText}>
+            Try adjusting your filters or check back later
+          </div>
         </div>
       ) : (
         <div className={styles.ordersContainer}>
@@ -370,10 +392,31 @@ const OrdersPage = () => {
 
                 {/* Total and Payment Status - Right aligned */}
                 <div className={`${styles.metaItem} ${styles.totalPriceItem}`}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', justifyContent: 'flex-start' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-                      <span className={styles.metaLabel} style={{ fontSize: '11px' }}>Total</span>
-                      <span className={`${styles.metaValue} ${styles.totalPriceValue}`} style={{ fontSize: '14px', fontWeight: '700' }}>{formatCurrency(order.totalPrice)}</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '8px',
+                      justifyContent: 'flex-start',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span className={styles.metaLabel} style={{ fontSize: '11px' }}>
+                        Total
+                      </span>
+                      <span
+                        className={`${styles.metaValue} ${styles.totalPriceValue}`}
+                        style={{ fontSize: '14px', fontWeight: '700' }}
+                      >
+                        {formatCurrency(order.totalPrice)}
+                      </span>
                     </div>
                     {(() => {
                       const paymentConfig = paymentStatusColors[order.paymentStatus];
@@ -420,7 +463,16 @@ const OrdersPage = () => {
                     {/* Product Details */}
                     <div className={styles.productDetails}>
                       <h3 className={styles.productName}>{item.productName}</h3>
-                      <div className={styles.productAttributesList} style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'space-between', maxWidth: '400px' }}>
+                      <div
+                        className={styles.productAttributesList}
+                        style={{
+                          display: 'flex',
+                          gap: '40px',
+                          flexWrap: 'wrap',
+                          justifyContent: 'space-between',
+                          maxWidth: '400px',
+                        }}
+                      >
                         <div className={styles.attributeItem}>
                           <span className={styles.attributeLabel}>Quantity:</span>
                           <span className={styles.attributeValue}>{item.quantity}</span>

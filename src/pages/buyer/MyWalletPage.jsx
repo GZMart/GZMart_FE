@@ -26,7 +26,7 @@ const MyWalletPage = () => {
     try {
       setLoading(true);
       const response = await rmaService.getWalletInfo();
-      
+
       setWalletData(response.data);
       setBalance(response.data.balance || 0);
       setTransactions(response.data.transactions || []);
@@ -38,15 +38,10 @@ const MyWalletPage = () => {
       setLoading(false);
     }
   };
-      type: 'withdrawal',
-      description: 'Withdrawal Initiated for Product Name and Product ID',
-      amount: -2490,
-      balance: 5000,
-      date: new Date('2022-04-25'),
-    },
-  ]);
 
   const handleBack = () => {
+    navigate(PUBLIC_ROUTES.HOME);
+  };
 
   const getTransactionTypeBadge = (type) => {
     const typeMap = {
@@ -92,13 +87,13 @@ const MyWalletPage = () => {
               <div className="mb-3">
                 <h6 className="text-muted mb-1">Số dư khả dụng</h6>
                 <h1 className="display-4 text-primary mb-0">
-                  {balance.toLocaleString('vi-VN')} 
+                  {balance.toLocaleString('vi-VN')}
                   <span className="fs-4 text-muted ms-2">coins</span>
                 </h1>
               </div>
               <p className="text-muted mb-0">
-                <i className="bi bi-info-circle me-2"></i>
-                1 coin = 1 VND (dùng cho đơn hàng tiếp theo)
+                <i className="bi bi-info-circle me-2"></i>1 coin = 1 VND (dùng cho đơn hàng tiếp
+                theo)
               </p>
             </Col>
             <Col md={6}>
@@ -188,9 +183,7 @@ const MyWalletPage = () => {
                       )}
                     </td>
                     <td className="text-end">
-                      <strong
-                        className={tx.amount >= 0 ? 'text-success' : 'text-danger'}
-                      >
+                      <strong className={tx.amount >= 0 ? 'text-success' : 'text-danger'}>
                         {tx.amount >= 0 ? '+' : ''}
                         {tx.amount.toLocaleString('vi-VN')} coins
                       </strong>

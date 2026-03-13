@@ -27,7 +27,9 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
-    if (!product.dealEndDate) return;
+    if (!product.dealEndDate) {
+      return;
+    }
 
     const updateTimer = () => {
       const now = new Date().getTime();
@@ -99,7 +101,13 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
     }
   };
   return (
-    <div className={styles.productListItem} onClick={handleCardClick} role="link" tabIndex={0} ref={ref}>
+    <div
+      className={styles.productListItem}
+      onClick={handleCardClick}
+      role="link"
+      tabIndex={0}
+      ref={ref}
+    >
       <div className={styles.imageWrapper}>
         <img src={productImage} alt={product.name} className={styles.productImage} />
         {isFlashSale ? (

@@ -32,7 +32,7 @@ const ForgotPasswordPage = () => {
       setLoading(true);
       try {
         await dispatch(forgotPassword(values.email)).unwrap();
-        
+
         setSubmittedEmail(values.email);
         setSuccess(true);
         toast.success(t('forgot_password_page.success_title'));
@@ -54,7 +54,16 @@ const ForgotPasswordPage = () => {
 
       <div className={styles.contentWrapper}>
         {!success ? (
-          <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '2rem', textAlign: 'center' }}>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2rem',
+              textAlign: 'center',
+            }}
+          >
             <div>
               <h1 className={styles.title}>{t('forgot_password_page.title')}</h1>
               <p className={styles.subtitle}>{t('forgot_password_page.subtitle')}</p>
@@ -74,17 +83,26 @@ const ForgotPasswordPage = () => {
                   onBlur={formik.handleBlur}
                 />
                 {formik.touched.email && formik.errors.email && (
-                  <div className={styles.errorMessage}>
-                    {formik.errors.email}
-                  </div>
+                  <div className={styles.errorMessage}>{formik.errors.email}</div>
                 )}
               </div>
 
               <button type="submit" className={styles.submitButton} disabled={loading}>
-                {loading ? t('forgot_password_page.submitting') : (
+                {loading ? (
+                  t('forgot_password_page.submitting')
+                ) : (
                   <>
                     {t('forgot_password_page.submit_button')}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                       <polyline points="12 5 19 12 12 19"></polyline>
                     </svg>
@@ -94,10 +112,7 @@ const ForgotPasswordPage = () => {
             </form>
 
             <div>
-              <button 
-                className={styles.backLink}
-                onClick={() => navigate(PUBLIC_ROUTES.LOGIN)}
-              >
+              <button className={styles.backLink} onClick={() => navigate(PUBLIC_ROUTES.LOGIN)}>
                 {t('forgot_password_page.back_to_login')}
               </button>
             </div>
@@ -105,7 +120,16 @@ const ForgotPasswordPage = () => {
         ) : (
           <div className={styles.successMessage}>
             <div className={styles.successIcon}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             </div>
@@ -113,16 +137,13 @@ const ForgotPasswordPage = () => {
             <p className={styles.successText}>
               {t('forgot_password_page.success_message', { email: submittedEmail })}
             </p>
-            <button 
-              className={styles.submitButton} 
-              onClick={() => navigate(PUBLIC_ROUTES.LOGIN)}
-            >
+            <button className={styles.submitButton} onClick={() => navigate(PUBLIC_ROUTES.LOGIN)}>
               {t('forgot_password_page.back_to_login')}
             </button>
           </div>
         )}
       </div>
-      
+
       <Footer />
     </div>
   );

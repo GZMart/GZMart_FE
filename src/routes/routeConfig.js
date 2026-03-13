@@ -25,6 +25,7 @@ const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPag
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
 // const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage')); // Removed: Use ProfilePage tab=orders
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
+const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
@@ -61,10 +62,15 @@ const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboProm
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
+const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
+
+// Buyer - Seller Application
+const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
 const UsersPage = lazy(() => import('@pages/admin/UsersPage'));
+const SellerApplicationsPage = lazy(() => import('@pages/admin/SellerApplicationsPage'));
 const SystemConfigPage = lazy(() => import('@pages/admin/SystemConfigPage'));
 const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
@@ -266,8 +272,22 @@ export const routeConfig = [
     layout: 'main',
   },
   {
+    path: '/buyer/notifications',
+    element: NotificationPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
     path: '/buyer/wallet',
     element: MyWalletPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/seller-application',
+    element: SellerApplicationPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
@@ -291,49 +311,49 @@ export const routeConfig = [
 
   // ERP Routes (Mini-ERP/Sourcing Module) - Admin & Seller only
   {
-    path: '/erp/dashboard',
+    path: '/seller/erp/dashboard',
     element: ERPDashboard,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
-    path: '/erp/suppliers',
+    path: '/seller/erp/suppliers',
     element: SuppliersPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
-    path: '/erp/suppliers/:id',
+    path: '/seller/erp/suppliers/:id',
     element: SupplierDetailPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
-    path: '/erp/purchase-orders',
+    path: '/seller/erp/purchase-orders',
     element: PurchaseOrdersPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
-    path: '/erp/purchase-orders/create',
+    path: '/seller/erp/purchase-orders/create',
     element: CreatePurchaseOrderPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
-    path: '/erp/purchase-orders/:id/edit',
+    path: '/seller/erp/purchase-orders/:id/edit',
     element: EditPurchaseOrderPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
-    path: '/erp/purchase-orders/:id',
+    path: '/seller/erp/purchase-orders/:id',
     element: PurchaseOrderDetailPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
@@ -376,7 +396,7 @@ export const routeConfig = [
     layout: 'erp',
   },
   {
-    path: '/seller/listings',
+    path: '/seller/products',
     element: ListingsPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
@@ -515,6 +535,13 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
+  {
+    path: '/seller/notifications',
+    element: ShopNotificationsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
 
   // Admin Routes
   {
@@ -527,6 +554,13 @@ export const routeConfig = [
   {
     path: '/admin/users',
     element: UsersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/seller-applications',
+    element: SellerApplicationsPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',

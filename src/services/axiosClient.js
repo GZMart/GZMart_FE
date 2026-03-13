@@ -154,9 +154,7 @@ axiosClient.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return axiosClient(originalRequest);
           })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
@@ -262,4 +260,5 @@ export const api = {
   delete: (url, config) => axiosClient.delete(url, config),
 };
 
+export { API_BASE_URL };
 export default axiosClient;

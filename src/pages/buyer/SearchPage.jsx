@@ -55,7 +55,9 @@ const SearchPage = () => {
 
   // Perform search
   const performSearch = async (query, additionalFilters = {}) => {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      return;
+    }
 
     try {
       setLoading(true);

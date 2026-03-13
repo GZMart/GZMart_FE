@@ -44,7 +44,10 @@ const OrderStatusTimeline = ({ history }) => {
               {/* Timeline content */}
               <div className="timeline-content flex-grow-1">
                 <h6 className="mb-1">
-                  <span className="badge" style={{ backgroundColor: getStatusColorCode(entry.status) }}>
+                  <span
+                    className="badge"
+                    style={{ backgroundColor: getStatusColorCode(entry.status) }}
+                  >
                     {entry.status?.replace(/_/g, ' ').toUpperCase()}
                   </span>
                 </h6>

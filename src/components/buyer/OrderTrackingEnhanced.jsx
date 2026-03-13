@@ -29,7 +29,9 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
   // Socket.io connection
   useEffect(() => {
-    if (!order?._id) return;
+    if (!order?._id) {
+      return;
+    }
 
     // FIX BUG 12: Connect to backend socket with reconnection handling
     const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
@@ -299,14 +301,18 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   // Get step status for rendering (wait, process, finish)
   const getStepStatus = (stepIndex) => {
     const currentStep = getCurrentStep();
-    if (stepIndex < currentStep) return 'finish';
-    if (stepIndex === currentStep) return 'process';
+    if (stepIndex < currentStep) {
+      return 'finish';
+    }
+    if (stepIndex === currentStep) {
+      return 'process';
+    }
     return 'wait';
   };
 
   return (
     <div className="order-tracking-enhanced">
-      <Card title="🚚 Order Status" className="tracking-card">
+      <Card className="tracking-card">
         {/* Show pending status notice if order is still pending */}
         {(currentStatus === 'pending' || currentStatus === 'processing') && (
           <div
@@ -364,35 +370,8 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
                 marginBottom: 12,
               }}
             >
-              <h3 style={{ margin: 0 }}>🚚 Track Delivery</h3>
-              {!order?.trackingCoordinates && !getCoordinates().usingRealGPS && (
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: '#fa8c16',
-                    background: '#fff7e6',
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    border: '1px solid #ffd591',
-                  }}
-                >
-                  📍 Demo Mode (Mock GPS)
-                </span>
-              )}
-              {!order?.trackingCoordinates && getCoordinates().usingRealGPS && (
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: '#52c41a',
-                    background: '#f6ffed',
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    border: '1px solid #b7eb8f',
-                  }}
-                >
-                  📍 Real GPS
-                </span>
-              )}
+              {!order?.trackingCoordinates && !getCoordinates().usingRealGPS && <span></span>}
+              {!order?.trackingCoordinates && getCoordinates().usingRealGPS && <span></span>}
             </div>
             <DeliveryTrackingMap
               sellerCoords={mapAnimation.start}
@@ -419,16 +398,6 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
                 }
               }}
             />
-            {!order?.trackingCoordinates && !getCoordinates().usingRealGPS && (
-              <p style={{ marginTop: 12, fontSize: 13, color: '#8c8c8c', textAlign: 'center' }}>
-                ℹ️ Using mock GPS coordinates (Hai Chau → Son Tra, Da Nang)
-              </p>
-            )}
-            {!order?.trackingCoordinates && getCoordinates().usingRealGPS && (
-              <p style={{ marginTop: 12, fontSize: 13, color: '#52c41a', textAlign: 'center' }}>
-                ✓ Using real GPS from user addresses
-              </p>
-            )}
           </Card>
         )}
 

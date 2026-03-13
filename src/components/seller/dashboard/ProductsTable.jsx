@@ -53,7 +53,9 @@ export function ProductsTable({ products = [], loading = false }) {
             </tbody>
           </table>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>No products available</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+            No products available
+          </div>
         )}
       </div>
     </div>

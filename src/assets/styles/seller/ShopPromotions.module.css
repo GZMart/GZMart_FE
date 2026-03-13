@@ -251,22 +251,22 @@
   .typeCard .d-flex {
     flex-wrap: wrap;
   }
-  
+
   .createBtn {
     margin-top: 12px;
     width: 100%;
   }
-  
+
   .horizontalTabs {
     overflow-x: auto;
     flex-wrap: nowrap;
   }
-  
+
   .tabItem {
     white-space: nowrap;
     padding: 10px 16px;
   }
-  
+
   .metricValue {
     font-size: 20px;
   }

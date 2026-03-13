@@ -45,11 +45,18 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
         newStatus,
       };
 
-      if (values.trackingNumber) statusData.trackingNumber = values.trackingNumber;
-      if (values.estimatedDelivery) 
+      if (values.trackingNumber) {
+        statusData.trackingNumber = values.trackingNumber;
+      }
+      if (values.estimatedDelivery) {
         statusData.estimatedDelivery = values.estimatedDelivery.toISOString();
-      if (values.notes) statusData.notes = values.notes;
-      if (values.reason) statusData.reason = values.reason;
+      }
+      if (values.notes) {
+        statusData.notes = values.notes;
+      }
+      if (values.reason) {
+        statusData.reason = values.reason;
+      }
 
       const response = await orderSellerService.updateStatus(order._id, statusData);
 
@@ -98,25 +105,15 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
     >
       {error && <Alert message={error} type="error" showIcon style={{ marginBottom: '16px' }} />}
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-      >
+      <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Form.Item>
           <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
             Current Status
           </label>
-          <Input
-            value={order?.status?.replace(/_/g, ' ').toUpperCase() || ''}
-            disabled
-          />
+          <Input value={order?.status?.replace(/_/g, ' ').toUpperCase() || ''} disabled />
         </Form.Item>
 
-        <Form.Item
-          label="New Status *"
-          required
-        >
+        <Form.Item label="New Status *" required>
           <Select
             placeholder="Select new status"
             value={newStatus || undefined}
@@ -135,41 +132,26 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
         </Form.Item>
 
         {newStatus === 'shipped' && (
-          <Form.Item
-            label="Tracking Number"
-            name="trackingNumber"
-          >
+          <Form.Item label="Tracking Number" name="trackingNumber">
             <Input placeholder="Enter tracking number" />
           </Form.Item>
         )}
 
         {(newStatus === 'shipped' || newStatus === 'processing') && (
-          <Form.Item
-            label="Estimated Delivery Date"
-            name="estimatedDelivery"
-          >
+          <Form.Item label="Estimated Delivery Date" name="estimatedDelivery">
             <DatePicker showTime format="DD/MM/YYYY HH:mm" />
           </Form.Item>
         )}
 
-        <Form.Item
-          label="Reason for Status Change"
-          name="reason"
-        >
+        <Form.Item label="Reason for Status Change" name="reason">
           <Input.TextArea
             rows={3}
             placeholder="e.g., Handed over to shipper, Customer confirmed delivery..."
           />
         </Form.Item>
 
-        <Form.Item
-          label="Additional Notes"
-          name="notes"
-        >
-          <Input.TextArea
-            rows={3}
-            placeholder="Any additional notes about this status update"
-          />
+        <Form.Item label="Additional Notes" name="notes">
+          <Input.TextArea rows={3} placeholder="Any additional notes about this status update" />
         </Form.Item>
       </Form>
     </Modal>

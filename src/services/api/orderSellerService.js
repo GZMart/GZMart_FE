@@ -33,9 +33,7 @@ export const orderSellerService = {
    * @param {boolean} orderData.items[].isFlashSale - Is flash sale item
    * @returns {Promise} Created order object
    */
-  create: async (orderData) => {
-    return await axiosClient.post(BASE_URL, orderData);
-  },
+  create: async (orderData) => await axiosClient.post(BASE_URL, orderData),
 
   /**
    * Get all seller orders with pagination and filters
@@ -46,9 +44,7 @@ export const orderSellerService = {
    * @param {string} [params.sortBy] - Sort field (createdAt, newest-first, oldest-first, total-high, total-low)
    * @returns {Promise} Orders list with pagination info
    */
-  getAll: async (params = {}) => {
-    return await axiosClient.get(BASE_URL, { params });
-  },
+  getAll: async (params = {}) => await axiosClient.get(BASE_URL, { params }),
 
   /**
    * Get orders by status with pagination
@@ -58,18 +54,15 @@ export const orderSellerService = {
    * @param {number} [params.limit=10] - Items per page
    * @returns {Promise} Orders with pagination and status counts
    */
-  getByStatus: async (status, params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/status/${status}`, { params });
-  },
+  getByStatus: async (status, params = {}) =>
+    await axiosClient.get(`${BASE_URL}/status/${status}`, { params }),
 
   /**
    * Get order details by ID
    * @param {string} orderId - Order ID
    * @returns {Promise} Order details object
    */
-  getById: async (orderId) => {
-    return await axiosClient.get(`${BASE_URL}/${orderId}`);
-  },
+  getById: async (orderId) => await axiosClient.get(`${BASE_URL}/${orderId}`),
 
   /**
    * Update order status
@@ -82,9 +75,8 @@ export const orderSellerService = {
    * @param {string} [statusData.reason] - Reason for status change (optional)
    * @returns {Promise} Updated order object
    */
-  updateStatus: async (orderId, statusData) => {
-    return await axiosClient.put(`${BASE_URL}/${orderId}/status`, statusData);
-  },
+  updateStatus: async (orderId, statusData) =>
+    await axiosClient.put(`${BASE_URL}/${orderId}/status`, statusData),
 
   /**
    * Cancel an order
@@ -93,69 +85,55 @@ export const orderSellerService = {
    * @param {string} cancelData.cancellationReason - Reason for cancellation
    * @returns {Promise} Cancelled order object
    */
-  cancel: async (orderId, cancelData) => {
-    return await axiosClient.put(`${BASE_URL}/${orderId}/cancel`, cancelData);
-  },
+  cancel: async (orderId, cancelData) =>
+    await axiosClient.put(`${BASE_URL}/${orderId}/cancel`, cancelData),
 
   /**
    * Get order status history/audit log
    * @param {string} orderId - Order ID
    * @returns {Promise} Order history with status changes
    */
-  getHistory: async (orderId) => {
-    return await axiosClient.get(`${BASE_URL}/${orderId}/status-history`);
-  },
+  getHistory: async (orderId) => await axiosClient.get(`${BASE_URL}/${orderId}/status-history`),
 
   /**
    * Get delivery note (PDF/HTML)
    * @param {string} orderId - Order ID
    * @returns {Promise} Delivery note HTML content
    */
-  getDeliveryNote: async (orderId) => {
-    return await axiosClient.get(`${BASE_URL}/${orderId}/delivery-note`);
-  },
+  getDeliveryNote: async (orderId) => await axiosClient.get(`${BASE_URL}/${orderId}/delivery-note`),
 
   /**
    * Legacy method - alias for getById
    */
-  getOrderById: async (orderId) => {
-    return await axiosClient.get(`${BASE_URL}/${orderId}`);
-  },
+  getOrderById: async (orderId) => await axiosClient.get(`${BASE_URL}/${orderId}`),
 
   /**
    * Legacy method - alias for getAll
    */
-  getOrders: async (params = {}) => {
-    return await axiosClient.get(BASE_URL, { params });
-  },
+  getOrders: async (params = {}) => await axiosClient.get(BASE_URL, { params }),
 
   /**
    * Legacy method - alias for getByStatus
    */
-  getOrdersByStatus: async (status, params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/status/${status}`, { params });
-  },
+  getOrdersByStatus: async (status, params = {}) =>
+    await axiosClient.get(`${BASE_URL}/status/${status}`, { params }),
 
   /**
    * Legacy method - alias for cancel
    */
-  cancelOrder: async (orderId, cancelData) => {
-    return await axiosClient.put(`${BASE_URL}/${orderId}/cancel`, cancelData);
-  },
+  cancelOrder: async (orderId, cancelData) =>
+    await axiosClient.put(`${BASE_URL}/${orderId}/cancel`, cancelData),
 
   /**
    * Legacy method - alias for updateStatus
    */
-  updateOrderStatus: async (orderId, statusData) => {
-    return await axiosClient.put(`${BASE_URL}/${orderId}/status`, statusData);
-  },
+  updateOrderStatus: async (orderId, statusData) =>
+    await axiosClient.put(`${BASE_URL}/${orderId}/status`, statusData),
 
   /**
    * Legacy method - alias for getHistory
    */
-  getOrderHistory: async (orderId) => {
-    return await axiosClient.get(`${BASE_URL}/${orderId}/history`);
-  },
+  getOrderHistory: async (orderId) => await axiosClient.get(`${BASE_URL}/${orderId}/history`),
 };
 
 export default orderSellerService;
