@@ -5,11 +5,14 @@ name: Deploy GZMart to Vercel
 on:
   workflow_run:
     workflows:
-      - 'Test GZMart Code'
+      - 'Format & Build GZMart'
     types:
       - completed
     branches:
       - main
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy:
