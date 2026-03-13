@@ -12,7 +12,8 @@ const NAV_GROUPS = [
     items: [
       { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
       { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
-      { to: '/seller/listings', icon: 'bi-grid-3x3-gap-fill', label: 'Listings' },
+      { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
+      { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
       { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
       { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
@@ -28,9 +29,9 @@ const NAV_GROUPS = [
   {
     label: 'ERP',
     items: [
-      { to: '/erp/dashboard', icon: 'bi-bar-chart-line', label: 'ERP Dashboard' },
-      { to: '/erp/suppliers', icon: 'bi-truck', label: 'Suppliers' },
-      { to: '/erp/purchase-orders', icon: 'bi-file-earmark-text', label: 'Purchase Orders' },
+      { to: '/seller/erp/dashboard', icon: 'bi-bar-chart-line', label: 'ERP Dashboard' },
+      { to: '/seller/erp/suppliers', icon: 'bi-truck', label: 'Suppliers' },
+      { to: '/seller/erp/purchase-orders', icon: 'bi-file-earmark-text', label: 'Purchase Orders' },
     ],
   },
   {

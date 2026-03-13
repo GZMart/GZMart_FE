@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import AddProductModal from '../../components/seller/listings/AddProductModal';
+import ProductDrawer from '../../components/seller/listings/ProductDrawer';
 import ListingsPagination from '../../components/seller/listings/ListingsPagination';
+import SortableHeader, { useSortState, sortRows } from '../../components/common/SortableHeader';
 import { productService } from '../../services/api/productService';
 import { useSearchParams } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
@@ -13,14 +14,15 @@ import styles from '../../assets/styles/seller/ListingsPage.module.css';
 const STATUS_TABS = [
   { value: 'all',      label: 'All' },
   { value: 'active',   label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
   { value: 'draft',    label: 'Draft' },
+  { value: 'inactive', label: 'Hidden' },
 ];
 
 const STATUS_MAP = {
   active:   { label: 'Active',   cls: styles.badgeActive },
-  inactive: { label: 'Inactive', cls: styles.badgeInactive },
+  inactive: { label: 'Hidden',   cls: styles.badgeHidden },
   draft:    { label: 'Draft',    cls: styles.badgeDraft },
+  out_of_stock: { label: 'Out of Stock', cls: styles.badgeOutOfStock },
 };
 
 const SORT_OPTIONS = [
@@ -34,16 +36,13 @@ const SORT_OPTIONS = [
 
 const ITEMS_PER_PAGE = 8;
 
-/* ── Helpers ──────────────────────────────────────────────────────── */
-const totalStock = (product) =>
-  product.models?.reduce((s, m) => s + (m.stock || 0), 0) ?? 0;
-
 /* ─────────────────────────────────────────────────────────────────── */
 const ListingsPage = () => {
   const [searchParams] = useSearchParams();
 
   const [allListings, setAllListings] = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [actionLoading, setActionLoading] = useState(null); // productId being toggled
   const [error, setError]             = useState(null);
   const [showAddModal, setShowAddModal]   = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -51,7 +50,7 @@ const ListingsPage = () => {
 
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState(searchParams.get('status') || 'all');
-  const [sort, setSort]   = useState('newest');
+  const { sortKey, sortDir, handleSort } = useSortState('_createdAt', 'desc');
 
   /* ── Fetch ──────────────────────────────────────────────────────── */
   useEffect(() => { fetchListings(); }, []);
@@ -105,16 +104,11 @@ const ListingsPage = () => {
       );
     }
 
-    switch (sort) {
-      case 'oldest':     list.sort((a, b) => new Date(a._createdAt) - new Date(b._createdAt)); break;
-      case 'price-low':  list.sort((a, b) => a.price - b.price); break;
-      case 'price-high': list.sort((a, b) => b.price - a.price); break;
-      case 'name-asc':   list.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case 'name-desc':  list.sort((a, b) => b.name.localeCompare(a.name)); break;
-      default:           list.sort((a, b) => new Date(b._createdAt) - new Date(a._createdAt));
-    }
-    return list;
-  }, [allListings, statusTab, search, sort]);
+    return sortRows(list, sortKey, sortDir, {
+      _createdAt: (r) => new Date(r._createdAt).getTime(),
+      status: (r) => ({ active: 0, draft: 1, inactive: 2 })[r.status] ?? 3,
+    });
+  }, [allListings, statusTab, search, sortKey, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -137,6 +131,23 @@ const ListingsPage = () => {
     }
   };
 
+  const handleToggleVisibility = useCallback(async (product) => {
+    const newStatus = product.status === 'inactive' ? 'active' : 'inactive';
+    setActionLoading(product.id);
+    try {
+      const response = await productService.toggleStatus(product.id, newStatus);
+      if (response.success) {
+        setAllListings((prev) =>
+          prev.map((p) => p.id === product.id ? { ...p, status: newStatus } : p)
+        );
+      }
+    } catch (err) {
+      console.error('Error toggling visibility:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  }, []);
+
   /* ── Render ─────────────────────────────────────────────────────── */
   return (
     <div className={styles.listingsPage}>
@@ -145,7 +156,7 @@ const ListingsPage = () => {
       <div className={styles.listingsHeader}>
         <div className={styles.headerContent}>
           <div className={styles.titleSection}>
-            <h1 className={styles.pageTitle}>Listings</h1>
+            <h1 className={styles.pageTitle}>Products</h1>
             <p className={styles.pageSubtitle}>Manage your product catalogue</p>
           </div>
           <button className={styles.addButton} onClick={handleAddItem}>
@@ -162,7 +173,7 @@ const ListingsPage = () => {
             { label: 'Total',    val: allListings.length },
             { label: 'Active',   val: allListings.filter((p) => p.status === 'active').length,   cls: styles.statActive },
             { label: 'Draft',    val: allListings.filter((p) => p.status === 'draft').length,    cls: styles.statDraft },
-            { label: 'Inactive', val: allListings.filter((p) => p.status === 'inactive').length, cls: styles.statInactive },
+            { label: 'Hidden',   val: allListings.filter((p) => p.status === 'inactive').length, cls: styles.statHidden },
           ].map(({ label, val, cls }) => (
             <div key={label} className={styles.statPill}>
               <span className={`${styles.statNum} ${cls || ''}`}>{loading ? '—' : val}</span>
@@ -208,16 +219,6 @@ const ListingsPage = () => {
             />
           </div>
 
-          {/* Sort */}
-          <select
-            className={styles.sortSelect}
-            value={sort}
-            onChange={(e) => { setSort(e.target.value); setCurrentPage(1); }}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -239,8 +240,8 @@ const ListingsPage = () => {
               <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
               <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
             </svg>
-            <p>{search ? `No results for "${search}"` : 'No products found. Add your first product!'}</p>
-            {!search && (
+            <p>{search ? `No results for "${search}"` : statusTab === 'inactive' ? 'No hidden products.' : 'No products found. Add your first product!'}</p>
+            {!search && statusTab !== 'inactive' && (
               <button className={styles.addButton} onClick={handleAddItem}>Add Product</button>
             )}
           </div>
@@ -252,12 +253,12 @@ const ListingsPage = () => {
                   <tr className={styles.thead}>
                     <th className={styles.th} style={{ width: 40 }}>#</th>
                     <th className={styles.th} style={{ width: 52 }}></th>
-                    <th className={styles.th}>Product</th>
-                    <th className={styles.th}>Category</th>
-                    <th className={styles.th}>SKU</th>
-                    <th className={styles.th} style={{ textAlign: 'right' }}>Price</th>
-                    <th className={styles.th} style={{ textAlign: 'center' }}>Stock</th>
-                    <th className={styles.th} style={{ textAlign: 'center' }}>Status</th>
+                    <SortableHeader label="Product"  colKey="name"        sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} />
+                    <SortableHeader label="Category" colKey="category"    sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} />
+                    <SortableHeader label="SKU"      colKey="sku"         sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} />
+                    <SortableHeader label="Price"    colKey="price"       sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} align="right" />
+                    <SortableHeader label="Stock"    colKey="stock"       sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} align="center" />
+                    <SortableHeader label="Status"   colKey="status"      sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} align="center" />
                     <th className={styles.th} style={{ width: 52 }}></th>
                   </tr>
                 </thead>
@@ -267,8 +268,10 @@ const ListingsPage = () => {
                     const rowNum = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
                     const lowStock = product.stock > 0 && product.stock < 5;
                     const outOfStock = product.stock === 0;
+                    const isHidden = product.status === 'inactive';
+                    const isToggling = actionLoading === product.id;
                     return (
-                      <tr key={product.id} className={styles.tr}>
+                      <tr key={product.id} className={`${styles.tr} ${isHidden ? styles.rowHidden : ''}`}>
                         <td className={styles.td}>
                           <span className={styles.rowNum}>{rowNum}</span>
                         </td>
@@ -316,18 +319,28 @@ const ListingsPage = () => {
                         <td className={styles.td}>
                           <Dropdown align="end">
                             <Dropdown.Toggle as="button" className={styles.menuBtn} bsPrefix="x">
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <circle cx="8" cy="3"  r="1.3" fill="currentColor"/>
-                                <circle cx="8" cy="8"  r="1.3" fill="currentColor"/>
-                                <circle cx="8" cy="13" r="1.3" fill="currentColor"/>
-                              </svg>
+                              {isToggling ? (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}>
+                                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                </svg>
+                              ) : (
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                  <circle cx="8" cy="3"  r="1.3" fill="currentColor"/>
+                                  <circle cx="8" cy="8"  r="1.3" fill="currentColor"/>
+                                  <circle cx="8" cy="13" r="1.3" fill="currentColor"/>
+                                </svg>
+                              )}
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
                               <Dropdown.Item onClick={() => handleEditItem(product)}>
                                 <i className="bi bi-pencil me-2" />Edit
                               </Dropdown.Item>
-                              <Dropdown.Item>
-                                <i className="bi bi-eye-slash me-2" />Hide
+                              <Dropdown.Item onClick={() => handleToggleVisibility(product)}>
+                                {isHidden ? (
+                                  <><i className="bi bi-eye me-2" />Unhide</>
+                                ) : (
+                                  <><i className="bi bi-eye-slash me-2" />Hide</>
+                                )}
                               </Dropdown.Item>
                               <Dropdown.Divider />
                               <Dropdown.Item className="text-danger">
@@ -358,7 +371,7 @@ const ListingsPage = () => {
         )}
       </div>
 
-      <AddProductModal
+      <ProductDrawer
         show={showAddModal}
         onHide={() => { setShowAddModal(false); setEditingProduct(null); }}
         onSuccess={fetchListings}

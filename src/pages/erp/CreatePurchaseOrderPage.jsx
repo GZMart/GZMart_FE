@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchSuppliers, createPurchaseOrder, fetchMyProducts } from '../../store/slices/erpSlice';
+import { fetchSuppliers, createPurchaseOrder, fetchMyProducts, fetchExchangeRate } from '../../store/slices/erpSlice';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import styles from '@assets/styles/erp/CreatePurchaseOrderPage.module.css';
 import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../constants/tierTypes';
@@ -772,7 +772,7 @@ const EMPTY_GROUP = () => ({
 const CreatePurchaseOrderPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { suppliers, loading, myProducts, myProductsLoading } = useSelector((state) => state.erp);
+  const { suppliers, loading, myProducts, myProductsLoading, exchangeRate: liveRate } = useSelector((state) => state.erp);
 
   const [formData, setFormData] = useState({
     supplierId: '',
@@ -812,7 +812,22 @@ const CreatePurchaseOrderPage = () => {
   const [groups, setGroups] = useState([EMPTY_GROUP()]);
   const [errors, setErrors] = useState({});
 
-  useEffect(() => { dispatch(fetchSuppliers({ limit: 100 })); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchSuppliers({ limit: 100 }));
+    dispatch(fetchExchangeRate());
+  }, [dispatch]);
+
+  // Auto-fill exchange rate from live cron data when component mounts
+  // Only overrides if the user has the default value (hasn't manually customised)
+  useEffect(() => {
+    if (!liveRate?.rate) return;
+    setImportConfig((prev) => {
+      if (Number(prev.exchangeRate) === DEFAULT_IMPORT_CONFIG.exchangeRate) {
+        return { ...prev, exchangeRate: liveRate.rate };
+      }
+      return prev;
+    });
+  }, [liveRate?.rate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save import config to localStorage whenever it changes
   useEffect(() => {
@@ -969,7 +984,7 @@ const CreatePurchaseOrderPage = () => {
 
       await dispatch(createPurchaseOrder(orderData)).unwrap();
       alert('Purchase order created successfully!');
-      navigate('/erp/purchase-orders');
+      navigate('/seller/erp/purchase-orders');
     } catch (err) {
       console.error('Failed:', err);
       alert('Error: ' + (err.error || JSON.stringify(err)));
@@ -987,7 +1002,7 @@ const CreatePurchaseOrderPage = () => {
           <h1>Create Purchase Order</h1>
         </div>
         <button type="button" className={styles.btnSecondary}
-          onClick={() => navigate('/erp/purchase-orders')}>← Back</button>
+          onClick={() => navigate('/seller/erp/purchase-orders')}>← Back</button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -1029,7 +1044,22 @@ const CreatePurchaseOrderPage = () => {
             <div className={styles.formGroup}>
               <label>Exchange Rate (VND / ¥)</label>
               <input type="number" name="exchangeRate" value={importConfig.exchangeRate}
-                onChange={handleConfigChange} min="1" step="10" />
+                onChange={handleConfigChange} min="1" step="any" placeholder="3500" />
+              {liveRate?.rate && (
+                <span className={styles.rateHint}>
+                  Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
+                  {Number(importConfig.exchangeRate) !== liveRate.rate && (
+                    <button
+                      type="button"
+                      className={styles.rateSyncBtn}
+                      onClick={() => setImportConfig((p) => ({ ...p, exchangeRate: liveRate.rate }))}
+                      title="Apply live exchange rate"
+                    >
+                      ↻ Use
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
             <div className={styles.formGroup}>
               <label>Buying Service Fee (%)</label>
@@ -1195,7 +1225,7 @@ const CreatePurchaseOrderPage = () => {
         {/* Actions */}
         <div className={styles.actions}>
           <button type="button" className={styles.btnSecondary}
-            onClick={() => navigate('/erp/purchase-orders')}>Cancel</button>
+            onClick={() => navigate('/seller/erp/purchase-orders')}>Cancel</button>
           <button type="submit" className={styles.btnPrimary}>Create Purchase Order</button>
         </div>
       </form>
