@@ -126,17 +126,29 @@ const NotificationBell = () => {
     if (!notification.isRead) {
       handleMarkAsRead({ stopPropagation: () => {} }, notification._id);
     }
-    
-    if (notification.type === 'ORDER') {
-      if (notification.relatedData?.orderId) {
-         navigate(`/buyer/orders/${notification.relatedData.orderId}`);
-      } else {
-         navigate('/buyer/orders');
-      }
-    } else if (notification.type === 'PROMOTION') {
-       navigate(PUBLIC_ROUTES.DEALS);
+
+    const shopId = notification.relatedData?.shopId;
+
+    switch (notification.type) {
+      case 'ORDER':
+        navigate(
+          notification.relatedData?.orderId
+            ? `/buyer/orders/${notification.relatedData.orderId}`
+            : '/buyer/orders'
+        );
+        break;
+      case 'PROMOTION':
+      case 'ANNOUNCEMENT':
+      case 'VOUCHER':
+        navigate(shopId ? `/shop/${shopId}` : '/deals');
+        break;
+      case 'FLASH_SALE':
+        navigate('/deals');
+        break;
+      default:
+        break;
     }
-    
+
     setShowDropdown(false);
   };
 
@@ -173,7 +185,7 @@ const NotificationBell = () => {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="px-3 py-2 text-dark" style={{ backgroundColor: '#fdfdfd' }}>
-            <span className="fw-bold" style={{ fontSize: '1rem' }}>Thông Báo Mới Nhận</span>
+            <span className="fw-bold" style={{ fontSize: '1rem' }}>{t('notifications.recent')}</span>
           </div>
           
           <div className="overflow-auto text-dark" style={{ maxHeight: '450px' }}>
