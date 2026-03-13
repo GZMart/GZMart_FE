@@ -494,6 +494,26 @@
     "tab_home": "Dạo",
     "tab_all_products": "TẤT CẢ SẢN PHẨM",
     "suggested_for_you": "GỢI Ý CHO BẠN",
-    "no_products": "Shop chưa có sản phẩm nào."
+    "no_products": "Shop này chưa có sản phẩm nào."
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "mark_all_read": "Đánh dấu đã đọc tất cả",
+    "loading": "Đang tải...",
+    "empty": "Không có thông báo nào",
+    "recent": "Thông Báo Mới Nhận",
+    "view_all": "Xem Tất Cả",
+    "view_details": "Xem Chi Tiết",
+    "page_title": "Thông báo của bạn",
+    "page_subtitle": "Cập nhật các cảnh báo và tin nhắn mới nhất của bạn.",
+    "categories": {
+      "all": "Thông Báo",
+      "order": "Cập Nhật Đơn Hàng",
+      "promotion": "Khuyến Mãi",
+      "flash_sale": "Flash Sale",
+      "voucher": "Voucher",
+      "wallet": "Cập Nhật Ví",
+      "system": "Cập Nhật Shopee"
+    }
   }
 }

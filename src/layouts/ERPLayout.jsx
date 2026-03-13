@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/layouts/ERPLayout.module.css';
+import NotificationBell from '@components/common/NotificationBell';
 
 const NAV_GROUPS = [
   {
@@ -24,6 +25,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/seller/vouchers', icon: 'bi-ticket-perforated', label: 'Vouchers' },
       { to: '/seller/promotions', icon: 'bi-megaphone', label: 'Promotions' },
+      { to: '/seller/notifications', icon: 'bi-bell', label: 'Notifications' },
     ],
   },
   {
@@ -149,28 +151,7 @@ const ERPLayout = ({ children }) => {
           <div className={styles.topbarRight}>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
-              <button
-                className={styles.iconBtn}
-                onClick={() => {
-                  setNotifOpen((o) => !o);
-                  setProfileOpen(false);
-                }}
-              >
-                <i className="bi bi-bell" />
-                <span className={styles.badge}>3</span>
-              </button>
-              {notifOpen && (
-                <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
-                  <div className={styles.dropdownHeader}>Notifications</div>
-                  {['New order #1042', 'Flash sale ends in 2h', 'Return request pending'].map(
-                    (n) => (
-                      <div key={n} className={styles.dropdownItem}>
-                        {n}
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
+              <NotificationBell />
             </div>
 
             {/* Profile dropdown */}
