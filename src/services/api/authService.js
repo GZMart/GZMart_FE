@@ -15,9 +15,7 @@ export const authService = {
    * @returns {Promise} Login response with token and user data
    * Response: { success: true, data: { user, tokens: { accessToken, refreshToken } } }
    */
-  login: async (credentials) => {
-    return api.post(`${BASE_URL}/login`, credentials);
-  },
+  login: async (credentials) => api.post(`${BASE_URL}/login`, credentials),
 
   /**
    * User registration
@@ -25,9 +23,7 @@ export const authService = {
    * @returns {Promise} Registration response
    * Response: { success: true, data: { user, tokens: { accessToken, refreshToken } } }
    */
-  register: async (userData) => {
-    return api.post(`${BASE_URL}/register`, userData);
-  },
+  register: async (userData) => api.post(`${BASE_URL}/register`, userData),
 
   /**
    * Login with Google
@@ -35,9 +31,7 @@ export const authService = {
    * @returns {Promise} Login response
    * Response: { success: true, message, user, token, refreshToken, isNewUser }
    */
-  loginWithGoogle: async (data) => {
-    return api.post(`${BASE_URL}/google-login`, data);
-  },
+  loginWithGoogle: async (data) => api.post(`${BASE_URL}/google-login`, data),
 
   /**
    * Login with Facebook
@@ -45,18 +39,14 @@ export const authService = {
    * @returns {Promise} Login response
    * Response: { success: true, message, user, token, refreshToken, isNewUser }
    */
-  loginWithFacebook: async (data) => {
-    return api.post(`${BASE_URL}/facebook-login`, data);
-  },
+  loginWithFacebook: async (data) => api.post(`${BASE_URL}/facebook-login`, data),
 
   /**
    * Logout user
    * @returns {Promise} Logout response
    * Response: { success: true, data: {} }
    */
-  logout: async () => {
-    return api.post(`${BASE_URL}/logout`);
-  },
+  logout: async () => api.post(`${BASE_URL}/logout`),
 
   /**
    * Refresh authentication token
@@ -64,18 +54,14 @@ export const authService = {
    * @returns {Promise} New access token
    * Response: { success: true, token }
    */
-  refreshToken: async (refreshToken) => {
-    return api.post(`${BASE_URL}/refresh-token`, { refreshToken });
-  },
+  refreshToken: async (refreshToken) => api.post(`${BASE_URL}/refresh-token`, { refreshToken }),
 
   /**
    * Get current user profile
    * @returns {Promise} User profile data
    * Response: { success: true, data: user }
    */
-  getCurrentUser: async () => {
-    return api.get(`${BASE_URL}/me`);
-  },
+  getCurrentUser: async () => api.get(`${BASE_URL}/me`),
 
   /**
    * Update user profile
@@ -103,9 +89,7 @@ export const authService = {
    * @returns {Promise} Password reset request response
    * Response: { success: true, message: 'Password reset email sent' }
    */
-  forgotPassword: async (email) => {
-    return api.post(`${BASE_URL}/forgot-password`, { email });
-  },
+  forgotPassword: async (email) => api.post(`${BASE_URL}/forgot-password`, { email }),
 
   /**
    * Reset password with token
@@ -113,9 +97,7 @@ export const authService = {
    * @returns {Promise} Password reset response
    * Response: { success: true, message: 'Password reset successfully' }
    */
-  resetPassword: async (data) => {
-    return api.post(`${BASE_URL}/reset-password`, data);
-  },
+  resetPassword: async (data) => api.post(`${BASE_URL}/reset-password`, data),
 
   /**
    * Change password for logged-in user
@@ -123,9 +105,7 @@ export const authService = {
    * @returns {Promise} Password change response
    * Response: { success: true, message: 'Password changed successfully' }
    */
-  changePassword: async (data) => {
-    return api.put(`${BASE_URL}/change-password`, data);
-  },
+  changePassword: async (data) => api.put(`${BASE_URL}/change-password`, data),
 
   /**
    * Set password for social login users
@@ -133,9 +113,7 @@ export const authService = {
    * @returns {Promise} Set password response
    * Response: { success: true, message: 'Set password successfully' }
    */
-  setPassword: async (data) => {
-    return api.post(`${BASE_URL}/set-password`, data);
-  },
+  setPassword: async (data) => api.post(`${BASE_URL}/set-password`, data),
 
   /**
    * Verify email with token (GET request with query param)
@@ -156,23 +134,23 @@ export const authService = {
       }
       return 'http://localhost:3000';
     };
-    
+
     const API_BASE_URL = getApiBaseUrl();
-    
+
     // Validate URL trước khi tạo
     if (!token || typeof token !== 'string') {
       throw new Error('Invalid verification token');
     }
-    
+
     const url = `${API_BASE_URL}${BASE_URL}/verify-email?token=${encodeURIComponent(token)}`;
-    
+
     // Validate final URL
     try {
       new URL(url);
     } catch (error) {
       throw new Error(`Invalid verification URL: ${url}`);
     }
-    
+
     return axios.get(url, {
       maxRedirects: 0,
       validateStatus: (status) => status >= 200 && status < 400,
@@ -185,9 +163,7 @@ export const authService = {
    * @returns {Promise} Resend response
    * Response: { success: true, message: 'Verification email sent successfully' }
    */
-  resendVerification: async (email) => {
-    return api.post(`${BASE_URL}/resend-verification`, { email });
-  },
+  resendVerification: async (email) => api.post(`${BASE_URL}/resend-verification`, { email }),
 
   /**
    * Send OTP to email
@@ -195,9 +171,7 @@ export const authService = {
    * @returns {Promise} Send OTP response
    * Response: { success: true, message: 'OTP sent successfully to your email' }
    */
-  sendOTP: async (email) => {
-    return api.post(`${BASE_URL}/send-otp`, { email });
-  },
+  sendOTP: async (email) => api.post(`${BASE_URL}/send-otp`, { email }),
 
   /**
    * Verify OTP
@@ -205,9 +179,7 @@ export const authService = {
    * @returns {Promise} Verify OTP response with tokens
    * Response: { success: true, message: 'OTP verified successfully', data: { user, tokens: { accessToken, refreshToken } } }
    */
-  verifyOTP: async (data) => {
-    return api.post(`${BASE_URL}/verify-otp`, data);
-  },
+  verifyOTP: async (data) => api.post(`${BASE_URL}/verify-otp`, data),
 };
 
 export default authService;

@@ -103,7 +103,9 @@
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btnEdit:hover {
@@ -222,7 +224,7 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-.infoItem:nth-last-child(-n+2) {
+.infoItem:nth-last-child(-n + 2) {
   border-bottom: none;
 }
 
@@ -392,7 +394,9 @@
   align-items: center;
   gap: 0.875rem;
   border-left: 3px solid var(--accent, #1a56db);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
   cursor: default;
 }
 
@@ -629,7 +633,7 @@
     grid-template-columns: 1fr;
   }
 
-  .infoItem:nth-last-child(-n+2) {
+  .infoItem:nth-last-child(-n + 2) {
     border-bottom: 1px solid #f1f5f9;
   }
 

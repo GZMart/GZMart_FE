@@ -43,8 +43,7 @@ const LoginPage = () => {
       email: Yup.string()
         .email(t('login_page.validation.invalid_email'))
         .required(t('login_page.validation.required_email')),
-      password: Yup.string()
-        .required(t('login_page.validation.required_password')),
+      password: Yup.string().required(t('login_page.validation.required_password')),
     }),
     onSubmit: async (values) => {
       setLoading(true);
@@ -108,14 +107,14 @@ const LoginPage = () => {
 
         if (loginWithGoogle.fulfilled.match(resultAction)) {
           const result = resultAction.payload;
-          
+
           // Login thành công
           toast.success(t('login_page.success_login'));
-          
+
           // Force page reload to ensure avatar is displayed specific for social login if needed
-          // But Redux state update should be enough usually. 
+          // But Redux state update should be enough usually.
           // Keeping the reload logic if it was requested or beneficial for avatar sync
-          
+
           // Redirect based on role or default to Home
           const user = result.user;
           if (user?.role === 'seller') {
@@ -126,7 +125,7 @@ const LoginPage = () => {
             navigate(PUBLIC_ROUTES.HOME);
           }
         } else {
-           toast.error(resultAction.payload || t('login_page.errors.google_login_error'));
+          toast.error(resultAction.payload || t('login_page.errors.google_login_error'));
         }
         setLoading(false);
       } catch (err) {
@@ -138,7 +137,7 @@ const LoginPage = () => {
     onError: () => {
       toast.error(t('login_page.errors.google_login_error'));
       setLoading(false);
-    }
+    },
   });
 
   const responseFacebook = async (response) => {
@@ -158,26 +157,26 @@ const LoginPage = () => {
       );
 
       if (loginWithFacebook.fulfilled.match(resultAction)) {
-         const result = resultAction.payload;
-         toast.success(t('login_page.success_login'));
-         
-         // Direct navigation for Facebook login, skipping set-password
-         const user = result.user;
-         if (user?.role === 'seller') {
-            navigate('/seller/dashboard');
-          } else if (user?.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate(PUBLIC_ROUTES.HOME);
-          }
+        const result = resultAction.payload;
+        toast.success(t('login_page.success_login'));
+
+        // Direct navigation for Facebook login, skipping set-password
+        const user = result.user;
+        if (user?.role === 'seller') {
+          navigate('/seller/dashboard');
+        } else if (user?.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate(PUBLIC_ROUTES.HOME);
+        }
       } else {
         toast.error(resultAction.payload || t('login_page.errors.facebook_login_error'));
       }
       setLoading(false);
     } catch (error) {
-       console.error('Facebook login error:', error);
-       toast.error(t('login_page.errors.facebook_login_error'));
-       setLoading(false);
+      console.error('Facebook login error:', error);
+      toast.error(t('login_page.errors.facebook_login_error'));
+      setLoading(false);
     }
   };
 
@@ -358,7 +357,13 @@ const LoginPage = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <label className={styles.checkboxLabel} style={{ marginBottom: 0 }}>
                       <input
                         type="checkbox"
@@ -368,9 +373,14 @@ const LoginPage = () => {
                       />
                       <span style={{ marginLeft: '7px' }}>{t('login_page.remember_me')}</span>
                     </label>
-                    <Link 
-                      to={PUBLIC_ROUTES.FORGOT_PASSWORD} 
-                      style={{ color: '#4a90e2', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500 }}
+                    <Link
+                      to={PUBLIC_ROUTES.FORGOT_PASSWORD}
+                      style={{
+                        color: '#4a90e2',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                      }}
                     >
                       {t('login_page.forgot_password')}
                     </Link>

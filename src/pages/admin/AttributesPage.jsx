@@ -7,74 +7,150 @@ import styles from '../../assets/styles/admin/AttributesPage.module.css';
 
 /* ── SVG Icons (inline, no emoji) ─────────────────────────── */
 const IconSliders = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
-    <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
-    <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
-    <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="4" y1="21" x2="4" y2="14" />
+    <line x1="4" y1="10" x2="4" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12" y2="3" />
+    <line x1="20" y1="21" x2="20" y2="16" />
+    <line x1="20" y1="12" x2="20" y2="3" />
+    <line x1="1" y1="14" x2="7" y2="14" />
+    <line x1="9" y1="8" x2="15" y2="8" />
+    <line x1="17" y1="16" x2="23" y2="16" />
   </svg>
 );
 const IconPlus = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
 const IconSearch = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 const IconX = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 const IconCheck = () => (
   <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.59L6.41 12l1.42-1.41L11 13.76l5.17-5.17 1.42 1.41L11 16.59z"/>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.59L6.41 12l1.42-1.41L11 13.76l5.17-5.17 1.42 1.41L11 16.59z" />
   </svg>
 );
 const IconDash = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
 const IconPencil = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 const IconTrash = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-    <path d="M10 11v6"/><path d="M14 11v6"/>
-    <path d="M9 6V4h6v2"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14H6L5 6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4h6v2" />
   </svg>
 );
 const IconTag = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-    <line x1="7" y1="7" x2="7.01" y2="7"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+    <line x1="7" y1="7" x2="7.01" y2="7" />
   </svg>
 );
 const IconAlert = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
 const IconCheckCircle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-    <polyline points="22 4 12 14.01 9 11.01"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
 
 /* ── Utility: slugify ─────────────────────────────────────── */
 const toSlug = (str) =>
-  str.toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  str
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
@@ -127,7 +203,9 @@ const AttributesPage = () => {
         const flatten = (nodes, depth = 0) => {
           (nodes || []).forEach((node) => {
             flat.push({ _id: node._id, name: node.name, depth });
-            if (node.children?.length) flatten(node.children, depth + 1);
+            if (node.children?.length) {
+              flatten(node.children, depth + 1);
+            }
           });
         };
         flatten(res.data || []);
@@ -137,7 +215,9 @@ const AttributesPage = () => {
       // Fallback to flat list
       try {
         const res2 = await categoryService.getAll();
-        if (res2.success) setCategories((res2.data || []).map(c => ({ ...c, depth: 0 })));
+        if (res2.success) {
+          setCategories((res2.data || []).map((c) => ({ ...c, depth: 0 })));
+        }
       } catch {}
       console.error('Failed to fetch categories:', err);
     }
@@ -149,7 +229,9 @@ const AttributesPage = () => {
       const res = categoryId
         ? await attributeService.getByCategory(categoryId)
         : await attributeService.getAll();
-      if (res.success) setAttributes(res.data || []);
+      if (res.success) {
+        setAttributes(res.data || []);
+      }
     } catch (err) {
       setError('Failed to fetch attributes');
     } finally {
@@ -159,19 +241,19 @@ const AttributesPage = () => {
 
   /* ── Filtered list (client-side search) ─────────────────── */
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return attributes;
+    if (!searchQuery.trim()) {
+      return attributes;
+    }
     const q = searchQuery.toLowerCase();
     return attributes.filter(
-      (a) =>
-        a.name?.toLowerCase().includes(q) ||
-        a.slug?.toLowerCase().includes(q)
+      (a) => a.name?.toLowerCase().includes(q) || a.slug?.toLowerCase().includes(q)
     );
   }, [attributes, searchQuery]);
 
   /* ── Stats ──────────────────────────────────────────────── */
-  const totalCount    = attributes.length;
+  const totalCount = attributes.length;
   const requiredCount = attributes.filter((a) => a.isRequired).length;
-  const filterCount   = attributes.filter((a) => a.isFilterable).length;
+  const filterCount = attributes.filter((a) => a.isFilterable).length;
 
   /* ── Category helper ────────────────────────────────────── */
   const getCategoryName = (categoryId) => {
@@ -181,7 +263,9 @@ const AttributesPage = () => {
   };
 
   const selectedCategoryName = useMemo(() => {
-    if (!selectedCategory) return null;
+    if (!selectedCategory) {
+      return null;
+    }
     const cat = categories.find((c) => c._id === selectedCategory);
     return cat?.name ?? null;
   }, [selectedCategory, categories]);
@@ -196,7 +280,8 @@ const AttributesPage = () => {
         name: attr.name || '',
         slug: attr.slug || '',
         description: attr.description || '',
-        categoryId: typeof attr.categoryId === 'object' ? attr.categoryId._id : attr.categoryId || '',
+        categoryId:
+          typeof attr.categoryId === 'object' ? attr.categoryId._id : attr.categoryId || '',
         options: attr.options || [],
         isRequired: attr.isRequired || false,
         isFilterable: attr.isFilterable || false,
@@ -282,7 +367,9 @@ const AttributesPage = () => {
   const handleDeleteClick = (attr) => setDeleteTarget(attr);
 
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget) {
+      return;
+    }
     try {
       await attributeService.delete(deleteTarget._id);
       setSuccess('Attribute deleted successfully!');
@@ -308,10 +395,14 @@ const AttributesPage = () => {
       {/* ── Header ── */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.headerIcon}><IconSliders /></div>
+          <div className={styles.headerIcon}>
+            <IconSliders />
+          </div>
           <div>
             <h2 className={styles.h2}>Attribute Management</h2>
-            <p className={styles.subtitle}>Manage dynamic product attributes (Material, Collar, etc.)</p>
+            <p className={styles.subtitle}>
+              Manage dynamic product attributes (Material, Collar, etc.)
+            </p>
           </div>
         </div>
         <button className={`btn btn-primary ${styles.btnAdd}`} onClick={() => handleShowModal()}>
@@ -354,7 +445,9 @@ const AttributesPage = () => {
           <div className={styles.filterBar}>
             {/* Search */}
             <div className={styles.searchWrapper}>
-              <span className={styles.searchIcon}><IconSearch /></span>
+              <span className={styles.searchIcon}>
+                <IconSearch />
+              </span>
               <input
                 type="text"
                 className={styles.searchInput}
@@ -372,7 +465,8 @@ const AttributesPage = () => {
               <option value="">All Categories</option>
               {categories.map((cat) => (
                 <option key={cat._id} value={cat._id}>
-                  {cat.depth > 0 ? '  '.repeat(cat.depth * 2) + '› ' : ''}{cat.name}
+                  {cat.depth > 0 ? `${'  '.repeat(cat.depth * 2)}› ` : ''}
+                  {cat.name}
                 </option>
               ))}
             </select>
@@ -423,8 +517,12 @@ const AttributesPage = () => {
                 : "Click 'Add Attribute' to create your first attribute."}
             </p>
             {!searchQuery && (
-              <button className={`btn btn-primary ${styles.emptyBtn}`} onClick={() => handleShowModal()}>
-                <IconPlus /> Add Attribute{selectedCategoryName ? ` for “${selectedCategoryName}”` : ''}
+              <button
+                className={`btn btn-primary ${styles.emptyBtn}`}
+                onClick={() => handleShowModal()}
+              >
+                <IconPlus /> Add Attribute
+                {selectedCategoryName ? ` for “${selectedCategoryName}”` : ''}
               </button>
             )}
           </div>
@@ -448,8 +546,12 @@ const AttributesPage = () => {
                 const remaining = opts.length - 3;
                 return (
                   <tr key={attr._id}>
-                    <td><span className={styles.attrName}>{attr.name}</span></td>
-                    <td><code className={styles.slugCode}>{attr.slug}</code></td>
+                    <td>
+                      <span className={styles.attrName}>{attr.name}</span>
+                    </td>
+                    <td>
+                      <code className={styles.slugCode}>{attr.slug}</code>
+                    </td>
                     <td>
                       <span className={styles.catPill}>{getCategoryName(attr.categoryId)}</span>
                     </td>
@@ -479,11 +581,11 @@ const AttributesPage = () => {
                       {opts.length > 0 ? (
                         <div className={styles.optionTagsCell}>
                           {displayOpts.map((o, i) => (
-                            <span key={i} className={styles.optTag}>{o}</span>
+                            <span key={i} className={styles.optTag}>
+                              {o}
+                            </span>
                           ))}
-                          {remaining > 0 && (
-                            <span className={styles.optTagMore}>+{remaining}</span>
-                          )}
+                          {remaining > 0 && <span className={styles.optTagMore}>+{remaining}</span>}
                         </div>
                       ) : (
                         <span className={styles.emptyDash}>—</span>
@@ -527,12 +629,18 @@ const AttributesPage = () => {
             : 'Define a new product attribute with options'
         }
         headerIcon={
-          <div style={{
-            width: 38, height: 38, borderRadius: 10, display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            background: editMode ? '#fff7ed' : '#eef2ff',
-            color: editMode ? '#d97706' : '#4f46e5',
-          }}>
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: editMode ? '#fff7ed' : '#eef2ff',
+              color: editMode ? '#d97706' : '#4f46e5',
+            }}
+          >
             {editMode ? <IconPencil /> : <IconSliders />}
           </div>
         }
@@ -541,19 +649,33 @@ const AttributesPage = () => {
             <button
               type="button"
               onClick={handleCloseModal}
-              style={{ padding: '8px 20px', borderRadius: 9, fontWeight: 600,
-                fontSize: '0.875rem', border: '1px solid #e5e7eb',
-                background: '#fff', color: '#374151', cursor: 'pointer' }}
+              style={{
+                padding: '8px 20px',
+                borderRadius: 9,
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                color: '#374151',
+                cursor: 'pointer',
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
               form="attr-form"
-              style={{ padding: '8px 20px', borderRadius: 9, fontWeight: 600,
-                fontSize: '0.875rem', border: 'none', cursor: 'pointer',
+              style={{
+                padding: '8px 20px',
+                borderRadius: 9,
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                border: 'none',
+                cursor: 'pointer',
                 background: 'linear-gradient(130deg, #4f46e5, #4338ca)',
-                color: '#fff', boxShadow: '0 3px 10px rgba(79,70,229,0.3)' }}
+                color: '#fff',
+                boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
+              }}
             >
               {editMode ? 'Update Attribute' : 'Create Attribute'}
             </button>
@@ -581,7 +703,9 @@ const AttributesPage = () => {
             </Col>
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label style={{ fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Slug</Form.Label>
+                <Form.Label style={{ fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>
+                  Slug
+                </Form.Label>
                 <Form.Control
                   type="text"
                   name="slug"
@@ -610,13 +734,17 @@ const AttributesPage = () => {
             >
               <option value="">Select category</option>
               {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
               ))}
             </Form.Select>
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label style={{ fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Description</Form.Label>
+            <Form.Label style={{ fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>
+              Description
+            </Form.Label>
             <Form.Control
               as="textarea"
               rows={2}
@@ -641,7 +769,10 @@ const AttributesPage = () => {
                 onChange={(e) => setOptionInput(e.target.value)}
                 placeholder="Type an option and press Enter or Add…"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); handleAddOption(); }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddOption();
+                  }
                 }}
               />
               <button type="button" className={`btn ${styles.btnAddOpt}`} onClick={handleAddOption}>
@@ -650,7 +781,9 @@ const AttributesPage = () => {
             </div>
             <div className={styles.optionTags}>
               {formData.options.length === 0 ? (
-                <span className={styles.optionsHint}>No options added yet. (e.g., Cotton, Polyester, Silk)</span>
+                <span className={styles.optionsHint}>
+                  No options added yet. (e.g., Cotton, Polyester, Silk)
+                </span>
               ) : (
                 formData.options.map((opt, idx) => (
                   <span key={idx} className={styles.optionTagItem}>
@@ -675,7 +808,9 @@ const AttributesPage = () => {
           <Row className="mb-3">
             <Col md={4}>
               <Form.Group>
-                <Form.Label style={{ fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Display Order</Form.Label>
+                <Form.Label style={{ fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>
+                  Display Order
+                </Form.Label>
                 <Form.Control
                   type="number"
                   name="displayOrder"
@@ -727,15 +862,21 @@ const AttributesPage = () => {
       {deleteTarget && (
         <div className={styles.deleteModal} onClick={() => setDeleteTarget(null)}>
           <div className={styles.deleteModalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.deleteModalIcon}><IconTrash /></div>
+            <div className={styles.deleteModalIcon}>
+              <IconTrash />
+            </div>
             <div className={styles.deleteModalTitle}>Delete Attribute?</div>
             <div className={styles.deleteModalText}>
               This will permanently remove{' '}
               <span className={styles.deleteModalName}>"{deleteTarget.name}"</span>
-              .<br />This action cannot be undone.
+              .<br />
+              This action cannot be undone.
             </div>
             <div className={styles.deleteModalActions}>
-              <button className={`btn ${styles.btnDeleteCancel}`} onClick={() => setDeleteTarget(null)}>
+              <button
+                className={`btn ${styles.btnDeleteCancel}`}
+                onClick={() => setDeleteTarget(null)}
+              >
                 Cancel
               </button>
               <button className={`btn ${styles.btnDeleteConfirm}`} onClick={handleDeleteConfirm}>

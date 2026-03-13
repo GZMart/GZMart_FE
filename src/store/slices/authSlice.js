@@ -28,10 +28,10 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await authService.login(credentials);
-      
+
       // Handle different response formats
       let user, accessToken, refreshToken;
-      
+
       if (response.data) {
         // Format: { success: true, data: { user, tokens: { accessToken, refreshToken } } }
         user = response.data.user;
@@ -56,12 +56,12 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await authService.register(userData);
-      
+
       // Register now only returns user info, no tokens yet
       // Tokens will be returned after OTP verification
       let user;
       let otp = null;
-      
+
       if (response.data) {
         user = response.data.user;
         // In development, OTP might be included in response
@@ -76,19 +76,19 @@ export const registerUser = createAsyncThunk(
     } catch (error) {
       // Extract error message from response
       let errorMessage = i18n.t('auth.register_failed');
-      
+
       if (error.response?.data) {
         // Backend error format: { success: false, error: "message" }
         errorMessage = error.response.data.error || error.response.data.message || errorMessage;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       // Handle array of error messages (from validation)
       if (Array.isArray(errorMessage)) {
         errorMessage = errorMessage.join(', ');
       }
-      
+
       return rejectWithValue(errorMessage);
     }
   }
@@ -99,7 +99,7 @@ export const loginWithGoogle = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await authService.loginWithGoogle(data);
-      
+
       return {
         user: response.user,
         token: response.token,
@@ -117,7 +117,7 @@ export const loginWithFacebook = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await authService.loginWithFacebook(data);
-      
+
       return {
         user: response.user,
         token: response.token,
@@ -145,13 +145,13 @@ export const refreshAuthToken = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const refreshToken = getState().auth.refreshToken || getRefreshToken();
-      
+
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
 
       const response = await authService.refreshToken(refreshToken);
-      
+
       return response.token || response.data?.token;
     } catch (error) {
       return rejectWithValue(error.message || i18n.t('auth.refresh_token_failed'));
@@ -449,8 +449,15 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout, updateUser, updateToken, clearError } =
-  authSlice.actions;
+export const {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
+  updateUser,
+  updateToken,
+  clearError,
+} = authSlice.actions;
 
 // Selectors
 export const selectAuth = (state) => state.auth;

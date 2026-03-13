@@ -12,26 +12,26 @@ import styles from '../../assets/styles/seller/ListingsPage.module.css';
 
 /* ── Status config ─────────────────────────────────────────────────── */
 const STATUS_TABS = [
-  { value: 'all',      label: 'All' },
-  { value: 'active',   label: 'Active' },
-  { value: 'draft',    label: 'Draft' },
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'draft', label: 'Draft' },
   { value: 'inactive', label: 'Hidden' },
 ];
 
 const STATUS_MAP = {
-  active:   { label: 'Active',   cls: styles.badgeActive },
-  inactive: { label: 'Hidden',   cls: styles.badgeHidden },
-  draft:    { label: 'Draft',    cls: styles.badgeDraft },
+  active: { label: 'Active', cls: styles.badgeActive },
+  inactive: { label: 'Hidden', cls: styles.badgeHidden },
+  draft: { label: 'Draft', cls: styles.badgeDraft },
   out_of_stock: { label: 'Out of Stock', cls: styles.badgeOutOfStock },
 };
 
 const SORT_OPTIONS = [
-  { value: 'newest',     label: 'Newest first' },
-  { value: 'oldest',     label: 'Oldest first' },
-  { value: 'price-low',  label: 'Price: Low → High' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'price-low', label: 'Price: Low → High' },
   { value: 'price-high', label: 'Price: High → Low' },
-  { value: 'name-asc',   label: 'Name: A → Z' },
-  { value: 'name-desc',  label: 'Name: Z → A' },
+  { value: 'name-asc', label: 'Name: A → Z' },
+  { value: 'name-desc', label: 'Name: Z → A' },
 ];
 
 const ITEMS_PER_PAGE = 8;
@@ -41,10 +41,10 @@ const ListingsPage = () => {
   const [searchParams] = useSearchParams();
 
   const [allListings, setAllListings] = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null); // productId being toggled
-  const [error, setError]             = useState(null);
-  const [showAddModal, setShowAddModal]   = useState(false);
+  const [error, setError] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -53,7 +53,9 @@ const ListingsPage = () => {
   const { sortKey, sortDir, handleSort } = useSortState('_createdAt', 'desc');
 
   /* ── Fetch ──────────────────────────────────────────────────────── */
-  useEffect(() => { fetchListings(); }, []);
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   const fetchListings = async () => {
     try {
@@ -75,17 +77,17 @@ const ListingsPage = () => {
 
   const mapProduct = (p) => {
     const categoryName =
-      typeof p.categoryId === 'object' ? p.categoryId?.name : p.category?.name ?? 'Uncategorized';
+      typeof p.categoryId === 'object' ? p.categoryId?.name : (p.category?.name ?? 'Uncategorized');
     return {
-      id:        p._id,
-      image:     p.images?.[0] || p.tiers?.[0]?.images?.[0] || null,
-      name:      p.name,
-      category:  categoryName || 'Uncategorized',
-      price:     p.originalPrice,
-      status:    p.status,
-      sku:       p.models?.[0]?.sku || '—',
-      brand:     p.brand || '—',
-      stock:     p.models?.reduce((s, m) => s + (m.stock || 0), 0) ?? 0,
+      id: p._id,
+      image: p.images?.[0] || p.tiers?.[0]?.images?.[0] || null,
+      name: p.name,
+      category: categoryName || 'Uncategorized',
+      price: p.originalPrice,
+      status: p.status,
+      sku: p.models?.[0]?.sku || '—',
+      brand: p.brand || '—',
+      stock: p.models?.reduce((s, m) => s + (m.stock || 0), 0) ?? 0,
       _createdAt: p.createdAt,
       _raw: p,
     };
@@ -95,7 +97,9 @@ const ListingsPage = () => {
   const filtered = useMemo(() => {
     let list = [...allListings];
 
-    if (statusTab !== 'all') list = list.filter((p) => p.status === statusTab);
+    if (statusTab !== 'all') {
+      list = list.filter((p) => p.status === statusTab);
+    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -111,19 +115,34 @@ const ListingsPage = () => {
   }, [allListings, statusTab, search, sortKey, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginated = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
-  const handleStatusTab = (val) => { setStatusTab(val); setCurrentPage(1); };
-  const handleSearch    = (e)   => { setSearch(e.target.value); setCurrentPage(1); };
+  const handleStatusTab = (val) => {
+    setStatusTab(val);
+    setCurrentPage(1);
+  };
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+    setCurrentPage(1);
+  };
 
   /* ── Actions ───────────────────────────────────────────────────── */
-  const handleAddItem = () => { setEditingProduct(null); setShowAddModal(true); };
+  const handleAddItem = () => {
+    setEditingProduct(null);
+    setShowAddModal(true);
+  };
 
   const handleEditItem = async (product) => {
     try {
       setLoading(true);
       const response = await productService.getById(product.id);
-      if (response.success) { setEditingProduct(response.data); setShowAddModal(true); }
+      if (response.success) {
+        setEditingProduct(response.data);
+        setShowAddModal(true);
+      }
     } catch (error) {
       console.error('Error fetching product:', error);
     } finally {
@@ -138,7 +157,7 @@ const ListingsPage = () => {
       const response = await productService.toggleStatus(product.id, newStatus);
       if (response.success) {
         setAllListings((prev) =>
-          prev.map((p) => p.id === product.id ? { ...p, status: newStatus } : p)
+          prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
         );
       }
     } catch (err) {
@@ -151,7 +170,6 @@ const ListingsPage = () => {
   /* ── Render ─────────────────────────────────────────────────────── */
   return (
     <div className={styles.listingsPage}>
-
       {/* ── Page Header ─────────────────────────────────────── */}
       <div className={styles.listingsHeader}>
         <div className={styles.headerContent}>
@@ -161,7 +179,12 @@ const ListingsPage = () => {
           </div>
           <button className={styles.addButton} onClick={handleAddItem}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path
+                d="M7 1v12M1 7h12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
             Add Product
           </button>
@@ -170,10 +193,22 @@ const ListingsPage = () => {
         {/* ── Stats row ─────────────────────────────────────── */}
         <div className={styles.statsRow}>
           {[
-            { label: 'Total',    val: allListings.length },
-            { label: 'Active',   val: allListings.filter((p) => p.status === 'active').length,   cls: styles.statActive },
-            { label: 'Draft',    val: allListings.filter((p) => p.status === 'draft').length,    cls: styles.statDraft },
-            { label: 'Hidden',   val: allListings.filter((p) => p.status === 'inactive').length, cls: styles.statHidden },
+            { label: 'Total', val: allListings.length },
+            {
+              label: 'Active',
+              val: allListings.filter((p) => p.status === 'active').length,
+              cls: styles.statActive,
+            },
+            {
+              label: 'Draft',
+              val: allListings.filter((p) => p.status === 'draft').length,
+              cls: styles.statDraft,
+            },
+            {
+              label: 'Hidden',
+              val: allListings.filter((p) => p.status === 'inactive').length,
+              cls: styles.statHidden,
+            },
           ].map(({ label, val, cls }) => (
             <div key={label} className={styles.statPill}>
               <span className={`${styles.statNum} ${cls || ''}`}>{loading ? '—' : val}</span>
@@ -206,9 +241,15 @@ const ListingsPage = () => {
         <div className={styles.toolbarRight}>
           {/* Search */}
           <div className={styles.searchBox}>
-            <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 20 20" fill="none">
-              <circle cx="8.5" cy="8.5" r="6.5" stroke="currentColor" strokeWidth="1.8"/>
-              <path d="M14 14l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            <svg
+              className={styles.searchIcon}
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="none"
+            >
+              <circle cx="8.5" cy="8.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M14 14l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             <input
               type="text"
@@ -218,7 +259,6 @@ const ListingsPage = () => {
               onChange={handleSearch}
             />
           </div>
-
         </div>
       </div>
 
@@ -231,18 +271,36 @@ const ListingsPage = () => {
         ) : error ? (
           <div className={styles.errorState}>
             <p>{error}</p>
-            <button className={styles.addButton} onClick={fetchListings}>Retry</button>
+            <button className={styles.addButton} onClick={fetchListings}>
+              Retry
+            </button>
           </div>
         ) : paginated.length === 0 ? (
           <div className={styles.emptyState}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.3">
-              <rect x="2" y="7" width="20" height="14" rx="2"/>
-              <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
-              <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#d1d5db"
+              strokeWidth="1.3"
+            >
+              <rect x="2" y="7" width="20" height="14" rx="2" />
+              <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
+              <line x1="12" y1="12" x2="12" y2="16" />
+              <line x1="10" y1="14" x2="14" y2="14" />
             </svg>
-            <p>{search ? `No results for "${search}"` : statusTab === 'inactive' ? 'No hidden products.' : 'No products found. Add your first product!'}</p>
+            <p>
+              {search
+                ? `No results for "${search}"`
+                : statusTab === 'inactive'
+                  ? 'No hidden products.'
+                  : 'No products found. Add your first product!'}
+            </p>
             {!search && statusTab !== 'inactive' && (
-              <button className={styles.addButton} onClick={handleAddItem}>Add Product</button>
+              <button className={styles.addButton} onClick={handleAddItem}>
+                Add Product
+              </button>
             )}
           </div>
         ) : (
@@ -251,14 +309,79 @@ const ListingsPage = () => {
               <table className={styles.table}>
                 <thead>
                   <tr className={styles.thead}>
-                    <th className={styles.th} style={{ width: 40 }}>#</th>
+                    <th className={styles.th} style={{ width: 40 }}>
+                      #
+                    </th>
                     <th className={styles.th} style={{ width: 52 }}></th>
-                    <SortableHeader label="Product"  colKey="name"        sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} />
-                    <SortableHeader label="Category" colKey="category"    sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} />
-                    <SortableHeader label="SKU"      colKey="sku"         sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} />
-                    <SortableHeader label="Price"    colKey="price"       sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} align="right" />
-                    <SortableHeader label="Stock"    colKey="stock"       sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} align="center" />
-                    <SortableHeader label="Status"   colKey="status"      sortKey={sortKey} sortDir={sortDir} onSort={(k) => { handleSort(k); setCurrentPage(1); }} className={styles.th} align="center" />
+                    <SortableHeader
+                      label="Product"
+                      colKey="name"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(k) => {
+                        handleSort(k);
+                        setCurrentPage(1);
+                      }}
+                      className={styles.th}
+                    />
+                    <SortableHeader
+                      label="Category"
+                      colKey="category"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(k) => {
+                        handleSort(k);
+                        setCurrentPage(1);
+                      }}
+                      className={styles.th}
+                    />
+                    <SortableHeader
+                      label="SKU"
+                      colKey="sku"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(k) => {
+                        handleSort(k);
+                        setCurrentPage(1);
+                      }}
+                      className={styles.th}
+                    />
+                    <SortableHeader
+                      label="Price"
+                      colKey="price"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(k) => {
+                        handleSort(k);
+                        setCurrentPage(1);
+                      }}
+                      className={styles.th}
+                      align="right"
+                    />
+                    <SortableHeader
+                      label="Stock"
+                      colKey="stock"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(k) => {
+                        handleSort(k);
+                        setCurrentPage(1);
+                      }}
+                      className={styles.th}
+                      align="center"
+                    />
+                    <SortableHeader
+                      label="Status"
+                      colKey="status"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(k) => {
+                        handleSort(k);
+                        setCurrentPage(1);
+                      }}
+                      className={styles.th}
+                      align="center"
+                    />
                     <th className={styles.th} style={{ width: 52 }}></th>
                   </tr>
                 </thead>
@@ -271,19 +394,34 @@ const ListingsPage = () => {
                     const isHidden = product.status === 'inactive';
                     const isToggling = actionLoading === product.id;
                     return (
-                      <tr key={product.id} className={`${styles.tr} ${isHidden ? styles.rowHidden : ''}`}>
+                      <tr
+                        key={product.id}
+                        className={`${styles.tr} ${isHidden ? styles.rowHidden : ''}`}
+                      >
                         <td className={styles.td}>
                           <span className={styles.rowNum}>{rowNum}</span>
                         </td>
                         <td className={styles.td}>
                           <div className={styles.thumbWrap}>
                             {product.image ? (
-                              <img src={product.image} alt={product.name} className={styles.thumb} />
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className={styles.thumb}
+                              />
                             ) : (
                               <div className={styles.thumbPlaceholder}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
-                                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                  <circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                                <svg
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#d1d5db"
+                                  strokeWidth="1.5"
+                                >
+                                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <path d="M21 15l-5-5L5 21" />
                                 </svg>
                               </div>
                             )}
@@ -305,11 +443,15 @@ const ListingsPage = () => {
                           <span className={styles.price}>{formatCurrency(product.price)}</span>
                         </td>
                         <td className={styles.td} style={{ textAlign: 'center' }}>
-                          <span className={
-                            outOfStock ? styles.stockOut
-                            : lowStock ? styles.stockLow
-                            : styles.stockOk
-                          }>
+                          <span
+                            className={
+                              outOfStock
+                                ? styles.stockOut
+                                : lowStock
+                                  ? styles.stockLow
+                                  : styles.stockOk
+                            }
+                          >
                             {outOfStock ? 'Out' : `${product.stock}`}
                           </span>
                         </td>
@@ -320,31 +462,47 @@ const ListingsPage = () => {
                           <Dropdown align="end">
                             <Dropdown.Toggle as="button" className={styles.menuBtn} bsPrefix="x">
                               {isToggling ? (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}>
-                                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  className={styles.spinIcon}
+                                >
+                                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                                 </svg>
                               ) : (
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                  <circle cx="8" cy="3"  r="1.3" fill="currentColor"/>
-                                  <circle cx="8" cy="8"  r="1.3" fill="currentColor"/>
-                                  <circle cx="8" cy="13" r="1.3" fill="currentColor"/>
+                                  <circle cx="8" cy="3" r="1.3" fill="currentColor" />
+                                  <circle cx="8" cy="8" r="1.3" fill="currentColor" />
+                                  <circle cx="8" cy="13" r="1.3" fill="currentColor" />
                                 </svg>
                               )}
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
                               <Dropdown.Item onClick={() => handleEditItem(product)}>
-                                <i className="bi bi-pencil me-2" />Edit
+                                <i className="bi bi-pencil me-2" />
+                                Edit
                               </Dropdown.Item>
                               <Dropdown.Item onClick={() => handleToggleVisibility(product)}>
                                 {isHidden ? (
-                                  <><i className="bi bi-eye me-2" />Unhide</>
+                                  <>
+                                    <i className="bi bi-eye me-2" />
+                                    Unhide
+                                  </>
                                 ) : (
-                                  <><i className="bi bi-eye-slash me-2" />Hide</>
+                                  <>
+                                    <i className="bi bi-eye-slash me-2" />
+                                    Hide
+                                  </>
                                 )}
                               </Dropdown.Item>
                               <Dropdown.Divider />
                               <Dropdown.Item className="text-danger">
-                                <i className="bi bi-trash me-2" />Delete
+                                <i className="bi bi-trash me-2" />
+                                Delete
                               </Dropdown.Item>
                             </Dropdown.Menu>
                           </Dropdown>
@@ -359,12 +517,18 @@ const ListingsPage = () => {
             {/* Footer */}
             <div className={styles.tableFooter}>
               <span className={styles.footerInfo}>
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} products
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+                {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}{' '}
+                products
               </span>
               <ListingsPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                onPageChange={(p) => { if (p >= 1 && p <= totalPages) setCurrentPage(p); }}
+                onPageChange={(p) => {
+                  if (p >= 1 && p <= totalPages) {
+                    setCurrentPage(p);
+                  }
+                }}
               />
             </div>
           </>
@@ -373,7 +537,10 @@ const ListingsPage = () => {
 
       <ProductDrawer
         show={showAddModal}
-        onHide={() => { setShowAddModal(false); setEditingProduct(null); }}
+        onHide={() => {
+          setShowAddModal(false);
+          setEditingProduct(null);
+        }}
         onSuccess={fetchListings}
         editingProduct={editingProduct}
       />

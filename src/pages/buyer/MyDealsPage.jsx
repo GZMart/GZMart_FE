@@ -48,7 +48,9 @@ const MyDealsPage = () => {
 
   // ── format countdown (reuse in DealCard if needed) ──────────────────────────
   const formatTimeLeft = (time) => {
-    if (!time) return '—';
+    if (!time) {
+      return '—';
+    }
     const pad = (n) => String(n).padStart(2, '0');
     return `${pad(time.hours)}h : ${pad(time.minutes)}m : ${pad(time.seconds)}s`;
   };
@@ -80,7 +82,9 @@ const MyDealsPage = () => {
                 className={styles.backButton}
               />
               <div className={styles.headerTitleSection}>
-                <Title level={1} className={styles.pageTitle}>My Deals</Title>
+                <Title level={1} className={styles.pageTitle}>
+                  My Deals
+                </Title>
               </div>
             </div>
           </div>
@@ -109,17 +113,15 @@ const MyDealsPage = () => {
               className={styles.backButton}
             />
             <div className={styles.headerTitleSection}>
-              <Title level={1} className={styles.pageTitle}>My Deals</Title>
+              <Title level={1} className={styles.pageTitle}>
+                My Deals
+              </Title>
               <Text className={styles.pageSubtitle}>Track your pending and approved deals</Text>
             </div>
           </div>
 
           <div className={styles.headerRight}>
-            <Button
-              type="primary"
-              icon={<ShoppingCartOutlined />}
-              className={styles.pastDealsBtn}
-            >
+            <Button type="primary" icon={<ShoppingCartOutlined />} className={styles.pastDealsBtn}>
               Past Deals
             </Button>
             <Button type="primary" className={styles.walletBtn}>
@@ -138,9 +140,7 @@ const MyDealsPage = () => {
                 <span className={styles.bellIcon}>🔔</span>
                 <div>
                   <h2>Pending Deals</h2>
-                  <p className={styles.sectionDescription}>
-                    Please choose a payment method
-                  </p>
+                  <p className={styles.sectionDescription}>Please choose a payment method</p>
                 </div>
               </div>
             </div>
@@ -151,10 +151,7 @@ const MyDealsPage = () => {
                   <DealCard key={deal._id ?? deal.id} deal={deal} type="pending" />
                 ))
               ) : (
-                <Empty
-                  description="No pending deals"
-                  style={{ padding: '32px 0' }}
-                />
+                <Empty description="No pending deals" style={{ padding: '32px 0' }} />
               )}
             </div>
           </div>
@@ -179,10 +176,7 @@ const MyDealsPage = () => {
                   <DealCard key={deal._id ?? deal.id} deal={deal} type="approved" />
                 ))
               ) : (
-                <Empty
-                  description="No approved deals"
-                  style={{ padding: '32px 0' }}
-                />
+                <Empty description="No approved deals" style={{ padding: '32px 0' }} />
               )}
             </div>
           </div>

@@ -109,7 +109,7 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
         type: requestType,
         reason: values.reason,
         description: values.description,
-        images: images,
+        images,
         items: order.items.map((item) => ({
           orderItemId: item._id,
           quantity: item.quantity, // Return all items by default

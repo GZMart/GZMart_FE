@@ -48,7 +48,9 @@ const AnimatedTruck = ({ route, duration, onComplete }) => {
   const hasCompletedRef = useRef(false); // Track if onComplete has been called
 
   useEffect(() => {
-    if (!route || route.length === 0) return;
+    if (!route || route.length === 0) {
+      return;
+    }
 
     // Reset completion flag when starting new animation
     hasCompletedRef.current = false;

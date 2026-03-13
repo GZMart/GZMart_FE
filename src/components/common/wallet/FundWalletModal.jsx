@@ -136,4 +136,3 @@ FundWalletModal.propTypes = {
 };
 
 export default FundWalletModal;
-

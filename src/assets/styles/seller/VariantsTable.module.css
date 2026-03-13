@@ -49,8 +49,14 @@
   animation: slideDown 0.15s ease;
 }
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .bulkLabel {
   font-size: 11.5px;
@@ -86,8 +92,13 @@
   white-space: nowrap;
   transition: background 0.15s;
 }
-.bulkApplyBtn:hover { background: #c2410c; }
-.bulkApplyBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.bulkApplyBtn:hover {
+  background: #c2410c;
+}
+.bulkApplyBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 /* ── Scrollable grid container ──────────────────────────────────── */
 .gridContainer {
@@ -103,9 +114,17 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
-.gridScroll::-webkit-scrollbar { height: 5px; width: 5px; }
-.gridScroll::-webkit-scrollbar-track { background: transparent; }
-.gridScroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.gridScroll::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+.gridScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.gridScroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
 
 /* ── Grid table ─────────────────────────────────────────────────── */
 .grid {
@@ -134,14 +153,31 @@
   white-space: nowrap;
   border-right: 1px solid #f1f5f9;
 }
-.grid th:last-child { border-right: none; }
-.colCheck { width: 36px; }
-.colImg   { width: 64px; }
-.colVar   { width: auto; }
-.colPrice { width: 17%; }
-.colCost  { width: 16%; }
-.colStock { width: 78px; text-align: center !important; }
-.colSku   { width: 18%; }
+.grid th:last-child {
+  border-right: none;
+}
+.colCheck {
+  width: 36px;
+}
+.colImg {
+  width: 64px;
+}
+.colVar {
+  width: auto;
+}
+.colPrice {
+  width: 17%;
+}
+.colCost {
+  width: 16%;
+}
+.colStock {
+  width: 78px;
+  text-align: center !important;
+}
+.colSku {
+  width: 18%;
+}
 
 /* Prevent cell overflow with table-layout: fixed */
 .grid td,
@@ -162,11 +198,21 @@
   border-bottom: 1px solid #f1f5f9;
   transition: background 0.1s;
 }
-.grid tbody tr:nth-child(even) { background: #f8fafc; }
-.grid tbody tr:nth-child(even):hover { background: #f1f5f9; }
-.grid tbody tr:last-child { border-bottom: none; }
-.grid tbody tr:hover { background: #f1f5f9; }
-.rowSelected { background: #eff6ff !important; }
+.grid tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.grid tbody tr:nth-child(even):hover {
+  background: #f1f5f9;
+}
+.grid tbody tr:last-child {
+  border-bottom: none;
+}
+.grid tbody tr:hover {
+  background: #f1f5f9;
+}
+.rowSelected {
+  background: #eff6ff !important;
+}
 
 .grid td {
   padding: 6px 10px;
@@ -174,10 +220,14 @@
   border-right: 1px solid #f1f5f9;
   color: #334155;
 }
-.grid td:last-child { border-right: none; }
+.grid td:last-child {
+  border-right: none;
+}
 
 /* ── Checkbox ───────────────────────────────────────────────────── */
-.checkCell { text-align: center; }
+.checkCell {
+  text-align: center;
+}
 .checkbox {
   width: 15px;
   height: 15px;
@@ -200,7 +250,9 @@
 }
 
 /* ── Image cell ─────────────────────────────────────────────────── */
-.imgCell { text-align: center; }
+.imgCell {
+  text-align: center;
+}
 .imgThumb {
   position: relative;
   display: inline-block;
@@ -232,7 +284,9 @@
   padding: 0;
   transition: background 0.1s;
 }
-.imgRemoveBtn:hover { background: #dc2626; }
+.imgRemoveBtn:hover {
+  background: #dc2626;
+}
 
 .imgUploadZone {
   width: 48px;
@@ -243,15 +297,22 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   background: #fafbfc;
 }
 .imgUploadZone:hover:not(.imgUploadDisabled) {
   border-color: #1a56db;
   background: #eff6ff;
 }
-.imgUploadDisabled { opacity: 0.5; cursor: not-allowed; }
-.fileHidden { display: none; }
+.imgUploadDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.fileHidden {
+  display: none;
+}
 
 /* ── Compact input ──────────────────────────────────────────────── */
 .compactInput {
@@ -288,9 +349,21 @@
   font-weight: 700;
   padding: 0 7px;
 }
-.stockOk      { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
-.stockLow     { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.stockEmpty   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.stockOk {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+.stockLow {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.stockEmpty {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
 
 /* ── Tip footer ─────────────────────────────────────────────────── */
 .tipRow {
@@ -306,7 +379,10 @@
   color: #64748b;
   line-height: 1.5;
 }
-.tipIcon { flex-shrink: 0; margin-top: 1px; }
+.tipIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
 
 /* ── Empty / Over-limit states ──────────────────────────────────── */
 .emptyState {

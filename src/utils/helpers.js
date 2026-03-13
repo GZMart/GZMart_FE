@@ -6,9 +6,7 @@
  * Generate a unique ID
  * @returns {string} Unique ID
  */
-export const generateId = () => {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-};
+export const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 /**
  * Debounce function
@@ -142,18 +140,14 @@ export const deepMerge = (target, source) => {
  * @param {*} item - Item to check
  * @returns {boolean} True if object
  */
-export const isObject = (item) => {
-  return item && typeof item === 'object' && !Array.isArray(item);
-};
+export const isObject = (item) => item && typeof item === 'object' && !Array.isArray(item);
 
 /**
  * Sleep/delay function
  * @param {number} ms - Milliseconds to sleep
  * @returns {Promise} Promise that resolves after delay
  */
-export const sleep = (ms) => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-};
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Retry a function multiple times
@@ -180,8 +174,8 @@ export const retry = async (fn, retries = 3, delay = 1000) => {
  * @param {string} key - Key to group by
  * @returns {object} Grouped object
  */
-export const groupBy = (array, key) => {
-  return array.reduce((result, item) => {
+export const groupBy = (array, key) =>
+  array.reduce((result, item) => {
     const group = item[key];
     if (!result[group]) {
       result[group] = [];
@@ -189,7 +183,6 @@ export const groupBy = (array, key) => {
     result[group].push(item);
     return result;
   }, {});
-};
 
 /**
  * Remove duplicates from array
@@ -220,8 +213,8 @@ export const removeDuplicates = (array, key = null) => {
  * @param {string} order - 'asc' or 'desc'
  * @returns {Array} Sorted array
  */
-export const sortBy = (array, key, order = 'asc') => {
-  return [...array].sort((a, b) => {
+export const sortBy = (array, key, order = 'asc') =>
+  [...array].sort((a, b) => {
     if (a[key] < b[key]) {
       return order === 'asc' ? -1 : 1;
     }
@@ -230,7 +223,6 @@ export const sortBy = (array, key, order = 'asc') => {
     }
     return 0;
   });
-};
 
 /**
  * Omit keys from object
@@ -250,14 +242,13 @@ export const omit = (obj, keys) => {
  * @param {Array<string>} keys - Keys to pick
  * @returns {object} Object with only picked keys
  */
-export const pick = (obj, keys) => {
-  return keys.reduce((result, key) => {
+export const pick = (obj, keys) =>
+  keys.reduce((result, key) => {
     if (obj.hasOwnProperty(key)) {
       result[key] = obj[key];
     }
     return result;
   }, {});
-};
 
 export default {
   generateId,

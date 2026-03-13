@@ -59,13 +59,11 @@ export const formatCurrency = (amount, currency = 'VND') => {
   }
 
   if (currency === 'VND') {
-    return (
-      `${new Intl.NumberFormat('vi-VN', {
-        style: 'decimal',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(amount)  }₫`
-    );
+    return `${new Intl.NumberFormat('vi-VN', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)}₫`;
   }
 
   return new Intl.NumberFormat('en-US', {

@@ -106,7 +106,9 @@ const OrderTracking = ({ order }) => {
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return '';
+    if (!date) {
+      return '';
+    }
     return new Date(date).toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',

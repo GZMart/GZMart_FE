@@ -99,7 +99,9 @@
   cursor: pointer;
   color: #9ca3af;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   padding: 0;
 }
 .closeBtn:hover {

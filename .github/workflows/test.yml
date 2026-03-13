@@ -1,0 +1,55 @@
+name: Test GZMart Code
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test_build_and_format:
+    name: Test, Build and Format Check
+    runs-on: ubuntu-latest
+    steps:
+      # Bước 1: Lấy mã nguồn
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Bước 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Bước 3: Cài đặt dependencies
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./GZMart_FE
+
+      # Bước 4: Kiểm tra định dạng code bằng Prettier
+      - name: Check code formatting
+        run: npm run format:check
+        working-directory: ./GZMart_FE
+        continue-on-error: true
+
+      # Bước 5: Chạy linter
+      - name: Run Lint
+        run: npm run lint
+        working-directory: ./GZMart_FE
+        continue-on-error: false
+
+      # Bước 5.5: Chạy tests
+      - name: Run Tests
+        run: npm test -- --watchAll=false
+        working-directory: ./GZMart_FE
+        continue-on-error: false
+
+      # Bước 6: Build dự án
+      - name: Build Project
+        run: CI=false npm run build
+        working-directory: ./GZMart_FE
+        continue-on-error: false

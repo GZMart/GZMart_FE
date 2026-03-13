@@ -8,21 +8,31 @@ import { PUBLIC_ROUTES } from '../../constants/routes';
 
 // Helper to format price
 const formatPrice = (price) => {
-  if (!price && price !== 0) return '0';
+  if (!price && price !== 0) {
+    return '0';
+  }
   return new Intl.NumberFormat('vi-VN').format(price);
 };
 
 // Helper to calculate discount percentage
 const calculateDiscount = (originalPrice, salePrice) => {
-  if (!originalPrice || !salePrice || originalPrice <= salePrice) return 0;
+  if (!originalPrice || !salePrice || originalPrice <= salePrice) {
+    return 0;
+  }
   return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
 };
 
 // Helper to get product image
 const getProductImage = (product) => {
-  if (product?.images?.length > 0) return product.images[0];
-  if (product?.image) return product.image;
-  if (product?.models?.length > 0 && product.models[0]?.image) return product.models[0].image;
+  if (product?.images?.length > 0) {
+    return product.images[0];
+  }
+  if (product?.image) {
+    return product.image;
+  }
+  if (product?.models?.length > 0 && product.models[0]?.image) {
+    return product.models[0].image;
+  }
   return 'https://via.placeholder.com/400x400?text=No+Image';
 };
 

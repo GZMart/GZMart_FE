@@ -120,11 +120,15 @@ const ProductDetailsPage = () => {
         setError(null);
 
         const fetchFlashSale = async (productId) => {
-          if (!productId) return null;
+          if (!productId) {
+            return null;
+          }
           try {
             // First try to fetch from getActive
             const response = await flashsaleService.getActive();
-            const allFlashSales = Array.isArray(response) ? response : response.data?.data || response.data || [];
+            const allFlashSales = Array.isArray(response)
+              ? response
+              : response.data?.data || response.data || [];
 
             // Find flash sale for this product
             const flashSale = allFlashSales.find((fs) => {
@@ -144,14 +148,17 @@ const ProductDetailsPage = () => {
           }
         };
 
-        const [productResponse, relatedResponse, frequentlyBoughtResponse, promotionsResponse] = await Promise.all([
-          productService.getById(id),
-          productService.getRelatedProducts(id, 8).catch(() => ({ data: [] })),
-          productService.getFeaturedProducts(4).catch(() => ({ data: [] })),
-          promotionBuyerService.getProductPromotions(id).catch(() => ({ data: null })),
-        ]);
+        const [productResponse, relatedResponse, frequentlyBoughtResponse, promotionsResponse] =
+          await Promise.all([
+            productService.getById(id),
+            productService.getRelatedProducts(id, 8).catch(() => ({ data: [] })),
+            productService.getFeaturedProducts(4).catch(() => ({ data: [] })),
+            promotionBuyerService.getProductPromotions(id).catch(() => ({ data: null })),
+          ]);
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         const productData = productResponse.data?.data || productResponse.data || productResponse;
 
@@ -204,7 +211,9 @@ const ProductDetailsPage = () => {
         // Set initial active model based on initial selection
         if (initialSelection.length > 0) {
           const model = findModel(transformed, initialSelection);
-          if (model) setActiveModel(model);
+          if (model) {
+            setActiveModel(model);
+          }
         } else if (productData.models?.length === 1) {
           // Case: No tiers, just one model (simple product)
           setActiveModel(productData.models[0]);
@@ -214,14 +223,14 @@ const ProductDetailsPage = () => {
         const processRelated = (res) => {
           const list = Array.isArray(res) ? res : res.data || [];
           return list.map((p) => {
-            const minModelPrice = p.models?.length > 0
-              ? Math.min(...p.models.map(m => m.price))
-              : p.originalPrice;
+            const minModelPrice =
+              p.models?.length > 0 ? Math.min(...p.models.map((m) => m.price)) : p.originalPrice;
             return {
               ...p,
               id: p._id,
               image:
-                p.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+                p.images?.[0] ||
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               price: minModelPrice ?? p.originalPrice ?? 0,
             };
           });
@@ -241,11 +250,15 @@ const ProductDetailsPage = () => {
           setError(err.response?.data?.message || 'Failed to load product');
         }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    if (id) fetchAllData();
+    if (id) {
+      fetchAllData();
+    }
 
     return () => {
       isMounted = false;
@@ -254,7 +267,9 @@ const ProductDetailsPage = () => {
 
   // Update countdown timer
   useEffect(() => {
-    if (!flashSale || !flashSale.endAt) return;
+    if (!flashSale || !flashSale.endAt) {
+      return;
+    }
 
     const updateCountdown = () => {
       const now = new Date();
@@ -299,7 +314,9 @@ const ProductDetailsPage = () => {
 
   // Check if an option should be disabled based on *other* current selections
   const isOptionDisabled = (tierLevel, optionIndex) => {
-    if (!product || !product.models) return false;
+    if (!product || !product.models) {
+      return false;
+    }
 
     // Construct target criteria to check availability
     const targetIndices = [...selectedTierIndex];
@@ -308,12 +325,16 @@ const ProductDetailsPage = () => {
     const matchingModel = findModel(product, targetIndices);
 
     // Disable if no matching model or stock is 0
-    if (!matchingModel) return true;
+    if (!matchingModel) {
+      return true;
+    }
     return matchingModel.stock <= 0;
   };
 
   const handleTierChange = (tierLevel, optionIndex) => {
-    if (isOptionDisabled(tierLevel, optionIndex)) return;
+    if (isOptionDisabled(tierLevel, optionIndex)) {
+      return;
+    }
 
     const newIndex = [...selectedTierIndex];
     newIndex[tierLevel] = optionIndex;
@@ -335,7 +356,9 @@ const ProductDetailsPage = () => {
   };
 
   const currentPrice = useMemo(() => {
-    if (activeModel) return activeModel.price;
+    if (activeModel) {
+      return activeModel.price;
+    }
     if (product) {
       const range = getPriceRange(product);
       return range.min; // Show min price by default
@@ -344,7 +367,9 @@ const ProductDetailsPage = () => {
   }, [activeModel, product]);
 
   const currentStock = useMemo(() => {
-    if (activeModel) return activeModel.stock;
+    if (activeModel) {
+      return activeModel.stock;
+    }
     return product?.stock || 0;
   }, [activeModel, product]);
 
@@ -354,7 +379,9 @@ const ProductDetailsPage = () => {
       return;
     }
 
-    if (!product) return;
+    if (!product) {
+      return;
+    }
 
     // Validate Selection
     if (product.tier_variations?.length > 0) {
@@ -437,9 +464,11 @@ const ProductDetailsPage = () => {
   };
 
   const formatSavedCount = (count) => {
-    if (!count) return 0;
+    if (!count) {
+      return 0;
+    }
     if (count >= 1000) {
-      return (count / 1000).toFixed(1).replace('.0', '') + 'k';
+      return `${(count / 1000).toFixed(1).replace('.0', '')}k`;
     }
     return count;
   };
@@ -600,7 +629,7 @@ const ProductDetailsPage = () => {
           </div>
         </div>
 
-           {/* Info */}
+        {/* Info */}
         <div className={styles.infoSection}>
           {/* 1. Product Title */}
           <h1 className={styles.productTitle}>{product.name}</h1>
@@ -668,7 +697,8 @@ const ProductDetailsPage = () => {
                     -{Math.round((1 - flashSale.salePrice / product.originalPrice) * 100)}%
                   </span>
                 </>
-              ) : promotions?.shopProgram && promotions.shopProgram.salePrice < promotions.shopProgram.originalPrice ? (
+              ) : promotions?.shopProgram &&
+                promotions.shopProgram.salePrice < promotions.shopProgram.originalPrice ? (
                 <>
                   <span className={styles.currentPrice}>
                     {formatCurrency(promotions.shopProgram.salePrice)}
@@ -676,9 +706,7 @@ const ProductDetailsPage = () => {
                   <span className={styles.originalPrice}>
                     {formatCurrency(promotions.shopProgram.originalPrice)}
                   </span>
-                  <span className={styles.discount}>
-                    -{promotions.shopProgram.discount}%
-                  </span>
+                  <span className={styles.discount}>-{promotions.shopProgram.discount}%</span>
                 </>
               ) : (
                 <>
@@ -874,12 +902,16 @@ const ProductDetailsPage = () => {
               image: product.images?.[0] || '',
               price: currentPrice,
               originalPrice: product.originalPrice || null,
-              variant: selectedTierIndex.length > 0
-                ? product.tier_variations?.map((t, i) => t.options[selectedTierIndex[i]]).filter(Boolean).join(' - ')
-                : null,
+              variant:
+                selectedTierIndex.length > 0
+                  ? product.tier_variations
+                      ?.map((t, i) => t.options[selectedTierIndex[i]])
+                      .filter(Boolean)
+                      .join(' - ')
+                  : null,
               slug: product.slug || product._id,
               rating: product.rating || 0,
-              hasVoucher: product.shopVouchers && product.shopVouchers.length > 0
+              hasVoucher: product.shopVouchers && product.shopVouchers.length > 0,
             }}
           />
         </div>

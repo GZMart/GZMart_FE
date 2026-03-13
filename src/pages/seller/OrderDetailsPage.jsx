@@ -136,12 +136,20 @@ const OrderDetailsPage = () => {
       processing: { bg: styles.statusProcessing, label: 'Processing', icon: Clock },
       shipped: { bg: styles.statusShipped, label: 'Shipped', icon: CheckCircle },
       delivered: { bg: styles.statusDelivered, label: 'Delivered', icon: CheckCircle },
-      delivered_pending_confirmation: { bg: styles.statusPendingConfirmation, label: 'Pending Confirmation', icon: AlertCircle },
+      delivered_pending_confirmation: {
+        bg: styles.statusPendingConfirmation,
+        label: 'Pending Confirmation',
+        icon: AlertCircle,
+      },
       completed: { bg: styles.statusCompleted, label: 'Completed', icon: CheckCircle },
       cancelled: { bg: styles.statusCancelled, label: 'Cancelled', icon: AlertCircle },
       refunded: { bg: styles.statusRefunded, label: 'Refunded', icon: AlertCircle },
       refund_pending: { bg: styles.statusPending, label: 'Refund Pending', icon: Clock },
-      under_investigation: { bg: styles.statusUnderInvestigation, label: 'Under Investigation', icon: AlertCircle },
+      under_investigation: {
+        bg: styles.statusUnderInvestigation,
+        label: 'Under Investigation',
+        icon: AlertCircle,
+      },
     };
     return statusInfo[status] || statusInfo.pending;
   };
@@ -160,15 +168,16 @@ const OrderDetailsPage = () => {
   };
 
   // Prepare items table data
-  const itemsTableData = order?.items?.map((item, idx) => ({
-    key: idx,
-    productName: item.productId?.name || 'Unknown Product',
-    sku: item.sku || 'N/A',
-    quantity: item.quantity,
-    price: item.price,
-    subtotal: item.subtotal,
-    tierSelections: item.tierSelections,
-  })) || [];
+  const itemsTableData =
+    order?.items?.map((item, idx) => ({
+      key: idx,
+      productName: item.productId?.name || 'Unknown Product',
+      sku: item.sku || 'N/A',
+      quantity: item.quantity,
+      price: item.price,
+      subtotal: item.subtotal,
+      tierSelections: item.tierSelections,
+    })) || [];
 
   // Show loading state
   if (loading) {
@@ -262,7 +271,9 @@ const OrderDetailsPage = () => {
             <div className={styles.infoGrid}>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Customer</span>
-                <span className={styles.infoValue}>{order.userId?.fullName || order.userId?.name || 'Unknown'}</span>
+                <span className={styles.infoValue}>
+                  {order.userId?.fullName || order.userId?.name || 'Unknown'}
+                </span>
               </div>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Email</span>
@@ -273,11 +284,15 @@ const OrderDetailsPage = () => {
             <div className={styles.infoGrid}>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Order Date</span>
-                <span className={styles.infoValue}>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
+                <span className={styles.infoValue}>
+                  {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                </span>
               </div>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Order Time</span>
-                <span className={styles.infoValue}>{new Date(order.createdAt).toLocaleTimeString('vi-VN')}</span>
+                <span className={styles.infoValue}>
+                  {new Date(order.createdAt).toLocaleTimeString('vi-VN')}
+                </span>
               </div>
             </div>
 
@@ -290,14 +305,18 @@ const OrderDetailsPage = () => {
               </div>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Shipping Method</span>
-                <span className={styles.infoValue}>{order.shippingMethod?.toUpperCase() || 'N/A'}</span>
+                <span className={styles.infoValue}>
+                  {order.shippingMethod?.toUpperCase() || 'N/A'}
+                </span>
               </div>
             </div>
 
             <div className={styles.infoGrid}>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Payment Method</span>
-                <span className={styles.infoValue}>{order.paymentMethod?.toUpperCase().replace(/_/g, ' ') || 'N/A'}</span>
+                <span className={styles.infoValue}>
+                  {order.paymentMethod?.toUpperCase().replace(/_/g, ' ') || 'N/A'}
+                </span>
               </div>
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Notes</span>
@@ -364,7 +383,9 @@ const OrderDetailsPage = () => {
         <div>
           {/* Order Total Card */}
           <div className={styles.totalCard}>
-            <h3 className={styles.cardTitle} style={{ marginBottom: '16px' }}>Order Total</h3>
+            <h3 className={styles.cardTitle} style={{ marginBottom: '16px' }}>
+              Order Total
+            </h3>
 
             <div className={styles.totalRow}>
               <span className={styles.totalLabel}>Subtotal:</span>
@@ -386,7 +407,9 @@ const OrderDetailsPage = () => {
             {order.discount > 0 && (
               <div className={styles.totalRow}>
                 <span className={styles.totalLabel}>Discount:</span>
-                <span className={`${styles.totalValue} ${styles.discountValue}`}>-{formatCurrency(order.discount)}</span>
+                <span className={`${styles.totalValue} ${styles.discountValue}`}>
+                  -{formatCurrency(order.discount)}
+                </span>
               </div>
             )}
 
@@ -423,9 +446,7 @@ const OrderDetailsPage = () => {
                 className={`${styles.actionButton} ${styles.actionButtonDanger}`}
                 onClick={handleCancelOrder}
                 disabled={
-                  order.status === 'completed' ||
-                  order.status === 'cancelled' ||
-                  actionLoading
+                  order.status === 'completed' || order.status === 'cancelled' || actionLoading
                 }
               >
                 <Trash2 size={16} />

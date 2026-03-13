@@ -138,7 +138,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       onClose();
     } catch (error) {
       console.error('❌ [ReviewModal] Error submitting review:', {
-        error: error,
+        error,
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,

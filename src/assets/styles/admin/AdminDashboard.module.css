@@ -53,7 +53,9 @@
 
 .statCard {
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
   position: relative;
   overflow: hidden;
   border: 1px solid #f0f0f0;
@@ -106,7 +108,9 @@
 
 .card {
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
   height: 100%;
   border: 1px solid #f0f0f0;
 }
@@ -177,17 +181,39 @@
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 992px) {
-  .header h1 { font-size: 1.15rem; }
-  .statIcon { font-size: 22px; }
-  .quickStatValue { font-size: 22px; }
+  .header h1 {
+    font-size: 1.15rem;
+  }
+  .statIcon {
+    font-size: 22px;
+  }
+  .quickStatValue {
+    font-size: 22px;
+  }
 }
 
 @media (max-width: 576px) {
-  .header h1 { font-size: 1rem; }
-  .statsRow { margin-bottom: 14px; }
-  .contentRow { margin-bottom: 14px; }
-  .statIcon { font-size: 18px; top: 12px; right: 12px; }
-  .quickStat { padding: 14px 10px; }
-  .quickStatValue { font-size: 18px; }
-  .quickStatLabel { font-size: 0.68rem; }
+  .header h1 {
+    font-size: 1rem;
+  }
+  .statsRow {
+    margin-bottom: 14px;
+  }
+  .contentRow {
+    margin-bottom: 14px;
+  }
+  .statIcon {
+    font-size: 18px;
+    top: 12px;
+    right: 12px;
+  }
+  .quickStat {
+    padding: 14px 10px;
+  }
+  .quickStatValue {
+    font-size: 18px;
+  }
+  .quickStatLabel {
+    font-size: 0.68rem;
+  }
 }

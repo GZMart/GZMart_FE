@@ -47,13 +47,21 @@ const createReview = async (reviewData) => {
  */
 const getProductReviews = async (productId, options = {}) => {
   const params = new URLSearchParams();
-  if (options.page) params.append('page', options.page);
-  if (options.limit) params.append('limit', options.limit);
-  if (options.rating) params.append('rating', options.rating);
-  if (options.sortBy) params.append('sortBy', options.sortBy);
+  if (options.page) {
+    params.append('page', options.page);
+  }
+  if (options.limit) {
+    params.append('limit', options.limit);
+  }
+  if (options.rating) {
+    params.append('rating', options.rating);
+  }
+  if (options.sortBy) {
+    params.append('sortBy', options.sortBy);
+  }
 
   const response = await axiosClient.get(
-    `/api/reviews/product/${productId}${params.toString() ? '?' + params.toString() : ''}`
+    `/api/reviews/product/${productId}${params.toString() ? `?${params.toString()}` : ''}`
   );
   return response.data;
 };
@@ -66,11 +74,15 @@ const getProductReviews = async (productId, options = {}) => {
  */
 const getUserReviews = async (options = {}) => {
   const params = new URLSearchParams();
-  if (options.page) params.append('page', options.page);
-  if (options.limit) params.append('limit', options.limit);
+  if (options.page) {
+    params.append('page', options.page);
+  }
+  if (options.limit) {
+    params.append('limit', options.limit);
+  }
 
   const response = await axiosClient.get(
-    `/api/reviews/user${params.toString() ? '?' + params.toString() : ''}`
+    `/api/reviews/user${params.toString() ? `?${params.toString()}` : ''}`
   );
   return response.data;
 };

@@ -34,22 +34,20 @@ const OrdersPage = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('vi-VN', {
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
 
   const getStatusTag = (status) => {
     const statusMap = {

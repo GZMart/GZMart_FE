@@ -29,7 +29,9 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
 
   // Socket.io connection
   useEffect(() => {
-    if (!order?._id) return;
+    if (!order?._id) {
+      return;
+    }
 
     // FIX BUG 12: Connect to backend socket with reconnection handling
     const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
@@ -299,8 +301,12 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   // Get step status for rendering (wait, process, finish)
   const getStepStatus = (stepIndex) => {
     const currentStep = getCurrentStep();
-    if (stepIndex < currentStep) return 'finish';
-    if (stepIndex === currentStep) return 'process';
+    if (stepIndex < currentStep) {
+      return 'finish';
+    }
+    if (stepIndex === currentStep) {
+      return 'process';
+    }
     return 'wait';
   };
 

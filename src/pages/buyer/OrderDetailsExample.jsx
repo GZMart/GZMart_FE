@@ -49,16 +49,13 @@ const OrderDetailsExample = () => {
     fetchOrderDetails();
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('vi-VN');
-  };
+  const formatDate = (dateString) => new Date(dateString).toLocaleString('vi-VN');
 
   if (loading) {
     return (

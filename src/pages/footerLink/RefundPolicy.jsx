@@ -47,8 +47,8 @@ const refundData = [
   },
 ];
 
-const renderTextWithLinks = (text) => {
-  return text.split(' ').map((word, index) => {
+const renderTextWithLinks = (text) =>
+  text.split(' ').map((word, index) => {
     if (word.includes('@')) {
       const cleanWord = word.replace(/[.,]$/, '');
       return (
@@ -59,9 +59,8 @@ const renderTextWithLinks = (text) => {
         </span>
       );
     }
-    return word + ' ';
+    return `${word} `;
   });
-};
 
 const RefundPolicy = () => {
   const navigate = useNavigate();

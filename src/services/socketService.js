@@ -15,7 +15,9 @@ class SocketService {
   }
 
   connect() {
-    if (this.socket) return this.socket;
+    if (this.socket) {
+      return this.socket;
+    }
 
     console.log('Connecting to socket at:', this.socketURL);
     this.socket = io(this.socketURL, {
@@ -42,7 +44,9 @@ class SocketService {
   }
 
   getSocket() {
-    if (!this.socket) return this.connect();
+    if (!this.socket) {
+      return this.connect();
+    }
     return this.socket;
   }
 

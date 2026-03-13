@@ -260,7 +260,7 @@ const initialState = {
   inventoryValuation: null,
 
   // Exchange Rate
-  exchangeRate: null,         // full record from DB
+  exchangeRate: null, // full record from DB
   exchangeRateSyncing: false,
 
   // Reports
@@ -420,7 +420,12 @@ const erpSlice = createSlice({
         state.inventoryValuation = action.payload;
       })
       .addCase(fetchInventoryValuation.rejected, (state) => {
-        state.inventoryValuation = { totalValue: 0, totalItems: 0, totalUnits: 0, averageCostPerItem: 0 };
+        state.inventoryValuation = {
+          totalValue: 0,
+          totalItems: 0,
+          totalUnits: 0,
+          averageCostPerItem: 0,
+        };
       })
 
       .addCase(fetchProfitLossReport.fulfilled, (state, action) => {

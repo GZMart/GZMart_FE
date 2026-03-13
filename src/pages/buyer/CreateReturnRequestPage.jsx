@@ -97,7 +97,9 @@ const CreateReturnRequestPage = () => {
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      return;
+    }
 
     try {
       setUploading(true);

@@ -63,12 +63,11 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
 
   // Confirm order (Pending -> Confirmed)
   const handleConfirmOrder = async () => {

@@ -153,7 +153,8 @@ const OTPVerificationPage = () => {
         toast.error(t('otp_page.errors.default'));
       }
     } catch (error) {
-      const errorMessage = error.message || error.response?.data?.error || t('otp_page.errors.default');
+      const errorMessage =
+        error.message || error.response?.data?.error || t('otp_page.errors.default');
       toast.error(errorMessage);
       // Clear OTP on error
       setOtp(['', '', '', '']);
@@ -172,7 +173,7 @@ const OTPVerificationPage = () => {
     try {
       const response = await authService.sendOTP(email);
 
-      let message = t('otp_page.resend_success');
+      const message = t('otp_page.resend_success');
 
       // In development, show OTP if available (Disabled)
       /*
@@ -191,7 +192,8 @@ const OTPVerificationPage = () => {
       setOtp(['', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (error) {
-      const errorMessage = error.message || error.response?.data?.error || t('otp_page.errors.resend_failed');
+      const errorMessage =
+        error.message || error.response?.data?.error || t('otp_page.errors.resend_failed');
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -292,9 +294,7 @@ const OTPVerificationPage = () => {
           <div className={styles.rightSection}>
             <div className={`${styles.formWrapper} ${styles.otpWrapper}`}>
               <div className={styles.otpHeader}>
-                <p className={styles.instructionText}>
-                  {t('otp_page.instruction')}
-                </p>
+                <p className={styles.instructionText}>{t('otp_page.instruction')}</p>
               </div>
 
               <form onSubmit={handleVerify} className={styles.loginForm}>
@@ -333,7 +333,8 @@ const OTPVerificationPage = () => {
                     </button>
                   ) : (
                     <span className={styles.timerText}>
-                      {t('otp_page.resend_timer')} <span className={styles.timerCount}>{formatTime(timer)}</span>
+                      {t('otp_page.resend_timer')}{' '}
+                      <span className={styles.timerCount}>{formatTime(timer)}</span>
                     </span>
                   )}
                 </div>

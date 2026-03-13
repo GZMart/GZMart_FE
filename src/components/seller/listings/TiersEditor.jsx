@@ -15,12 +15,16 @@ const TiersEditor = ({ tiers, onChange, disabled }) => {
   };
 
   const handleAddTier = () => {
-    if (tiers.length >= MAX_TIERS) return;
+    if (tiers.length >= MAX_TIERS) {
+      return;
+    }
     setShowAddTierModal(true);
   };
 
   const handleConfirmAddTier = () => {
-    if (!selectedTierType) return;
+    if (!selectedTierType) {
+      return;
+    }
     const tierType = TIER_TYPES[selectedTierType];
     onChange([
       ...tiers,
@@ -40,7 +44,9 @@ const TiersEditor = ({ tiers, onChange, disabled }) => {
 
   const handleAddOption = (tierIndex) => {
     const updated = [...tiers];
-    if (updated[tierIndex].options.length >= MAX_OPTIONS) return;
+    if (updated[tierIndex].options.length >= MAX_OPTIONS) {
+      return;
+    }
     updated[tierIndex].options.push({ value: '', isCustom: false });
     onChange(updated);
   };

@@ -26,7 +26,9 @@ const CategoriesPage = () => {
         setLoading(true);
         const response = await categoryService.getCategoriesWithCounts();
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         const categoriesData = response.data?.data || [];
 

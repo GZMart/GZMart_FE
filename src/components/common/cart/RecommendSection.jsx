@@ -89,7 +89,8 @@ const RecommendSection = ({ limit = 4 }) => {
         if (activeModel.tierIndex && activeModel.tierIndex.length > 0) {
           colorValue = fullProduct.tier_variations[0]?.options?.[activeModel.tierIndex[0]] || 'N/A';
           if (activeModel.tierIndex.length > 1) {
-            sizeValue = fullProduct.tier_variations[1]?.options?.[activeModel.tierIndex[1]] || 'N/A';
+            sizeValue =
+              fullProduct.tier_variations[1]?.options?.[activeModel.tierIndex[1]] || 'N/A';
           }
         }
       }
@@ -103,19 +104,22 @@ const RecommendSection = ({ limit = 4 }) => {
         price: product.price,
         color: colorValue,
         size: sizeValue,
-        variant: (sizeValue !== 'N/A' ? `${sizeValue} - ${colorValue}` : colorValue).trim() || 'Default',
+        variant:
+          (sizeValue !== 'N/A' ? `${sizeValue} - ${colorValue}` : colorValue).trim() || 'Default',
         sku: product.id,
         brand: product.brand,
       };
 
       const addItemAsync = async () => {
         try {
-          await dispatch(addToCart({
-            product: cartItem,
-            quantity: 1,
-            color: cartItem.color,
-            size: cartItem.size
-          })).unwrap();
+          await dispatch(
+            addToCart({
+              product: cartItem,
+              quantity: 1,
+              color: cartItem.color,
+              size: cartItem.size,
+            })
+          ).unwrap();
           toast.success('Added to cart successfully!');
         } catch (err) {
           console.error('Add to cart error:', err);

@@ -7,15 +7,11 @@ import styles from '@assets/styles/admin/AdminLayout.module.css';
 const NAV_ITEMS = [
   {
     section: 'OVERVIEW',
-    items: [
-      { to: ADMIN_ROUTES.DASHBOARD, icon: 'bi bi-speedometer2', label: 'Dashboard' },
-    ],
+    items: [{ to: ADMIN_ROUTES.DASHBOARD, icon: 'bi bi-speedometer2', label: 'Dashboard' }],
   },
   {
     section: 'USER MANAGEMENT',
-    items: [
-      { to: ADMIN_ROUTES.USERS, icon: 'bi bi-people', label: 'Users' },
-    ],
+    items: [{ to: ADMIN_ROUTES.USERS, icon: 'bi bi-people', label: 'Users' }],
   },
   {
     section: 'CATALOG',
@@ -27,7 +23,12 @@ const NAV_ITEMS = [
   {
     section: 'MARKETING',
     items: [
-      { to: ADMIN_ROUTES.SYSTEM_VOUCHERS, icon: 'bi bi-gift', label: 'System Vouchers', matchPrefix: true },
+      {
+        to: ADMIN_ROUTES.SYSTEM_VOUCHERS,
+        icon: 'bi bi-gift',
+        label: 'System Vouchers',
+        matchPrefix: true,
+      },
     ],
   },
   {
@@ -87,17 +88,23 @@ const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
-  const isActive = useCallback((item) => {
-    if (item.matchPath) return location.pathname.includes(item.matchPath);
-    if (item.matchPrefix) return location.pathname.startsWith(item.to);
-    return location.pathname === item.to;
-  }, [location.pathname]);
+  const isActive = useCallback(
+    (item) => {
+      if (item.matchPath) {
+        return location.pathname.includes(item.matchPath);
+      }
+      if (item.matchPrefix) {
+        return location.pathname.startsWith(item.to);
+      }
+      return location.pathname === item.to;
+    },
+    [location.pathname]
+  );
 
   const pageTitle =
-    Object.entries(PAGE_TITLES).find(([route]) =>
-      location.pathname === route || location.pathname.startsWith(route + '/')
-    )?.[1] ??
-    (location.pathname.includes('/erp') ? 'ERP Overview' : 'Admin');
+    Object.entries(PAGE_TITLES).find(
+      ([route]) => location.pathname === route || location.pathname.startsWith(`${route}/`)
+    )?.[1] ?? (location.pathname.includes('/erp') ? 'ERP Overview' : 'Admin');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -141,9 +148,7 @@ const AdminLayout = ({ children }) => {
                       <i className={item.icon} />
                     </span>
                     <span className={styles.navLabel}>{item.label}</span>
-                    {item.badge && (
-                      <span className={styles.navBadge}>{item.badge}</span>
-                    )}
+                    {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
                   </Link>
                 );
               })}
@@ -159,11 +164,7 @@ const AdminLayout = ({ children }) => {
               <div className={styles.userName}>Administrator</div>
               <div className={styles.userRole}>Super Admin</div>
             </div>
-            <button
-              className={styles.logoutBtn}
-              title="Logout"
-              onClick={handleLogout}
-            >
+            <button className={styles.logoutBtn} title="Logout" onClick={handleLogout}>
               <i className="bi bi-box-arrow-right" />
             </button>
           </div>
@@ -202,9 +203,7 @@ const AdminLayout = ({ children }) => {
       </header>
 
       {/* ── Main content ── */}
-      <main className={mainClass}>
-        {children || <Outlet />}
-      </main>
+      <main className={mainClass}>{children || <Outlet />}</main>
     </div>
   );
 };
