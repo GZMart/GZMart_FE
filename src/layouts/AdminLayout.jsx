@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { ADMIN_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/admin/AdminLayout.module.css';
+import NotificationBell from '@components/common/NotificationBell';
 
 const NAV_ITEMS = [
   {
@@ -187,10 +188,9 @@ const AdminLayout = ({ children }) => {
 
         <div className={styles.topbarRight}>
           {/* Notifications */}
-          <button className={styles.topbarIconBtn} title="Notifications">
-            <i className="bi bi-bell" />
-            <span className={styles.topbarBadge} />
-          </button>
+          <div className={styles.topbarIconBtn} title="Notifications" style={{ padding: 0 }}>
+             <NotificationBell />
+          </div>
 
           <div className={styles.topbarDivider} />
 

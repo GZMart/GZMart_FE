@@ -26,6 +26,7 @@ import {
 
 import enFlag from '../../assets/svg/language/en.svg';
 import viFlag from '../../assets/svg/language/vi.svg';
+import NotificationBell from './NotificationBell';
 
 // Fashion categories data from Guangzhou market
 const FAKE_CATEGORIES_DATA = [
