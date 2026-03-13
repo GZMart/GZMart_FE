@@ -24,7 +24,7 @@ import {
   Search,
 } from 'lucide-react';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
-import { PUBLIC_ROUTES } from '@constants/routes';
+import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import {
   selectUser,
   selectIsAuthenticated,
@@ -1537,6 +1537,17 @@ const ProfilePage = () => {
                   <Coins className={styles.navIcon} size={20} strokeWidth={2} />
                   <span className={styles.navText}>GZMart Coin</span>
                 </div>
+
+                {/* Become a Seller */}
+                {user?.role === 'buyer' && (
+                  <div
+                    className={styles.navItem}
+                    onClick={() => navigate(BUYER_ROUTES.SELLER_APPLICATION)}
+                  >
+                    <Store className={styles.navIcon} size={20} strokeWidth={2} />
+                    <span className={styles.navText}>Become a Seller</span>
+                  </div>
+                )}
               </div>
             </div>
 
