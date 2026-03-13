@@ -66,7 +66,7 @@ export const SELLER_ROUTES = {
   INVENTORY: '/seller/inventory',
 
   // Products
-  LISTINGS: '/seller/listings',
+  PRODUCTS: '/seller/products',
 
   // Returns
   RETURNS: '/seller/returns',

@@ -1,159 +1,152 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { inventoryService } from '@services/api';
+import inventoryService from '../../services/api/inventoryService';
 
 const initialState = {
-  inventoryItems: [],
-  currentItem: null,
-  lowStockAlerts: [],
-  outOfStockItems: [],
-  statistics: null,
+  // List of inventory transactions
+  transactions: [],
+  transactionsPagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+  // Stats from backend
+  stats: null,
+  // UI state
   loading: false,
+  adjusting: false, // separate flag for adjust operations
   error: null,
-  pagination: {
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
-  },
 };
 
-// Async Thunks
-export const fetchInventoryItems = createAsyncThunk(
-  'inventory/fetchAll',
-  async (params, { rejectWithValue }) => {
+// ── Thunks ────────────────────────────────────────────────────────
+
+export const fetchInventoryTransactions = createAsyncThunk(
+  'inventory/fetchTransactions',
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await inventoryService.getInventoryItems(params);
-      return response;
+      const response = await inventoryService.getTransactions(params);
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const fetchInventoryItemById = createAsyncThunk(
-  'inventory/fetchById',
-  async (id, { rejectWithValue }) => {
+export const fetchInventoryStats = createAsyncThunk(
+  'inventory/fetchStats',
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await inventoryService.getInventoryItemById(id);
-      return response;
+      const response = await inventoryService.getStats(params);
+      return response.data?.data ?? response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-export const fetchLowStockAlerts = createAsyncThunk(
-  'inventory/fetchLowStock',
-  async (params, { rejectWithValue }) => {
+/**
+ * Adjust stock to a new absolute value (e.g., set SKU to 15 units).
+ * payload: { productId, modelId, sku, newStock, costPrice?, note? }
+ */
+export const adjustStockItem = createAsyncThunk(
+  'inventory/adjustStock',
+  async (payload, { rejectWithValue }) => {
     try {
-      const response = await inventoryService.getLowStockAlerts(params);
-      return response;
+      const response = await inventoryService.adjustStock(payload);
+      return { ...response.data?.data, sku: payload.sku, newStock: payload.newStock };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
 
-export const adjustInventoryQuantity = createAsyncThunk(
-  'inventory/adjustQuantity',
-  async ({ id, adjustmentData }, { rejectWithValue }) => {
+/**
+ * Add stock (stock-in).
+ * payload: { productId, modelId, sku, quantity, costPrice?, note? }
+ */
+export const stockInItem = createAsyncThunk(
+  'inventory/stockIn',
+  async (payload, { rejectWithValue }) => {
     try {
-      const response = await inventoryService.adjustQuantity(id, adjustmentData);
-      return response;
+      const response = await inventoryService.stockIn(payload);
+      return response.data?.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
+
+// ── Slice ─────────────────────────────────────────────────────────
 
 const inventorySlice = createSlice({
   name: 'inventory',
   initialState,
   reducers: {
-    clearCurrentItem: (state) => {
-      state.currentItem = null;
-    },
     clearError: (state) => {
       state.error = null;
-    },
-    updateInventoryItem: (state, action) => {
-      const index = state.inventoryItems.findIndex((item) => item.id === action.payload.id);
-      if (index !== -1) {
-        state.inventoryItems[index] = { ...state.inventoryItems[index], ...action.payload };
-      }
     },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all inventory items
-      .addCase(fetchInventoryItems.pending, (state) => {
+      // Fetch transactions
+      .addCase(fetchInventoryTransactions.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchInventoryItems.fulfilled, (state, action) => {
+      .addCase(fetchInventoryTransactions.fulfilled, (state, action) => {
         state.loading = false;
-        state.inventoryItems = action.payload.data || action.payload;
-        state.pagination = action.payload.pagination || state.pagination;
+        state.transactions = action.payload.data ?? action.payload;
+        state.transactionsPagination = action.payload.pagination ?? state.transactionsPagination;
       })
-      .addCase(fetchInventoryItems.rejected, (state, action) => {
+      .addCase(fetchInventoryTransactions.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch item by ID
-      .addCase(fetchInventoryItemById.pending, (state) => {
+
+      // Fetch stats
+      .addCase(fetchInventoryStats.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchInventoryItemById.fulfilled, (state, action) => {
+      .addCase(fetchInventoryStats.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentItem = action.payload;
+        state.stats = action.payload;
       })
-      .addCase(fetchInventoryItemById.rejected, (state, action) => {
+      .addCase(fetchInventoryStats.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch low stock alerts
-      .addCase(fetchLowStockAlerts.pending, (state) => {
-        state.loading = true;
+
+      // Adjust stock
+      .addCase(adjustStockItem.pending, (state) => {
+        state.adjusting = true;
         state.error = null;
       })
-      .addCase(fetchLowStockAlerts.fulfilled, (state, action) => {
-        state.loading = false;
-        state.lowStockAlerts = action.payload;
+      .addCase(adjustStockItem.fulfilled, (state) => {
+        state.adjusting = false;
       })
-      .addCase(fetchLowStockAlerts.rejected, (state, action) => {
-        state.loading = false;
+      .addCase(adjustStockItem.rejected, (state, action) => {
+        state.adjusting = false;
         state.error = action.payload;
       })
-      // Adjust quantity
-      .addCase(adjustInventoryQuantity.pending, (state) => {
-        state.loading = true;
+
+      // Stock in
+      .addCase(stockInItem.pending, (state) => {
+        state.adjusting = true;
         state.error = null;
       })
-      .addCase(adjustInventoryQuantity.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.inventoryItems.findIndex((item) => item.id === action.payload.id);
-        if (index !== -1) {
-          state.inventoryItems[index] = action.payload;
-        }
-        if (state.currentItem?.id === action.payload.id) {
-          state.currentItem = action.payload;
-        }
+      .addCase(stockInItem.fulfilled, (state) => {
+        state.adjusting = false;
       })
-      .addCase(adjustInventoryQuantity.rejected, (state, action) => {
-        state.loading = false;
+      .addCase(stockInItem.rejected, (state, action) => {
+        state.adjusting = false;
         state.error = action.payload;
       });
   },
 });
 
-export const { clearCurrentItem, clearError, updateInventoryItem } = inventorySlice.actions;
+export const { clearError } = inventorySlice.actions;
 
 // Selectors
-export const selectInventoryItems = (state) => state.inventory.inventoryItems;
-export const selectCurrentItem = (state) => state.inventory.currentItem;
-export const selectLowStockAlerts = (state) => state.inventory.lowStockAlerts;
+export const selectInventoryTransactions = (state) => state.inventory.transactions;
+export const selectInventoryStats = (state) => state.inventory.stats;
 export const selectInventoryLoading = (state) => state.inventory.loading;
+export const selectInventoryAdjusting = (state) => state.inventory.adjusting;
 export const selectInventoryError = (state) => state.inventory.error;
 
 export default inventorySlice.reducer;

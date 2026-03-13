@@ -41,7 +41,7 @@
     bottom: -6px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #ff4444;
+    background-color: #B13C36;
     color: white;
     font-size: 11px;
     padding: 2px 6px;
@@ -102,17 +102,17 @@
 }
 
 .btnViewShop {
-    border: 1px solid #ff4444;
-    color: #ff4444;
+    border: 1px solid #B13C36;
+    color: #B13C36;
 }
 
 .btnViewShop i {
-    color: #ff4444;
+    color: #B13C36;
     font-size: 15px;
 }
 
 .btnViewShop:hover {
-    background-color: rgba(255, 68, 68, 0.05);
+    background-color: rgba(177, 60, 54, 0.05);
 }
 
 .btnChat {
@@ -162,7 +162,7 @@
 }
 
 .statValue {
-    color: #ff4444;
+    color: #B13C36;
 }
 
 @media (max-width: 900px) {

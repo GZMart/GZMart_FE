@@ -22,7 +22,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  background: #ee4d2d;
+  background: #B13C36;
   color: var(--color-white);
   font-size: 12px;
   font-weight: 700;
@@ -135,17 +135,17 @@
 }
 
 .actionBtn:hover {
-  background: #ee4d2d;
+  background: #B13C36;
   color: var(--color-white);
   transform: scale(1.1);
 }
 
 .actionBtnActive {
-  color: #ee4d2d;
+  color: #B13C36;
 }
 
 .actionBtnActive:hover {
-  background: #ee4d2d;
+  background: #B13C36;
   color: var(--color-white);
 }
 
@@ -217,7 +217,7 @@
 .currentPrice {
   font-size: 15px;
   font-weight: 700;
-  color: #ee4d2d;
+  color: #B13C36;
 }
 
 .originalPrice {

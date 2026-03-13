@@ -10,10 +10,6 @@ import OrderSummary from '@components/common/cart/OrderSummary';
 import RecommendSection from '@components/common/cart/RecommendSection';
 import PromoBanner from '@components/common/cart/PromoBanner';
 
-
-
-
-
 /**
  * Cart Page Component
  * Displays shopping cart with items, order summary, and recommendations
@@ -63,15 +59,20 @@ const CartPage = () => {
 
   const isAllSelected = cartItems.length > 0 && selectedItems.size === cartItems.length;
 
-  // Get selected items data
   const getSelectedItemsData = () => cartItems.filter((item) => selectedItems.has(item.id));
-
-
 
   const selectedItemsData = getSelectedItemsData();
 
   return (
     <div className="cart-page bg-white" style={{ minHeight: '100vh' }}>
+      <style>
+        {`
+          .cart-page .form-check-input:checked {
+            background-color: #B13C36 !important;
+            border-color: #B13C36 !important;
+          }
+        `}
+      </style>
       <Container className="py-4">
         {/* Breadcrumbs */}
         {/* <div className="mb-4">

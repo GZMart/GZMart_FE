@@ -50,7 +50,7 @@ const NAV_ITEMS = [
     section: 'ERP MONITORING',
     items: [
       {
-        to: '/erp/dashboard',
+        to: '/seller/erp/dashboard',
         icon: 'bi bi-eye',
         label: 'ERP Overview',
         matchPrefix: true,

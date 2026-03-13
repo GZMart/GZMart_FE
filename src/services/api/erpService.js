@@ -14,6 +14,7 @@ const PO_BASE  = '/api/purchase-orders';
 const SUP_BASE = '/api/purchase-orders/suppliers';
 const INV_BASE = '/api/purchase-orders/inventory';
 const REP_BASE = '/api/purchase-orders/reports';
+const XR_BASE  = '/api/exchange-rate';
 
 // ============================================================
 // SELLER PRODUCTS (for PO Listing Picker)
@@ -149,6 +150,33 @@ export const getProfitLossReport = async (startDate, endDate) => {
   });
 };
 
+// ============================================================
+// EXCHANGE RATE
+// ============================================================
+
+/**
+ * Get the current active CNY→VND exchange rate
+ */
+export const getExchangeRate = async () => {
+  return axiosClient.get(XR_BASE);
+};
+
+/**
+ * Manually override the exchange rate (admin/manager)
+ * @param {Number} rate
+ * @param {String} [note]
+ */
+export const updateExchangeRate = async (rate, note) => {
+  return axiosClient.put(XR_BASE, { rate, note });
+};
+
+/**
+ * Force an immediate sync from external APIs (admin/manager)
+ */
+export const syncExchangeRate = async () => {
+  return axiosClient.post(`${XR_BASE}/sync`);
+};
+
 export default {
   // Purchase Orders
   createPurchaseOrder,
@@ -169,4 +197,8 @@ export default {
   getInventoryValuation,
   // Reports
   getProfitLossReport,
+  // Exchange Rate
+  getExchangeRate,
+  updateExchangeRate,
+  syncExchangeRate,
 };

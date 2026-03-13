@@ -2,6 +2,27 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Spinner, Button } from 'react-bootstrap';
+import {
+  Bell,
+  Coins,
+  User,
+  ChevronDown,
+  Package,
+  MapPin,
+  Plus,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  FileText,
+  ArrowLeft,
+  Camera,
+  X,
+  MessageCircle,
+  Store,
+  Search,
+} from 'lucide-react';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
 import { PUBLIC_ROUTES } from '@constants/routes';
 import {
@@ -16,6 +37,7 @@ import { reviewService } from '@services/api';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
+import coinService from '@services/coin.service';
 import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
 import ReturnRequestModal from '@components/buyer/ReturnRequestModal';
 import locationService from '@services/api/locationService';
@@ -44,6 +66,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'account');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailsTab, setDetailsTab] = useState('items');
+  const [showMyAccountDropdown, setShowMyAccountDropdown] = useState(true); // For My Account dropdown
 
   // Order API State
   const [orders, setOrders] = useState([]);
@@ -54,10 +77,21 @@ const ProfilePage = () => {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(null);
 
+  // Order Filter & Search State
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+
   // Review Modal State
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
+  // Coin State
+  const [coinBalance, setCoinBalance] = useState(null);
+  const [coinTransactions, setCoinTransactions] = useState([]);
+  const [coinLoading, setCoinLoading] = useState(false);
+  const [coinHistoryFilter, setCoinHistoryFilter] = useState('all'); // 'all', 'received', 'used'
+  const [coinPagination, setCoinPagination] = useState({ page: 1, limit: 20, total: 0 });
 
   // Initialize form data from user
   const [formData, setFormData] = useState({
@@ -180,7 +214,10 @@ const ProfilePage = () => {
         dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
         aboutMe: user.aboutMe || '',
       });
-      setAvatarPreview(user.avatar || user.profileImage || null);
+      // Only set avatarPreview if user has an avatar, otherwise leave it null to use fallback
+      if (user.avatar || user.profileImage) {
+        setAvatarPreview(user.avatar || user.profileImage);
+      }
     }
   }, [user]);
 
@@ -194,6 +231,9 @@ const ProfilePage = () => {
     }
     if (activeTab === 'address') {
       fetchAddresses();
+    }
+    if (activeTab === 'coin') {
+      fetchCoinData();
     }
   }, [activeTab, isAuthenticated, user]);
 
@@ -295,6 +335,35 @@ const ProfilePage = () => {
       console.error('Failed to fetch addresses:', error);
     } finally {
       setAddressLoading(false);
+    }
+  };
+
+  const fetchCoinData = async () => {
+    setCoinLoading(true);
+    try {
+      // Fetch balance
+      const balanceResponse = await coinService.getCoinBalance();
+      if (balanceResponse && balanceResponse.success) {
+        setCoinBalance(balanceResponse.data);
+      }
+
+      // Fetch transactions
+      const transactionsResponse = await coinService.getCoinTransactions({
+        page: coinPagination.page,
+        limit: coinPagination.limit,
+      });
+      if (transactionsResponse && transactionsResponse.success) {
+        setCoinTransactions(transactionsResponse.transactions || []);
+        setCoinPagination((prev) => ({
+          ...prev,
+          total: transactionsResponse.pagination?.total || 0,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch coin data:', error);
+      toast.error('Failed to load coin data');
+    } finally {
+      setCoinLoading(false);
     }
   };
 
@@ -591,7 +660,7 @@ const ProfilePage = () => {
     // This function just closes the modal after successful submission
     setShowReviewModal(false);
     setReviewingOrder(null);
-    
+
     try {
       // TODO: Replace with actual API call
       // const response = await orderService.submitReview(reviewingOrder._id, reviewData);
@@ -608,7 +677,7 @@ const ProfilePage = () => {
       setReviewingOrder(null);
       // Optional: Refresh order list after successful review submission
       //if (activeTab === 'orders') {
-        //await fetchOrders(pagination.page);
+      //await fetchOrders(pagination.page);
       //}
     } catch (error) {
       console.error('Error after review submission:', error);
@@ -628,20 +697,164 @@ const ProfilePage = () => {
     return null;
   }
 
+  const renderNotificationsTab = () => (
+    <div>
+      <div className={styles.sectionHeader}>
+        <Bell size={24} color="#111827" strokeWidth={2} />
+        <h3 className={styles.sectionTitle}>Notifications</h3>
+      </div>
+      <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#6B7280' }}>
+        <Bell size={64} color="#D1D5DB" strokeWidth={1.5} style={{ margin: '0 auto 1rem' }} />
+        <h4 style={{ marginBottom: '0.5rem', color: '#374151' }}>No Notifications</h4>
+        <p>You don't have any notifications yet.</p>
+      </div>
+    </div>
+  );
+
+  const renderCoinTab = () => {
+    // Calculate expiring coins info
+    const expiringCoins = coinBalance?.breakdown?.expiringSoon?.details || [];
+    const nextExpiringCoin = expiringCoins.length > 0 ? expiringCoins[0] : null;
+    const totalBalance = coinBalance?.totalBalance || 0;
+
+    // Filter transactions based on selected filter
+    const getFilteredTransactions = () => {
+      if (!coinTransactions || coinTransactions.length === 0) return [];
+
+      if (coinHistoryFilter === 'received') {
+        return coinTransactions.filter((tx) => tx.type === 'add' || tx.amount > 0);
+      } else if (coinHistoryFilter === 'used') {
+        return coinTransactions.filter((tx) => tx.type === 'deduct' || tx.amount < 0);
+      }
+      return coinTransactions; // 'all'
+    };
+
+    const filteredTransactions = getFilteredTransactions();
+
+    // Format date
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${hours}:${minutes} ${day}-${month}-${year}`;
+    };
+
+    // Format expiration date
+    const formatExpirationDate = (dateString) => {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    };
+
+    return (
+      <div className={styles.coinTab}>
+        {/* Header with balance */}
+        <div className={styles.coinHeader}>
+          <div className={styles.coinBalanceSection}>
+            <div className={styles.coinIcon}>
+              <Coins size={32} color="#F59E0B" strokeWidth={2} />
+            </div>
+            <div className={styles.coinBalanceInfo}>
+              <div className={styles.coinBalanceLabel}>GZCoin balance</div>
+              <div className={styles.coinBalanceAmount}>{totalBalance.toLocaleString()}</div>
+              {nextExpiringCoin && (
+                <div className={styles.coinExpirationInfo}>
+                  {nextExpiringCoin.amount.toLocaleString()} GZCoin will expire on{' '}
+                  {formatExpirationDate(nextExpiringCoin.expiresAt)}
+                </div>
+              )}
+            </div>
+          </div>
+          <button className={styles.coinEarnMoreBtn}>
+            Get more! <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* History Tabs */}
+        <div className={styles.coinHistoryTabs}>
+          <button
+            className={`${styles.coinHistoryTab} ${coinHistoryFilter === 'all' ? styles.active : ''}`}
+            onClick={() => setCoinHistoryFilter('all')}
+          >
+            ALL HISTORY
+          </button>
+          <button
+            className={`${styles.coinHistoryTab} ${coinHistoryFilter === 'received' ? styles.active : ''}`}
+            onClick={() => setCoinHistoryFilter('received')}
+          >
+            RECEIVED
+          </button>
+          <button
+            className={`${styles.coinHistoryTab} ${coinHistoryFilter === 'used' ? styles.active : ''}`}
+            onClick={() => setCoinHistoryFilter('used')}
+          >
+            USED
+          </button>
+        </div>
+
+        {/* Transaction List */}
+        <div className={styles.coinTransactionList}>
+          {coinLoading ? (
+            <div className={styles.coinLoadingContainer}>
+              <Spinner animation="border" size="sm" />
+              <span>Loading transactions...</span>
+            </div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className={styles.coinEmptyState}>
+              <Coins size={64} color="#D1D5DB" strokeWidth={1.5} />
+              <p>No transaction history</p>
+            </div>
+          ) : (
+            filteredTransactions.map((transaction) => {
+              const isPositive = transaction.amount > 0;
+              const amount = Math.abs(transaction.amount);
+
+              return (
+                <div key={transaction._id} className={styles.coinTransactionItem}>
+                  <div className={styles.coinTransactionIcon}>
+                    <div
+                      className={`${styles.coinIconCircle} ${isPositive ? styles.positive : styles.negative}`}
+                    >
+                      <span>S</span>
+                    </div>
+                  </div>
+                  <div className={styles.coinTransactionDetails}>
+                    <div className={styles.coinTransactionTitle}>
+                      {transaction.description || (isPositive ? 'Received GZCoin' : 'Used GZCoin')}
+                    </div>
+                    {transaction.metadata?.source && (
+                      <div className={styles.coinTransactionSource}>
+                        {transaction.metadata.source}
+                      </div>
+                    )}
+                    <div className={styles.coinTransactionDate}>
+                      {formatDate(transaction.createdAt || transaction.date)}
+                    </div>
+                  </div>
+                  <div
+                    className={`${styles.coinTransactionAmount} ${isPositive ? styles.positive : styles.negative}`}
+                  >
+                    {isPositive ? '+' : '-'}
+                    {amount.toLocaleString()}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderAccountTab = () => (
     <>
       <div className={styles.sectionHeader}>
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#111827"
-          strokeWidth="2"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
+        <User size={24} color="#111827" strokeWidth={2} />
         <h3 className={styles.sectionTitle}>{t('profile_page.account.title')}</h3>
       </div>
 
@@ -741,19 +954,7 @@ const ProfilePage = () => {
     <div>
       <div className={styles.addressHeader}>
         <h3 className={styles.addressTitle}>
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#111827"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
+          <MapPin size={24} color="#111827" strokeWidth={2} />
           {t('profile_page.address.title')}
         </h3>
         <button
@@ -761,19 +962,7 @@ const ProfilePage = () => {
           title={t('profile_page.address.title')}
           onClick={handleAddAddressClick}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={20} strokeWidth={2} />
         </button>
       </div>
 
@@ -819,19 +1008,7 @@ const ProfilePage = () => {
                     }}
                     title={t('profile_page.address.edit_tooltip')}
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
+                    <Edit2 size={18} strokeWidth={2} />
                   </button>
                   <button
                     className={styles.iconActionBtn}
@@ -842,19 +1019,7 @@ const ProfilePage = () => {
                     title={t('profile_page.address.delete_tooltip')}
                     style={{ color: '#DC2626' }}
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
+                    <Trash2 size={18} strokeWidth={2} />
                   </button>
                 </div>
               </div>
@@ -894,581 +1059,407 @@ const ProfilePage = () => {
     return <span className={`${styles.badge} ${config.class}`}>{config.text}</span>;
   };
 
-  const renderOrdersTab = () => (
-    <div>
-      {!selectedOrder ? (
-        <>
-          <div className={styles.addressHeader}>
-            <h3 className={styles.addressTitle}>
-              <div
-                style={{
-                  background: '#FFF7ED',
-                  padding: '8px',
-                  borderRadius: '12px',
-                  display: 'flex',
-                }}
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#F97316"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 8h-4l-3-4-3 4H7L4 8l-3 4v8h22v-8l-3-4z" />
-                  <path d="M10 12h4" />
-                </svg>
-              </div>
-              {t('profile_page.orders.title')}
-            </h3>
-          </div>
+  const renderOrdersTab = () => {
+    // Filter orders by status and search query
+    const filteredOrders = orders.filter((order) => {
+      // Filter by status
+      const statusMatch =
+        orderStatusFilter === 'all' ||
+        (orderStatusFilter === 'pending' && order.status === 'pending') ||
+        (orderStatusFilter === 'processing' &&
+          ['confirmed', 'processing', 'packing'].includes(order.status)) ||
+        (orderStatusFilter === 'shipping' && ['shipping', 'shipped'].includes(order.status)) ||
+        (orderStatusFilter === 'delivered' &&
+          ['delivered', 'delivered_pending_confirmation'].includes(order.status)) ||
+        (orderStatusFilter === 'completed' && order.status === 'completed') ||
+        (orderStatusFilter === 'cancelled' && order.status === 'cancelled') ||
+        (orderStatusFilter === 'return' &&
+          ['return_requested', 'return_approved', 'refunded'].includes(order.status));
 
-          <div className={styles.tableWrapper}>
-            {orderLoading ? (
-              <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
-                <Spinner animation="border" variant="primary" />
-                <p className="mt-3 font-weight-bold">{t('profile_page.orders.loading')}</p>
+      // Filter by search query (product name)
+      const searchMatch =
+        !orderSearchQuery ||
+        order.items?.some((item) =>
+          item.productId?.name?.toLowerCase().includes(orderSearchQuery.toLowerCase())
+        );
+
+      return statusMatch && searchMatch;
+    });
+
+    const orderStatusTabs = [
+      { key: 'all', label: 'All' },
+      { key: 'pending', label: 'Pending Payment' },
+      { key: 'processing', label: 'Processing' },
+      { key: 'shipping', label: 'Shipping' },
+      { key: 'delivered', label: 'Completed' },
+      { key: 'cancelled', label: 'Cancelled' },
+      { key: 'return', label: 'Return/Refund' },
+    ];
+
+    return (
+      <div>
+        {!selectedOrder ? (
+          <>
+            {/* Filter Tabs */}
+            <div className={styles.orderFilterTabs}>
+              {orderStatusTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  className={`${styles.orderFilterTab} ${
+                    orderStatusFilter === tab.key ? styles.orderFilterTabActive : ''
+                  }`}
+                  onClick={() => setOrderStatusFilter(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Bar */}
+            <div className={styles.orderSearchBar}>
+              <Search size={20} color="#9CA3AF" />
+              <input
+                type="text"
+                placeholder="Search by Shop name, Order ID or Product name"
+                className={styles.orderSearchInput}
+                value={orderSearchQuery}
+                onChange={(e) => setOrderSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Orders List */}
+            <div className={styles.ordersListContainer}>
+              {orderLoading ? (
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
+                  <Spinner animation="border" variant="primary" />
+                  <p className="mt-3 font-weight-bold">{t('profile_page.orders.loading')}</p>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
+                  <Package size={64} color="#D1D5DB" strokeWidth={1.5} />
+                  <h4 style={{ marginTop: '1rem' }}>
+                    {orderSearchQuery || orderStatusFilter !== 'all'
+                      ? 'No orders found'
+                      : t('profile_page.orders.empty_title')}
+                  </h4>
+                  <p>
+                    {orderSearchQuery || orderStatusFilter !== 'all'
+                      ? 'Try changing the filter or search keyword'
+                      : t('profile_page.orders.empty_msg')}
+                  </p>
+                </div>
+              ) : (
+                filteredOrders.map((order) => (
+                  <div key={order._id} className={styles.orderCard}>
+                    {/* Order Header */}
+                    <div className={styles.orderCardHeader}>
+                      <div className={styles.orderCardHeaderLeft}>
+                        <Store size={16} color="#EF4444" strokeWidth={2} />
+                        <span className={styles.shopName}>
+                          {order.items?.[0]?.productId?.sellerId?.fullName || 'GZMart Shop'}
+                        </span>
+                        <button className={styles.shopChatBtn}>
+                          <MessageCircle size={16} strokeWidth={2} />
+                          Chat
+                        </button>
+                        <button className={styles.shopViewBtn}>
+                          <Store size={16} strokeWidth={2} />
+                          View Shop
+                        </button>
+                      </div>
+                      <div className={styles.orderCardHeaderRight}>
+                        <div className={styles.orderCardStatus}>{getStatusBadge(order.status)}</div>
+                      </div>
+                    </div>
+
+                    {/* Order Items */}
+                    <div className={styles.orderCardBody}>
+                      {order.items?.slice(0, 3).map((item, idx) => (
+                        <div
+                          key={idx}
+                          className={styles.orderCardItem}
+                          onClick={() => handleOrderClick(order._id)}
+                        >
+                          <img
+                            src={item.productId?.images?.[0] || 'https://via.placeholder.com/80'}
+                            alt={item.productId?.name}
+                            className={styles.orderCardItemImage}
+                          />
+                          <div className={styles.orderCardItemInfo}>
+                            <h4 className={styles.orderCardItemName}>
+                              {item.productId?.name || 'Product'}
+                            </h4>
+                            <p className={styles.orderCardItemVariant}>
+                              Classification:{' '}
+                              {item.tierSelections
+                                ? Object.values(item.tierSelections).join(', ')
+                                : 'Default'}
+                            </p>
+                            <p className={styles.orderCardItemQuantity}>x{item.quantity}</p>
+                          </div>
+                          <div className={styles.orderCardItemPrice}>
+                            <span className={styles.orderCardItemOldPrice}>
+                              {formatCurrency(item.price * 1.2)}
+                            </span>
+                            <span className={styles.orderCardItemCurrentPrice}>
+                              {formatCurrency(item.price)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {order.items?.length > 3 && (
+                        <div className={styles.orderCardMoreItems}>
+                          And {order.items.length - 3} more product(s)...
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Order Footer */}
+                    <div className={styles.orderCardFooter}>
+                      <div className={styles.orderCardTotal}>
+                        <span className={styles.orderCardTotalLabel}>Total Amount:</span>
+                        <span className={styles.orderCardTotalAmount}>
+                          {formatCurrency(order.totalPrice)}
+                        </span>
+                      </div>
+                      <div className={styles.orderCardActions}>
+                        <button className={styles.orderCardActionSecondary}>Reorder</button>
+                        <button className={styles.orderCardActionSecondary}>Contact Seller</button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className={styles.paginationContainer}>
+                <button
+                  className={styles.paginationBtn}
+                  disabled={pagination.page === 1}
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                >
+                  <ChevronLeft size={16} strokeWidth={2} />
+                  Previous
+                </button>
+                <span className={styles.paginationInfo}>
+                  Page {pagination.page} of {pagination.pages}
+                </span>
+                <button
+                  className={styles.paginationBtn}
+                  disabled={pagination.page === pagination.pages}
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                >
+                  Next
+                  <ChevronRight size={16} strokeWidth={2} />
+                </button>
               </div>
-            ) : orders.length === 0 ? (
+            )}
+          </>
+        ) : (
+          <div>
+            {detailsLoading || !selectedOrderDetails ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
-                <h4>{t('profile_page.orders.empty_title')}</h4>
-                <p>{t('profile_page.orders.empty_msg')}</p>
+                Loading details...
               </div>
             ) : (
-              <table className={styles.orderTable}>
-                <thead>
-                  <tr className={styles.orderTableHeader}>
-                    <th>{t('profile_page.orders.table.id')}</th>
-                    <th>{t('profile_page.orders.table.date')}</th>
-                    <th>{t('profile_page.orders.table.status')}</th>
-                    <th>{t('profile_page.orders.table.total')}</th>
-                    <th>{t('profile_page.orders.table.action')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr
-                      key={order._id}
-                      className={styles.orderRow}
-                      onClick={() => handleOrderClick(order._id)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td>#{order.orderNumber}</td>
-                      <td>
-                        {new Date(order.createdAt).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </td>
-                      <td>{getStatusBadge(order.status)}</td>
-                      <td>{formatCurrency(order.totalPrice)}</td>
-                      <td>
-                        {[
-                          'confirmed',
-                          'processing',
-                          'packing',
-                          'shipping',
-                          'shipped',
-                          'delivered',
-                          'delivered_pending_confirmation',
-                        ].includes(order.status) && (
-                          <button
-                            className={`${styles.badge} ${styles.badgeSuccess}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/buyer/orders/${order._id}`);
-                            }}
-                            style={{
-                              cursor: 'pointer',
-                              border: 'none',
-                              transition: 'all 0.2s ease',
-                              backgroundColor: '#10B981',
-                              color: 'white',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'scale(1)';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}
-                          >
-                            📍 Track Order
-                          </button>
-                        )}
-                        {order.paymentMethod === 'payos' && order.paymentStatus === 'pending' && (
-                          <button
-                            className={`${styles.badge} ${styles.badgeWarning}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePayNow(order._id);
-                            }}
-                            disabled={paymentProcessing === order._id}
-                            style={{
-                              cursor: paymentProcessing === order._id ? 'not-allowed' : 'pointer',
-                              opacity: paymentProcessing === order._id ? 0.6 : 1,
-                              border: 'none',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              if (paymentProcessing !== order._id) {
-                                e.currentTarget.style.transform = 'scale(1.05)';
-                                e.currentTarget.style.boxShadow =
-                                  '0 2px 8px rgba(234, 179, 8, 0.3)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'scale(1)';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}
-                          >
-                            {paymentProcessing === order._id ? (
-                              <>
-                                <Spinner
-                                  as="span"
-                                  animation="border"
-                                  size="sm"
-                                  role="status"
-                                  style={{ width: '12px', height: '12px', marginRight: '4px' }}
-                                />
-                                Processing...
-                              </>
-                            ) : (
-                              'Pay Now'
-                            )}
-                          </button>
-                        )}
-                        {order.status === 'completed' && (
-                          <button
-                            className={`${styles.badge} ${styles.badgeInfo}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenReviewModal(order);
-                            }}
-                            style={{
-                              cursor: 'pointer',
-                              border: 'none',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.3)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'scale(1)';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}
-                          >
-                            Rate
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Pro Max Pagination */}
-          {pagination.pages > 1 && (
-            <div className={styles.paginationContainer}>
-              <button
-                className={styles.paginationBtn}
-                disabled={pagination.page === 1}
-                onClick={() => handlePageChange(pagination.page - 1)}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-                Previous
-              </button>
-              <span className={styles.paginationInfo}>
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <button
-                className={styles.paginationBtn}
-                disabled={pagination.page === pagination.pages}
-                onClick={() => handlePageChange(pagination.page + 1)}
-              >
-                Next
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </button>
-            </div>
-          )}
-
-          <button className={styles.enquireButton}>Need help with an order?</button>
-        </>
-      ) : (
-        <div>
-          {/* Back Button */}
-          <button
-            className={styles.backButton}
-            onClick={() => setSelectedOrder(null)}
-            style={{ marginBottom: '2rem' }}
-          >
-            <div className={styles.backIconCircle} style={{ width: '36px', height: '36px' }}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
-            </div>
-            Back to Orders List
-          </button>
-
-          {detailsLoading || !selectedOrderDetails ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
-              Loading details...
-            </div>
-          ) : (
-            <>
-              {/* Details Tabs */}
-              <div className={styles.detailsTabs}>
-                <button
-                  className={`${styles.detailsTabBtn} ${detailsTab === 'items' ? styles.active : ''}`}
-                  onClick={() => setDetailsTab('items')}
-                >
-                  Items Ordered
-                </button>
-                <button
-                  className={`${styles.detailsTabBtn} ${detailsTab === 'invoices' ? styles.active : ''}`}
-                  onClick={() => setDetailsTab('invoices')}
-                >
-                  Invoices
-                </button>
-                <button
-                  className={`${styles.detailsTabBtn} ${detailsTab === 'shipment' ? styles.active : ''}`}
-                  onClick={() => setDetailsTab('shipment')}
-                >
-                  Shipment Status
-                </button>
-              </div>
-
-              {detailsTab === 'items' && (
-                <div className={styles.tableWrapper}>
-                  <table className={styles.productTable}>
-                    <thead>
-                      <tr>
-                        <th>Product Details</th>
-                        <th>Unit Price</th>
-                        <th>Qty</th>
-                        <th>Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrderDetails.items?.map((item, idx) => (
-                        <tr key={idx}>
-                          <td>
-                            <div className={styles.productItem}>
-                              <img
-                                src={
-                                  item.productId?.images?.[0] || 'https://via.placeholder.com/60'
-                                }
-                                alt={item.productId?.name}
-                                className={styles.productImage}
-                              />
-                              <div className={styles.productInfo}>
-                                <h4>{item.productId?.name}</h4>
-                                <p>
-                                  {item.tierSelections
-                                    ? Object.values(item.tierSelections).join(' / ')
-                                    : 'Standard'}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td>{formatCurrency(item.price)}</td>
-                          <td>{item.quantity}</td>
-                          <td>{formatCurrency(item.subtotal)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {detailsTab === 'invoices' && (
-                <div
-                  style={{
-                    padding: '4rem',
-                    textAlign: 'center',
-                    background: 'white',
-                    borderRadius: '16px',
-                    border: '1px solid #f3f4f6',
-                  }}
-                >
-                  <div style={{ marginBottom: '1rem' }}>
-                    <svg
-                      width="48"
-                      height="48"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#2563EB"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                  </div>
-                  <h4 style={{ marginBottom: '0.5rem' }}>
-                    Invoice #{selectedOrderDetails.orderNumber}
-                  </h4>
-                  <p style={{ color: '#6B7280', marginBottom: '1.5rem' }}>
-                    Download or view the official invoice for this order.
-                  </p>
+              <>
+                {/* Order Header */}
+                <div className={styles.orderDetailsHeader}>
                   <button
-                    className={styles.reorderBtn}
-                    onClick={(e) => handleViewInvoice(e, selectedOrderDetails._id)}
-                    style={{ margin: '0 auto' }}
+                    className={styles.orderDetailsBackBtn}
+                    onClick={() => setSelectedOrder(null)}
                   >
-                    View Invoice
+                    <ArrowLeft size={18} strokeWidth={2} />
+                    <span>BACK</span>
                   </button>
+                  <div className={styles.orderDetailsHeaderInfo}>
+                    <span className={styles.orderDetailsOrderNumber}>
+                      ORDER ID: {selectedOrderDetails.orderNumber}
+                    </span>
+                    <span className={styles.orderDetailsHeaderDivider}>|</span>
+                    {getStatusBadge(selectedOrderDetails.status)}
+                  </div>
                 </div>
-              )}
 
-              {detailsTab === 'shipment' && (
-                <div>
-                  {/* Use OrderTrackingEnhanced component for map and tracking steps */}
+                {/* Shipment Tracking */}
+                <div className={styles.orderDetailsSection}>
                   <OrderTrackingEnhanced
                     order={selectedOrderDetails}
                     onOrderUpdate={(updatedData) => {
-                      // 1. Update selected order details immediately for instant UI update
                       setSelectedOrderDetails(updatedData);
-
-                      // 2. Update order in the list if it exists
                       setOrders((prevOrders) =>
                         prevOrders.map((order) =>
                           order._id === updatedData._id ? { ...order, ...updatedData } : order
                         )
                       );
-
-                      // 3. Refetch order details in background to ensure consistency
                       handleOrderClick(selectedOrderDetails._id);
                     }}
                   />
                 </div>
-              )}
 
-              {/* Order Information */}
-              <div className={styles.orderInfoGrid}>
-                <div className={styles.infoSection}>
-                  <h4>Order Summary</h4>
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Subtotal</span>
-                    <span className={styles.infoValue}>
-                      {formatCurrency(selectedOrderDetails.subtotal)}
-                    </span>
-                  </div>
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Shipping Fee</span>
-                    <span className={styles.infoValue}>
-                      {formatCurrency(selectedOrderDetails.shippingCost)}
-                    </span>
-                  </div>
-                  {selectedOrderDetails.discount > 0 && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Discount</span>
-                      <span className={styles.infoValue} style={{ color: '#059669' }}>
-                        -{formatCurrency(selectedOrderDetails.discount)}
-                      </span>
+                {/* Shipping Address */}
+                <div className={styles.orderDetailsSection}>
+                  <h3 className={styles.orderDetailsSectionTitle}>Delivery Address</h3>
+                  <div className={styles.orderDetailsAddressBox}>
+                    <div className={styles.orderDetailsAddressHeader}>
+                      <div>
+                        <p className={styles.orderDetailsAddressName}>
+                          {selectedOrderDetails.userId?.fullName || user.fullName}
+                        </p>
+                        <p className={styles.orderDetailsAddressPhone}>
+                          {selectedOrderDetails.userId?.phone || user.phone || '(+84) XXX XXX XXX'}
+                        </p>
+                      </div>
                     </div>
-                  )}
-
-                  <div
-                    className={styles.infoRow}
-                    style={{
-                      marginTop: '1rem',
-                      paddingTop: '1rem',
-                      borderTop: '1px dashed #E5E7EB',
-                    }}
-                  >
-                    <span
-                      className={styles.infoLabel}
-                      style={{ fontWeight: '700', color: '#111827' }}
-                    >
-                      Grand Total
-                    </span>
-                    <span
-                      className={styles.infoValue}
-                      style={{ fontSize: '1.25rem', color: '#2563EB' }}
-                    >
-                      {formatCurrency(selectedOrderDetails.totalPrice)}
-                    </span>
+                    <p className={styles.orderDetailsAddressText}>
+                      {selectedOrderDetails.shippingAddress}
+                    </p>
                   </div>
                 </div>
 
-                <div className={styles.infoSection}>
-                  <h4>Payment</h4>
-                  <div className={styles.infoRow}>
-                    <span
-                      className={styles.infoValue}
-                      style={{
-                        textTransform: 'capitalize',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                      }}
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                        <line x1="1" y1="10" x2="23" y2="10"></line>
-                      </svg>
+                {/* Order Items */}
+                <div className={styles.orderDetailsSection}>
+                  <div className={styles.orderDetailsShopHeader}>
+                    <div className={styles.orderDetailsShopHeaderLeft}>
+                      <Store size={18} color="#EF4444" strokeWidth={2} />
+                      <span className={styles.orderDetailsShopName}>
+                        {selectedOrderDetails.items?.[0]?.productId?.sellerId?.fullName ||
+                          'GZMart Shop'}
+                      </span>
+                      <button className={styles.orderDetailsShopBtn}>
+                        <MessageCircle size={16} strokeWidth={2} />
+                        Chat
+                      </button>
+                      <button className={styles.orderDetailsShopBtn}>View Shop</button>
+                    </div>
+                  </div>
+
+                  <div className={styles.orderDetailsItemsList}>
+                    {selectedOrderDetails.items?.map((item, idx) => (
+                      <div key={idx} className={styles.orderDetailsItem}>
+                        <img
+                          src={item.productId?.images?.[0] || 'https://via.placeholder.com/80'}
+                          alt={item.productId?.name}
+                          className={styles.orderDetailsItemImage}
+                        />
+                        <div className={styles.orderDetailsItemInfo}>
+                          <h4 className={styles.orderDetailsItemName}>
+                            {item.productId?.name || 'Product'}
+                          </h4>
+                          <p className={styles.orderDetailsItemVariant}>
+                            Classification:{' '}
+                            {item.tierSelections
+                              ? Object.values(item.tierSelections).join(', ')
+                              : 'Default'}
+                          </p>
+                          <p className={styles.orderDetailsItemQuantity}>x{item.quantity}</p>
+                        </div>
+                        <div className={styles.orderDetailsItemPriceContainer}>
+                          {item.originalPrice && item.originalPrice > item.price && (
+                            <span className={styles.orderDetailsItemOldPrice}>
+                              {formatCurrency(item.originalPrice)}
+                            </span>
+                          )}
+                          <span className={styles.orderDetailsItemCurrentPrice}>
+                            {formatCurrency(item.price)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Summary in same section */}
+                  <div className={styles.orderDetailsPricingBox}>
+                    <div className={styles.orderDetailsPricingRow}>
+                      <span className={styles.orderDetailsPricingLabel}>Merchandise Subtotal</span>
+                      <span className={styles.orderDetailsPricingValue}>
+                        {formatCurrency(selectedOrderDetails.subtotal)}
+                      </span>
+                    </div>
+                    <div className={styles.orderDetailsPricingRow}>
+                      <span className={styles.orderDetailsPricingLabel}>Shipping Fee</span>
+                      <span className={styles.orderDetailsPricingValue}>
+                        {formatCurrency(selectedOrderDetails.shippingCost)}
+                      </span>
+                    </div>
+                    {selectedOrderDetails.discount > 0 && (
+                      <div className={styles.orderDetailsPricingRow}>
+                        <span className={styles.orderDetailsPricingLabel}>Discount</span>
+                        <span
+                          className={styles.orderDetailsPricingValue}
+                          style={{ color: '#059669' }}
+                        >
+                          -{formatCurrency(selectedOrderDetails.discount)}
+                        </span>
+                      </div>
+                    )}
+                    <div className={styles.orderDetailsPricingRowTotal}>
+                      <span className={styles.orderDetailsPricingLabelTotal}>Order Total</span>
+                      <span className={styles.orderDetailsPricingValueTotal}>
+                        {formatCurrency(selectedOrderDetails.totalPrice)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className={styles.orderDetailsPaymentBox}>
+                    <span className={styles.orderDetailsPaymentLabel}>Payment Method</span>
+                    <span className={styles.orderDetailsPaymentValue}>
                       {selectedOrderDetails.paymentMethod.replace(/_/g, ' ')}
                     </span>
                   </div>
                 </div>
 
-                <div className={styles.infoSection}>
-                  <h4>Shipping Details</h4>
-                  <div className={styles.addressDetails}>
-                    <p style={{ fontWeight: '700', marginBottom: '0.25rem', color: '#111827' }}>
-                      {selectedOrderDetails.userId?.fullName || user.fullName}
-                    </p>
-                    <p>{selectedOrderDetails.shippingAddress}</p>
-                    <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
-                      Order #{selectedOrderDetails.orderNumber}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className={styles.actionButtons}>
-                <button className={styles.ratingBtn}>Add Rating</button>
-                <button className={styles.reorderBtn}>Reorder Again</button>
-                {(selectedOrderDetails.status === 'delivered' ||
-                  selectedOrderDetails.status === 'completed') && (
+                {/* Action Buttons */}
+                <div className={styles.orderDetailsActions}>
                   <button
-                    className={styles.returnBtn}
-                    onClick={() => setShowReturnModal(true)}
-                    style={{
-                      backgroundColor: '#f59e0b',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '8px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
+                    className={styles.orderDetailsActionPrimary}
+                    onClick={() => handleOpenReviewModal(selectedOrderDetails)}
                   >
-                    🔄 Request Return/Refund
+                    Reorder
                   </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
+                  <button className={styles.orderDetailsActionSecondary}>Contact Seller</button>
+                  {(selectedOrderDetails.status === 'delivered' ||
+                    selectedOrderDetails.status === 'completed') && (
+                    <button
+                      className={styles.orderDetailsActionSecondary}
+                      onClick={() => setShowReturnModal(true)}
+                    >
+                      Request Return/Refund
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.pageLayout}>
       <div className={styles.mainContent}>
         <div className={styles.profileContainer}>
           {/* Mobile Navigation Bar */}
-          <div className={styles.navigationBar}>
-            {/* Back Button */}
-            <button className={styles.backButton} onClick={() => navigate(-1)}>
-              <div className={styles.backIconCircle}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M15 18L9 12L15 6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <span>Back</span>
-            </button>
-
-            <h1 className={styles.pageTitle}>MY PROFILE</h1>
-
-            {/* Share Button */}
-            <button className={styles.shareButton}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2" />
-                <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-                <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2" />
-                <path
-                  d="M8.59 13.51L15.42 17.49M15.41 6.51L8.59 10.49"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              </svg>
-            </button>
-          </div>
 
           <div className={styles.profileGrid}>
-            {/* Sidebar Card */}
-            <div className={styles.sidebarCard}>
-              <div className={styles.avatarSection}>
+            {/* Sidebar Navigation */}
+            <div className={styles.sidebarNav}>
+              {/* Avatar and User Info */}
+              <div className={styles.avatarHeader}>
                 <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
-                <div className={styles.cameraButton} onClick={() => fileInputRef.current?.click()}>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                <div className={styles.userInfo}>
+                  <h3 className={styles.userName}>{userDisplayName}</h3>
+                  <button
+                    className={styles.editProfileBtn}
+                    onClick={() => handleTabChange('account')}
                   >
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
+                    <Edit2 size={14} strokeWidth={2} />
+                    Edit Profile
+                  </button>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -1478,78 +1469,79 @@ const ProfilePage = () => {
                   />
                 </div>
               </div>
-              <h2 className={styles.userName}>{userDisplayName}</h2>
 
-              <div className={styles.sidebarNavGrid}>
+              {/* Navigation List */}
+              <div className={styles.navList}>
+                {/* Notifications */}
                 <div
-                  className={`${styles.navCard} ${styles.navCardAccount} ${activeTab === 'account' ? styles.active : ''}`}
-                  onClick={() => handleTabChange('account')}
+                  className={`${styles.navItem} ${activeTab === 'notifications' ? styles.navItemActive : ''}`}
+                  onClick={() => handleTabChange('notifications')}
                 >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                  <span className={styles.navCardTitle}>Account</span>
+                  <Bell className={styles.navIcon} size={20} strokeWidth={2} />
+                  <span className={styles.navText}>Notifications</span>
                 </div>
 
+                {/* My Account with Dropdown */}
+                <div className={styles.navItemGroup}>
+                  <div
+                    className={`${styles.navItem} ${styles.navItemParent} ${activeTab === 'account' || activeTab === 'address' ? styles.navItemActive : ''}`}
+                    onClick={() => setShowMyAccountDropdown(!showMyAccountDropdown)}
+                  >
+                    <User className={styles.navIcon} size={20} strokeWidth={2} />
+                    <span className={styles.navText}>My Account</span>
+                    <ChevronDown
+                      className={`${styles.navArrow} ${showMyAccountDropdown ? styles.navArrowExpanded : ''}`}
+                      size={16}
+                      strokeWidth={2}
+                    />
+                  </div>
+
+                  {/* Dropdown Items */}
+                  {showMyAccountDropdown && (
+                    <div className={styles.navDropdown}>
+                      <div
+                        className={`${styles.navSubItem} ${activeTab === 'account' ? styles.navSubItemActive : ''}`}
+                        onClick={() => handleTabChange('account')}
+                      >
+                        <span className={styles.navText}>Profile</span>
+                      </div>
+                      <div
+                        className={`${styles.navSubItem} ${activeTab === 'address' ? styles.navSubItemActive : ''}`}
+                        onClick={() => handleTabChange('address')}
+                      >
+                        <span className={styles.navText}>Address</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Orders */}
                 <div
-                  className={`${styles.navCard} ${styles.navCardOrder} ${activeTab === 'orders' ? styles.active : ''}`}
+                  className={`${styles.navItem} ${activeTab === 'orders' ? styles.navItemActive : ''}`}
                   onClick={() => handleTabChange('orders')}
                 >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M21 8h-4l-3-4-3 4H7L4 8l-3 4v8h22v-8l-3-4z" />
-                    <path d="M10 12h4" />
-                  </svg>
-                  <span className={styles.navCardTitle}>Orders</span>
+                  <Package className={styles.navIcon} size={20} strokeWidth={2} />
+                  <span className={styles.navText}>My Orders</span>
                 </div>
 
+                {/* GZMart Coin */}
                 <div
-                  className={`${styles.navCard} ${styles.navCardAddress} ${activeTab === 'address' ? styles.active : ''}`}
-                  onClick={() => handleTabChange('address')}
+                  className={`${styles.navItem} ${activeTab === 'coin' ? styles.navItemActive : ''}`}
+                  onClick={() => handleTabChange('coin')}
                 >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                    <circle cx="12" cy="9" r="2.5" />
-                  </svg>
-                  <span className={styles.navCardTitle}>Address</span>
-                </div>
-
-                <div className={`${styles.navCard} ${styles.navCardLogout}`} onClick={handleLogout}>
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                  <span className={styles.navCardTitle}>Logout</span>
+                  <Coins className={styles.navIcon} size={20} strokeWidth={2} />
+                  <span className={styles.navText}>GZMart Coin</span>
                 </div>
               </div>
             </div>
 
             {/* Main Content Area */}
             <div className={styles.accountDetailsCard}>
+              {activeTab === 'notifications' && renderNotificationsTab()}
               {activeTab === 'account' && renderAccountTab()}
               {activeTab === 'address' && renderAddressTab()}
               {activeTab === 'orders' && renderOrdersTab()}
+              {activeTab === 'coin' && renderCoinTab()}
             </div>
           </div>
         </div>
@@ -1567,19 +1559,7 @@ const ProfilePage = () => {
               : t('profile_page.address.modal.title_add')}
           </h4>
           <button className={styles.modalCloseBtn} onClick={() => setShowAddressModal(false)}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <X size={24} strokeWidth={2} />
           </button>
         </div>
 

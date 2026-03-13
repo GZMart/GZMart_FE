@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { X, Save, Pencil, AlertTriangle, Send, XCircle, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchPurchaseOrderById,
   updatePurchaseOrder,
+  cancelPurchaseOrder,
   fetchSuppliers,
   clearCurrentPurchaseOrder,
+  fetchExchangeRate,
 } from '../../store/slices/erpSlice';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import drawerStyles from '@assets/styles/erp/EditPODrawer.module.css';
@@ -149,33 +152,6 @@ function computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost) 
   };
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   SVG Icons
-   ──────────────────────────────────────────────────────────────────── */
-const XIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-    <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-  </svg>
-);
-
-const SaveIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
-    <path d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5ZM10 8a1 1 0 0 1 1 1v2.586l.793-.793a1 1 0 1 1 1.414 1.414l-2.5 2.5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 1 1 1.414-1.414l.793.793V9a1 1 0 0 1 1-1Z" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-    <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
-    <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
-  </svg>
-);
-
-const WarnIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
-    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
-  </svg>
-);
 
 /* ────────────────────────────────────────────────────────────────────
    ProductGroup — Tier-select UX identical to CreatePurchaseOrderPage
@@ -333,9 +309,9 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
      onClose   {function}  — called when drawer is dismissed
      onSaved   {function}  — called after successful save (passes updated PO)
    ──────────────────────────────────────────────────────────────────── */
-const EditPODrawer = ({ poId, onClose, onSaved }) => {
+const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
   const dispatch = useDispatch();
-  const { currentPurchaseOrder: po, loading, suppliers } = useSelector((s) => s.erp);
+  const { currentPurchaseOrder: po, loading, suppliers, exchangeRate: liveRate } = useSelector((s) => s.erp);
 
   const [supplierId,           setSupplierId]           = useState('');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
@@ -351,9 +327,13 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
   });
 
   const [groups,      setGroups]      = useState([EMPTY_GROUP()]);
-  const [saving,      setSaving]      = useState(false);
-  const [errors,      setErrors]      = useState({});
-  const [submitError, setSubmitError] = useState('');
+  const [saving,       setSaving]       = useState(false);
+  const [submitting,   setSubmitting]   = useState(false);
+  const [cancelling,   setCancelling]   = useState(false);
+  const [confirmMode,  setConfirmMode]  = useState(null); // null | 'submit' | 'cancel'
+  const [cancelReason, setCancelReason] = useState('');
+  const [errors,       setErrors]       = useState({});
+  const [submitError,  setSubmitError]  = useState('');
 
   /* ── Lock body scroll while drawer is open ── */
   useEffect(() => {
@@ -372,6 +352,7 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
   useEffect(() => {
     dispatch(fetchPurchaseOrderById(poId));
     dispatch(fetchSuppliers({ limit: 100 }));
+    dispatch(fetchExchangeRate());
     return () => { dispatch(clearCurrentPurchaseOrder()); };
   }, [dispatch, poId]);
 
@@ -448,11 +429,8 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
     return Object.keys(errs).length === 0;
   };
 
-  /* ── Submit ── */
-  const handleSave = async () => {
-    setSubmitError('');
-    if (!validate()) return;
-
+  /* ── Build payload ── */
+  const buildUpdateData = (extraFields = {}) => {
     const items = groups.flatMap((g) =>
       g.variants.map((v) => {
         const priceVnd = (Number(v.unitPriceCny) || 0) * rate;
@@ -473,8 +451,7 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
         };
       })
     );
-
-    const updateData = {
+    return {
       supplierId,
       expectedDeliveryDate,
       notes,
@@ -492,17 +469,68 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
         vnDomesticShippingVnd: parseFloat(fixedCosts.vnDomesticShippingVnd) || 0,
       },
       items,
+      ...extraFields,
     };
+  };
 
+  /* ── Save draft ── */
+  const handleSave = async () => {
+    setSubmitError('');
+    if (!validate()) return;
     setSaving(true);
     try {
-      const result = await dispatch(updatePurchaseOrder({ id: poId, updateData })).unwrap();
+      const result = await dispatch(updatePurchaseOrder({ id: poId, updateData: buildUpdateData() })).unwrap();
       onSaved?.(result);
       onClose();
     } catch (err) {
       setSubmitError(err.message || err.error || 'Cannot update. Please try again.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ── Show inline submit confirmation ── */
+  const handleSaveAndSubmit = () => {
+    setSubmitError('');
+    if (!validate()) return;
+    setConfirmMode('submit');
+  };
+
+  /* ── Confirm submit (after inline panel OK) ── */
+  const confirmSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const result = await dispatch(updatePurchaseOrder({ id: poId, updateData: buildUpdateData({ status: 'Pending' }) })).unwrap();
+      onSubmitted?.(result);
+      onClose();
+    } catch (err) {
+      setConfirmMode(null);
+      setSubmitError(err.message || err.error || 'Cannot submit. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /* ── Show inline cancel confirmation ── */
+  const handleCancel = () => {
+    setCancelReason('');
+    setSubmitError('');
+    setConfirmMode('cancel');
+  };
+
+  /* ── Confirm cancel (after inline panel OK) ── */
+  const confirmCancel = async () => {
+    if (!cancelReason.trim()) return;
+    setCancelling(true);
+    try {
+      await dispatch(cancelPurchaseOrder({ id: poId, cancelReason: cancelReason.trim() })).unwrap();
+      onCancelled?.();
+      onClose();
+    } catch (err) {
+      setConfirmMode(null);
+      setSubmitError(err.message || err.error || 'Cannot cancel. Please try again.');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -520,7 +548,7 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
         {/* Header */}
         <div className={d.drawerHeader}>
           <div className={d.drawerHeaderLeft}>
-            <div className={d.drawerIcon}><EditIcon /></div>
+            <div className={d.drawerIcon}><Pencil size={16} /></div>
             <div>
               <div className={d.drawerTitle}>Edit Purchase Order</div>
               <div className={d.drawerSubtitle}>
@@ -530,7 +558,7 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
             </div>
           </div>
           <button className={d.drawerCloseBtn} onClick={onClose} aria-label="Close">
-            <XIcon />
+            <X size={16} />
           </button>
         </div>
 
@@ -544,13 +572,13 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
             <>
               {/* Edit banner */}
               <div className={d.editBanner}>
-                <WarnIcon />
-                <span>Changes are not saved immediately. Press <strong>Save changes</strong> at the bottom.</span>
+                <AlertTriangle size={15} />
+                <span>Changes are not saved immediately. Press <strong>Save Draft</strong> at the bottom.</span>
               </div>
 
               {submitError && (
                 <div className={d.errorBanner}>
-                  <WarnIcon />
+                  <AlertTriangle size={15} />
                   <span>{submitError}</span>
                 </div>
               )}
@@ -600,9 +628,22 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
                 <div className={s.formGrid3}>
                   <div className={s.formGroup}>
                     <label>Exchange Rate ¥ → VND</label>
-                    <input type="number" min="0" value={importConfig.exchangeRate}
-                      onChange={(e) => setImportConfig(c => ({ ...c, exchangeRate: e.target.value }))} />
-                    <span className={s.hint}>VND/¥</span>
+                    <input type="number" min="1" step="any" value={importConfig.exchangeRate}
+                      onChange={(e) => setImportConfig(c => ({ ...c, exchangeRate: e.target.value }))}
+                      placeholder="3500" />
+                    {liveRate?.rate ? (
+                      <span className={s.rateHint}>
+                        Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
+                        {Number(importConfig.exchangeRate) !== liveRate.rate && (
+                          <button type="button" className={s.rateSyncBtn}
+                            onClick={() => setImportConfig(c => ({ ...c, exchangeRate: liveRate.rate }))}>
+                            ↻ Use
+                          </button>
+                        )}
+                      </span>
+                    ) : (
+                      <span className={s.hint}>VND/¥</span>
+                    )}
                   </div>
                   <div className={s.formGroup}>
                     <label>Buying Service Fee (%)</label>
@@ -697,15 +738,71 @@ const EditPODrawer = ({ poId, onClose, onSaved }) => {
           ) : null}
         </div>
 
+        {/* ── Inline confirmation panels ── */}
+        {confirmMode === 'submit' && (
+          <div className={d.confirmPanel} data-variant="submit">
+            <div className={d.confirmIcon}><Send size={18} /></div>
+            <div className={d.confirmContent}>
+              <p className={d.confirmTitle}>Submit this order?</p>
+              <p className={d.confirmDesc}>Status will change to <strong>Ordering</strong>. You can still cancel later.</p>
+            </div>
+            <div className={d.confirmActions}>
+              <button type="button" className={d.confirmDismiss} onClick={() => setConfirmMode(null)} disabled={submitting}>
+                Go Back
+              </button>
+              <button type="button" className={d.confirmOk} data-variant="submit" onClick={confirmSubmit} disabled={submitting}>
+                {submitting ? <Loader2 size={13} className={d.spinIcon} /> : <Send size={13} />}
+                {submitting ? 'Submitting…' : 'Yes, Submit'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {confirmMode === 'cancel' && (
+          <div className={d.confirmPanel} data-variant="cancel">
+            <div className={d.confirmIcon}><XCircle size={18} /></div>
+            <div className={d.confirmContent}>
+              <p className={d.confirmTitle}>Cancel this order?</p>
+              <textarea
+                className={d.confirmTextarea}
+                placeholder="Reason for cancellation (required)…"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={2}
+                autoFocus
+              />
+            </div>
+            <div className={d.confirmActions}>
+              <button type="button" className={d.confirmDismiss} onClick={() => setConfirmMode(null)} disabled={cancelling}>
+                Go Back
+              </button>
+              <button type="button" className={d.confirmOk} data-variant="cancel" onClick={confirmCancel} disabled={cancelling || !cancelReason.trim()}>
+                {cancelling ? <Loader2 size={13} className={d.spinIcon} /> : <XCircle size={13} />}
+                {cancelling ? 'Cancelling…' : 'Confirm Cancel'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className={d.drawerFooter}>
-          <button type="button" className={s.btnSecondary} onClick={onClose} disabled={saving}>
-            Cancel
+          <button type="button" className={d.btnCancelOrder} onClick={handleCancel} disabled={saving || submitting || cancelling || !!confirmMode || !po}>
+            <XCircle size={13} />
+            Cancel Order
           </button>
-          <button type="button" className={s.btnPrimary} onClick={handleSave} disabled={saving || !po}>
-            <SaveIcon />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+          <div className={d.drawerFooterRight}>
+            <button type="button" className={s.btnSecondary} onClick={onClose} disabled={saving || submitting || cancelling}>
+              Close
+            </button>
+            <button type="button" className={s.btnPrimary} onClick={handleSave} disabled={saving || submitting || cancelling || !!confirmMode || !po}>
+              {saving ? <Loader2 size={14} className={d.spinIcon} /> : <Save size={14} />}
+              {saving ? 'Saving...' : 'Save Draft'}
+            </button>
+            <button type="button" className={d.btnSubmitOrder} onClick={handleSaveAndSubmit} disabled={saving || submitting || cancelling || !!confirmMode || !po}>
+              <Send size={14} />
+              Submit Order
+            </button>
+          </div>
         </div>
       </div>
     </>,

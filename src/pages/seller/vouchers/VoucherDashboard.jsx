@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import SortableHeader, { useSortState, sortRows } from '../../../components/common/SortableHeader';
 import { Container, Row, Col, Card, Nav, Tab, Button, Badge, Table, ProgressBar, Form, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import voucherService from '@services/api/voucherService';
@@ -24,6 +25,16 @@ const VoucherDashboard = () => {
     const [vouchers, setVouchers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+    const { sortKey, sortDir, handleSort } = useSortState();
+
+    const sortedVouchers = useMemo(() =>
+      sortRows(vouchers, sortKey, sortDir, {
+        discount: (v) => v.discountType === 'percentage' ? v.discountValue : v.discountValue,
+        usage:    (v) => v.usageCount ?? 0,
+        status:   (v) => ({ active: 0, upcoming: 1, expired: 2, inactive: 3 })[v.status] ?? 4,
+        validity: (v) => new Date(v.startDate).getTime(),
+      }),
+    [vouchers, sortKey, sortDir]);
 
     // Fetch Vouchers
     const fetchVouchers = async () => {
@@ -194,12 +205,12 @@ const VoucherDashboard = () => {
                                     <Table hover className="align-middle mb-0" style={{ fontSize: '0.9rem' }}>
                                         <thead className={styles.tableHeader}>
                                             <tr>
-                                                <th className="ps-4">Voucher Name | Code</th>
-                                                <th>Type</th>
-                                                <th>Discount</th>
-                                                <th style={{ minWidth: '140px' }}>Usage</th>
-                                                <th>Status</th>
-                                                <th>Validity Period</th>
+                                                <SortableHeader label="Voucher Name | Code" colKey="name"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="ps-4" />
+                                                <SortableHeader label="Type"                colKey="type"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                                                <SortableHeader label="Discount"            colKey="discount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                                                <SortableHeader label="Usage"               colKey="usage"    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                                                <SortableHeader label="Status"              colKey="status"   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                                                <SortableHeader label="Validity Period"     colKey="validity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                                                 <th className="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
@@ -210,8 +221,8 @@ const VoucherDashboard = () => {
                                                         <div className="spinner-border text-primary" role="status"></div>
                                                     </td>
                                                 </tr>
-                                            ) : vouchers.length > 0 ? (
-                                                vouchers.map(voucher => (
+                                            ) : sortedVouchers.length > 0 ? (
+                                                sortedVouchers.map(voucher => (
                                                     <tr key={voucher._id}>
                                                         <td className="ps-4 py-3">
                                                             <div className="fw-bold text-dark">{voucher.name}</div>

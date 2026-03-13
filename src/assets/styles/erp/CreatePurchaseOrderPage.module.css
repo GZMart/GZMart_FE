@@ -753,6 +753,31 @@
   font-style: italic;
 }
 
+/* ── Live exchange rate hint ───────────────────────────────────── */
+.rateHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: #d97706;
+  margin-top: 0.25rem;
+}
+.rateHint strong { color: #b45309; }
+
+.rateSyncBtn {
+  background: none;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #d97706;
+  padding: 0.05rem 0.4rem;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: background 0.15s;
+}
+.rateSyncBtn:hover { background: #fef3c7; }
+
 /* ── Form Error / Validation ───────────────────────────────────── */
 .errorText {
   color: var(--po-red);

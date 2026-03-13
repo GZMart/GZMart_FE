@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from '../../assets/styles/ShopInfoCard.module.css';
 
-const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onToggleFollow }) => {
+const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onToggleFollow, productInfo = null }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -17,9 +17,9 @@ const ShopInfoCard = ({ seller, showViewShop = true, isFollowing = false, onTogg
     if (!sellerId) return;
 
     // Dispatch custom event that ChatWidget listens to
-    console.log('ShopInfoCard: Dispatching openChatWithShop for:', sellerId);
+    console.log('ShopInfoCard: Dispatching openChatWithShop for:', sellerId, 'with product:', productInfo);
     const event = new CustomEvent('openChatWithShop', {
-      detail: { shopId: sellerId }
+      detail: { shopId: sellerId, productInfo }
     });
     window.dispatchEvent(event);
   };

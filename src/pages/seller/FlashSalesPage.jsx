@@ -979,6 +979,12 @@ const FlashSalesPage = () => {
       title: 'Campaign / Product',
       key: 'campaign',
       width: 220,
+      sorter: (a, b) => {
+        const aName = a.campaignTitle || a.productId?.name || '';
+        const bName = b.campaignTitle || b.productId?.name || '';
+        return aName.localeCompare(bName);
+      },
+      showSorterTooltip: false,
       render: (_, group) => (
         <div className={styles.campaignCell}>
           <span className={styles.campaignName}>{group.campaignTitle || group.productId?.name}</span>
@@ -995,6 +1001,8 @@ const FlashSalesPage = () => {
       title: 'Price',
       key: 'price',
       width: 150,
+      sorter: (a, b) => (a.salePrice ?? 0) - (b.salePrice ?? 0),
+      showSorterTooltip: false,
       render: (_, group) => (
         <div className={styles.priceColumn}>
           <div className={styles.salePrice}>
@@ -1012,6 +1020,8 @@ const FlashSalesPage = () => {
       title: 'Qty / Sold',
       key: 'quantity',
       width: 150,
+      sorter: (a, b) => (a.soldQuantity ?? 0) - (b.soldQuantity ?? 0),
+      showSorterTooltip: false,
       render: (_, group) => {
         const pct = group.totalQuantity ? Math.round((group.soldQuantity / group.totalQuantity) * 100) : 0;
         return (
@@ -1034,6 +1044,8 @@ const FlashSalesPage = () => {
       title: 'Time',
       key: 'time',
       width: 200,
+      sorter: (a, b) => new Date(a.startAt) - new Date(b.startAt),
+      showSorterTooltip: false,
       render: (_, group) => (
         <div className={styles.timeColumn}>
           <div><span className={styles.timeLabel}>Start</span> {dayjs(group.startAt).format('DD/MM HH:mm')}</div>
@@ -1045,6 +1057,11 @@ const FlashSalesPage = () => {
       title: 'Status',
       key: 'status',
       width: 110,
+      sorter: (a, b) => {
+        const order = { active: 0, upcoming: 1, pending: 2, ended: 3, cancelled: 4, expired: 5 };
+        return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+      },
+      showSorterTooltip: false,
       render: (_, group) => {
         const s = group.status;
         const cls =

@@ -1,90 +1,195 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import SortableHeader from '../../components/common/SortableHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import {
   fetchPurchaseOrders,
   completePurchaseOrder,
   cancelPurchaseOrder,
+  fetchSuppliers,
 } from '../../store/slices/erpSlice';
+import {
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Pencil,
+  Check,
+  X,
+  Package,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  MoreHorizontal,
+  Loader2,
+  Search,
+  FilterX,
+} from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EditPODrawer from '../../components/erp/EditPODrawer';
 import styles from '@assets/styles/erp/PurchaseOrdersPage.module.css';
 
-// ── SVG Icons ────────────────────────────────────────────────────────────────
-const IconPlus   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>;
-const IconChevL  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m15 18-6-6 6-6"/></svg>;
-const IconChevR  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6"/></svg>;
-const IconEye    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
-const IconEdit   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const IconCheck  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6 9 17l-5-5"/></svg>;
-const IconX      = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>;
-const IconBox    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
-const IconClock  = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-const IconOk     = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
-const IconBan    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>;
-const IconWarn   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+// ── Kebab Dropdown ────────────────────────────────────────────────────────────
+const KebabMenu = ({ items }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className={styles.kebabWrap} ref={ref}>
+      <button
+        className={styles.kebabTrigger}
+        onClick={() => setOpen(o => !o)}
+        aria-label="More actions"
+        title="More actions"
+      >
+        <MoreHorizontal size={15} />
+      </button>
+      {open && (
+        <div className={styles.kebabMenu}>
+          {items.map((item) => (
+            <button
+              key={item.label}
+              className={`${styles.kebabItem} ${item.danger ? styles.kebabItemDanger : ''}`}
+              onClick={() => { item.onClick(); setOpen(false); }}
+              disabled={item.disabled}
+            >
+              {item.icon && <span className={styles.kebabItemIcon}>{item.icon}</span>}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
 const PurchaseOrdersPage = () => {
   const dispatch = useDispatch();
-  const { purchaseOrders, purchaseOrdersPagination, loading, error } = useSelector(
+  const { purchaseOrders, purchaseOrdersPagination, loading, error, suppliers } = useSelector(
     (state) => state.erp
   );
 
   const [filters, setFilters] = useState({
     status: '',
+    supplierId: '',
+    search: '',
+    dateFrom: '',
+    dateTo: '',
     page: 1,
     limit: 20,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
 
-  const [cancelModal, setCancelModal] = useState({ show: false, id: null });
+  // debounced search value that actually triggers API call
+  const [searchInput, setSearchInput]   = useState('');
+  const searchTimer                      = useRef(null);
+
+  const [cancelModal, setCancelModal]   = useState({ show: false, id: null });
   const [cancelReason, setCancelReason] = useState('');
-  const [editingPoId, setEditingPoId] = useState(null);
+  const [editingPoId, setEditingPoId]   = useState(null);
+  const [receivingId, setReceivingId]   = useState(null);
+
+  const COL_TO_SORT = {
+    orderNumber:          'orderNumber',
+    supplierName:         'supplier',
+    createdAt:            'createdAt',
+    expectedDeliveryDate: 'expectedDeliveryDate',
+    finalAmount:          'finalAmount',
+    status:               'status',
+  };
+
+  const handleSort = useCallback((colKey) => {
+    const backendField = COL_TO_SORT[colKey];
+    if (!backendField) return;
+    setFilters(prev => ({
+      ...prev,
+      sortBy: backendField,
+      sortOrder: prev.sortBy === backendField && prev.sortOrder === 'asc' ? 'desc' : 'asc',
+      page: 1,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const apiFilters = useMemo(() => {
+    const { dateFrom, dateTo, ...rest } = filters;
+    return { ...rest, ...(dateFrom && { startDate: dateFrom }), ...(dateTo && { endDate: dateTo }) };
+  }, [filters]);
 
   useEffect(() => {
-    dispatch(fetchPurchaseOrders(filters));
-  }, [dispatch, filters]);
+    dispatch(fetchPurchaseOrders(apiFilters));
+  }, [dispatch, apiFilters]);
 
-  // Stat counts derived from current list
+  useEffect(() => {
+    if (!suppliers?.length) dispatch(fetchSuppliers({ limit: 200 }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
+
+  const handleSearchChange = (val) => {
+    setSearchInput(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setFilters(p => ({ ...p, search: val, page: 1 }));
+    }, 400);
+  };
+
+  const activeFilterCount = [filters.supplierId, filters.dateFrom, filters.dateTo, filters.status]
+    .filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearchInput('');
+    setFilters(p => ({ ...p, status: '', supplierId: '', search: '', dateFrom: '', dateTo: '', page: 1 }));
+  };
+
   const stats = useMemo(() => {
-    const all = purchaseOrders;
+    const sc = purchaseOrdersPagination?.statusCounts;
     return {
-      total:     all.length,
-      pending:   all.filter(p => p.status === 'Pending').length,
-      completed: all.filter(p => p.status === 'Completed').length,
-      cancelled: all.filter(p => p.status === 'Cancelled').length,
+      total:     sc?.total     ?? purchaseOrdersPagination?.total ?? 0,
+      pending:   sc?.Pending   ?? 0,
+      completed: sc?.Completed ?? 0,
+      cancelled: sc?.Cancelled ?? 0,
     };
-  }, [purchaseOrders]);
+  }, [purchaseOrdersPagination]);
 
-  const handleComplete = async (id) => {
-    if (window.confirm('Confirm order completion? This will update inventory and cannot be undone.')) {
-      try {
-        await dispatch(completePurchaseOrder(id)).unwrap();
-        dispatch(fetchPurchaseOrders(filters));
-      } catch (err) {
-        alert('Cannot complete purchase order: ' + (err.error || err));
-      }
+  // Pending → Completed (updates inventory)
+  const handleReceive = async (id) => {
+    if (!window.confirm('Confirm goods received? This will update inventory and cannot be undone.')) return;
+    setReceivingId(id);
+    try {
+      await dispatch(completePurchaseOrder(id)).unwrap();
+      dispatch(fetchPurchaseOrders(apiFilters));
+    } catch (err) {
+      alert('Cannot confirm receipt: ' + (err.error || err.message || err));
+    } finally {
+      setReceivingId(null);
     }
   };
 
   const handleCancelSubmit = async () => {
-    if (!cancelReason.trim()) { alert('Please enter a cancellation reason'); return; }
+    if (!cancelReason.trim()) { alert('Please enter a cancellation reason.'); return; }
     try {
       await dispatch(cancelPurchaseOrder({ id: cancelModal.id, cancelReason })).unwrap();
       setCancelModal({ show: false, id: null });
       setCancelReason('');
-      dispatch(fetchPurchaseOrders(filters));
+      dispatch(fetchPurchaseOrders(apiFilters));
     } catch (err) {
-      alert('Cannot cancel purchase order: ' + (err.error || err));
+      alert('Cannot cancel: ' + (err.error || err.message || err));
     }
   };
 
   const getStatusBadge = (status) => {
     const map = {
       Draft:     { label: 'Draft',     cls: styles.badgeDraft,     dot: '#94a3b8' },
-      Pending:   { label: 'Pending',   cls: styles.badgePending,   dot: '#d97706' },
-      Completed: { label: 'Completed', cls: styles.badgeCompleted, dot: '#10b981' },
+      Pending:   { label: 'Ordering',  cls: styles.badgePending,   dot: '#d97706' },
+      Completed: { label: 'Received',  cls: styles.badgeCompleted, dot: '#10b981' },
       Cancelled: { label: 'Cancelled', cls: styles.badgeCancelled, dot: '#ef4444' },
     };
     const cfg = map[status] || map.Draft;
@@ -96,22 +201,77 @@ const PurchaseOrdersPage = () => {
     );
   };
 
-  const fmtVnd = (n) => new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 0 }).format(n || 0) + ' ₫';
+  const fmtVnd  = (n) => new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 0 }).format(n || 0) + ' ₫';
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+
+  // Build action set per PO status
+  const renderActions = (po) => {
+    const isReceiving = receivingId === po._id;
+
+    return (
+      <div className={styles.rowActions}>
+        {/* View — always visible (ghost) */}
+        <Link
+          to={`/seller/erp/purchase-orders/${po._id}`}
+          className={`${styles.actionBtn} ${styles.btnView}`}
+          title="View details"
+        >
+          <Eye size={14} /> View
+        </Link>
+
+        {/* ── Draft: Edit only (Cancel lives inside the drawer) ── */}
+        {po.status === 'Draft' && (
+          <button
+            className={`${styles.actionBtn} ${styles.btnIconOnly}`}
+            onClick={() => setEditingPoId(po._id)}
+            title="Edit order"
+            aria-label="Edit"
+          >
+            <Pencil size={14} />
+          </button>
+        )}
+
+        {/* ── Pending: Receive + kebab(Cancel) ── */}
+        {po.status === 'Pending' && (
+          <>
+            <button
+              className={`${styles.actionBtn} ${styles.btnPrimaryAction} ${styles.btnGreen}`}
+              onClick={() => handleReceive(po._id)}
+              disabled={isReceiving}
+              title="Confirm goods received"
+            >
+              {isReceiving
+                ? <Loader2 size={13} className={styles.spinIcon} />
+                : <Check size={13} />}
+              {isReceiving ? 'Confirming…' : 'Receive'}
+            </button>
+
+            <KebabMenu items={[
+              {
+                label: 'Cancel Order',
+                icon: <X size={13} />,
+                danger: true,
+                onClick: () => setCancelModal({ show: true, id: po._id }),
+              },
+            ]} />
+          </>
+        )}
+      </div>
+    );
+  };
 
   if (loading && !purchaseOrders.length) return <LoadingSpinner />;
 
   return (
     <div className={styles.container}>
-
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1>Purchase Orders</h1>
           <p className={styles.headerSub}>Manage Guangzhou Imports · Landed Cost</p>
         </div>
-        <Link to="/erp/purchase-orders/create" className={styles.btnPrimary}>
-          <IconPlus /> Create Order
+        <Link to="/seller/erp/purchase-orders/create" className={styles.btnPrimary}>
+          <Plus size={14} /> Create Order
         </Link>
       </div>
 
@@ -120,28 +280,28 @@ const PurchaseOrdersPage = () => {
       {/* Stat Cards */}
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#eef2ff', color: '#6366f1' }}><IconBox /></div>
+          <div className={styles.statIcon} style={{ background: '#eef2ff', color: '#6366f1' }}><Package size={20} strokeWidth={1.8} /></div>
           <div className={styles.statInfo}>
-            <div className={styles.statValue}>{purchaseOrdersPagination?.total ?? stats.total}</div>
+            <div className={styles.statValue}>{stats.total}</div>
             <div className={styles.statLabel}>Total Orders</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#fffbeb', color: '#d97706' }}><IconClock /></div>
+          <div className={styles.statIcon} style={{ background: '#fffbeb', color: '#d97706' }}><Clock size={20} strokeWidth={1.8} /></div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.pending}</div>
-            <div className={styles.statLabel}>Pending</div>
+            <div className={styles.statLabel}>Ordering</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#ecfdf5', color: '#10b981' }}><IconOk /></div>
+          <div className={styles.statIcon} style={{ background: '#ecfdf5', color: '#10b981' }}><CheckCircle2 size={20} strokeWidth={1.8} /></div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.completed}</div>
-            <div className={styles.statLabel}>Completed</div>
+            <div className={styles.statLabel}>Received</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#fef2f2', color: '#ef4444' }}><IconBan /></div>
+          <div className={styles.statIcon} style={{ background: '#fef2f2', color: '#ef4444' }}><XCircle size={20} strokeWidth={1.8} /></div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.cancelled}</div>
             <div className={styles.statLabel}>Cancelled</div>
@@ -149,30 +309,72 @@ const PurchaseOrdersPage = () => {
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className={styles.toolbar}>
-        <span className={styles.filterLabel}>Filter:</span>
-        <div className={styles.filterGroup}>
-          <select className={styles.select} value={filters.status}
-            onChange={(e) => setFilters(p => ({ ...p, status: e.target.value, page: 1 }))}>
-            <option value="">All Statuses</option>
-            <option value="Draft">Draft</option>
-            <option value="Pending">Pending</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-          <select className={styles.select} value={filters.sortBy}
-            onChange={(e) => setFilters(p => ({ ...p, sortBy: e.target.value }))}>
-            <option value="createdAt">Sort: Created Date</option>
-            <option value="expectedDeliveryDate">Sort: Delivery Date</option>
-            <option value="finalAmount">Sort: Total Amount</option>
-          </select>
-          <select className={styles.select} value={filters.sortOrder}
-            onChange={(e) => setFilters(p => ({ ...p, sortOrder: e.target.value }))}>
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
-          </select>
+      {/* Filter Bar */}
+      <div className={styles.filterBar}>
+        {/* Search */}
+        <div className={styles.filterSearch}>
+          <Search size={14} className={styles.filterSearchIcon} />
+          <input
+            type="text"
+            className={styles.filterSearchInput}
+            placeholder="Search by order number…"
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
         </div>
+
+        {/* Status */}
+        <select
+          className={styles.filterSelect}
+          value={filters.status}
+          onChange={(e) => setFilters(p => ({ ...p, status: e.target.value, page: 1 }))}
+        >
+          <option value="">All Statuses</option>
+          <option value="Draft">Draft</option>
+          <option value="Pending">Ordering</option>
+          <option value="Completed">Received</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+
+        {/* Supplier */}
+        <select
+          className={styles.filterSelect}
+          value={filters.supplierId}
+          onChange={(e) => setFilters(p => ({ ...p, supplierId: e.target.value, page: 1 }))}
+        >
+          <option value="">All Suppliers</option>
+          {(suppliers || []).map(s => (
+            <option key={s._id} value={s._id}>{s.name}</option>
+          ))}
+        </select>
+
+        {/* Date range */}
+        <div className={styles.filterDateRange}>
+          <input
+            type="date"
+            className={styles.filterDate}
+            value={filters.dateFrom}
+            onChange={(e) => setFilters(p => ({ ...p, dateFrom: e.target.value, page: 1 }))}
+            title="Created from"
+          />
+          <span className={styles.filterDateSep}>–</span>
+          <input
+            type="date"
+            className={styles.filterDate}
+            value={filters.dateTo}
+            onChange={(e) => setFilters(p => ({ ...p, dateTo: e.target.value, page: 1 }))}
+            title="Created to"
+          />
+        </div>
+
+        {/* Clear */}
+        {(activeFilterCount > 0 || searchInput) && (
+          <button className={styles.filterClearBtn} onClick={clearFilters} title="Clear all filters">
+            <FilterX size={14} />
+            Clear
+            {activeFilterCount > 0 && <span className={styles.filterBadge}>{activeFilterCount}</span>}
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -180,14 +382,14 @@ const PurchaseOrdersPage = () => {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Order Number</th>
-              <th>Supplier</th>
-              <th>Created At</th>
-              <th>Expected Delivery</th>
+              <SortableHeader label="Order Number"      colKey="orderNumber"          sortKey={filters.sortBy === 'orderNumber' ? 'orderNumber' : null}                   sortDir={filters.sortOrder} onSort={handleSort} />
+              <SortableHeader label="Supplier"          colKey="supplierName"         sortKey={filters.sortBy === 'supplier' ? 'supplierName' : null}                      sortDir={filters.sortOrder} onSort={handleSort} />
+              <SortableHeader label="Created At"        colKey="createdAt"            sortKey={filters.sortBy === 'createdAt' ? 'createdAt' : null}                        sortDir={filters.sortOrder} onSort={handleSort} />
+              <SortableHeader label="Expected Delivery" colKey="expectedDeliveryDate" sortKey={filters.sortBy === 'expectedDeliveryDate' ? 'expectedDeliveryDate' : null}  sortDir={filters.sortOrder} onSort={handleSort} />
               <th>Products</th>
-              <th style={{ textAlign: 'right' }}>Total</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <SortableHeader label="Total"             colKey="finalAmount"          sortKey={filters.sortBy === 'finalAmount' ? 'finalAmount' : null}                    sortDir={filters.sortOrder} onSort={handleSort} align="right" />
+              <SortableHeader label="Status"            colKey="status"               sortKey={filters.sortBy === 'status' ? 'status' : null}                              sortDir={filters.sortOrder} onSort={handleSort} />
+              <th className={styles.thActions}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -195,61 +397,31 @@ const PurchaseOrdersPage = () => {
               <tr>
                 <td colSpan={8}>
                   <div className={styles.emptyState}>
-                    <svg className={styles.emptyIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0ll7-4A2 2 0 0021 16z"/>
-                    </svg>
+                    <Package size={40} strokeWidth={1.2} color="#d1d5db" />
                     <p>No purchase orders yet</p>
-                    <Link to="/erp/purchase-orders/create" className={styles.btnPrimary}>
-                      <IconPlus /> Create first order
+                    <Link to="/seller/erp/purchase-orders/create" className={styles.btnPrimary}>
+                      <Plus size={14} /> Create first order
                     </Link>
                   </div>
                 </td>
               </tr>
             ) : (
               purchaseOrders.map((po) => (
-                <tr key={po._id}>
+                <tr key={po._id} className={styles.tableRow}>
                   <td>
-                    <Link to={`/erp/purchase-orders/${po._id}`} className={styles.codeLink}>
+                    <Link to={`/seller/erp/purchase-orders/${po._id}`} className={styles.codeLink}>
                       {po.code}
                     </Link>
                   </td>
                   <td><span className={styles.supplierName}>{po.supplierId?.name || '—'}</span></td>
                   <td><span className={styles.dateText}>{fmtDate(po.createdAt)}</span></td>
                   <td><span className={styles.dateText}>{fmtDate(po.expectedDeliveryDate)}</span></td>
-                  <td>
-                    <span className={styles.itemCount}>
-                      {po.items?.length || 0} SKU
-                    </span>
-                  </td>
+                  <td><span className={styles.itemCount}>{po.items?.length || 0} SKU</span></td>
                   <td style={{ textAlign: 'right' }}>
                     <span className={styles.amount}>{fmtVnd(po.finalAmount)}</span>
                   </td>
                   <td>{getStatusBadge(po.status)}</td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <Link to={`/erp/purchase-orders/${po._id}`} className={`${styles.actionBtn} ${styles.btnView}`}>
-                        <IconEye /> View
-                      </Link>
-                      {po.status === 'Draft' && (
-                        <button
-                          className={`${styles.actionBtn} ${styles.btnEdit}`}
-                          onClick={() => setEditingPoId(po._id)}
-                        >
-                          <IconEdit /> Edit
-                        </button>
-                      )}
-                      {po.status === 'Pending' && (
-                        <>
-                          <button className={`${styles.actionBtn} ${styles.btnComplete}`} onClick={() => handleComplete(po._id)}>
-                            <IconCheck /> Complete
-                          </button>
-                          <button className={`${styles.actionBtn} ${styles.btnCancel}`} onClick={() => setCancelModal({ show: true, id: po._id })}>
-                            <IconX /> Cancel
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+                  <td className={styles.tdActions}>{renderActions(po)}</td>
                 </tr>
               ))
             )}
@@ -263,7 +435,7 @@ const PurchaseOrdersPage = () => {
           <button className={styles.pageBtn}
             disabled={filters.page === 1}
             onClick={() => setFilters(p => ({ ...p, page: p.page - 1 }))}>
-            <IconChevL /> Prev
+            <ChevronLeft size={14} /> Prev
           </button>
           <span className={styles.pageInfo}>
             Page {filters.page} of {purchaseOrdersPagination.totalPages}
@@ -271,7 +443,7 @@ const PurchaseOrdersPage = () => {
           <button className={styles.pageBtn}
             disabled={filters.page === purchaseOrdersPagination.totalPages}
             onClick={() => setFilters(p => ({ ...p, page: p.page + 1 }))}>
-            Next <IconChevR />
+            Next <ChevronRight size={14} />
           </button>
         </div>
       )}
@@ -281,7 +453,7 @@ const PurchaseOrdersPage = () => {
         <div className={styles.modal} onClick={(e) => e.target === e.currentTarget && setCancelModal({ show: false, id: null })}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
-              <span style={{ color: '#ef4444' }}><IconWarn /></span>
+              <AlertTriangle size={18} color="#ef4444" />
               <h2 className={styles.modalTitle}>Cancel Purchase Order</h2>
             </div>
             <div className={styles.formGroup}>
@@ -306,12 +478,14 @@ const PurchaseOrdersPage = () => {
         </div>
       )}
 
-      {/* ── Edit PO Drawer ── */}
+      {/* Edit PO Drawer */}
       {editingPoId && (
         <EditPODrawer
           poId={editingPoId}
           onClose={() => setEditingPoId(null)}
-          onSaved={() => dispatch(fetchPurchaseOrders(filters))}
+          onSaved={() => dispatch(fetchPurchaseOrders(apiFilters))}
+          onSubmitted={() => dispatch(fetchPurchaseOrders(apiFilters))}
+          onCancelled={() => dispatch(fetchPurchaseOrders(apiFilters))}
         />
       )}
     </div>

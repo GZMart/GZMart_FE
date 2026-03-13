@@ -262,4 +262,5 @@ export const api = {
   delete: (url, config) => axiosClient.delete(url, config),
 };
 
+export { API_BASE_URL };
 export default axiosClient;
