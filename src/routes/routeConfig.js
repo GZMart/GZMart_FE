@@ -25,6 +25,7 @@ const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPag
 const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
 // const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage')); // Removed: Use ProfilePage tab=orders
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
+const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
@@ -61,6 +62,7 @@ const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboProm
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
+const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -261,6 +263,13 @@ export const routeConfig = [
   {
     path: '/buyer/profile',
     element: ProfilePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/notifications',
+    element: NotificationPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
@@ -511,6 +520,13 @@ export const routeConfig = [
   {
     path: '/seller/promotions/edit/addon/:id',
     element: AddOnDealForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/notifications',
+    element: ShopNotificationsPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
