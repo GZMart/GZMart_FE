@@ -62,9 +62,13 @@ const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 
+// Buyer - Seller Application
+const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
+
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
 const UsersPage = lazy(() => import('@pages/admin/UsersPage'));
+const SellerApplicationsPage = lazy(() => import('@pages/admin/SellerApplicationsPage'));
 const SystemConfigPage = lazy(() => import('@pages/admin/SystemConfigPage'));
 const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
@@ -268,6 +272,13 @@ export const routeConfig = [
   {
     path: '/buyer/wallet',
     element: MyWalletPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/seller-application',
+    element: SellerApplicationPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',
@@ -527,6 +538,13 @@ export const routeConfig = [
   {
     path: '/admin/users',
     element: UsersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/seller-applications',
+    element: SellerApplicationsPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',

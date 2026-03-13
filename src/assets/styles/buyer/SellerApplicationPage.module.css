@@ -1,0 +1,370 @@
+/* split-screen-onboarding.module.css */
+
+.splitLayout {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #f8fafc;
+}
+
+/* LEFT PANEL (Dark Gradient, Branding, Benefits) */
+.leftPanel {
+  display: none;
+  width: 45%;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 64px 48px;
+  position: relative;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+@media (min-width: 1024px) {
+  .leftPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+.decorativeCircle1 {
+  position: absolute;
+  top: -10%;
+  left: -20%;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  z-index: 0;
+}
+
+.decorativeCircle2 {
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%);
+  z-index: 0;
+}
+
+.leftContent {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 64px;
+}
+
+.brandIcon {
+  font-size: 32px;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.brandName {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.heroTitle {
+  font-family: 'Cormorant', serif;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.heroSubtitle {
+  font-size: 18px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 48px;
+  font-weight: 400;
+}
+
+.benefitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.benefitItem {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  transition: transform 0.3s ease;
+}
+
+.benefitItem:hover {
+  transform: translateX(8px);
+}
+
+.benefitIconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.benefitTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.benefitDesc {
+  font-size: 15px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* RIGHT PANEL (Form Area) */
+.rightPanel {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+@media (min-width: 1024px) {
+  .rightPanel {
+    width: 55%;
+    padding: 64px 48px;
+    align-items: center;
+  }
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 0;
+  color: #64748b;
+  gap: 16px;
+}
+
+/* User Chip */
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.userEmail {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* Form Styles */
+.formHeader {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-family: 'Cormorant', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.formSubtitle {
+  font-size: 16px;
+  color: #64748b;
+}
+
+.formSection {
+  background: #fff;
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 24px;
+}
+
+.formSectionTitle {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 20px;
+}
+
+@media (min-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Ant Design Overrides */
+:global(.ant-form-item-label > label) {
+  font-weight: 500 !important;
+  color: #334155 !important;
+  font-size: 14px !important;
+}
+
+:global(.ant-input), :global(.ant-input-password), :global(.ant-select-selector) {
+  border-radius: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.2s ease !important;
+  background-color: #f8fafc !important;
+}
+
+:global(.ant-input-affix-wrapper) {
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    background-color: #f8fafc !important;
+    padding: 0 11px !important;
+}
+
+:global(.ant-input-affix-wrapper > input.ant-input) {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+:global(.ant-input:hover), :global(.ant-select:hover .ant-select-selector), :global(.ant-input-affix-wrapper:hover) {
+  border-color: #94a3b8 !important;
+  background-color: #fff !important;
+}
+
+:global(.ant-input:focus), :global(.ant-input-focused), :global(.ant-select-focused .ant-select-selector), :global(.ant-input-affix-wrapper-focused) {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+  background-color: #fff !important;
+}
+
+.inputIcon {
+  color: #94a3b8;
+}
+
+.submitBtn {
+  height: 56px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 16px !important;
+  background: #0f172a !important; /* Premium Dark */
+  border: none !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.2), 0 2px 4px -2px rgba(15, 23, 42, 0.1) !important;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.3), 0 4px 6px -4px rgba(15, 23, 42, 0.2) !important;
+  background: #1e293b !important;
+}
+
+.termsText {
+  text-align: center;
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+/* History Section */
+.historySection {
+  margin-top: 40px;
+}
+
+.applicationItem {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.appHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.appDate {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.statusTag {
+  border-radius: 8px !important;
+  padding: 4px 12px !important;
+  border: ruby !important; /* Fix for transparent borders usually found in custom tags */
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.reviewNote {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border-left: 4px solid #3b82f6;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
