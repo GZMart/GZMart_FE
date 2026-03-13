@@ -373,7 +373,9 @@ const ReturnsPage = () => {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={(p) => {
-                  if (p >= 1 && p <= totalPages) setCurrentPage(p);
+                  if (p >= 1 && p <= totalPages) {
+                    setCurrentPage(p);
+                  }
                 }}
               />
             </div>

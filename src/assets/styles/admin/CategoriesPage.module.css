@@ -50,7 +50,9 @@
   border-radius: 9px !important;
   font-weight: 600 !important;
   box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35) !important;
-  transition: box-shadow 0.2s, transform 0.15s !important;
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s !important;
 }
 .btnAdd:hover {
   transform: translateY(-1px);
@@ -77,11 +79,22 @@
   cursor: default;
   transition: transform 0.15s;
 }
-.statCard:hover { transform: translateY(-2px); }
+.statCard:hover {
+  transform: translateY(-2px);
+}
 
-.statTotal  { background: #f5f3ff; border-color: #ede9fe; }
-.statActive { background: #f0fdf4; border-color: #bbf7d0; }
-.statInactive{ background: #f9fafb; border-color: #e5e7eb; }
+.statTotal {
+  background: #f5f3ff;
+  border-color: #ede9fe;
+}
+.statActive {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.statInactive {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
 
 .statNum {
   font-size: 1.9rem;
@@ -89,15 +102,21 @@
   line-height: 1;
   margin-bottom: 2px;
 }
-.statTotal  .statNum  { color: #4f46e5; }
-.statActive  .statNum  { color: #16a34a; }
-.statInactive .statNum { color: #9ca3af; }
+.statTotal .statNum {
+  color: #4f46e5;
+}
+.statActive .statNum {
+  color: #16a34a;
+}
+.statInactive .statNum {
+  color: #9ca3af;
+}
 
 .statLabel {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .7px;
+  letter-spacing: 0.7px;
   color: #6b7280;
 }
 
@@ -106,7 +125,9 @@
   background: #fff;
   border-radius: 14px;
   border: 1px solid #f0f0f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
@@ -135,10 +156,17 @@
   width: 240px !important;
   border-radius: 8px !important;
 }
-.searchInput :global(.ant-input-prefix) { color: #9ca3af; }
-.searchInput:focus-within { border-color: #6366f1 !important; }
+.searchInput :global(.ant-input-prefix) {
+  color: #9ca3af;
+}
+.searchInput:focus-within {
+  border-color: #6366f1 !important;
+}
 
-.searchIcon { color: #9ca3af; font-size: 13px; }
+.searchIcon {
+  color: #9ca3af;
+  font-size: 13px;
+}
 
 .filterSelect {
   width: 140px !important;
@@ -152,10 +180,15 @@
   font-size: 13px !important;
   padding: 0 8px !important;
 }
-.btnClear:hover { color: #dc2626 !important; background: #fef2f2 !important; }
+.btnClear:hover {
+  color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
 
 /* Right side of toolbar */
-.toolbarRight { flex-shrink: 0; }
+.toolbarRight {
+  flex-shrink: 0;
+}
 
 .resultCount {
   font-size: 0.78rem;
@@ -172,19 +205,24 @@
   font-weight: 600;
   color: #9ca3af;
   text-transform: uppercase;
-  letter-spacing: .6px;
+  letter-spacing: 0.6px;
 }
 .btnToggleAll {
   font-size: 0.8rem !important;
   color: #6366f1 !important;
   gap: 4px;
 }
-.btnToggleAll:hover { color: #4338ca !important; }
-
+.btnToggleAll:hover {
+  color: #4338ca !important;
+}
 
 /* Row depths */
-.rowRoot td { background: #ffffff !important; }
-.rowChild td { background: #fafafa !important; }
+.rowRoot td {
+  background: #ffffff !important;
+}
+.rowChild td {
+  background: #fafafa !important;
+}
 
 /* Row hover */
 :global(.ant-table-tbody > tr.rowRoot:hover > td),
@@ -244,26 +282,35 @@
   border-radius: 2px;
   flex-shrink: 0;
 }
-.depth0 { background: #4f46e5; }
-.depth1 { background: #0ea5e9; }
-.depth2 { background: #10b981; }
+.depth0 {
+  background: #4f46e5;
+}
+.depth1 {
+  background: #0ea5e9;
+}
+.depth2 {
+  background: #10b981;
+}
 
-.catIcon, .catIconDefault {
+.catIcon,
+.catIconDefault {
   font-size: 13px;
   color: #9ca3af;
   flex-shrink: 0;
 }
-.catIcon { color: #6366f1; }
+.catIcon {
+  color: #6366f1;
+}
 
 .nameRoot {
   font-weight: 700;
   color: #111827;
-  font-size: .92rem;
+  font-size: 0.92rem;
 }
 .nameChild {
   font-weight: 500;
   color: #374151;
-  font-size: .875rem;
+  font-size: 0.875rem;
 }
 
 .childCount {
@@ -290,7 +337,9 @@
 }
 
 /* ── Empty ────────────────────────────────────────────────── */
-.empty { color: #d1d5db; }
+.empty {
+  color: #d1d5db;
+}
 
 /* ── Order pill ───────────────────────────────────────────── */
 .orderPill {
@@ -312,16 +361,24 @@
   color: #8b5cf6 !important;
   border-radius: 7px !important;
 }
-.btnAddSub:hover { background: #f5f3ff !important; }
+.btnAddSub:hover {
+  background: #f5f3ff !important;
+}
 
 .btnEdit {
   color: #6366f1 !important;
   border-radius: 7px !important;
 }
-.btnEdit:hover  { background: #eef2ff !important; }
+.btnEdit:hover {
+  background: #eef2ff !important;
+}
 
-.btnDelete { border-radius: 7px !important; }
-.btnDelete:hover:not(:disabled) { background: #fef2f2 !important; }
+.btnDelete {
+  border-radius: 7px !important;
+}
+.btnDelete:hover:not(:disabled) {
+  background: #fef2f2 !important;
+}
 
 /* ── Modal header ─────────────────────────────────────────── */
 .modalHeader {
@@ -339,8 +396,14 @@
   font-size: 18px;
   flex-shrink: 0;
 }
-.modalIconAdd  { background: #eef2ff; color: #4f46e5; }
-.modalIconEdit { background: #fff7ed; color: #d97706; }
+.modalIconAdd {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.modalIconEdit {
+  background: #fff7ed;
+  color: #d97706;
+}
 
 .modalHeaderTitle {
   font-size: 1rem;
@@ -355,7 +418,9 @@
 }
 
 /* ── Form layout ──────────────────────────────────────────── */
-.form { padding-top: 4px; }
+.form {
+  padding-top: 4px;
+}
 
 /* Top panel: [image | basic info] */
 .formTopPanel {
@@ -380,7 +445,9 @@
 }
 
 /* Override CloudinaryUpload trigger size to fill column */
-.formImageCol :global(.wrapper) { width: 100%; }
+.formImageCol :global(.wrapper) {
+  width: 100%;
+}
 .formImageCol :global(.uploadTrigger),
 .formImageCol :global(.preview) {
   width: 100% !important;
@@ -425,7 +492,9 @@
 }
 
 /* Parent takes full row (span 2 on cols 1-2 explicitly in JSX) */
-.formSettingsGrid :global(.ant-form-item) { margin-bottom: 0; }
+.formSettingsGrid :global(.ant-form-item) {
+  margin-bottom: 0;
+}
 
 /* Switch + hint text */
 .switchField {
@@ -465,18 +534,33 @@
   gap: 14px;
   flex-wrap: wrap;
 }
-.formRow > :global(.ant-form-item) { min-width: 120px; }
-
+.formRow > :global(.ant-form-item) {
+  min-width: 120px;
+}
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .formTopPanel { grid-template-columns: 1fr; }
-  .formSettingsGrid { grid-template-columns: 1fr 1fr; }
-  .formSettingsGrid > *[style*="span 2"] { grid-column: span 2; }
-  .formRow { flex-direction: column; }
-  .formRow > :global(.ant-form-item) { width: 100% !important; }
-  .stats { gap: 8px; }
-  .h2 { font-size: 1.1rem; }
+  .formTopPanel {
+    grid-template-columns: 1fr;
+  }
+  .formSettingsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .formSettingsGrid > *[style*='span 2'] {
+    grid-column: span 2;
+  }
+  .formRow {
+    flex-direction: column;
+  }
+  .formRow > :global(.ant-form-item) {
+    width: 100% !important;
+  }
+  .stats {
+    gap: 8px;
+  }
+  .h2 {
+    font-size: 1.1rem;
+  }
 }
 
 /* Featured switch — amber to distinguish from Active (green) */
@@ -496,7 +580,9 @@
   color: #d1d5db;
   cursor: grab;
   border-radius: 5px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   padding: 0;
   font-size: 14px;
 }
@@ -504,7 +590,9 @@
   color: #6366f1;
   background: #eef2ff;
 }
-.dragHandle:active { cursor: grabbing; }
+.dragHandle:active {
+  cursor: grabbing;
+}
 
 .dragPlaceholder {
   display: inline-block;
@@ -527,7 +615,10 @@
   pointer-events: none;
   white-space: nowrap;
 }
-.dragOverlayIcon { color: #6366f1; font-size: 16px; }
+.dragOverlayIcon {
+  color: #6366f1;
+  font-size: 16px;
+}
 
 /* ── Toolbar badges ────────────────────────────────────────── */
 .savingBadge {
@@ -542,8 +633,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .dndHint {

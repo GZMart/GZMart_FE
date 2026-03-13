@@ -194,9 +194,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     });
 
     // Generate cartesian product
-    const cartesian = (...arrays) => {
-      return arrays.reduce((acc, array) => acc.flatMap((x) => array.map((y) => [...x, y])), [[]]);
-    };
+    const cartesian = (...arrays) =>
+      arrays.reduce((acc, array) => acc.flatMap((x) => array.map((y) => [...x, y])), [[]]);
 
     const tierIndices = validTiers.map((tier) => tier.options.map((_, index) => index));
     const combinations = cartesian(...tierIndices);
@@ -292,7 +291,9 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   };
 
   const handleRemoveSizeChart = () => {
-    if (sizeChartPreview) URL.revokeObjectURL(sizeChartPreview);
+    if (sizeChartPreview) {
+      URL.revokeObjectURL(sizeChartPreview);
+    }
     setSizeChart(null);
     setSizeChartPreview(null);
   };
@@ -300,8 +301,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const handleImagesUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter((file) => {
-      if (!file.type.startsWith('image/')) return false;
-      if (file.size > 5 * 1024 * 1024) return false;
+      if (!file.type.startsWith('image/')) {
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        return false;
+      }
       return true;
     });
 
@@ -325,8 +330,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const handleVideosUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter((file) => {
-      if (!file.type.startsWith('video/')) return false;
-      if (file.size > 50 * 1024 * 1024) return false;
+      if (!file.type.startsWith('video/')) {
+        return false;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        return false;
+      }
       return true;
     });
 
@@ -545,9 +554,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           tierIndex: model.tierIndex,
           price: parseFloat(model.price),
           // Only include costPrice on CREATE
-          ...(!isEditMode && model.costPrice
-            ? { costPrice: parseFloat(model.costPrice) }
-            : {}),
+          ...(!isEditMode && model.costPrice ? { costPrice: parseFloat(model.costPrice) } : {}),
           stock: parseInt(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
           ...(!model.imageFile && model.image && { image: model.image }),
@@ -628,7 +635,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         // Log FormData contents (for debugging)
         if (import.meta.env.DEV) {
           console.log('📤 Sending FormData with files:');
-          for (let [key, value] of formDataToSend.entries()) {
+          for (const [key, value] of formDataToSend.entries()) {
             if (value instanceof File) {
               console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
             } else {
@@ -688,12 +695,16 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         setModels([]);
         setErrors({});
         // Clean up file previews
-        if (sizeChartPreview) URL.revokeObjectURL(sizeChartPreview);
+        if (sizeChartPreview) {
+          URL.revokeObjectURL(sizeChartPreview);
+        }
         imagePreviews.forEach((url) => URL.revokeObjectURL(url));
         videoPreviews.forEach((url) => URL.revokeObjectURL(url));
         // Clean up variant image previews
         models.forEach((model) => {
-          if (model.imagePreview) URL.revokeObjectURL(model.imagePreview);
+          if (model.imagePreview) {
+            URL.revokeObjectURL(model.imagePreview);
+          }
         });
         setSizeChart(null);
         setSizeChartPreview(null);
@@ -742,12 +753,16 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       setTiers([]);
       // Clean up variant image previews before clearing models
       models.forEach((model) => {
-        if (model.imagePreview) URL.revokeObjectURL(model.imagePreview);
+        if (model.imagePreview) {
+          URL.revokeObjectURL(model.imagePreview);
+        }
       });
       setModels([]);
       setErrors({});
       // Clean up file previews
-      if (sizeChartPreview) URL.revokeObjectURL(sizeChartPreview);
+      if (sizeChartPreview) {
+        URL.revokeObjectURL(sizeChartPreview);
+      }
       imagePreviews.forEach((url) => URL.revokeObjectURL(url));
       videoPreviews.forEach((url) => URL.revokeObjectURL(url));
       setSizeChart(null);
@@ -887,17 +902,17 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     }
   };
 
-
   // ── Save-guard: all SKUs need images ──────────────────────────
   const missingVariantImages =
     productType === 'variant' ? models.filter((m) => !m.imageFile && !m.image).length : 0;
   const missingProductImage = productType === 'simple' && imagePreviews.length === 0;
   const saveBlocked = missingVariantImages > 0 || missingProductImage;
-  const saveBlockReason = missingVariantImages > 0
-    ? `${missingVariantImages} SKU${missingVariantImages !== 1 ? 's are' : ' is'} missing an image`
-    : missingProductImage
-    ? 'Add at least one product image'
-    : '';
+  const saveBlockReason =
+    missingVariantImages > 0
+      ? `${missingVariantImages} SKU${missingVariantImages !== 1 ? 's are' : ' is'} missing an image`
+      : missingProductImage
+        ? 'Add at least one product image'
+        : '';
 
   return createPortal(
     <>
@@ -917,20 +932,73 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         {/* Header */}
         <div className={styles.drawerHeader}>
           <div className={styles.drawerHeaderLeft}>
-            <button type="button" className={styles.drawerCloseBtn} onClick={handleClose} aria-label="Close">
+            <button
+              type="button"
+              className={styles.drawerCloseBtn}
+              onClick={handleClose}
+              aria-label="Close"
+            >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path
+                  d="M10 4L4 10M4 4l6 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
             <div>
-              <h2 className={styles.drawerTitle}>{isEditMode ? 'Edit Product' : 'Add New Product'}</h2>
-              <p className={styles.drawerSubtitle}>{isEditMode ? 'Update product details below' : 'Fill in the details to list a new product'}</p>
+              <h2 className={styles.drawerTitle}>
+                {isEditMode ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              <p className={styles.drawerSubtitle}>
+                {isEditMode
+                  ? 'Update product details below'
+                  : 'Fill in the details to list a new product'}
+              </p>
             </div>
           </div>
           <div className={styles.drawerHeaderRight}>
             {isEditMode && <span className={styles.editingBadge}>Editing</span>}
-            <button type="button" className={styles.drawerSaveBtn} onClick={handleSubmit} disabled={loading || saveBlocked} title={saveBlockReason || undefined}>
-              {loading ? (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>{isEditMode ? 'Updating...' : 'Saving...'}</>) : (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>{isEditMode ? 'Update Product' : 'Save Product'}</>)}
+            <button
+              type="button"
+              className={styles.drawerSaveBtn}
+              onClick={handleSubmit}
+              disabled={loading || saveBlocked}
+              title={saveBlockReason || undefined}
+            >
+              {loading ? (
+                <>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className={styles.spinIcon}
+                  >
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  {isEditMode ? 'Updating...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  {isEditMode ? 'Update Product' : 'Save Product'}
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -938,37 +1006,102 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         {/* Scrollable Body */}
         <div className={styles.drawerBody}>
           <Form onSubmit={handleSubmit}>
-            {errors.submit && (<div className={`${styles.alert} ${styles.alertDanger}`} role="alert">{errors.submit}</div>)}
+            {errors.submit && (
+              <div className={`${styles.alert} ${styles.alertDanger}`} role="alert">
+                {errors.submit}
+              </div>
+            )}
             <div>
               {/* ── Basic Info ── */}
-              <div className={styles.sectionHeader}><span className={styles.sectionNum}>1</span>Basic Information</div>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>1</span>Basic Information
+              </div>
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>Product Name <span className={styles.required}>*</span></label>
-                    <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} placeholder="e.g. Premium Cotton T-Shirt" disabled={loading} className={`${styles.formControl} ${errors.name ? styles.invalid : ''}`}/>
+                    <label className={styles.formLabel}>
+                      Product Name <span className={styles.required}>*</span>
+                    </label>
+                    <Form.Control
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      isInvalid={!!errors.name}
+                      placeholder="e.g. Premium Cotton T-Shirt"
+                      disabled={loading}
+                      className={`${styles.formControl} ${errors.name ? styles.invalid : ''}`}
+                    />
                     {errors.name && <div className={styles.invalidFeedback}>{errors.name}</div>}
                   </Form.Group>
                 </Col>
                 <Col md={3}>
                   <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>Category <span className={styles.required}>*</span></label>
-                    <Form.Select name="categoryId" value={formData.categoryId} onChange={handleChange} isInvalid={!!errors.categoryId} disabled={loading} className={`${styles.formControl} ${errors.categoryId ? styles.invalid : ''}`}>
+                    <label className={styles.formLabel}>
+                      Category <span className={styles.required}>*</span>
+                    </label>
+                    <Form.Select
+                      name="categoryId"
+                      value={formData.categoryId}
+                      onChange={handleChange}
+                      isInvalid={!!errors.categoryId}
+                      disabled={loading}
+                      className={`${styles.formControl} ${errors.categoryId ? styles.invalid : ''}`}
+                    >
                       <option value="">Select category...</option>
-                      {categories.map((cat) => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </Form.Select>
-                    {errors.categoryId && <div className={styles.invalidFeedback}>{errors.categoryId}</div>}
+                    {errors.categoryId && (
+                      <div className={styles.invalidFeedback}>{errors.categoryId}</div>
+                    )}
                   </Form.Group>
                 </Col>
                 <Col md={3}>
                   <Form.Group className="mb-3">
                     <label className={styles.formLabel}>Product Type</label>
                     <div className={styles.typeSwitcher}>
-                      <button type="button" className={`${styles.typeBtn} ${productType === 'simple' ? styles.typeBtnActive : ''}`} onClick={() => setProductType('simple')} disabled={loading}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Simple
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${productType === 'simple' ? styles.typeBtnActive : ''}`}
+                        onClick={() => setProductType('simple')}
+                        disabled={loading}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                        </svg>
+                        Simple
                       </button>
-                      <button type="button" className={`${styles.typeBtn} ${productType === 'variant' ? styles.typeBtnActive : ''}`} onClick={() => setProductType('variant')} disabled={loading}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Variants
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${productType === 'variant' ? styles.typeBtnActive : ''}`}
+                        onClick={() => setProductType('variant')}
+                        disabled={loading}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="3" y="3" width="7" height="7" rx="1" />
+                          <rect x="14" y="3" width="7" height="7" rx="1" />
+                          <rect x="3" y="14" width="7" height="7" rx="1" />
+                          <rect x="14" y="14" width="7" height="7" rx="1" />
+                        </svg>
+                        Variants
                       </button>
                     </div>
                   </Form.Group>
@@ -976,15 +1109,32 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
               </Row>
 
               {/* ── Pricing & Stock ── */}
-              <div className={styles.sectionHeader}><span className={styles.sectionNum}>2</span>Pricing &amp; Stock</div>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>2</span>Pricing &amp; Stock
+              </div>
               <Row>
                 <Col md={3}>
                   <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>Price (₫) <span className={styles.required}>*</span></label>
-                    <div className={styles.inputAddon}><span className={styles.addonPrefix}>₫</span>
-                      <Form.Control type="number" name="originalPrice" value={formData.originalPrice} onChange={handleChange} isInvalid={!!errors.originalPrice} placeholder="150000" min="0" disabled={loading} className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}/>
+                    <label className={styles.formLabel}>
+                      Price (₫) <span className={styles.required}>*</span>
+                    </label>
+                    <div className={styles.inputAddon}>
+                      <span className={styles.addonPrefix}>₫</span>
+                      <Form.Control
+                        type="number"
+                        name="originalPrice"
+                        value={formData.originalPrice}
+                        onChange={handleChange}
+                        isInvalid={!!errors.originalPrice}
+                        placeholder="150000"
+                        min="0"
+                        disabled={loading}
+                        className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}
+                      />
                     </div>
-                    {errors.originalPrice && <div className={styles.invalidFeedback}>{errors.originalPrice}</div>}
+                    {errors.originalPrice && (
+                      <div className={styles.invalidFeedback}>{errors.originalPrice}</div>
+                    )}
                   </Form.Group>
                 </Col>
                 <Col md={3}>
@@ -993,66 +1143,149 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                       Cost Price (₫)
                       {isEditMode && <span className={styles.lockBadge}>Locked</span>}
                     </label>
-                    <div className={styles.inputAddon}><span className={styles.addonPrefix}>₫</span>
-                      <Form.Control type="number" name="costPrice" value={formData.costPrice} onChange={handleChange} placeholder="80000" min="0" disabled={loading || isEditMode} readOnly={isEditMode} className={`${styles.formControl} ${styles.withPrefix}`}/>
+                    <div className={styles.inputAddon}>
+                      <span className={styles.addonPrefix}>₫</span>
+                      <Form.Control
+                        type="number"
+                        name="costPrice"
+                        value={formData.costPrice}
+                        onChange={handleChange}
+                        placeholder="80000"
+                        min="0"
+                        disabled={loading || isEditMode}
+                        readOnly={isEditMode}
+                        className={`${styles.formControl} ${styles.withPrefix}`}
+                      />
                     </div>
-                    {isEditMode && (() => {
-                      const src = editingProduct?.models?.[0]?.costSource;
-                      const poId = editingProduct?.models?.[0]?.costSourcePoId;
-                      return (
-                        <div className={styles.stockLockedNote}>
-                          {src === 'po' && poId ? (
-                            <>
-                              <span className={styles.costSourceBadgePo}>via PO</span>
-                              {' · '}
-                              <a href="/seller/erp/purchase-orders" target="_blank" rel="noopener noreferrer">
-                                View POs ↗
-                              </a>
-                            </>
-                          ) : (
-                            <>
-                              <span className={styles.costSourceBadgeManual}>Manual</span>
-                              {' · update via '}
-                              <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">Inventory</a>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    {isEditMode &&
+                      (() => {
+                        const src = editingProduct?.models?.[0]?.costSource;
+                        const poId = editingProduct?.models?.[0]?.costSourcePoId;
+                        return (
+                          <div className={styles.stockLockedNote}>
+                            {src === 'po' && poId ? (
+                              <>
+                                <span className={styles.costSourceBadgePo}>via PO</span>
+                                {' · '}
+                                <a
+                                  href="/seller/erp/purchase-orders"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  View POs ↗
+                                </a>
+                              </>
+                            ) : (
+                              <>
+                                <span className={styles.costSourceBadgeManual}>Manual</span>
+                                {' · update via '}
+                                <a
+                                  href="/seller/inventory"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Inventory
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                   </Form.Group>
                 </Col>
-                {productType === 'simple' && (<>
-                  <Col md={2}>
-                    <Form.Group className="mb-3">
-                      <label className={styles.formLabel}>Stock {isEditMode ? <span className={styles.lockBadge}>Locked</span> : <span className={styles.required}>*</span>}</label>
-                      <Form.Control type="number" name="stock" value={formData.stock} onChange={handleChange} isInvalid={!!errors.stock} placeholder="100" min="0" disabled={loading || isEditMode} readOnly={isEditMode} className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}/>
-                      {isEditMode ? (<div className={styles.stockLockedNote}>Via <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">Inventory</a></div>) : (errors.stock && <div className={styles.invalidFeedback}>{errors.stock}</div>)}
-                    </Form.Group>
-                  </Col>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <label className={styles.formLabel}>SKU <span className={styles.optionalBadge}>Optional</span></label>
-                      <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} isInvalid={!!errors.sku} placeholder="Auto-generated if left blank" disabled={loading} className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}/>
-                      {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
-                    </Form.Group>
-                  </Col>
-                </>)}
+                {productType === 'simple' && (
+                  <>
+                    <Col md={2}>
+                      <Form.Group className="mb-3">
+                        <label className={styles.formLabel}>
+                          Stock{' '}
+                          {isEditMode ? (
+                            <span className={styles.lockBadge}>Locked</span>
+                          ) : (
+                            <span className={styles.required}>*</span>
+                          )}
+                        </label>
+                        <Form.Control
+                          type="number"
+                          name="stock"
+                          value={formData.stock}
+                          onChange={handleChange}
+                          isInvalid={!!errors.stock}
+                          placeholder="100"
+                          min="0"
+                          disabled={loading || isEditMode}
+                          readOnly={isEditMode}
+                          className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}
+                        />
+                        {isEditMode ? (
+                          <div className={styles.stockLockedNote}>
+                            Via{' '}
+                            <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">
+                              Inventory
+                            </a>
+                          </div>
+                        ) : (
+                          errors.stock && (
+                            <div className={styles.invalidFeedback}>{errors.stock}</div>
+                          )
+                        )}
+                      </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <label className={styles.formLabel}>
+                          SKU <span className={styles.optionalBadge}>Optional</span>
+                        </label>
+                        <Form.Control
+                          type="text"
+                          name="sku"
+                          value={formData.sku}
+                          onChange={handleChange}
+                          isInvalid={!!errors.sku}
+                          placeholder="Auto-generated if left blank"
+                          disabled={loading}
+                          className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}
+                        />
+                        {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
+                      </Form.Group>
+                    </Col>
+                  </>
+                )}
               </Row>
 
               {/* ── Details ── */}
-              <div className={styles.sectionHeader}><span className={styles.sectionNum}>3</span>Details</div>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>3</span>Details
+              </div>
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <label className={styles.formLabel}>Tags</label>
-                    <Form.Control type="text" name="tags" value={formData.tags} onChange={handleChange} placeholder="shirt, cotton, summer..." disabled={loading} className={styles.formControl}/>
+                    <Form.Control
+                      type="text"
+                      name="tags"
+                      value={formData.tags}
+                      onChange={handleChange}
+                      placeholder="shirt, cotton, summer..."
+                      disabled={loading}
+                      className={styles.formControl}
+                    />
                     <p className={styles.textMuted}>Separate tags with commas</p>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <label className={styles.formLabel}>Description</label>
-                    <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} placeholder="Describe your product..." disabled={loading} className={styles.formControl}/>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Describe your product..."
+                      disabled={loading}
+                      className={styles.formControl}
+                    />
                   </Form.Group>
                 </Col>
               </Row>
@@ -1061,28 +1294,76 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
               {attributes.length > 0 && (
                 <>
                   <div className={styles.sectionHeader}>Attributes</div>
-                  <Row>{attributes.map((attr) => <Col md={4} key={attr._id}>{renderAttributeField(attr)}</Col>)}</Row>
+                  <Row>
+                    {attributes.map((attr) => (
+                      <Col md={4} key={attr._id}>
+                        {renderAttributeField(attr)}
+                      </Col>
+                    ))}
+                  </Row>
                 </>
               )}
 
               {/* ── Variations ── */}
               {productType === 'variant' && (
                 <>
-                  <div className={styles.sectionHeader}><span className={styles.sectionNum}>4</span>Variations</div>
-                  {errors.tiers && <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.tiers}</div>}
+                  <div className={styles.sectionHeader}>
+                    <span className={styles.sectionNum}>4</span>Variations
+                  </div>
+                  {errors.tiers && (
+                    <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.tiers}</div>
+                  )}
                   <TiersEditor tiers={tiers} onChange={setTiers} disabled={loading} />
-                  {models.length > 0 && (<>
-                    <div className={styles.variantCountBadge}>{models.length} variant{models.length !== 1 ? 's' : ''} generated{models.length > 200 && <span className={styles.overLimitBadge}> (max 200)</span>}</div>
-                    {errors.models && <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.models}</div>}
-                    <VariantsTable models={models} onChange={setModels} tiers={tiers} disabled={loading} isEditMode={isEditMode}/>
-                    {missingVariantImages > 0 && (
-                      <div className={`${styles.alert} ${styles.alertWarning}`}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        <strong>{missingVariantImages} SKU{missingVariantImages !== 1 ? 's are' : ' is'} missing an image.</strong>&nbsp;Upload an image for every variant — Save will be unlocked once all SKUs have images.
+                  {models.length > 0 && (
+                    <>
+                      <div className={styles.variantCountBadge}>
+                        {models.length} variant{models.length !== 1 ? 's' : ''} generated
+                        {models.length > 200 && (
+                          <span className={styles.overLimitBadge}> (max 200)</span>
+                        )}
                       </div>
-                    )}
-                    {errors.modelImages && <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.modelImages}</div>}
-                  </>)}
+                      {errors.models && (
+                        <div className={`${styles.alert} ${styles.alertDanger}`}>
+                          {errors.models}
+                        </div>
+                      )}
+                      <VariantsTable
+                        models={models}
+                        onChange={setModels}
+                        tiers={tiers}
+                        disabled={loading}
+                        isEditMode={isEditMode}
+                      />
+                      {missingVariantImages > 0 && (
+                        <div className={`${styles.alert} ${styles.alertWarning}`}>
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            style={{ flexShrink: 0 }}
+                          >
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <strong>
+                            {missingVariantImages} SKU{missingVariantImages !== 1 ? 's are' : ' is'}{' '}
+                            missing an image.
+                          </strong>
+                          &nbsp;Upload an image for every variant — Save will be unlocked once all
+                          SKUs have images.
+                        </div>
+                      )}
+                      {errors.modelImages && (
+                        <div className={`${styles.alert} ${styles.alertDanger}`}>
+                          {errors.modelImages}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </>
               )}
 
@@ -1091,55 +1372,229 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
               <div className={styles.mediaRow}>
                 {/* Size Chart */}
                 <div className={styles.mediaBlock}>
-                  <div className={styles.mediaBlockHeader}><span className={styles.mediaBlockTitle}>Size Chart</span><span className={styles.mediaBlockHint}>Optional</span></div>
+                  <div className={styles.mediaBlockHeader}>
+                    <span className={styles.mediaBlockTitle}>Size Chart</span>
+                    <span className={styles.mediaBlockHint}>Optional</span>
+                  </div>
                   {sizeChartPreview ? (
-                    <div className={styles.previewSingle}><img src={sizeChartPreview} alt="Size chart" className={styles.previewSingleImg}/><button type="button" className={styles.removeBtn} onClick={handleRemoveSizeChart} aria-label="Remove"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
+                    <div className={styles.previewSingle}>
+                      <img
+                        src={sizeChartPreview}
+                        alt="Size chart"
+                        className={styles.previewSingleImg}
+                      />
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        onClick={handleRemoveSizeChart}
+                        aria-label="Remove"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                          <path
+                            d="M12 4L4 12M4 4l8 8"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   ) : (
-                    <label className={`${styles.uploadZone} ${(loading || !!sizeChart) ? styles.uploadDisabled : ''}`}>
-                      <input type="file" accept="image/*" onChange={handleSizeChartUpload} disabled={loading || !!sizeChart} className={styles.fileInputHidden}/>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <label
+                      className={`${styles.uploadZone} ${loading || !!sizeChart ? styles.uploadDisabled : ''}`}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSizeChartUpload}
+                        disabled={loading || !!sizeChart}
+                        className={styles.fileInputHidden}
+                      />
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#94a3b8"
+                        strokeWidth="1.5"
+                      >
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
                       <span className={styles.uploadZoneText}>Click to upload</span>
                     </label>
                   )}
                 </div>
 
                 {/* Images */}
-                <div className={styles.mediaBlock} style={{flex:2}}>
-                  <div className={styles.mediaBlockHeader}><span className={styles.mediaBlockTitle}>Product Images <span className={styles.mediaCount}>{imagePreviews.length}/10</span></span><span className={styles.mediaBlockHint}>{productType === 'simple' ? <span className={styles.required}>Required</span> : 'Max 10 · 5MB'}</span></div>
+                <div className={styles.mediaBlock} style={{ flex: 2 }}>
+                  <div className={styles.mediaBlockHeader}>
+                    <span className={styles.mediaBlockTitle}>
+                      Product Images{' '}
+                      <span className={styles.mediaCount}>{imagePreviews.length}/10</span>
+                    </span>
+                    <span className={styles.mediaBlockHint}>
+                      {productType === 'simple' ? (
+                        <span className={styles.required}>Required</span>
+                      ) : (
+                        'Max 10 · 5MB'
+                      )}
+                    </span>
+                  </div>
                   <div className={styles.imageGrid}>
                     {imagePreviews.map((preview, index) => (
                       <div key={index} className={styles.imageThumb}>
-                        <img src={preview} alt={`Preview ${index + 1}`} className={styles.imageThumbImg}/>
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className={styles.imageThumbImg}
+                        />
                         {index === 0 && <span className={styles.primaryBadge}>Main</span>}
-                        <button type="button" className={styles.removeBtn} onClick={() => handleRemoveImage(index)} aria-label="Remove"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
+                        <button
+                          type="button"
+                          className={styles.removeBtn}
+                          onClick={() => handleRemoveImage(index)}
+                          aria-label="Remove"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                            <path
+                              d="M12 4L4 12M4 4l8 8"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </button>
                       </div>
                     ))}
-                    {imagePreviews.length < 10 && (<label className={`${styles.imageAddBtn} ${loading ? styles.uploadDisabled : ''}`}><input type="file" accept="image/*" multiple onChange={handleImagesUpload} disabled={loading || images.length >= 10} className={styles.fileInputHidden}/><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></label>)}
+                    {imagePreviews.length < 10 && (
+                      <label
+                        className={`${styles.imageAddBtn} ${loading ? styles.uploadDisabled : ''}`}
+                      >
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImagesUpload}
+                          disabled={loading || images.length >= 10}
+                          className={styles.fileInputHidden}
+                        />
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#94a3b8"
+                          strokeWidth="1.5"
+                        >
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </label>
+                    )}
                   </div>
-                  {errors.images && <div className={styles.invalidFeedback} style={{marginTop:'0.375rem'}}>{errors.images}</div>}
+                  {errors.images && (
+                    <div className={styles.invalidFeedback} style={{ marginTop: '0.375rem' }}>
+                      {errors.images}
+                    </div>
+                  )}
                   {productType === 'simple' && missingProductImage && !errors.images && (
-                    <p className={styles.textMuted} style={{marginTop:'0.25rem',color:'#d97706'}}>⚠ At least one image is required to save</p>
+                    <p
+                      className={styles.textMuted}
+                      style={{ marginTop: '0.25rem', color: '#d97706' }}
+                    >
+                      ⚠ At least one image is required to save
+                    </p>
                   )}
                 </div>
 
                 {/* Videos */}
                 <div className={styles.mediaBlock}>
-                  <div className={styles.mediaBlockHeader}><span className={styles.mediaBlockTitle}>Videos <span className={styles.mediaCount}>{videoPreviews.length}/3</span></span><span className={styles.mediaBlockHint}>Max 3 · 50MB</span></div>
-                  {videoPreviews.length > 0 && (<div className={styles.videoList}>{videoPreviews.map((preview, index) => (<div key={index} className={styles.videoItem}><video src={preview} className={styles.videoPreview} controls/><span className={styles.videoName}>{videos[index]?.name}</span><button type="button" className={styles.removeBtn} onClick={() => handleRemoveVideo(index)} aria-label="Remove"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>))}</div>)}
-                  {videoPreviews.length < 3 && (<label className={`${styles.uploadZone} ${(loading || videos.length >= 3) ? styles.uploadDisabled : ''}`}><input type="file" accept="video/*" multiple onChange={handleVideosUpload} disabled={loading || videos.length >= 3} className={styles.fileInputHidden}/><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span className={styles.uploadZoneText}>Click to upload video</span></label>)}
+                  <div className={styles.mediaBlockHeader}>
+                    <span className={styles.mediaBlockTitle}>
+                      Videos <span className={styles.mediaCount}>{videoPreviews.length}/3</span>
+                    </span>
+                    <span className={styles.mediaBlockHint}>Max 3 · 50MB</span>
+                  </div>
+                  {videoPreviews.length > 0 && (
+                    <div className={styles.videoList}>
+                      {videoPreviews.map((preview, index) => (
+                        <div key={index} className={styles.videoItem}>
+                          <video src={preview} className={styles.videoPreview} controls />
+                          <span className={styles.videoName}>{videos[index]?.name}</span>
+                          <button
+                            type="button"
+                            className={styles.removeBtn}
+                            onClick={() => handleRemoveVideo(index)}
+                            aria-label="Remove"
+                          >
+                            <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                              <path
+                                d="M12 4L4 12M4 4l8 8"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {videoPreviews.length < 3 && (
+                    <label
+                      className={`${styles.uploadZone} ${loading || videos.length >= 3 ? styles.uploadDisabled : ''}`}
+                    >
+                      <input
+                        type="file"
+                        accept="video/*"
+                        multiple
+                        onChange={handleVideosUpload}
+                        disabled={loading || videos.length >= 3}
+                        className={styles.fileInputHidden}
+                      />
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#94a3b8"
+                        strokeWidth="1.5"
+                      >
+                        <polygon points="23 7 16 12 23 17 23 7" />
+                        <rect x="1" y="5" width="15" height="14" rx="2" />
+                      </svg>
+                      <span className={styles.uploadZoneText}>Click to upload video</span>
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
-
           </Form>
         </div>
 
         {/* Footer */}
         <div className={styles.drawerFooter}>
-          <button type="button" className={styles.btnSecondary} onClick={handleClose} disabled={loading}>Cancel</button>
-          <button type="button" className={styles.btnPrimary} onClick={handleSubmit} disabled={loading || saveBlocked} title={saveBlockReason || undefined}>
-            {loading ? 'Saving...' : (isEditMode ? 'Update Product' : 'Save Product')}
-            {saveBlocked && !loading && <span className={styles.saveBtnHint}>&nbsp;· {saveBlockReason}</span>}
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={handleClose}
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={styles.btnPrimary}
+            onClick={handleSubmit}
+            disabled={loading || saveBlocked}
+            title={saveBlockReason || undefined}
+          >
+            {loading ? 'Saving...' : isEditMode ? 'Update Product' : 'Save Product'}
+            {saveBlocked && !loading && (
+              <span className={styles.saveBtnHint}>&nbsp;· {saveBlockReason}</span>
+            )}
           </button>
         </div>
       </div>

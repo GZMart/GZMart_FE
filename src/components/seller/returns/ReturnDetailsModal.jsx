@@ -11,7 +11,9 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  if (!returnRequest) return null;
+  if (!returnRequest) {
+    return null;
+  }
 
   const handleRespond = async (decision) => {
     try {

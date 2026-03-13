@@ -31,11 +31,12 @@ import styles from '@assets/styles/erp/PurchaseOrderDetailPage.module.css';
 const Toast = ({ toasts }) => (
   <div className={styles.toastContainer}>
     {toasts.map((t) => (
-      <div key={t.id} className={`${styles.toast} ${t.type === 'error' ? styles.toastError : styles.toastSuccess}`}>
+      <div
+        key={t.id}
+        className={`${styles.toast} ${t.type === 'error' ? styles.toastError : styles.toastSuccess}`}
+      >
         <span className={styles.toastIcon}>
-          {t.type === 'error'
-            ? <AlertTriangle size={18} />
-            : <CheckCircle2 size={18} />}
+          {t.type === 'error' ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
         </span>
         {t.message}
       </div>
@@ -44,12 +45,24 @@ const Toast = ({ toasts }) => (
 );
 
 /* ── Helper: Generic Confirm Modal ──────────────────────────────── */
-const ConfirmModal = ({ isOpen, onClose, onConfirm, isLoading, title, desc, confirmLabel, confirmVariant = 'green' }) => {
-  if (!isOpen) return null;
-  const variantCls = {
-    green:  styles.btnModalConfirmGreen,
-    amber:  styles.btnModalConfirmAmber,
-  }[confirmVariant] || styles.btnModalConfirmGreen;
+const ConfirmModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  isLoading,
+  title,
+  desc,
+  confirmLabel,
+  confirmVariant = 'green',
+}) => {
+  if (!isOpen) {
+    return null;
+  }
+  const variantCls =
+    {
+      green: styles.btnModalConfirmGreen,
+      amber: styles.btnModalConfirmAmber,
+    }[confirmVariant] || styles.btnModalConfirmGreen;
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -85,7 +98,9 @@ const PurchaseOrderDetailPage = () => {
 
   useEffect(() => {
     dispatch(fetchPurchaseOrderById(id));
-    return () => { dispatch(clearCurrentPurchaseOrder()); };
+    return () => {
+      dispatch(clearCurrentPurchaseOrder());
+    };
   }, [dispatch, id]);
 
   const addToast = useCallback((message, type = 'success') => {
@@ -100,19 +115,36 @@ const PurchaseOrderDetailPage = () => {
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
 
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
+    if (!dateString) {
+      return '-';
+    }
     return new Date(dateString).toLocaleString('vi-VN', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   const getStatusConfig = (status) => {
     const map = {
-      Draft:     { label: 'Nháp',            heroClass: styles.badgeHero, lightClass: styles.badgeDraft },
-      Pending:   { label: 'Đang đặt hàng',   heroClass: styles.badgeHero, lightClass: styles.badgePending },
-      Completed: { label: 'Đã nhận hàng',    heroClass: styles.badgeHero, lightClass: styles.badgeCompleted },
-      Cancelled: { label: 'Đã hủy',          heroClass: styles.badgeHero, lightClass: styles.badgeCancelled },
+      Draft: { label: 'Nháp', heroClass: styles.badgeHero, lightClass: styles.badgeDraft },
+      Pending: {
+        label: 'Đang đặt hàng',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgePending,
+      },
+      Completed: {
+        label: 'Đã nhận hàng',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgeCompleted,
+      },
+      Cancelled: {
+        label: 'Đã hủy',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgeCancelled,
+      },
     };
     return map[status] || map.Pending;
   };
@@ -145,13 +177,15 @@ const PurchaseOrderDetailPage = () => {
       dispatch(fetchPurchaseOrderById(id));
     } catch (err) {
       setConfirmAction(null);
-      addToast('Error: ' + (err.error || err.message || 'Unknown error'), 'error');
+      addToast(`Error: ${err.error || err.message || 'Unknown error'}`, 'error');
     } finally {
       setActionLoading(false);
     }
   };
 
-  if (loading || !po) return <LoadingSpinner />;
+  if (loading || !po) {
+    return <LoadingSpinner />;
+  }
 
   const totalItems = po.items?.reduce((s, i) => s + (i.quantity || 0), 0) ?? 0;
 
@@ -165,24 +199,45 @@ const PurchaseOrderDetailPage = () => {
         onConfirm={handleConfirm}
         isLoading={actionLoading}
         title={
-          confirmAction === 'receive'  ? 'Confirm goods received?' :
-          confirmAction === 'submit'   ? 'Submit this order?' :
-          confirmAction === 'setDraft' ? 'Revert to Draft?' : ''
+          confirmAction === 'receive'
+            ? 'Confirm goods received?'
+            : confirmAction === 'submit'
+              ? 'Submit this order?'
+              : confirmAction === 'setDraft'
+                ? 'Revert to Draft?'
+                : ''
         }
         desc={
-          confirmAction === 'receive'  ? <span>This will <strong>update inventory stock</strong> and cannot be undone. Make sure all goods have been received.</span> :
-          confirmAction === 'submit'   ? <span>Status will change to <strong>Ordering</strong>. You can still cancel or revert to Draft later.</span> :
-          confirmAction === 'setDraft' ? <span>The order will be moved back to <strong>Draft</strong> status. No inventory changes will occur.</span> : ''
+          confirmAction === 'receive' ? (
+            <span>
+              This will <strong>update inventory stock</strong> and cannot be undone. Make sure all
+              goods have been received.
+            </span>
+          ) : confirmAction === 'submit' ? (
+            <span>
+              Status will change to <strong>Ordering</strong>. You can still cancel or revert to
+              Draft later.
+            </span>
+          ) : confirmAction === 'setDraft' ? (
+            <span>
+              The order will be moved back to <strong>Draft</strong> status. No inventory changes
+              will occur.
+            </span>
+          ) : (
+            ''
+          )
         }
         confirmLabel={
-          confirmAction === 'receive'  ? 'Yes, Receive Goods' :
-          confirmAction === 'submit'   ? 'Yes, Submit Order' :
-          confirmAction === 'setDraft' ? 'Yes, Set as Draft' : 'Confirm'
+          confirmAction === 'receive'
+            ? 'Yes, Receive Goods'
+            : confirmAction === 'submit'
+              ? 'Yes, Submit Order'
+              : confirmAction === 'setDraft'
+                ? 'Yes, Set as Draft'
+                : 'Confirm'
         }
         confirmVariant={
-          confirmAction === 'receive'  ? 'green' :
-          confirmAction === 'submit'   ? 'amber' :
-          'amber'
+          confirmAction === 'receive' ? 'green' : confirmAction === 'submit' ? 'amber' : 'amber'
         }
       />
 
@@ -216,22 +271,36 @@ const PurchaseOrderDetailPage = () => {
           <div className={styles.heroRight}>
             <div className={styles.heroAmount}>
               <div className={styles.heroAmountLabel}>Total</div>
-              <div className={styles.heroAmountValue}>{formatCurrency(po.finalAmount || po.totalAmount)}</div>
+              <div className={styles.heroAmountValue}>
+                {formatCurrency(po.finalAmount || po.totalAmount)}
+              </div>
             </div>
             <div className={styles.heroActions}>
               {po.status === 'Draft' && (
-                <button className={`${styles.btnComplete} ${styles.btnHeroAmber}`} onClick={() => setConfirmAction('submit')} disabled={actionLoading}>
+                <button
+                  className={`${styles.btnComplete} ${styles.btnHeroAmber}`}
+                  onClick={() => setConfirmAction('submit')}
+                  disabled={actionLoading}
+                >
                   <Send size={15} />
                   Submit Order
                 </button>
               )}
               {po.status === 'Pending' && (
                 <>
-                  <button className={`${styles.btnComplete} ${styles.btnHeroGhost}`} onClick={() => setConfirmAction('setDraft')} disabled={actionLoading}>
+                  <button
+                    className={`${styles.btnComplete} ${styles.btnHeroGhost}`}
+                    onClick={() => setConfirmAction('setDraft')}
+                    disabled={actionLoading}
+                  >
                     <RotateCcw size={14} />
                     Set as Draft
                   </button>
-                  <button className={styles.btnComplete} onClick={() => setConfirmAction('receive')} disabled={actionLoading}>
+                  <button
+                    className={styles.btnComplete}
+                    onClick={() => setConfirmAction('receive')}
+                    disabled={actionLoading}
+                  >
                     <CheckCircle2 size={15} />
                     Receive Goods
                   </button>
@@ -246,7 +315,6 @@ const PurchaseOrderDetailPage = () => {
       <div className={styles.mainGrid}>
         {/* Left column */}
         <div className={styles.mainCol}>
-
           {/* Supplier + Order Info in 2 cards */}
           <div className={styles.section}>
             <h2>
@@ -257,7 +325,10 @@ const PurchaseOrderDetailPage = () => {
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Supplier Name</span>
                 {po.supplierId?._id ? (
-                  <Link to={`/seller/erp/suppliers/${po.supplierId._id}`} className={styles.infoLink}>
+                  <Link
+                    to={`/seller/erp/suppliers/${po.supplierId._id}`}
+                    className={styles.infoLink}
+                  >
                     {po.supplierId?.name || '-'}
                     <ExternalLink size={12} />
                   </Link>
@@ -299,12 +370,18 @@ const PurchaseOrderDetailPage = () => {
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Received Date</span>
                 <span className={styles.infoValue}>
-                  {po.receivedDate ? formatDate(po.receivedDate) : <span className={styles.infoValueMuted}>Not received</span>}
+                  {po.receivedDate ? (
+                    formatDate(po.receivedDate)
+                  ) : (
+                    <span className={styles.infoValueMuted}>Not received</span>
+                  )}
                 </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Number of Items</span>
-                <span className={styles.infoValue}>{po.items?.length ?? 0} lines · {totalItems} units</span>
+                <span className={styles.infoValue}>
+                  {po.items?.length ?? 0} lines · {totalItems} units
+                </span>
               </div>
               {po.notes && (
                 <div className={styles.infoItem} style={{ gridColumn: '1 / -1' }}>
@@ -390,11 +467,12 @@ const PurchaseOrderDetailPage = () => {
                   <tbody>
                     {po.inventoryUpdates.map((upd, index) => (
                       <tr key={index}>
-                        <td><span className={styles.skuChip}>{upd.sku}</span></td>
+                        <td>
+                          <span className={styles.skuChip}>{upd.sku}</span>
+                        </td>
                         <td style={{ textAlign: 'center' }}>
                           <span className={styles.diffPositive}>
-                            <ArrowUp size={12} />
-                            +{upd.quantityAdded}
+                            <ArrowUp size={12} />+{upd.quantityAdded}
                           </span>
                         </td>
                         <td style={{ textAlign: 'center' }}>
@@ -403,9 +481,17 @@ const PurchaseOrderDetailPage = () => {
                         <td style={{ textAlign: 'center' }}>
                           <span className={styles.diffPositive}>{upd.newStock}</span>
                         </td>
-                        <td><span className={styles.costOld}>{formatCurrency(upd.oldCostPrice)}</span></td>
-                        <td><span className={styles.costNew}>{formatCurrency(upd.newCostPrice)}</span></td>
-                        <td><span className={styles.amountCell}>{formatCurrency(upd.landedCost)}</span></td>
+                        <td>
+                          <span className={styles.costOld}>{formatCurrency(upd.oldCostPrice)}</span>
+                        </td>
+                        <td>
+                          <span className={styles.costNew}>{formatCurrency(upd.newCostPrice)}</span>
+                        </td>
+                        <td>
+                          <span className={styles.amountCell}>
+                            {formatCurrency(upd.landedCost)}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -417,7 +503,6 @@ const PurchaseOrderDetailPage = () => {
 
         {/* Right sidebar */}
         <div className={styles.sideCol}>
-
           {/* Financial Summary Card */}
           <div className={styles.summaryCard}>
             <div className={styles.summaryHeader}>
@@ -431,20 +516,26 @@ const PurchaseOrderDetailPage = () => {
               </div>
               <div className={styles.summaryRow}>
                 <span className={styles.summaryRowLabel}>Shipping Cost</span>
-                <span className={po.shippingCost ? styles.summaryRowValue : styles.summaryRowValueMuted}>
+                <span
+                  className={po.shippingCost ? styles.summaryRowValue : styles.summaryRowValueMuted}
+                >
                   {formatCurrency(po.shippingCost)}
                 </span>
               </div>
               <div className={styles.summaryRow}>
                 <span className={styles.summaryRowLabel}>Tax</span>
-                <span className={po.taxAmount ? styles.summaryRowValue : styles.summaryRowValueMuted}>
+                <span
+                  className={po.taxAmount ? styles.summaryRowValue : styles.summaryRowValueMuted}
+                >
                   {formatCurrency(po.taxAmount)}
                 </span>
               </div>
               {po.otherCost !== undefined && (
                 <div className={styles.summaryRow}>
                   <span className={styles.summaryRowLabel}>Other Costs</span>
-                  <span className={po.otherCost ? styles.summaryRowValue : styles.summaryRowValueMuted}>
+                  <span
+                    className={po.otherCost ? styles.summaryRowValue : styles.summaryRowValueMuted}
+                  >
                     {formatCurrency(po.otherCost)}
                   </span>
                 </div>
@@ -466,23 +557,33 @@ const PurchaseOrderDetailPage = () => {
             </h2>
             <div className={styles.timeline}>
               <div className={styles.timelineItem}>
-                <div className={`${styles.timelineDot} ${po.status === 'Draft' ? styles.active : styles.completed}`} />
+                <div
+                  className={`${styles.timelineDot} ${po.status === 'Draft' ? styles.active : styles.completed}`}
+                />
                 <div className={styles.timelineContent}>
                   <div className={styles.timelineTitle}>Đơn hàng được tạo</div>
                   <div className={styles.timelineDate}>{formatDate(po.createdAt)}</div>
                 </div>
               </div>
 
-              {(po.status === 'Pending' || po.status === 'Completed' || po.status === 'Cancelled') && (
+              {(po.status === 'Pending' ||
+                po.status === 'Completed' ||
+                po.status === 'Cancelled') && (
                 <div className={styles.timelineItem}>
-                  <div className={`${styles.timelineDot} ${
-                    po.status === 'Pending' ? styles.active
-                    : po.status === 'Completed' || po.status === 'Cancelled' ? styles.completed
-                    : ''
-                  }`} />
+                  <div
+                    className={`${styles.timelineDot} ${
+                      po.status === 'Pending'
+                        ? styles.active
+                        : po.status === 'Completed' || po.status === 'Cancelled'
+                          ? styles.completed
+                          : ''
+                    }`}
+                  />
                   <div className={styles.timelineContent}>
                     <div className={styles.timelineTitle}>Đang đặt hàng</div>
-                    <div className={styles.timelineDate}>{po.updatedAt ? formatDate(po.updatedAt) : '-'}</div>
+                    <div className={styles.timelineDate}>
+                      {po.updatedAt ? formatDate(po.updatedAt) : '-'}
+                    </div>
                   </div>
                 </div>
               )}

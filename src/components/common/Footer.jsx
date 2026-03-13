@@ -59,9 +59,7 @@ const Footer = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isActivePath = (path) => {
-    return location.pathname === path;
-  };
+  const isActivePath = (path) => location.pathname === path;
 
   return (
     <footer style={styles.bgDark} className="text-secondary pt-5 pb-5 mt-auto">

@@ -39,7 +39,11 @@ const SellerDashboard = () => {
 
       setDashboardData(dashResponse.data);
       // Use sample data if API returns empty or null
-      setRevenueTrend(trendResponse.data && trendResponse.data.length > 0 ? trendResponse.data : sampleRevenueTrendData);
+      setRevenueTrend(
+        trendResponse.data && trendResponse.data.length > 0
+          ? trendResponse.data
+          : sampleRevenueTrendData
+      );
     } catch (error) {
       console.error(error);
       // Use sample data on error
@@ -56,7 +60,14 @@ const SellerDashboard = () => {
 
   if (loading && !dashboardData) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+        }}
+      >
         <div>Loading...</div>
       </div>
     );
@@ -86,12 +97,11 @@ const SellerDashboard = () => {
           <h1>Dashboard</h1>
           <p>You can add your credit and debit card details here for future purchases.</p>
         </div>
-        <button
-          onClick={fetchDashboard}
-          disabled={loading}
-          className={styles.refreshBtn}
-        >
-          <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+        <button onClick={fetchDashboard} disabled={loading} className={styles.refreshBtn}>
+          <RefreshCw
+            size={18}
+            style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }}
+          />
           Refresh
         </button>
       </div>
@@ -103,33 +113,35 @@ const SellerDashboard = () => {
 
         {/* Stat Cards - 1/3 */}
         <div className={styles.statCardsGrid}>
-          <StatCard 
-            icon={CreditCard} 
-            label="Total Sales" 
+          <StatCard
+            icon={CreditCard}
+            label="Total Sales"
             value={formatCurrency(revenue?.total || 0)}
             trend="13.02%"
             trendUp={true}
             fromLabel="From Jan"
           />
-          <StatCard 
-            icon={ShoppingCart} 
-            label="Avg. Order Value" 
-            value={formatCurrency(orderStats?.total > 0 ? (revenue?.total || 0) / orderStats?.total : 0)}
+          <StatCard
+            icon={ShoppingCart}
+            label="Avg. Order Value"
+            value={formatCurrency(
+              orderStats?.total > 0 ? (revenue?.total || 0) / orderStats?.total : 0
+            )}
             trend="3.02%"
             trendUp={false}
             fromLabel="From Jan"
           />
-          <StatCard 
-            icon={Zap} 
-            label="Online Sessions" 
+          <StatCard
+            icon={Zap}
+            label="Online Sessions"
             value={`${(orderStats?.total || 0).toLocaleString('vi-VN')} orders`}
             trend="9.58%"
             trendUp={true}
             fromLabel="From Jan"
           />
-          <StatCard 
-            icon={BarChart3} 
-            label="Conversion Rate" 
+          <StatCard
+            icon={BarChart3}
+            label="Conversion Rate"
             value={`${(customerStats?.repeatedPurchaseRate || 0).toFixed(2)}%`}
             trend="0.35%"
             trendUp={false}

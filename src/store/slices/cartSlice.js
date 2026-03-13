@@ -49,7 +49,9 @@ export const updateQuantity = createAsyncThunk(
   async ({ productId, quantity }, { rejectWithValue }) => {
     // Note: productId argument here is actually the CartItem ID (legacy naming in component)
     try {
-      if (quantity < 1) return rejectWithValue('Quantity must be at least 1');
+      if (quantity < 1) {
+        return rejectWithValue('Quantity must be at least 1');
+      }
       const response = await cartService.updateCartItem(productId, quantity);
       return { itemId: productId, quantity, total: response.cartTotal };
     } catch (error) {

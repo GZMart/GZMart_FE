@@ -31,8 +31,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const fmtTime = ({ hours, minutes, seconds }) =>
   `${pad(hours)}h : ${pad(minutes)}m : ${pad(seconds)}s`;
 
-const fmtPrice = (n) =>
-  typeof n === 'number' ? n.toLocaleString('vi-VN') : '—';
+const fmtPrice = (n) => (typeof n === 'number' ? n.toLocaleString('vi-VN') : '—');
 
 // ─── component ────────────────────────────────────────────────────────────────
 
@@ -57,7 +56,9 @@ const DealDetailsPage = () => {
 
   // ── fetch deal ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!dealId) return;
+    if (!dealId) {
+      return;
+    }
 
     const fetchDeal = async () => {
       try {
@@ -65,10 +66,14 @@ const DealDetailsPage = () => {
         setError(null);
         const response = await dealService.getDealById(dealId);
         const data = response?.data?.data ?? response?.data ?? null;
-        if (!data) throw new Error('Deal not found');
+        if (!data) {
+          throw new Error('Deal not found');
+        }
         setDeal(data);
         // Seed countdown from real endDate
-        if (data.endDate) setTimeLeft(calcTimeLeft(data.endDate));
+        if (data.endDate) {
+          setTimeLeft(calcTimeLeft(data.endDate));
+        }
       } catch (err) {
         console.error('❌ DealDetailsPage: failed to fetch deal', err);
         setError(err?.response?.data?.message || err.message || 'Không tải được deal');
@@ -82,7 +87,9 @@ const DealDetailsPage = () => {
 
   // ── countdown ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!deal?.endDate) return;
+    if (!deal?.endDate) {
+      return;
+    }
     const id = setInterval(() => {
       setTimeLeft(calcTimeLeft(deal.endDate));
     }, 1000);
@@ -94,8 +101,7 @@ const DealDetailsPage = () => {
   const tierVariations = Array.isArray(product.tier_variations) ? product.tier_variations : [];
 
   const allVariantsSelected =
-    tierVariations.length === 0 ||
-    tierVariations.every((v) => selectedVariants[v.name]);
+    tierVariations.length === 0 || tierVariations.every((v) => selectedVariants[v.name]);
 
   const handleVariantChange = useCallback((varName, value) => {
     setSelectedVariants((prev) => ({ ...prev, [varName]: value }));
@@ -134,7 +140,14 @@ const DealDetailsPage = () => {
   // ── loading / error states ───────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+        }}
+      >
         <Spin size="large" tip="Loading deal..." />
       </div>
     );
@@ -157,8 +170,7 @@ const DealDetailsPage = () => {
 
   // ── render ───────────────────────────────────────────────────────────────────
   const mainImage =
-    product.images?.[0] ||
-    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600';
+    product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600';
 
   return (
     <div className={styles.dealDetailsPage}>
@@ -177,8 +189,7 @@ const DealDetailsPage = () => {
         {/* Status alert — show for active deals */}
         {deal.status === 'active' && (
           <div className={`${styles.dealAlert} ${styles.pendingAlert}`}>
-            ⚡ This deal is <strong>LIVE</strong> — ends in{' '}
-            <strong>{fmtTime(timeLeft)}</strong>
+            ⚡ This deal is <strong>LIVE</strong> — ends in <strong>{fmtTime(timeLeft)}</strong>
           </div>
         )}
 
@@ -205,8 +216,8 @@ const DealDetailsPage = () => {
             {product.rating != null && (
               <div className={styles.dealRatingSection}>
                 <span className={styles.ratingStars}>
-                  {'★'.repeat(Math.round(product.rating))}{'☆'.repeat(5 - Math.round(product.rating))}{' '}
-                  {product.rating}
+                  {'★'.repeat(Math.round(product.rating))}
+                  {'☆'.repeat(5 - Math.round(product.rating))} {product.rating}
                 </span>
                 {product.reviewCount != null && (
                   <span className={styles.ratingCount}>
@@ -264,9 +275,7 @@ const DealDetailsPage = () => {
                     {fmtPrice(deal.dealPrice ?? deal.discountedPrice)}
                   </span>
                   {product.originalPrice != null && (
-                    <span className={styles.originalPrice}>
-                      ₫{fmtPrice(product.originalPrice)}
-                    </span>
+                    <span className={styles.originalPrice}>₫{fmtPrice(product.originalPrice)}</span>
                   )}
                   {deal.discountPercent > 0 && (
                     <span className={styles.discount}>{deal.discountPercent}% OFF</span>
@@ -274,7 +283,8 @@ const DealDetailsPage = () => {
                 </div>
                 {deal.discountedMinPrice !== deal.discountedMaxPrice && (
                   <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-                    Range: ₫{fmtPrice(deal.discountedMinPrice)} – ₫{fmtPrice(deal.discountedMaxPrice)}
+                    Range: ₫{fmtPrice(deal.discountedMinPrice)} – ₫
+                    {fmtPrice(deal.discountedMaxPrice)}
                   </div>
                 )}
               </div>
@@ -362,11 +372,7 @@ const DealDetailsPage = () => {
 
               {quantityLimit != null && (
                 <div className={styles.progressSection}>
-                  <Progress
-                    percent={fillPercent}
-                    strokeColor="#1890ff"
-                    showInfo={false}
-                  />
+                  <Progress percent={fillPercent} strokeColor="#1890ff" showInfo={false} />
                 </div>
               )}
 
@@ -415,7 +421,9 @@ const DealDetailsPage = () => {
                 type="text"
                 className={styles.actionLink}
                 onClick={() => setIsWishlisted((w) => !w)}
-                icon={isWishlisted ? <HeartFilled style={{ color: '#f5222d' }} /> : <HeartOutlined />}
+                icon={
+                  isWishlisted ? <HeartFilled style={{ color: '#f5222d' }} /> : <HeartOutlined />
+                }
               >
                 {isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}
               </Button>

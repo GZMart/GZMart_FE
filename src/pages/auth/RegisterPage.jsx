@@ -56,7 +56,7 @@ const RegisterPage = () => {
         ).unwrap();
 
         // Đăng ký thành công - OTP đã được gửi
-        let message = t('register_page.success_message');
+        const message = t('register_page.success_message');
 
         toast.success(message, {
           autoClose: result?.otp ? 10000 : 3000, // Show longer if OTP is included
@@ -296,13 +296,17 @@ const RegisterPage = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>{t('register_page.confirm_password_label')}</label>
+                  <label className={styles.label}>
+                    {t('register_page.confirm_password_label')}
+                  </label>
                   <div className={styles.passwordWrapper}>
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       name="confirmPassword"
                       className={`${styles.input} ${
-                        formik.touched.confirmPassword && formik.errors.confirmPassword ? 'is-invalid' : ''
+                        formik.touched.confirmPassword && formik.errors.confirmPassword
+                          ? 'is-invalid'
+                          : ''
                       }`}
                       placeholder={t('register_page.confirm_password_placeholder')}
                       value={formik.values.confirmPassword}
@@ -315,7 +319,7 @@ const RegisterPage = () => {
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (
-                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                           <path
                             d="M3 3L21 21M10.5 10.5C10.0353 10.9646 9.75 11.6022 9.75 12.3C9.75 13.6569 10.8431 14.75 12 14.75C12.6978 14.75 13.3354 14.4647 13.8 14M6.5 6.5C4.8 7.7 3 10 3 12C3 15 7.5 19 12 19C13.5 19 15 18.5 16.5 17.5"
                             stroke="currentColor"

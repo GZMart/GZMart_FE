@@ -52,23 +52,23 @@ const CheckoutPage = () => {
           setApplicableVouchers(vouchers);
 
           // Auto-select the best shop voucher
-          const eligibleShopVouchers = vouchers.filter(v =>
-            v.eligible && (v.type === 'shop' || v.type === 'private')
+          const eligibleShopVouchers = vouchers.filter(
+            (v) => v.eligible && (v.type === 'shop' || v.type === 'private')
           );
           if (eligibleShopVouchers.length > 0) {
             const bestShopVoucher = eligibleShopVouchers.reduce((prev, current) =>
-              (prev.estimatedSaving > current.estimatedSaving) ? prev : current
+              prev.estimatedSaving > current.estimatedSaving ? prev : current
             );
             setSelectedShopVoucherId(bestShopVoucher._id);
           }
 
           // Auto-select the best product voucher
-          const eligibleProductVouchers = vouchers.filter(v =>
-            v.eligible && v.type === 'product'
+          const eligibleProductVouchers = vouchers.filter(
+            (v) => v.eligible && v.type === 'product'
           );
           if (eligibleProductVouchers.length > 0) {
             const bestProductVoucher = eligibleProductVouchers.reduce((prev, current) =>
-              (prev.estimatedSaving > current.estimatedSaving) ? prev : current
+              prev.estimatedSaving > current.estimatedSaving ? prev : current
             );
             setSelectedProductVoucherId(bestProductVoucher._id);
           }
@@ -915,8 +915,8 @@ const CheckoutPage = () => {
     try {
       if (!voucher.isSaved) {
         await voucherService.saveVoucher(voucher._id);
-        setApplicableVouchers(prev =>
-          prev.map(v => v._id === voucher._id ? { ...v, isSaved: true } : v)
+        setApplicableVouchers((prev) =>
+          prev.map((v) => (v._id === voucher._id ? { ...v, isSaved: true } : v))
         );
       }
       // Auto use
@@ -932,13 +932,18 @@ const CheckoutPage = () => {
 
   // Render Voucher Section (Minimized in Checkout Sidebar)
   const renderVoucherSection = () => {
-    const selectedShopVoucher = applicableVouchers.find(v => v._id === selectedShopVoucherId);
-    const selectedProductVoucher = applicableVouchers.find(v => v._id === selectedProductVoucherId);
+    const selectedShopVoucher = applicableVouchers.find((v) => v._id === selectedShopVoucherId);
+    const selectedProductVoucher = applicableVouchers.find(
+      (v) => v._id === selectedProductVoucherId
+    );
 
     return (
       <div className="mb-3">
         <div className="d-flex align-items-center justify-content-between mb-2">
-          <div className="d-flex align-items-center gap-2" style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+          <div
+            className="d-flex align-items-center gap-2"
+            style={{ fontSize: '0.95rem', fontWeight: 600 }}
+          >
             <i className="bi bi-tag-fill" style={{ color: '#B13C36', fontSize: '1.1rem' }}></i>
             <span style={{ color: '#2b2b2b' }}>GZMart Vouchers</span>
           </div>
@@ -974,22 +979,43 @@ const CheckoutPage = () => {
                 <div className="flex-grow-1">
                   <div className="d-flex justify-content-between align-items-center">
                     <div className="d-flex align-items-center gap-2">
-                      <Badge bg="" style={{ backgroundColor: '#B13C36', fontSize: '0.7rem', padding: '0.35em 0.5em', fontWeight: 600, letterSpacing: '0.5px' }}>
+                      <Badge
+                        bg=""
+                        style={{
+                          backgroundColor: '#B13C36',
+                          fontSize: '0.7rem',
+                          padding: '0.35em 0.5em',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                        }}
+                      >
                         SHOP
                       </Badge>
-                      <span className="fw-semibold text-truncate" style={{ color: '#333', maxWidth: '160px' }}>{selectedShopVoucher.name}</span>
+                      <span
+                        className="fw-semibold text-truncate"
+                        style={{ color: '#333', maxWidth: '160px' }}
+                      >
+                        {selectedShopVoucher.name}
+                      </span>
                     </div>
                     {/* Clear Button */}
                     <i
                       className="bi bi-x-circle-fill text-muted"
                       style={{ cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }}
-                      onMouseEnter={(e) => e.target.style.color = '#B13C36'}
-                      onMouseLeave={(e) => e.target.style.color = '#6c757d'}
+                      onMouseEnter={(e) => (e.target.style.color = '#B13C36')}
+                      onMouseLeave={(e) => (e.target.style.color = '#6c757d')}
                       onClick={() => setSelectedShopVoucherId(null)}
                       title="Bỏ chọn"
                     ></i>
                   </div>
-                  <div style={{ color: '#B13C36', fontSize: '0.8rem', fontWeight: 600, marginTop: '6px' }}>
+                  <div
+                    style={{
+                      color: '#B13C36',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      marginTop: '6px',
+                    }}
+                  >
                     - {formatCurrency(selectedShopVoucher.estimatedSaving)}
                   </div>
                 </div>
@@ -1009,22 +1035,43 @@ const CheckoutPage = () => {
                 <div className="flex-grow-1">
                   <div className="d-flex justify-content-between align-items-center">
                     <div className="d-flex align-items-center gap-2">
-                      <Badge bg="" style={{ backgroundColor: '#B13C36', fontSize: '0.7rem', padding: '0.35em 0.5em', fontWeight: 600, letterSpacing: '0.5px' }}>
+                      <Badge
+                        bg=""
+                        style={{
+                          backgroundColor: '#B13C36',
+                          fontSize: '0.7rem',
+                          padding: '0.35em 0.5em',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                        }}
+                      >
                         PRODUCT
                       </Badge>
-                      <span className="fw-semibold text-truncate" style={{ color: '#333', maxWidth: '160px' }}>{selectedProductVoucher.name}</span>
+                      <span
+                        className="fw-semibold text-truncate"
+                        style={{ color: '#333', maxWidth: '160px' }}
+                      >
+                        {selectedProductVoucher.name}
+                      </span>
                     </div>
                     {/* Clear Button */}
                     <i
                       className="bi bi-x-circle-fill text-muted"
                       style={{ cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }}
-                      onMouseEnter={(e) => e.target.style.color = '#B13C36'}
-                      onMouseLeave={(e) => e.target.style.color = '#6c757d'}
+                      onMouseEnter={(e) => (e.target.style.color = '#B13C36')}
+                      onMouseLeave={(e) => (e.target.style.color = '#6c757d')}
                       onClick={() => setSelectedProductVoucherId(null)}
                       title="Bỏ chọn"
                     ></i>
                   </div>
-                  <div style={{ color: '#B13C36', fontSize: '0.8rem', fontWeight: 600, marginTop: '6px' }}>
+                  <div
+                    style={{
+                      color: '#B13C36',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      marginTop: '6px',
+                    }}
+                  >
                     - {formatCurrency(selectedProductVoucher.estimatedSaving)}
                   </div>
                 </div>
@@ -1032,7 +1079,14 @@ const CheckoutPage = () => {
             )}
 
             {!selectedShopVoucher && !selectedProductVoucher && (
-              <div className="text-muted small text-center py-2" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px dashed #dee2e6' }}>
+              <div
+                className="text-muted small text-center py-2"
+                style={{
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px dashed #dee2e6',
+                }}
+              >
                 Chưa có voucher nào được chọn
               </div>
             )}
@@ -1104,7 +1158,9 @@ const CheckoutPage = () => {
 
         <div className="d-flex justify-content-between mb-4">
           <span className="fw-bold fs-5">Total Price</span>
-          <span className="fw-bold fs-5" style={{ color: '#741E20' }}>{formatCurrency(finalTotal)}</span>
+          <span className="fw-bold fs-5" style={{ color: '#741E20' }}>
+            {formatCurrency(finalTotal)}
+          </span>
         </div>
 
         <div className="d-flex gap-2">
@@ -1194,7 +1250,11 @@ const CheckoutPage = () => {
           size="md"
           className="voucher-selection-modal"
         >
-          <Modal.Header closeButton className="border-0 pb-3" style={{ borderBottom: '1px solid #eee' }}>
+          <Modal.Header
+            closeButton
+            className="border-0 pb-3"
+            style={{ borderBottom: '1px solid #eee' }}
+          >
             <Modal.Title className="fw-bold fs-5" style={{ color: '#2b2b2b' }}>
               <i className="bi bi-ticket-perforated-fill me-2" style={{ color: '#B13C36' }}></i>
               Chọn Mã Giảm Giá
@@ -1202,7 +1262,10 @@ const CheckoutPage = () => {
           </Modal.Header>
           <Modal.Body className="p-4 pt-4" style={{ backgroundColor: '#fafbfe' }}>
             {/* Manual Code Input inside Modal */}
-            <div className="d-flex gap-2 mb-4 p-3 rounded-3 bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div
+              className="d-flex gap-2 mb-4 p-3 rounded-3 bg-white"
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+            >
               <Form.Control
                 type="text"
                 placeholder="Nhập mã giảm giá..."
@@ -1217,7 +1280,13 @@ const CheckoutPage = () => {
               />
               <Button
                 className="border-0 text-white"
-                style={{ backgroundColor: '#B13C36', whiteSpace: 'nowrap', padding: '0.6rem 1.5rem', fontWeight: 600, borderRadius: '6px' }}
+                style={{
+                  backgroundColor: '#B13C36',
+                  whiteSpace: 'nowrap',
+                  padding: '0.6rem 1.5rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                }}
                 onClick={handleApplyCode}
                 disabled={codeLoading || !manualCode.trim()}
               >
@@ -1231,184 +1300,301 @@ const CheckoutPage = () => {
             )}
 
             {/* List of Vouchers */}
-            <div style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '8px' }} className="custom-scrollbar">
-              {applicableVouchers.filter(v => v.type === 'shop' || v.type === 'private').length > 0 && (
+            <div
+              style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '8px' }}
+              className="custom-scrollbar"
+            >
+              {applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private').length >
+                0 && (
                 <div className="mb-4">
                   <div className="d-flex align-items-center mb-3">
-                    <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>Voucher của Shop</h6>
-                    <span className="ms-2 badge rounded-pill" style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}>
-                      {applicableVouchers.filter(v => v.type === 'shop' || v.type === 'private').length}
+                    <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
+                      Voucher của Shop
+                    </h6>
+                    <span
+                      className="ms-2 badge rounded-pill"
+                      style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}
+                    >
+                      {
+                        applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private')
+                          .length
+                      }
                     </span>
                   </div>
-                  {applicableVouchers.filter(v => v.type === 'shop' || v.type === 'private').map((v) => (
-                    <div
-                      key={v._id}
-                      className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${!v.eligible ? 'opacity-50' : 'bg-white shadow-sm'
+                  {applicableVouchers
+                    .filter((v) => v.type === 'shop' || v.type === 'private')
+                    .map((v) => (
+                      <div
+                        key={v._id}
+                        className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
+                          !v.eligible ? 'opacity-50' : 'bg-white shadow-sm'
                         }`}
-                      style={{
-                        border: selectedShopVoucherId === v._id ? '2px solid #B13C36' : '1px solid transparent',
-                        cursor: v.eligible ? 'pointer' : 'not-allowed',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}
-                      onClick={() => {
-                        if (!v.eligible) {
-                          return;
-                        }
-                        if (!v.isSaved) {
-                          return; // Must save first
-                        }
-                        setSelectedShopVoucherId(selectedShopVoucherId === v._id ? null : v._id);
-                      }}
-                    >
-                      {/* Decorative edge */}
-                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: '#B13C36', opacity: selectedShopVoucherId === v._id ? 1 : 0.2 }}></div>
-
-                      <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                        style={{
+                          border:
+                            selectedShopVoucherId === v._id
+                              ? '2px solid #B13C36'
+                              : '1px solid transparent',
+                          cursor: v.eligible ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                        onClick={() => {
+                          if (!v.eligible) {
+                            return;
+                          }
+                          if (!v.isSaved) {
+                            return; // Must save first
+                          }
+                          setSelectedShopVoucherId(selectedShopVoucherId === v._id ? null : v._id);
+                        }}
+                      >
+                        {/* Decorative edge */}
                         <div
-                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                          style={{ width: '54px', height: '54px', backgroundColor: '#fff5f0', color: '#B13C36', border: '1px solid #ffeada' }}
-                        >
-                          <i className="bi bi-shop fs-4"></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="fw-bold text-truncate" style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}>{v.name}</div>
-                          <div className="text-muted small mt-1">
-                            {v.minBasketPrice > 0 ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}` : 'Không có mức tối thiểu'}
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '4px',
+                            backgroundColor: '#B13C36',
+                            opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
+                          }}
+                        ></div>
+
+                        <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            style={{
+                              width: '54px',
+                              height: '54px',
+                              backgroundColor: '#fff5f0',
+                              color: '#B13C36',
+                              border: '1px solid #ffeada',
+                            }}
+                          >
+                            <i className="bi bi-shop fs-4"></i>
                           </div>
-                          {v.eligible && v.estimatedSaving > 0 && (
-                            <div className="mt-1 d-inline-block px-2 py-1 rounded" style={{ backgroundColor: '#ffe9e6', color: '#B13C36', fontSize: '0.75rem', fontWeight: 700 }}>
-                              Giảm {formatCurrency(v.estimatedSaving)}
+                          <div className="flex-grow-1">
+                            <div
+                              className="fw-bold text-truncate"
+                              style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
+                            >
+                              {v.name}
+                            </div>
+                            <div className="text-muted small mt-1">
+                              {v.minBasketPrice > 0
+                                ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
+                                : 'Không có mức tối thiểu'}
+                            </div>
+                            {v.eligible && v.estimatedSaving > 0 && (
+                              <div
+                                className="mt-1 d-inline-block px-2 py-1 rounded"
+                                style={{
+                                  backgroundColor: '#ffe9e6',
+                                  color: '#B13C36',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Giảm {formatCurrency(v.estimatedSaving)}
+                              </div>
+                            )}
+                            {!v.eligible && v.ineligibleReason && (
+                              <div
+                                className="text-danger mt-1 fw-medium"
+                                style={{ fontSize: '0.75rem' }}
+                              >
+                                {v.ineligibleReason}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="ms-3 flex-shrink-0 text-end pe-2">
+                          {!v.isSaved ? (
+                            <Button
+                              size="sm"
+                              className="fw-semibold px-3"
+                              style={{
+                                backgroundColor: '#B13C36',
+                                borderColor: '#B13C36',
+                                fontSize: '0.85rem',
+                                borderRadius: '6px',
+                              }}
+                              onClick={(e) => handleSaveAndUseVoucher(e, v)}
+                              disabled={!v.eligible}
+                            >
+                              Lưu
+                            </Button>
+                          ) : (
+                            <div className="form-check m-0">
+                              <input
+                                className="form-check-input"
+                                type="radio"
+                                id={`shop-v-${v._id}`}
+                                name="modalShopVoucher"
+                                checked={selectedShopVoucherId === v._id}
+                                disabled={!v.eligible}
+                                onChange={() => {}}
+                                style={{
+                                  width: '1.4em',
+                                  height: '1.4em',
+                                  cursor: 'pointer',
+                                  accentColor: '#B13C36', // Modern browser styling
+                                }}
+                              />
                             </div>
                           )}
-                          {!v.eligible && v.ineligibleReason && (
-                            <div className="text-danger mt-1 fw-medium" style={{ fontSize: '0.75rem' }}>{v.ineligibleReason}</div>
-                          )}
                         </div>
                       </div>
-
-                      <div className="ms-3 flex-shrink-0 text-end pe-2">
-                        {!v.isSaved ? (
-                          <Button
-                            size="sm"
-                            className="fw-semibold px-3"
-                            style={{ backgroundColor: '#B13C36', borderColor: '#B13C36', fontSize: '0.85rem', borderRadius: '6px' }}
-                            onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                            disabled={!v.eligible}
-                          >
-                            Lưu
-                          </Button>
-                        ) : (
-                          <div className="form-check m-0">
-                            <input
-                              className="form-check-input"
-                              type="radio"
-                              id={`shop-v-${v._id}`}
-                              name="modalShopVoucher"
-                              checked={selectedShopVoucherId === v._id}
-                              disabled={!v.eligible}
-                              onChange={() => { }}
-                              style={{
-                                width: '1.4em', height: '1.4em', cursor: 'pointer',
-                                accentColor: '#B13C36' // Modern browser styling
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
 
-              {applicableVouchers.filter(v => v.type === 'product').length > 0 && (
+              {applicableVouchers.filter((v) => v.type === 'product').length > 0 && (
                 <div className="mb-4">
                   <div className="d-flex align-items-center mb-3">
-                    <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>Voucher Sản Phẩm</h6>
-                    <span className="ms-2 badge rounded-pill" style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}>
-                      {applicableVouchers.filter(v => v.type === 'product').length}
+                    <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
+                      Voucher Sản Phẩm
+                    </h6>
+                    <span
+                      className="ms-2 badge rounded-pill"
+                      style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}
+                    >
+                      {applicableVouchers.filter((v) => v.type === 'product').length}
                     </span>
                   </div>
-                  {applicableVouchers.filter(v => v.type === 'product').map((v) => (
-                    <div
-                      key={v._id}
-                      className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${!v.eligible ? 'opacity-50' : 'bg-white shadow-sm'
+                  {applicableVouchers
+                    .filter((v) => v.type === 'product')
+                    .map((v) => (
+                      <div
+                        key={v._id}
+                        className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
+                          !v.eligible ? 'opacity-50' : 'bg-white shadow-sm'
                         }`}
-                      style={{
-                        border: selectedProductVoucherId === v._id ? '2px solid #B13C36' : '1px solid transparent',
-                        cursor: v.eligible ? 'pointer' : 'not-allowed',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}
-                      onClick={() => {
-                        if (!v.eligible) {
-                          return;
-                        }
-                        if (!v.isSaved) {
-                          return; // Must save first
-                        }
-                        setSelectedProductVoucherId(selectedProductVoucherId === v._id ? null : v._id);
-                      }}
-                    >
-                      {/* Decorative edge */}
-                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: '#B13C36', opacity: selectedProductVoucherId === v._id ? 1 : 0.2 }}></div>
-
-                      <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                        style={{
+                          border:
+                            selectedProductVoucherId === v._id
+                              ? '2px solid #B13C36'
+                              : '1px solid transparent',
+                          cursor: v.eligible ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                        onClick={() => {
+                          if (!v.eligible) {
+                            return;
+                          }
+                          if (!v.isSaved) {
+                            return; // Must save first
+                          }
+                          setSelectedProductVoucherId(
+                            selectedProductVoucherId === v._id ? null : v._id
+                          );
+                        }}
+                      >
+                        {/* Decorative edge */}
                         <div
-                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                          style={{ width: '54px', height: '54px', backgroundColor: '#fff5f0', color: '#B13C36', border: '1px solid #ffeada' }}
-                        >
-                          <i className="bi bi-box-seam fs-4"></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <div className="fw-bold text-truncate" style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}>{v.name}</div>
-                          <div className="text-muted small mt-1">
-                            {v.minBasketPrice > 0 ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}` : 'Không có mức tối thiểu'}
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '4px',
+                            backgroundColor: '#B13C36',
+                            opacity: selectedProductVoucherId === v._id ? 1 : 0.2,
+                          }}
+                        ></div>
+
+                        <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            style={{
+                              width: '54px',
+                              height: '54px',
+                              backgroundColor: '#fff5f0',
+                              color: '#B13C36',
+                              border: '1px solid #ffeada',
+                            }}
+                          >
+                            <i className="bi bi-box-seam fs-4"></i>
                           </div>
-                          {v.eligible && v.estimatedSaving > 0 && (
-                            <div className="mt-1 d-inline-block px-2 py-1 rounded" style={{ backgroundColor: '#ffe9e6', color: '#B13C36', fontSize: '0.75rem', fontWeight: 700 }}>
-                              Giảm {formatCurrency(v.estimatedSaving)}
+                          <div className="flex-grow-1">
+                            <div
+                              className="fw-bold text-truncate"
+                              style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
+                            >
+                              {v.name}
+                            </div>
+                            <div className="text-muted small mt-1">
+                              {v.minBasketPrice > 0
+                                ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
+                                : 'Không có mức tối thiểu'}
+                            </div>
+                            {v.eligible && v.estimatedSaving > 0 && (
+                              <div
+                                className="mt-1 d-inline-block px-2 py-1 rounded"
+                                style={{
+                                  backgroundColor: '#ffe9e6',
+                                  color: '#B13C36',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Giảm {formatCurrency(v.estimatedSaving)}
+                              </div>
+                            )}
+                            {!v.eligible && v.ineligibleReason && (
+                              <div
+                                className="text-danger mt-1 fw-medium"
+                                style={{ fontSize: '0.75rem' }}
+                              >
+                                {v.ineligibleReason}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="ms-3 flex-shrink-0 text-end pe-2">
+                          {!v.isSaved ? (
+                            <Button
+                              size="sm"
+                              className="fw-semibold px-3"
+                              style={{
+                                backgroundColor: '#B13C36',
+                                borderColor: '#B13C36',
+                                fontSize: '0.85rem',
+                                borderRadius: '6px',
+                              }}
+                              onClick={(e) => handleSaveAndUseVoucher(e, v)}
+                              disabled={!v.eligible}
+                            >
+                              Lưu
+                            </Button>
+                          ) : (
+                            <div className="form-check m-0">
+                              <input
+                                className="form-check-input"
+                                type="radio"
+                                id={`prod-v-${v._id}`}
+                                name="modalProductVoucher"
+                                checked={selectedProductVoucherId === v._id}
+                                disabled={!v.eligible}
+                                onChange={() => {}}
+                                style={{
+                                  width: '1.4em',
+                                  height: '1.4em',
+                                  cursor: 'pointer',
+                                  accentColor: '#B13C36',
+                                }}
+                              />
                             </div>
                           )}
-                          {!v.eligible && v.ineligibleReason && (
-                            <div className="text-danger mt-1 fw-medium" style={{ fontSize: '0.75rem' }}>{v.ineligibleReason}</div>
-                          )}
                         </div>
                       </div>
-
-                      <div className="ms-3 flex-shrink-0 text-end pe-2">
-                        {!v.isSaved ? (
-                          <Button
-                            size="sm"
-                            className="fw-semibold px-3"
-                            style={{ backgroundColor: '#B13C36', borderColor: '#B13C36', fontSize: '0.85rem', borderRadius: '6px' }}
-                            onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                            disabled={!v.eligible}
-                          >
-                            Lưu
-                          </Button>
-                        ) : (
-                          <div className="form-check m-0">
-                            <input
-                              className="form-check-input"
-                              type="radio"
-                              id={`prod-v-${v._id}`}
-                              name="modalProductVoucher"
-                              checked={selectedProductVoucherId === v._id}
-                              disabled={!v.eligible}
-                              onChange={() => { }}
-                              style={{
-                                width: '1.4em', height: '1.4em', cursor: 'pointer',
-                                accentColor: '#B13C36'
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -1416,14 +1602,18 @@ const CheckoutPage = () => {
           <Modal.Footer className="border-0 pt-3 pb-4 px-4" style={{ backgroundColor: '#fafbfe' }}>
             <Button
               className="w-100 py-2 fw-bold border-0 text-white"
-              style={{ backgroundColor: '#B13C36', borderRadius: '8px', fontSize: '1.05rem', boxShadow: '0 4px 12px rgba(177, 60, 54, 0.2)' }}
+              style={{
+                backgroundColor: '#B13C36',
+                borderRadius: '8px',
+                fontSize: '1.05rem',
+                boxShadow: '0 4px 12px rgba(177, 60, 54, 0.2)',
+              }}
               onClick={() => setShowVoucherModal(false)}
             >
               ĐỒNG Ý
             </Button>
           </Modal.Footer>
         </Modal>
-
       </Container>
 
       <Modal

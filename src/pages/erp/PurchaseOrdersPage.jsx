@@ -36,7 +36,11 @@ const KebabMenu = ({ items }) => {
   const ref = useRef(null);
 
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -45,7 +49,7 @@ const KebabMenu = ({ items }) => {
     <div className={styles.kebabWrap} ref={ref}>
       <button
         className={styles.kebabTrigger}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         aria-label="More actions"
         title="More actions"
       >
@@ -57,7 +61,10 @@ const KebabMenu = ({ items }) => {
             <button
               key={item.label}
               className={`${styles.kebabItem} ${item.danger ? styles.kebabItemDanger : ''}`}
-              onClick={() => { item.onClick(); setOpen(false); }}
+              onClick={() => {
+                item.onClick();
+                setOpen(false);
+              }}
               disabled={item.disabled}
             >
               {item.icon && <span className={styles.kebabItemIcon}>{item.icon}</span>}
@@ -90,38 +97,44 @@ const PurchaseOrdersPage = () => {
   });
 
   // debounced search value that actually triggers API call
-  const [searchInput, setSearchInput]   = useState('');
-  const searchTimer                      = useRef(null);
+  const [searchInput, setSearchInput] = useState('');
+  const searchTimer = useRef(null);
 
-  const [cancelModal, setCancelModal]   = useState({ show: false, id: null });
+  const [cancelModal, setCancelModal] = useState({ show: false, id: null });
   const [cancelReason, setCancelReason] = useState('');
-  const [editingPoId, setEditingPoId]   = useState(null);
-  const [receivingId, setReceivingId]   = useState(null);
+  const [editingPoId, setEditingPoId] = useState(null);
+  const [receivingId, setReceivingId] = useState(null);
 
   const COL_TO_SORT = {
-    orderNumber:          'orderNumber',
-    supplierName:         'supplier',
-    createdAt:            'createdAt',
+    orderNumber: 'orderNumber',
+    supplierName: 'supplier',
+    createdAt: 'createdAt',
     expectedDeliveryDate: 'expectedDeliveryDate',
-    finalAmount:          'finalAmount',
-    status:               'status',
+    finalAmount: 'finalAmount',
+    status: 'status',
   };
 
   const handleSort = useCallback((colKey) => {
     const backendField = COL_TO_SORT[colKey];
-    if (!backendField) return;
-    setFilters(prev => ({
+    if (!backendField) {
+      return;
+    }
+    setFilters((prev) => ({
       ...prev,
       sortBy: backendField,
       sortOrder: prev.sortBy === backendField && prev.sortOrder === 'asc' ? 'desc' : 'asc',
       page: 1,
     }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const apiFilters = useMemo(() => {
     const { dateFrom, dateTo, ...rest } = filters;
-    return { ...rest, ...(dateFrom && { startDate: dateFrom }), ...(dateTo && { endDate: dateTo }) };
+    return {
+      ...rest,
+      ...(dateFrom && { startDate: dateFrom }),
+      ...(dateTo && { endDate: dateTo }),
+    };
   }, [filters]);
 
   useEffect(() => {
@@ -129,31 +142,45 @@ const PurchaseOrdersPage = () => {
   }, [dispatch, apiFilters]);
 
   useEffect(() => {
-    if (!suppliers?.length) dispatch(fetchSuppliers({ limit: 200 }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!suppliers?.length) {
+      dispatch(fetchSuppliers({ limit: 200 }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   const handleSearchChange = (val) => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => {
-      setFilters(p => ({ ...p, search: val, page: 1 }));
+      setFilters((p) => ({ ...p, search: val, page: 1 }));
     }, 400);
   };
 
-  const activeFilterCount = [filters.supplierId, filters.dateFrom, filters.dateTo, filters.status]
-    .filter(Boolean).length;
+  const activeFilterCount = [
+    filters.supplierId,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.status,
+  ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearchInput('');
-    setFilters(p => ({ ...p, status: '', supplierId: '', search: '', dateFrom: '', dateTo: '', page: 1 }));
+    setFilters((p) => ({
+      ...p,
+      status: '',
+      supplierId: '',
+      search: '',
+      dateFrom: '',
+      dateTo: '',
+      page: 1,
+    }));
   };
 
   const stats = useMemo(() => {
     const sc = purchaseOrdersPagination?.statusCounts;
     return {
-      total:     sc?.total     ?? purchaseOrdersPagination?.total ?? 0,
-      pending:   sc?.Pending   ?? 0,
+      total: sc?.total ?? purchaseOrdersPagination?.total ?? 0,
+      pending: sc?.Pending ?? 0,
       completed: sc?.Completed ?? 0,
       cancelled: sc?.Cancelled ?? 0,
     };
@@ -161,48 +188,71 @@ const PurchaseOrdersPage = () => {
 
   // Pending → Completed (updates inventory)
   const handleReceive = async (id) => {
-    if (!window.confirm('Confirm goods received? This will update inventory and cannot be undone.')) return;
+    if (
+      !window.confirm('Confirm goods received? This will update inventory and cannot be undone.')
+    ) {
+      return;
+    }
     setReceivingId(id);
     try {
       await dispatch(completePurchaseOrder(id)).unwrap();
       dispatch(fetchPurchaseOrders(apiFilters));
     } catch (err) {
-      alert('Cannot confirm receipt: ' + (err.error || err.message || err));
+      alert(`Cannot confirm receipt: ${err.error || err.message || err}`);
     } finally {
       setReceivingId(null);
     }
   };
 
   const handleCancelSubmit = async () => {
-    if (!cancelReason.trim()) { alert('Please enter a cancellation reason.'); return; }
+    if (!cancelReason.trim()) {
+      alert('Please enter a cancellation reason.');
+      return;
+    }
     try {
       await dispatch(cancelPurchaseOrder({ id: cancelModal.id, cancelReason })).unwrap();
       setCancelModal({ show: false, id: null });
       setCancelReason('');
       dispatch(fetchPurchaseOrders(apiFilters));
     } catch (err) {
-      alert('Cannot cancel: ' + (err.error || err.message || err));
+      alert(`Cannot cancel: ${err.error || err.message || err}`);
     }
   };
 
   const getStatusBadge = (status) => {
     const map = {
-      Draft:     { label: 'Draft',     cls: styles.badgeDraft,     dot: '#94a3b8' },
-      Pending:   { label: 'Ordering',  cls: styles.badgePending,   dot: '#d97706' },
-      Completed: { label: 'Received',  cls: styles.badgeCompleted, dot: '#10b981' },
+      Draft: { label: 'Draft', cls: styles.badgeDraft, dot: '#94a3b8' },
+      Pending: { label: 'Ordering', cls: styles.badgePending, dot: '#d97706' },
+      Completed: { label: 'Received', cls: styles.badgeCompleted, dot: '#10b981' },
       Cancelled: { label: 'Cancelled', cls: styles.badgeCancelled, dot: '#ef4444' },
     };
     const cfg = map[status] || map.Draft;
     return (
       <span className={`${styles.badge} ${cfg.cls}`}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: cfg.dot, display: 'inline-block' }} />
+        <span
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: cfg.dot,
+            display: 'inline-block',
+          }}
+        />
         {cfg.label}
       </span>
     );
   };
 
-  const fmtVnd  = (n) => new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 0 }).format(n || 0) + ' ₫';
-  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+  const fmtVnd = (n) =>
+    `${new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 0 }).format(n || 0)} ₫`;
+  const fmtDate = (d) =>
+    d
+      ? new Date(d).toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      : '—';
 
   // Build action set per PO status
   const renderActions = (po) => {
@@ -240,27 +290,33 @@ const PurchaseOrdersPage = () => {
               disabled={isReceiving}
               title="Confirm goods received"
             >
-              {isReceiving
-                ? <Loader2 size={13} className={styles.spinIcon} />
-                : <Check size={13} />}
+              {isReceiving ? (
+                <Loader2 size={13} className={styles.spinIcon} />
+              ) : (
+                <Check size={13} />
+              )}
               {isReceiving ? 'Confirming…' : 'Receive'}
             </button>
 
-            <KebabMenu items={[
-              {
-                label: 'Cancel Order',
-                icon: <X size={13} />,
-                danger: true,
-                onClick: () => setCancelModal({ show: true, id: po._id }),
-              },
-            ]} />
+            <KebabMenu
+              items={[
+                {
+                  label: 'Cancel Order',
+                  icon: <X size={13} />,
+                  danger: true,
+                  onClick: () => setCancelModal({ show: true, id: po._id }),
+                },
+              ]}
+            />
           </>
         )}
       </div>
     );
   };
 
-  if (loading && !purchaseOrders.length) return <LoadingSpinner />;
+  if (loading && !purchaseOrders.length) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className={styles.container}>
@@ -280,28 +336,36 @@ const PurchaseOrdersPage = () => {
       {/* Stat Cards */}
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#eef2ff', color: '#6366f1' }}><Package size={20} strokeWidth={1.8} /></div>
+          <div className={styles.statIcon} style={{ background: '#eef2ff', color: '#6366f1' }}>
+            <Package size={20} strokeWidth={1.8} />
+          </div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.total}</div>
             <div className={styles.statLabel}>Total Orders</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#fffbeb', color: '#d97706' }}><Clock size={20} strokeWidth={1.8} /></div>
+          <div className={styles.statIcon} style={{ background: '#fffbeb', color: '#d97706' }}>
+            <Clock size={20} strokeWidth={1.8} />
+          </div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.pending}</div>
             <div className={styles.statLabel}>Ordering</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#ecfdf5', color: '#10b981' }}><CheckCircle2 size={20} strokeWidth={1.8} /></div>
+          <div className={styles.statIcon} style={{ background: '#ecfdf5', color: '#10b981' }}>
+            <CheckCircle2 size={20} strokeWidth={1.8} />
+          </div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.completed}</div>
             <div className={styles.statLabel}>Received</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: '#fef2f2', color: '#ef4444' }}><XCircle size={20} strokeWidth={1.8} /></div>
+          <div className={styles.statIcon} style={{ background: '#fef2f2', color: '#ef4444' }}>
+            <XCircle size={20} strokeWidth={1.8} />
+          </div>
           <div className={styles.statInfo}>
             <div className={styles.statValue}>{stats.cancelled}</div>
             <div className={styles.statLabel}>Cancelled</div>
@@ -327,7 +391,7 @@ const PurchaseOrdersPage = () => {
         <select
           className={styles.filterSelect}
           value={filters.status}
-          onChange={(e) => setFilters(p => ({ ...p, status: e.target.value, page: 1 }))}
+          onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value, page: 1 }))}
         >
           <option value="">All Statuses</option>
           <option value="Draft">Draft</option>
@@ -340,11 +404,13 @@ const PurchaseOrdersPage = () => {
         <select
           className={styles.filterSelect}
           value={filters.supplierId}
-          onChange={(e) => setFilters(p => ({ ...p, supplierId: e.target.value, page: 1 }))}
+          onChange={(e) => setFilters((p) => ({ ...p, supplierId: e.target.value, page: 1 }))}
         >
           <option value="">All Suppliers</option>
-          {(suppliers || []).map(s => (
-            <option key={s._id} value={s._id}>{s.name}</option>
+          {(suppliers || []).map((s) => (
+            <option key={s._id} value={s._id}>
+              {s.name}
+            </option>
           ))}
         </select>
 
@@ -354,7 +420,7 @@ const PurchaseOrdersPage = () => {
             type="date"
             className={styles.filterDate}
             value={filters.dateFrom}
-            onChange={(e) => setFilters(p => ({ ...p, dateFrom: e.target.value, page: 1 }))}
+            onChange={(e) => setFilters((p) => ({ ...p, dateFrom: e.target.value, page: 1 }))}
             title="Created from"
           />
           <span className={styles.filterDateSep}>–</span>
@@ -362,17 +428,23 @@ const PurchaseOrdersPage = () => {
             type="date"
             className={styles.filterDate}
             value={filters.dateTo}
-            onChange={(e) => setFilters(p => ({ ...p, dateTo: e.target.value, page: 1 }))}
+            onChange={(e) => setFilters((p) => ({ ...p, dateTo: e.target.value, page: 1 }))}
             title="Created to"
           />
         </div>
 
         {/* Clear */}
         {(activeFilterCount > 0 || searchInput) && (
-          <button className={styles.filterClearBtn} onClick={clearFilters} title="Clear all filters">
+          <button
+            className={styles.filterClearBtn}
+            onClick={clearFilters}
+            title="Clear all filters"
+          >
             <FilterX size={14} />
             Clear
-            {activeFilterCount > 0 && <span className={styles.filterBadge}>{activeFilterCount}</span>}
+            {activeFilterCount > 0 && (
+              <span className={styles.filterBadge}>{activeFilterCount}</span>
+            )}
           </button>
         )}
       </div>
@@ -382,13 +454,50 @@ const PurchaseOrdersPage = () => {
         <table className={styles.table}>
           <thead>
             <tr>
-              <SortableHeader label="Order Number"      colKey="orderNumber"          sortKey={filters.sortBy === 'orderNumber' ? 'orderNumber' : null}                   sortDir={filters.sortOrder} onSort={handleSort} />
-              <SortableHeader label="Supplier"          colKey="supplierName"         sortKey={filters.sortBy === 'supplier' ? 'supplierName' : null}                      sortDir={filters.sortOrder} onSort={handleSort} />
-              <SortableHeader label="Created At"        colKey="createdAt"            sortKey={filters.sortBy === 'createdAt' ? 'createdAt' : null}                        sortDir={filters.sortOrder} onSort={handleSort} />
-              <SortableHeader label="Expected Delivery" colKey="expectedDeliveryDate" sortKey={filters.sortBy === 'expectedDeliveryDate' ? 'expectedDeliveryDate' : null}  sortDir={filters.sortOrder} onSort={handleSort} />
+              <SortableHeader
+                label="Order Number"
+                colKey="orderNumber"
+                sortKey={filters.sortBy === 'orderNumber' ? 'orderNumber' : null}
+                sortDir={filters.sortOrder}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Supplier"
+                colKey="supplierName"
+                sortKey={filters.sortBy === 'supplier' ? 'supplierName' : null}
+                sortDir={filters.sortOrder}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Created At"
+                colKey="createdAt"
+                sortKey={filters.sortBy === 'createdAt' ? 'createdAt' : null}
+                sortDir={filters.sortOrder}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Expected Delivery"
+                colKey="expectedDeliveryDate"
+                sortKey={filters.sortBy === 'expectedDeliveryDate' ? 'expectedDeliveryDate' : null}
+                sortDir={filters.sortOrder}
+                onSort={handleSort}
+              />
               <th>Products</th>
-              <SortableHeader label="Total"             colKey="finalAmount"          sortKey={filters.sortBy === 'finalAmount' ? 'finalAmount' : null}                    sortDir={filters.sortOrder} onSort={handleSort} align="right" />
-              <SortableHeader label="Status"            colKey="status"               sortKey={filters.sortBy === 'status' ? 'status' : null}                              sortDir={filters.sortOrder} onSort={handleSort} />
+              <SortableHeader
+                label="Total"
+                colKey="finalAmount"
+                sortKey={filters.sortBy === 'finalAmount' ? 'finalAmount' : null}
+                sortDir={filters.sortOrder}
+                onSort={handleSort}
+                align="right"
+              />
+              <SortableHeader
+                label="Status"
+                colKey="status"
+                sortKey={filters.sortBy === 'status' ? 'status' : null}
+                sortDir={filters.sortOrder}
+                onSort={handleSort}
+              />
               <th className={styles.thActions}>Actions</th>
             </tr>
           </thead>
@@ -413,10 +522,18 @@ const PurchaseOrdersPage = () => {
                       {po.code}
                     </Link>
                   </td>
-                  <td><span className={styles.supplierName}>{po.supplierId?.name || '—'}</span></td>
-                  <td><span className={styles.dateText}>{fmtDate(po.createdAt)}</span></td>
-                  <td><span className={styles.dateText}>{fmtDate(po.expectedDeliveryDate)}</span></td>
-                  <td><span className={styles.itemCount}>{po.items?.length || 0} SKU</span></td>
+                  <td>
+                    <span className={styles.supplierName}>{po.supplierId?.name || '—'}</span>
+                  </td>
+                  <td>
+                    <span className={styles.dateText}>{fmtDate(po.createdAt)}</span>
+                  </td>
+                  <td>
+                    <span className={styles.dateText}>{fmtDate(po.expectedDeliveryDate)}</span>
+                  </td>
+                  <td>
+                    <span className={styles.itemCount}>{po.items?.length || 0} SKU</span>
+                  </td>
                   <td style={{ textAlign: 'right' }}>
                     <span className={styles.amount}>{fmtVnd(po.finalAmount)}</span>
                   </td>
@@ -432,17 +549,21 @@ const PurchaseOrdersPage = () => {
       {/* Pagination */}
       {purchaseOrdersPagination && purchaseOrdersPagination.totalPages > 1 && (
         <div className={styles.pagination}>
-          <button className={styles.pageBtn}
+          <button
+            className={styles.pageBtn}
             disabled={filters.page === 1}
-            onClick={() => setFilters(p => ({ ...p, page: p.page - 1 }))}>
+            onClick={() => setFilters((p) => ({ ...p, page: p.page - 1 }))}
+          >
             <ChevronLeft size={14} /> Prev
           </button>
           <span className={styles.pageInfo}>
             Page {filters.page} of {purchaseOrdersPagination.totalPages}
           </span>
-          <button className={styles.pageBtn}
+          <button
+            className={styles.pageBtn}
             disabled={filters.page === purchaseOrdersPagination.totalPages}
-            onClick={() => setFilters(p => ({ ...p, page: p.page + 1 }))}>
+            onClick={() => setFilters((p) => ({ ...p, page: p.page + 1 }))}
+          >
             Next <ChevronRight size={14} />
           </button>
         </div>
@@ -450,7 +571,10 @@ const PurchaseOrdersPage = () => {
 
       {/* Cancel Modal */}
       {cancelModal.show && (
-        <div className={styles.modal} onClick={(e) => e.target === e.currentTarget && setCancelModal({ show: false, id: null })}>
+        <div
+          className={styles.modal}
+          onClick={(e) => e.target === e.currentTarget && setCancelModal({ show: false, id: null })}
+        >
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
               <AlertTriangle size={18} color="#ef4444" />
@@ -466,8 +590,13 @@ const PurchaseOrdersPage = () => {
               />
             </div>
             <div className={styles.modalActions}>
-              <button className={styles.btnSecondary}
-                onClick={() => { setCancelModal({ show: false, id: null }); setCancelReason(''); }}>
+              <button
+                className={styles.btnSecondary}
+                onClick={() => {
+                  setCancelModal({ show: false, id: null });
+                  setCancelReason('');
+                }}
+              >
                 Close
               </button>
               <button className={styles.btnDanger} onClick={handleCancelSubmit}>

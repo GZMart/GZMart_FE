@@ -6,7 +6,9 @@ import styles from '../../assets/styles/PromotionBadge.module.css';
  * Shows tier-based discounts (e.g., "Buy 2 get 10% off")
  */
 export const ComboPromotionBanner = ({ combos }) => {
-  if (!combos || combos.length === 0) return null;
+  if (!combos || combos.length === 0) {
+    return null;
+  }
 
   return (
     <div className={styles.comboSection}>
@@ -44,7 +46,9 @@ export const ComboPromotionBanner = ({ combos }) => {
  * Shows add-on products with discounted prices
  */
 export const AddOnDealCards = ({ deals }) => {
-  if (!deals || deals.length === 0) return null;
+  if (!deals || deals.length === 0) {
+    return null;
+  }
 
   return (
     <div className={styles.addonSection}>
@@ -57,12 +61,12 @@ export const AddOnDealCards = ({ deals }) => {
           <div className={styles.addonDealName}>{deal.name}</div>
           <div className={styles.addonItems}>
             {deal.subProducts.map((sp, idx) => {
-              if (!sp.product) return null;
+              if (!sp.product) {
+                return null;
+              }
               const savings =
                 sp.originalPrice > sp.price
-                  ? Math.round(
-                      ((sp.originalPrice - sp.price) / sp.originalPrice) * 100
-                    )
+                  ? Math.round(((sp.originalPrice - sp.price) / sp.originalPrice) * 100)
                   : 0;
 
               return (
@@ -83,9 +87,7 @@ export const AddOnDealCards = ({ deals }) => {
                   <div className={styles.addonInfo}>
                     <div className={styles.addonProductName}>{sp.product.name}</div>
                     <div className={styles.addonPricing}>
-                      <span className={styles.addonSalePrice}>
-                        {formatCurrency(sp.price)}
-                      </span>
+                      <span className={styles.addonSalePrice}>{formatCurrency(sp.price)}</span>
                       {sp.originalPrice > sp.price && (
                         <>
                           <span className={styles.addonOriginalPrice}>
@@ -96,9 +98,7 @@ export const AddOnDealCards = ({ deals }) => {
                       )}
                     </div>
                     {sp.limit && (
-                      <div className={styles.addonLimit}>
-                        Limit: {sp.limit} per order
-                      </div>
+                      <div className={styles.addonLimit}>Limit: {sp.limit} per order</div>
                     )}
                   </div>
                 </div>

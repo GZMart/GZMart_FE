@@ -21,13 +21,13 @@ const TrackOrderPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [name]: null,
       }));
@@ -57,7 +57,7 @@ const TrackOrderPage = () => {
   const handleFieldBlur = (e) => {
     const { name, value } = e.target;
     const error = validateField(name, value);
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
       [name]: error,
     }));
@@ -76,7 +76,7 @@ const TrackOrderPage = () => {
     if (!orderIdError && !emailError) {
       // Navigate to order details page with orderId
       navigate(`/track-order-details/${formData.orderId}`, {
-        state: { email: formData.billingEmail }
+        state: { email: formData.billingEmail },
       });
     }
   };
@@ -87,8 +87,8 @@ const TrackOrderPage = () => {
         {/* Header Section */}
         <div className={styles.trackOrderHeader}>
           <div className={styles.backButtonGroup}>
-            <Button 
-              type="text" 
+            <Button
+              type="text"
               icon={<LeftOutlined />}
               onClick={() => navigate(-1)}
               className={styles.backButton}
@@ -105,8 +105,9 @@ const TrackOrderPage = () => {
           {/* Description */}
           <div className={styles.trackOrderDescription}>
             <Paragraph>
-              To track your order please enter your order ID in the input field below and press the &ldquo;Track Order&rdquo; button. 
-              this was given to you on your receipt and in the confirmation email you should have received.
+              To track your order please enter your order ID in the input field below and press the
+              &ldquo;Track Order&rdquo; button. this was given to you on your receipt and in the
+              confirmation email you should have received.
             </Paragraph>
           </div>
 
@@ -126,9 +127,7 @@ const TrackOrderPage = () => {
                     status={errors.orderId ? 'error' : ''}
                     className={styles.formInput}
                   />
-                  {errors.orderId && (
-                    <span className={styles.errorMessage}>{errors.orderId}</span>
-                  )}
+                  {errors.orderId && <span className={styles.errorMessage}>{errors.orderId}</span>}
                 </div>
               </Col>
 

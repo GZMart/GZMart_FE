@@ -46,7 +46,7 @@ const ShopProfilePage = () => {
     page: 1,
     limit: 20,
     total: 0,
-    pages: 0
+    pages: 0,
   });
 
   useEffect(() => {
@@ -87,11 +87,11 @@ const ShopProfilePage = () => {
       const isNowFollowing = res.data?.isFollowing;
       setIsFollowing(isNowFollowing);
 
-      setSeller(prev => ({
+      setSeller((prev) => ({
         ...prev,
         followerCount: isNowFollowing
           ? (prev.followerCount || 0) + 1
-          : Math.max(0, (prev.followerCount || 1) - 1)
+          : Math.max(0, (prev.followerCount || 1) - 1),
       }));
 
       toast.success(res.message || (isNowFollowing ? 'Đã theo dõi' : 'Đã bỏ theo dõi'));
@@ -107,7 +107,7 @@ const ShopProfilePage = () => {
 
       const response = await productService.getProductsBySeller(id, {
         page: pagination.page,
-        limit: pagination.limit
+        limit: pagination.limit,
       });
 
       const responseData = response.data?.data || response.data || response;
@@ -133,7 +133,10 @@ const ShopProfilePage = () => {
                   const updated = { ...p };
 
                   // Shop program price override
-                  if (promo.shopProgram && promo.shopProgram.salePrice < promo.shopProgram.originalPrice) {
+                  if (
+                    promo.shopProgram &&
+                    promo.shopProgram.salePrice < promo.shopProgram.originalPrice
+                  ) {
                     updated.price = promo.shopProgram.salePrice;
                     updated.originalPrice = promo.shopProgram.originalPrice;
                     updated.promotionType = 'shopProgram';
@@ -142,8 +145,9 @@ const ShopProfilePage = () => {
                   // Combo promotion info
                   if (promo.comboPromotions && promo.comboPromotions.length > 0) {
                     const combo = promo.comboPromotions[0];
-                    const bestTier = combo.tiers?.reduce((best, t) =>
-                      (t.value > (best?.value || 0)) ? t : best, null
+                    const bestTier = combo.tiers?.reduce(
+                      (best, t) => (t.value > (best?.value || 0) ? t : best),
+                      null
                     );
                     updated.comboPromotion = {
                       name: combo.name,
@@ -164,10 +168,10 @@ const ShopProfilePage = () => {
         // Match the pagination structure from the backend
         const pageData = response.data?.pagination || response.pagination;
         if (pageData) {
-          setPagination(prev => ({
+          setPagination((prev) => ({
             ...prev,
             total: pageData.total || 0,
-            pages: pageData.pages || 0
+            pages: pageData.pages || 0,
           }));
         }
       }
@@ -181,7 +185,7 @@ const ShopProfilePage = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
-      setPagination(prev => ({ ...prev, page: newPage }));
+      setPagination((prev) => ({ ...prev, page: newPage }));
       window.scrollTo(0, 0);
     }
   };
@@ -205,14 +209,16 @@ const ShopProfilePage = () => {
       const voucher = vouchers.find((v) => v._id === voucherId);
       if (voucher?.isSaved) {
         await voucherService.unsaveVoucher(voucherId);
-        setVouchers((prev) => prev.map((v) => v._id === voucherId ? { ...v, isSaved: false } : v));
+        setVouchers((prev) =>
+          prev.map((v) => (v._id === voucherId ? { ...v, isSaved: false } : v))
+        );
         toast.success('Đã bỏ lưu voucher');
         if (activeVoucherFilter?._id === voucherId) {
           setActiveVoucherFilter(null);
         }
       } else {
         await voucherService.saveVoucher(voucherId);
-        setVouchers((prev) => prev.map((v) => v._id === voucherId ? { ...v, isSaved: true } : v));
+        setVouchers((prev) => prev.map((v) => (v._id === voucherId ? { ...v, isSaved: true } : v)));
         toast.success('Đã lưu voucher!');
       }
     } catch {
@@ -223,7 +229,7 @@ const ShopProfilePage = () => {
   const handleUseVoucher = (voucher) => {
     setActiveVoucherFilter(voucher);
     setActiveTab('ALL');
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
 
     // Slight delay to ensure tab switch before scrolling
     setTimeout(() => {
@@ -266,7 +272,11 @@ const ShopProfilePage = () => {
         <Container className="mt-4 mb-3">
           {seller.profileImage && (
             <div className={styles.shopBanner}>
-              <img src={seller.profileImage} alt={`${seller.fullName} shop banner`} className={styles.shopBannerImg} />
+              <img
+                src={seller.profileImage}
+                alt={`${seller.fullName} shop banner`}
+                className={styles.shopBannerImg}
+              />
             </div>
           )}
           <ShopInfoCard
@@ -289,12 +299,16 @@ const ShopProfilePage = () => {
               </div>
             </div>
             <div className={styles.voucherCarouselWrapper}>
-              <button className={`${styles.voucherArrow} ${styles.voucherArrowLeft}`} onClick={() => scrollVouchers('left')}>
+              <button
+                className={`${styles.voucherArrow} ${styles.voucherArrowLeft}`}
+                onClick={() => scrollVouchers('left')}
+              >
                 <ChevronLeft size={20} />
               </button>
               <div className={styles.voucherCarousel} ref={voucherScrollRef}>
                 {vouchers.map((v) => {
-                  const usagePercent = v.usageLimit > 0 ? Math.round((v.usageCount / v.usageLimit) * 100) : 0;
+                  const usagePercent =
+                    v.usageLimit > 0 ? Math.round((v.usageCount / v.usageLimit) * 100) : 0;
                   const endDate = new Date(v.endTime);
                   const formattedEnd = `${String(endDate.getDate()).padStart(2, '0')}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${endDate.getFullYear()}`;
                   return (
@@ -330,7 +344,10 @@ const ShopProfilePage = () => {
                       </div>
                       <div className={styles.voucherFooter}>
                         <div className={styles.voucherUsageBar}>
-                          <div className={styles.voucherUsageFill} style={{ width: `${usagePercent}%` }} />
+                          <div
+                            className={styles.voucherUsageFill}
+                            style={{ width: `${usagePercent}%` }}
+                          />
                         </div>
                         <span className={styles.voucherUsageText}>{usagePercent}% used</span>
                         <span className={styles.voucherExpiry}>Exp: {formattedEnd}</span>
@@ -339,7 +356,10 @@ const ShopProfilePage = () => {
                   );
                 })}
               </div>
-              <button className={`${styles.voucherArrow} ${styles.voucherArrowRight}`} onClick={() => scrollVouchers('right')}>
+              <button
+                className={`${styles.voucherArrow} ${styles.voucherArrowRight}`}
+                onClick={() => scrollVouchers('right')}
+              >
                 <ChevronRight size={20} />
               </button>
             </div>
@@ -378,9 +398,18 @@ const ShopProfilePage = () => {
                 <Ticket size={16} />
                 <span>
                   Đang lọc sản phẩm cho voucher:
-                  <strong> {activeVoucherFilter.discountType === 'percent' ? `${activeVoucherFilter.discountValue}%` : formatCurrency(activeVoucherFilter.discountValue)} Giảm</strong>
+                  <strong>
+                    {' '}
+                    {activeVoucherFilter.discountType === 'percent'
+                      ? `${activeVoucherFilter.discountValue}%`
+                      : formatCurrency(activeVoucherFilter.discountValue)}{' '}
+                    Giảm
+                  </strong>
                 </span>
-                <span className={styles.filterCondition}> (Đơn Tối Thiểu {formatCurrency(activeVoucherFilter.minBasketPrice)})</span>
+                <span className={styles.filterCondition}>
+                  {' '}
+                  (Đơn Tối Thiểu {formatCurrency(activeVoucherFilter.minBasketPrice)})
+                </span>
               </div>
               <button
                 className={styles.clearFilterBtn}
@@ -402,11 +431,15 @@ const ShopProfilePage = () => {
                   {/* 1. Gợi Ý Cho Bạn Section */}
                   <div className={styles.productsSection}>
                     <div className={styles.sectionHeader}>
-                      <h3 className={styles.sectionTitle}>{t('product_details.suggested_for_you', 'GỢI Ý CHO BẠN')}</h3>
-                      <button className={styles.viewAllBtn}>Xem Tất Cả <i className="bi bi-chevron-right"></i></button>
+                      <h3 className={styles.sectionTitle}>
+                        {t('product_details.suggested_for_you', 'GỢI Ý CHO BẠN')}
+                      </h3>
+                      <button className={styles.viewAllBtn}>
+                        Xem Tất Cả <i className="bi bi-chevron-right"></i>
+                      </button>
                     </div>
                     <Row className="g-3">
-                      {products.slice(0, 6).map(product => (
+                      {products.slice(0, 6).map((product) => (
                         <Col key={product.id || product._id} xs={6} md={4} lg={2}>
                           <ProductCard product={product} />
                         </Col>
@@ -421,10 +454,12 @@ const ShopProfilePage = () => {
                         <h3 className={`${styles.sectionTitle} ${styles.fire}`}>
                           <i className="bi bi-fire"></i> ƯU ĐÃI KHỦNG
                         </h3>
-                        <button className={styles.viewAllBtn}>Xem Tất Cả <i className="bi bi-chevron-right"></i></button>
+                        <button className={styles.viewAllBtn}>
+                          Xem Tất Cả <i className="bi bi-chevron-right"></i>
+                        </button>
                       </div>
                       <Row className="g-3">
-                        {products.slice(6, 12).map(product => (
+                        {products.slice(6, 12).map((product) => (
                           <Col key={product.id || product._id} xs={6} md={4} lg={2}>
                             <ProductCard product={product} />
                           </Col>
@@ -438,10 +473,12 @@ const ShopProfilePage = () => {
                     <div className={styles.productsSection}>
                       <div className={styles.sectionHeader}>
                         <h3 className={styles.sectionTitle}>SẢN PHẨM BÁN CHẠY</h3>
-                        <button className={styles.viewAllBtn}>Xem Tất Cả <i className="bi bi-chevron-right"></i></button>
+                        <button className={styles.viewAllBtn}>
+                          Xem Tất Cả <i className="bi bi-chevron-right"></i>
+                        </button>
                       </div>
                       <Row className="g-3">
-                        {products.slice(12, 18).map(product => (
+                        {products.slice(12, 18).map((product) => (
                           <Col key={product.id || product._id} xs={6} md={4} lg={2}>
                             <ProductCard product={product} />
                           </Col>
@@ -454,12 +491,16 @@ const ShopProfilePage = () => {
                 /* ALL PRODUCTS TAB */
                 <div className={styles.productsSection}>
                   <div className={styles.sectionHeader}>
-                    <h3 className={styles.sectionTitle}>{t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')}</h3>
+                    <h3 className={styles.sectionTitle}>
+                      {t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')}
+                    </h3>
                   </div>
                   <Row className="g-3">
                     {products
-                      .filter(p => !activeVoucherFilter || p.price >= activeVoucherFilter.minBasketPrice)
-                      .map(product => (
+                      .filter(
+                        (p) => !activeVoucherFilter || p.price >= activeVoucherFilter.minBasketPrice
+                      )
+                      .map((product) => (
                         <Col key={product.id || product._id} xs={6} md={4} lg={2}>
                           <ProductCard product={product} />
                         </Col>

@@ -13,48 +13,41 @@ const dealService = {
    * GET /api/deals
    * @param {object} params - { page, limit }
    */
-  getActiveDeals: (params = {}) =>
-    axiosClient.get('/api/deals', { params }),
+  getActiveDeals: (params = {}) => axiosClient.get('/api/deals', { params }),
 
   /** @deprecated use getActiveDeals() */
-  getAllDeals: (params = {}) =>
-    axiosClient.get('/api/deals', { params }),
+  getAllDeals: (params = {}) => axiosClient.get('/api/deals', { params }),
 
   /**
    * Get only flash_sale type deals
    * GET /api/deals/flash-sales
    * @param {object} params - { page, limit }
    */
-  getFlashSaleDeals: (params = {}) =>
-    axiosClient.get('/api/deals/flash-sales', { params }),
+  getFlashSaleDeals: (params = {}) => axiosClient.get('/api/deals/flash-sales', { params }),
 
   /** @deprecated use getFlashSaleDeals() */
-  getFlashSales: (params = {}) =>
-    axiosClient.get('/api/deals/flash-sales', { params }),
+  getFlashSales: (params = {}) => axiosClient.get('/api/deals/flash-sales', { params }),
 
   /**
    * Get only daily_deal type deals
    * GET /api/deals/daily-deals
    * @param {object} params - { page, limit }
    */
-  getDailyDeals: (params = {}) =>
-    axiosClient.get('/api/deals/daily-deals', { params }),
+  getDailyDeals: (params = {}) => axiosClient.get('/api/deals/daily-deals', { params }),
 
   /**
    * Get only weekly_deal type deals (Weekend Deals)
    * GET /api/deals/weekend-deals
    * @param {object} params - { page, limit }
    */
-  getWeekendDeals: (params = {}) =>
-    axiosClient.get('/api/deals/weekend-deals', { params }),
+  getWeekendDeals: (params = {}) => axiosClient.get('/api/deals/weekend-deals', { params }),
 
   /**
    * Get product-level deal badge info
    * GET /api/deals/product/:productId
    * @param {string} productId
    */
-  getDealByProduct: (productId) =>
-    axiosClient.get(`/api/deals/product/${productId}`),
+  getDealByProduct: (productId) => axiosClient.get(`/api/deals/product/${productId}`),
 
   /**
    * Get full deal details by deal ID — used by DealDetailsPage
@@ -71,8 +64,7 @@ const dealService = {
    *
    * @param {string} dealId
    */
-  getDealById: (dealId) =>
-    axiosClient.get(`/api/deals/${dealId}`),
+  getDealById: (dealId) => axiosClient.get(`/api/deals/${dealId}`),
 
   /**
    * Get authenticated user's deals (pending + approved)
@@ -81,8 +73,7 @@ const dealService = {
    * Response: { success, pendingDeals: [], approvedDeals: [] }
    * NOTE: BE currently returns empty arrays (stub). Display empty state gracefully.
    */
-  getMyDeals: () =>
-    axiosClient.get('/api/deals/my-deals'),
+  getMyDeals: () => axiosClient.get('/api/deals/my-deals'),
 };
 
 export default dealService;

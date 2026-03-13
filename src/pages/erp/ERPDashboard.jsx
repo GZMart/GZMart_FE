@@ -32,16 +32,22 @@ import styles from '@assets/styles/erp/ERPDashboard.module.css';
 
 const ERPDashboard = () => {
   const dispatch = useDispatch();
-  const { lowStockItems, inventoryValuation, purchaseOrders, purchaseOrdersPagination, loading, exchangeRate, exchangeRateSyncing } = useSelector(
-    (state) => state.erp
-  );
+  const {
+    lowStockItems,
+    inventoryValuation,
+    purchaseOrders,
+    purchaseOrdersPagination,
+    loading,
+    exchangeRate,
+    exchangeRateSyncing,
+  } = useSelector((state) => state.erp);
 
   // Manual rate edit state
-  const [editingRate, setEditingRate]   = useState(false);
-  const [rateInput, setRateInput]       = useState('');
-  const [rateNote, setRateNote]         = useState('');
-  const [rateSaving, setRateSaving]     = useState(false);
-  const [rateMsg, setRateMsg]           = useState(null);
+  const [editingRate, setEditingRate] = useState(false);
+  const [rateInput, setRateInput] = useState('');
+  const [rateNote, setRateNote] = useState('');
+  const [rateSaving, setRateSaving] = useState(false);
+  const [rateMsg, setRateMsg] = useState(null);
 
   useEffect(() => {
     dispatch(fetchLowStockItems({ limit: 10 }));
@@ -53,7 +59,10 @@ const ERPDashboard = () => {
   const handleSyncRate = async () => {
     const result = await dispatch(syncExchangeRate());
     if (syncExchangeRate.fulfilled.match(result)) {
-      setRateMsg({ type: 'success', text: `Synced: 1 ¥ = ${result.payload.rate?.toLocaleString('vi-VN')} ₫` });
+      setRateMsg({
+        type: 'success',
+        text: `Synced: 1 ¥ = ${result.payload.rate?.toLocaleString('vi-VN')} ₫`,
+      });
     } else {
       setRateMsg({ type: 'error', text: 'Sync failed — all external APIs unavailable' });
     }
@@ -62,9 +71,13 @@ const ERPDashboard = () => {
 
   const handleSaveManualRate = async () => {
     const parsed = parseFloat(rateInput);
-    if (!parsed || parsed <= 0) return;
+    if (!parsed || parsed <= 0) {
+      return;
+    }
     setRateSaving(true);
-    const result = await dispatch(updateExchangeRate({ rate: parsed, note: rateNote.trim() || undefined }));
+    const result = await dispatch(
+      updateExchangeRate({ rate: parsed, note: rateNote.trim() || undefined })
+    );
     setRateSaving(false);
     if (updateExchangeRate.fulfilled.match(result)) {
       setEditingRate(false);
@@ -77,15 +90,16 @@ const ERPDashboard = () => {
     setTimeout(() => setRateMsg(null), 4000);
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount || 0);
-  };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '—';
+    if (!dateString) {
+      return '—';
+    }
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
@@ -93,17 +107,19 @@ const ERPDashboard = () => {
     const sc = purchaseOrdersPagination?.statusCounts;
     if (sc) {
       return {
-        pending:   sc.Pending   ?? 0,
+        pending: sc.Pending ?? 0,
         completed: sc.Completed ?? 0,
         cancelled: sc.Cancelled ?? 0,
-        draft:     sc.Draft     ?? 0,
+        draft: sc.Draft ?? 0,
       };
     }
     // Fallback: count from loaded items (may be inaccurate if paginated)
     const counts = { pending: 0, completed: 0, cancelled: 0, draft: 0 };
     purchaseOrders.forEach((po) => {
       const key = po.status?.toLowerCase();
-      if (key in counts) counts[key]++;
+      if (key in counts) {
+        counts[key]++;
+      }
     });
     return counts;
   };
@@ -134,7 +150,10 @@ const ERPDashboard = () => {
     {
       icon: ClipboardList,
       label: 'Purchase Orders',
-      value: purchaseOrdersPagination?.statusCounts?.total ?? purchaseOrdersPagination?.total ?? purchaseOrders.length,
+      value:
+        purchaseOrdersPagination?.statusCounts?.total ??
+        purchaseOrdersPagination?.total ??
+        purchaseOrders.length,
       detail: `${statusCounts.pending} đang đặt hàng`,
       accentColor: '#1a56db',
       bgColor: '#eff6ff',
@@ -202,7 +221,6 @@ const ERPDashboard = () => {
 
   return (
     <div className={styles.container}>
-
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className={styles.header}>
         <div>
@@ -248,7 +266,9 @@ const ERPDashboard = () => {
                 1 ¥ =&nbsp;
                 <strong>{(exchangeRate?.rate ?? 3500).toLocaleString('vi-VN')}</strong>
                 &nbsp;₫
-                <span className={`${styles.xrSourceBadge} ${exchangeRate?.source === 'manual' ? styles.xrManual : styles.xrAuto}`}>
+                <span
+                  className={`${styles.xrSourceBadge} ${exchangeRate?.source === 'manual' ? styles.xrManual : styles.xrAuto}`}
+                >
                   {exchangeRate?.source === 'manual' ? 'Manual' : 'Auto'}
                 </span>
               </span>
@@ -265,7 +285,9 @@ const ERPDashboard = () => {
 
         <div className={styles.xrActions}>
           {rateMsg && (
-            <span className={`${styles.xrMsg} ${rateMsg.type === 'error' ? styles.xrMsgError : styles.xrMsgSuccess}`}>
+            <span
+              className={`${styles.xrMsg} ${rateMsg.type === 'error' ? styles.xrMsgError : styles.xrMsgSuccess}`}
+            >
               <CheckCircle size={13} />
               {rateMsg.text}
             </span>
@@ -281,7 +303,14 @@ const ERPDashboard = () => {
                 <Save size={13} />
                 {rateSaving ? 'Saving…' : 'Save'}
               </button>
-              <button className={styles.xrBtnCancel} onClick={() => { setEditingRate(false); setRateInput(''); setRateNote(''); }}>
+              <button
+                className={styles.xrBtnCancel}
+                onClick={() => {
+                  setEditingRate(false);
+                  setRateInput('');
+                  setRateNote('');
+                }}
+              >
                 <X size={13} />
                 Cancel
               </button>
@@ -299,7 +328,10 @@ const ERPDashboard = () => {
               </button>
               <button
                 className={styles.xrBtnEdit}
-                onClick={() => { setEditingRate(true); setRateInput(String(exchangeRate?.rate ?? 3500)); }}
+                onClick={() => {
+                  setEditingRate(true);
+                  setRateInput(String(exchangeRate?.rate ?? 3500));
+                }}
                 title="Manually set exchange rate"
               >
                 <Edit2 size={13} />
@@ -353,7 +385,6 @@ const ERPDashboard = () => {
 
       {/* ── Two-column tables ────────────────────────────────────── */}
       <div className={styles.tablesGrid}>
-
         {/* Low Stock Warning */}
         {lowStockItems.length > 0 && (
           <div className={styles.section}>
@@ -395,7 +426,9 @@ const ERPDashboard = () => {
         )}
 
         {/* Recent Purchase Orders */}
-        <div className={`${styles.section} ${lowStockItems.length === 0 ? styles.sectionFull : ''}`}>
+        <div
+          className={`${styles.section} ${lowStockItems.length === 0 ? styles.sectionFull : ''}`}
+        >
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleRow}>
               <ClipboardList size={16} strokeWidth={2} color="#1a56db" />
@@ -442,7 +475,12 @@ const ERPDashboard = () => {
                       <td className={styles.amount}>{formatCurrency(po.finalAmount)}</td>
                       <td>
                         <span className={getPOStatusClass(po.status)}>
-                          {{ Draft: 'Draft', Pending: 'Ordering', Completed: 'Received', Cancelled: 'Cancelled' }[po.status] ?? po.status}
+                          {{
+                            Draft: 'Draft',
+                            Pending: 'Ordering',
+                            Completed: 'Received',
+                            Cancelled: 'Cancelled',
+                          }[po.status] ?? po.status}
                         </span>
                       </td>
                     </tr>

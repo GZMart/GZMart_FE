@@ -7,18 +7,16 @@ import TopCategories from '../../components/homepage/TopCategories.jsx';
 import TopClothingBrand from '../../components/homepage/TopClothingBrand.jsx';
 import FrequentlyBoughtTogether from '../../components/homepage/FrequentlyBoughtTogether.jsx';
 
-const HomePage = () => {
-  return (
-    <>
-      <HeroBanner />
-      <FeatureBar />
-      <ShopByBrands />
-      <DealsOfTheDay />
-      <TopCategories />
-      <TopClothingBrand />
-      <FrequentlyBoughtTogether />
-    </>
-  );
-};
+const HomePage = () => (
+  <>
+    <HeroBanner />
+    <FeatureBar />
+    <ShopByBrands />
+    <DealsOfTheDay />
+    <TopCategories />
+    <TopClothingBrand />
+    <FrequentlyBoughtTogether />
+  </>
+);
 
 export default HomePage;

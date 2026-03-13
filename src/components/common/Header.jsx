@@ -1141,13 +1141,14 @@ const Header = () => {
   }, []);
 
   // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   // Fetch cart data when user logs in (only when authentication state changes to true)
   const prevAuthRef = useRef(isAuthenticated);
@@ -1230,7 +1231,9 @@ const Header = () => {
 
   // Handle search submit (Enter key or Search button click)
   const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
 
     const trimmedQuery = searchQuery.trim();
     // Navigate to products page (with or without search query)

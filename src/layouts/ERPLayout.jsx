@@ -55,7 +55,9 @@ const ERPLayout = ({ children }) => {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (to) => {
-    if (to === SELLER_ROUTES.DASHBOARD) return location.pathname === to;
+    if (to === SELLER_ROUTES.DASHBOARD) {
+      return location.pathname === to;
+    }
     return location.pathname.startsWith(to);
   };
 
@@ -115,9 +117,7 @@ const ERPLayout = ({ children }) => {
         {!collapsed && (
           <div className={styles.sidebarFooter}>
             <div className={styles.userPill}>
-              <div className={styles.userAvatar}>
-                {user?.name?.[0]?.toUpperCase() || 'S'}
-              </div>
+              <div className={styles.userAvatar}>{user?.name?.[0]?.toUpperCase() || 'S'}</div>
               <div className={styles.userInfo}>
                 <span className={styles.userName}>{user?.name || 'Seller'}</span>
                 <span className={styles.userEmail}>{user?.email || ''}</span>
@@ -158,23 +158,35 @@ const ERPLayout = ({ children }) => {
             <div className={styles.topbarAction}>
               <button
                 className={styles.avatarBtn}
-                onClick={() => { setProfileOpen((o) => !o); setNotifOpen(false); }}
+                onClick={() => {
+                  setProfileOpen((o) => !o);
+                  setNotifOpen(false);
+                }}
               >
-                <div className={styles.topAvatar}>
-                  {user?.name?.[0]?.toUpperCase() || 'S'}
-                </div>
+                <div className={styles.topAvatar}>{user?.name?.[0]?.toUpperCase() || 'S'}</div>
                 <i className="bi bi-chevron-down" style={{ fontSize: '11px', marginLeft: '4px' }} />
               </button>
               {profileOpen && (
                 <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
-                  <Link to={SELLER_ROUTES.PROFILE} className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                  <Link
+                    to={SELLER_ROUTES.PROFILE}
+                    className={styles.dropdownItem}
+                    onClick={() => setProfileOpen(false)}
+                  >
                     <i className="bi bi-person me-2" /> Profile
                   </Link>
-                  <Link to="/seller/billing" className={styles.dropdownItem} onClick={() => setProfileOpen(false)}>
+                  <Link
+                    to="/seller/billing"
+                    className={styles.dropdownItem}
+                    onClick={() => setProfileOpen(false)}
+                  >
                     <i className="bi bi-credit-card me-2" /> Billing
                   </Link>
                   <div className={styles.dropdownDivider} />
-                  <button className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`} onClick={handleLogout}>
+                  <button
+                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                    onClick={handleLogout}
+                  >
                     <i className="bi bi-box-arrow-right me-2" /> Logout
                   </button>
                 </div>
@@ -184,9 +196,7 @@ const ERPLayout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className={styles.content}>
-          {children || <Outlet />}
-        </main>
+        <main className={styles.content}>{children || <Outlet />}</main>
       </div>
     </div>
   );

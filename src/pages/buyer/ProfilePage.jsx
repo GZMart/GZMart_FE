@@ -224,7 +224,9 @@ const ProfilePage = () => {
   // Fetch orders when Orders tab is active
   useEffect(() => {
     // Only fetch if user is authenticated
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user) {
+      return;
+    }
 
     if (activeTab === 'orders') {
       fetchOrders(pagination.page);
@@ -239,7 +241,9 @@ const ProfilePage = () => {
 
   // Socket.io connection for real-time order updates
   useEffect(() => {
-    if (!isAuthenticated || !user || orders.length === 0) return;
+    if (!isAuthenticated || !user || orders.length === 0) {
+      return;
+    }
 
     // Connect to socket
     const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000', {
@@ -521,11 +525,10 @@ const ProfilePage = () => {
     }
   };
 
-  const formatAddressString = (addr) => {
-    return [addr.details, addr.wardName, addr.provinceName]
+  const formatAddressString = (addr) =>
+    [addr.details, addr.wardName, addr.provinceName]
       .filter((part) => part && part.trim() !== '')
       .join(', ');
-  };
 
   const fetchOrders = async (page) => {
     setOrderLoading(true);
@@ -719,7 +722,9 @@ const ProfilePage = () => {
 
     // Filter transactions based on selected filter
     const getFilteredTransactions = () => {
-      if (!coinTransactions || coinTransactions.length === 0) return [];
+      if (!coinTransactions || coinTransactions.length === 0) {
+        return [];
+      }
 
       if (coinHistoryFilter === 'received') {
         return coinTransactions.filter((tx) => tx.type === 'add' || tx.amount > 0);

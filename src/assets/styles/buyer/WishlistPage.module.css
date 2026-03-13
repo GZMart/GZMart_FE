@@ -79,7 +79,8 @@
 
 /* Table Styling */
 .wishlistTable {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .wishlistTable .ant-table-thead > tr > th {

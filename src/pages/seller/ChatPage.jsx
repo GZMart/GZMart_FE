@@ -11,7 +11,6 @@ import './ChatPage.css';
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 const ChatPage = () => {
-
   const { user } = useSelector((state) => state.auth);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -55,7 +54,7 @@ const ChatPage = () => {
   const fetchConversations = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/chat/conversations`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` }
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
       setConversations(response.data);
     } catch (error) {
@@ -72,7 +71,7 @@ const ChatPage = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/api/chat/messages/${conv._id}?page=1&limit=20`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` }
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
       setMessages(response.data.messages || response.data);
       setHasMore(response.data.hasMore !== undefined ? response.data.hasMore : false);
@@ -98,10 +97,13 @@ const ChatPage = () => {
       const prevScrollHeight = container ? container.scrollHeight : 0;
 
       const [response] = await Promise.all([
-        axios.get(`${API_URL}/api/chat/messages/${activeConversation._id}?page=${nextPage}&limit=20`, {
-          headers: { Authorization: `Bearer ${getAuthToken()}` }
-        }),
-        new Promise(resolve => setTimeout(resolve, 1500))
+        axios.get(
+          `${API_URL}/api/chat/messages/${activeConversation._id}?page=${nextPage}&limit=20`,
+          {
+            headers: { Authorization: `Bearer ${getAuthToken()}` },
+          }
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
       ]);
 
       const newMessages = response.data.messages || [];
@@ -113,7 +115,8 @@ const ChatPage = () => {
         // Restore scroll position so user doesn't jump to the top
         setTimeout(() => {
           if (messageListRef.current) {
-            messageListRef.current.scrollTop = messageListRef.current.scrollHeight - prevScrollHeight;
+            messageListRef.current.scrollTop =
+              messageListRef.current.scrollHeight - prevScrollHeight;
           }
         }, 0);
       } else {
@@ -138,7 +141,7 @@ const ChatPage = () => {
       return;
     }
 
-    const receiverId = activeConversation.participants.find(p => p._id !== user._id)?._id;
+    const receiverId = activeConversation.participants.find((p) => p._id !== user._id)?._id;
 
     const messageData = {
       conversationId: activeConversation._id,
@@ -165,13 +168,18 @@ const ChatPage = () => {
         <Col md={4} lg={3} className="conversation-sidebar d-flex flex-column h-100 p-0">
           <div className="p-3 conversation-sidebar-header d-flex justify-content-between align-items-center">
             <h5 className="mb-0 fw-bold text-dark">Tin nhắn</h5>
-            <Button variant="outline-primary" size="sm" onClick={() => setShowAutoReplyModal(true)} title="Cài đặt trả lời tự động">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => setShowAutoReplyModal(true)}
+              title="Cài đặt trả lời tự động"
+            >
               <i className="bi bi-gear me-1"></i> Auto-Reply
             </Button>
           </div>
           <ListGroup variant="flush" className="overflow-auto flex-grow-1">
-            {conversations.map(conv => {
-              const otherUser = conv.participants.find(p => p._id !== user._id);
+            {conversations.map((conv) => {
+              const otherUser = conv.participants.find((p) => p._id !== user._id);
               return (
                 <ListGroup.Item
                   key={conv._id}
@@ -207,26 +215,31 @@ const ChatPage = () => {
         </Col>
 
         {/* Chat Area */}
-        <Col md={8} lg={9} className="chat-main-area d-flex flex-column h-100 p-0 position-relative">
+        <Col
+          md={8}
+          lg={9}
+          className="chat-main-area d-flex flex-column h-100 p-0 position-relative"
+        >
           {activeConversation ? (
             <>
               {/* Chat Header */}
               <div className="p-3 chat-header d-flex align-items-center justify-content-between">
                 <div className="d-flex align-items-center">
                   <Image
-                    src={activeConversation.participants.find(p => p._id !== user._id)?.avatar || 'https://via.placeholder.com/40'}
+                    src={
+                      activeConversation.participants.find((p) => p._id !== user._id)?.avatar ||
+                      'https://via.placeholder.com/40'
+                    }
                     roundedCircle
                     width={40}
                     height={40}
                     className="me-2"
                   />
                   <h6 className="mb-0">
-                    {activeConversation.participants.find(p => p._id !== user._id)?.fullName}
+                    {activeConversation.participants.find((p) => p._id !== user._id)?.fullName}
                   </h6>
                 </div>
-                <div>
-                  {/* Action buttons like delete chat, etc. */}
-                </div>
+                <div>{/* Action buttons like delete chat, etc. */}</div>
               </div>
 
               {/* Messages List */}
@@ -241,14 +254,18 @@ const ChatPage = () => {
                   </div>
                 )}
                 {loading && page === 1 ? (
-                  <div className="text-center my-auto"><div className="spinner-border text-primary"></div></div>
+                  <div className="text-center my-auto">
+                    <div className="spinner-border text-primary"></div>
+                  </div>
                 ) : (
                   messages.map((msg, idx) => (
                     <div
                       key={idx}
                       className={`d-flex mb-3 ${msg.sender._id === user._id || msg.sender === user._id ? 'justify-content-end' : 'justify-content-start'}`}
                     >
-                      <div className={`message-bubble p-0 ${msg.sender._id === user._id || msg.sender === user._id ? 'bg-primary' : 'bg-white'}`}>
+                      <div
+                        className={`message-bubble p-0 ${msg.sender._id === user._id || msg.sender === user._id ? 'bg-primary' : 'bg-white'}`}
+                      >
                         {msg.type === 'product' && msg.productInfo ? (
                           <a
                             href={`/product/${msg.productInfo.productId}`}
@@ -259,23 +276,64 @@ const ChatPage = () => {
                             <div className="chat-product-preview m-2 border-0">
                               <img src={msg.productInfo.image} alt="" className="product-image" />
                               <div className="p-2">
-                                <div className="text-truncate fw-medium" style={{ fontSize: '0.85rem', color: '#1e293b' }}>{msg.productInfo.name}</div>
-                                {msg.productInfo.variant && <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>{msg.productInfo.variant}</div>}
-                                <div className="fw-bold mt-1" style={{ fontSize: '0.9rem', color: '#ef4444' }}>
-                                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(msg.productInfo.price)}
+                                <div
+                                  className="text-truncate fw-medium"
+                                  style={{ fontSize: '0.85rem', color: '#1e293b' }}
+                                >
+                                  {msg.productInfo.name}
+                                </div>
+                                {msg.productInfo.variant && (
+                                  <div
+                                    style={{
+                                      fontSize: '0.75rem',
+                                      color: '#64748b',
+                                      marginTop: '2px',
+                                    }}
+                                  >
+                                    {msg.productInfo.variant}
+                                  </div>
+                                )}
+                                <div
+                                  className="fw-bold mt-1"
+                                  style={{ fontSize: '0.9rem', color: '#ef4444' }}
+                                >
+                                  {new Intl.NumberFormat('vi-VN', {
+                                    style: 'currency',
+                                    currency: 'VND',
+                                  }).format(msg.productInfo.price)}
                                 </div>
                               </div>
-                              <div style={{ background: '#f8fafc', padding: '8px 12px', fontSize: '0.75rem', color: '#3b82f6', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '500' }}>
+                              <div
+                                style={{
+                                  background: '#f8fafc',
+                                  padding: '8px 12px',
+                                  fontSize: '0.75rem',
+                                  color: '#3b82f6',
+                                  borderTop: '1px solid #f1f5f9',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  fontWeight: '500',
+                                }}
+                              >
                                 <span>Xem chi tiết</span>
                                 <i className="bi bi-chevron-right"></i>
                               </div>
                             </div>
                           </a>
                         ) : (
-                          <p className="mb-0 p-3" style={{ fontSize: '0.95rem' }}>{msg.content}</p>
+                          <p className="mb-0 p-3" style={{ fontSize: '0.95rem' }}>
+                            {msg.content}
+                          </p>
                         )}
-                        <small className={`d-block text-end mt-1 p-2 pt-0 ${msg.sender._id === user._id || msg.sender === user._id ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.7rem' }}>
-                          {new Date(msg.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}
+                        <small
+                          className={`d-block text-end mt-1 p-2 pt-0 ${msg.sender._id === user._id || msg.sender === user._id ? 'text-white-50' : 'text-muted'}`}
+                          style={{ fontSize: '0.7rem' }}
+                        >
+                          {new Date(msg.timestamp).toLocaleString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </small>
                       </div>
                     </div>
@@ -315,11 +373,8 @@ const ChatPage = () => {
         </Col>
       </Row>
 
-      <AutoReplyModal
-        show={showAutoReplyModal}
-        onHide={() => setShowAutoReplyModal(false)}
-      />
-    </Container >
+      <AutoReplyModal show={showAutoReplyModal} onHide={() => setShowAutoReplyModal(false)} />
+    </Container>
   );
 };
 

@@ -40,7 +40,7 @@
 }
 
 .voucherTitle svg {
-  color: #B13C36;
+  color: #b13c36;
 }
 
 .voucherCarouselWrapper {
@@ -89,7 +89,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #B13C36;
+  background: #b13c36;
   border-radius: 12px 0 0 12px;
 }
 
@@ -102,7 +102,7 @@
 .voucherDiscount {
   font-size: 16px;
   font-weight: 700;
-  color: #B13C36;
+  color: #b13c36;
   margin-bottom: 6px;
 }
 
@@ -125,7 +125,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(177, 60, 54, 0.1);
-  color: #B13C36;
+  color: #b13c36;
   border: 1.5px solid rgba(177, 60, 54, 0.3);
   border-radius: 50%;
   cursor: pointer;
@@ -135,14 +135,14 @@
 }
 
 .voucherSaveBtn:hover {
-  background: #B13C36;
+  background: #b13c36;
   color: #fff;
-  border-color: #B13C36;
+  border-color: #b13c36;
   transform: scale(1.1);
 }
 
 .useVoucherBtn {
-  background: #B13C36;
+  background: #b13c36;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -155,7 +155,7 @@
 }
 
 .useVoucherBtn:hover {
-  background: #8E302B;
+  background: #8e302b;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(177, 60, 54, 0.3);
 }
@@ -176,14 +176,14 @@
 
 .voucherUsageFill {
   height: 100%;
-  background: #B13C36;
+  background: #b13c36;
   border-radius: 2px;
   transition: width 0.3s;
 }
 
 .voucherUsageText {
   font-size: 11px;
-  color: #B13C36;
+  color: #b13c36;
 }
 
 .voucherExpiry {
@@ -269,8 +269,8 @@
 
 .tabItem.active {
   background-color: white;
-  color: #B13C36;
-  border-bottom-color: #B13C36;
+  color: #b13c36;
+  border-bottom-color: #b13c36;
 }
 
 /* Main Content Sections */
@@ -296,7 +296,7 @@
 }
 
 .sectionTitle.fire {
-  color: #B13C36;
+  color: #b13c36;
 }
 
 .sectionTitle.fire i {
@@ -304,7 +304,7 @@
 }
 
 .viewAllBtn {
-  color: #B13C36;
+  color: #b13c36;
   background: transparent;
   border: none;
   font-size: 14px;
@@ -316,7 +316,7 @@
 }
 
 .viewAllBtn:hover {
-  color: #8E302B;
+  color: #8e302b;
   text-decoration: underline;
 }
 
@@ -330,7 +330,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #B13C36;
+  color: #b13c36;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
@@ -348,8 +348,8 @@
 
 .clearFilterBtn {
   background: transparent;
-  color: #B13C36;
-  border: 1px solid #B13C36;
+  color: #b13c36;
+  border: 1px solid #b13c36;
   border-radius: 4px;
   padding: 4px 12px;
   font-size: 13px;
@@ -359,6 +359,6 @@
 }
 
 .clearFilterBtn:hover {
-  background: #B13C36;
+  background: #b13c36;
   color: #fff;
 }

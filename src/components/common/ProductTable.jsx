@@ -36,64 +36,62 @@ const ProductTable = ({
     }
   };
 
-  const renderProductRow = (product, index) => {
-    return (
-      <>
-        <td className={styles.tableCell}>{index + 1}</td>
-        <td className={styles.tableCell}>
-          <img
-            src={product.image || 'https://picsum.photos/600/600'}
-            alt={product.name}
-            className={styles.productImage}
-          />
-        </td>
-        <td className={styles.tableCell}>
-          <span className={styles.productName}>{product.name}</span>
-        </td>
-        <td className={styles.tableCell}>
-          <span className={styles.category}>{product.category}</span>
-        </td>
-        <td className={styles.tableCell}>
-          <span className={styles.price}>{product.price}</span>
-        </td>
-        <td className={styles.tableCell}>
-          <span className={`${styles.statusBadge} ${getStatusClass(product.status)}`}>
-            {product.status}
-          </span>
-        </td>
-        <td className={styles.tableCell}>
-          {showActions && actions.length > 0 ? (
-            <Dropdown align="end">
-              <Dropdown.Toggle as="button" className={styles.actionButton} bsPrefix="custom">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="3" r="1.5" fill="currentColor" />
-                  <circle cx="8" cy="8" r="1.5" fill="currentColor" />
-                  <circle cx="8" cy="13" r="1.5" fill="currentColor" />
-                </svg>
-              </Dropdown.Toggle>
-
-              <Dropdown.Menu>
-                {actions.map((action, idx) => (
-                  <Dropdown.Item key={idx} onClick={() => action.onClick(product)}>
-                    {action.icon && <i className={`${action.icon} me-2`}></i>}
-                    {action.label}
-                  </Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown>
-          ) : (
-            <button className={styles.actionButton}>
+  const renderProductRow = (product, index) => (
+    <>
+      <td className={styles.tableCell}>{index + 1}</td>
+      <td className={styles.tableCell}>
+        <img
+          src={product.image || 'https://picsum.photos/600/600'}
+          alt={product.name}
+          className={styles.productImage}
+        />
+      </td>
+      <td className={styles.tableCell}>
+        <span className={styles.productName}>{product.name}</span>
+      </td>
+      <td className={styles.tableCell}>
+        <span className={styles.category}>{product.category}</span>
+      </td>
+      <td className={styles.tableCell}>
+        <span className={styles.price}>{product.price}</span>
+      </td>
+      <td className={styles.tableCell}>
+        <span className={`${styles.statusBadge} ${getStatusClass(product.status)}`}>
+          {product.status}
+        </span>
+      </td>
+      <td className={styles.tableCell}>
+        {showActions && actions.length > 0 ? (
+          <Dropdown align="end">
+            <Dropdown.Toggle as="button" className={styles.actionButton} bsPrefix="custom">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="8" cy="3" r="1.5" fill="currentColor" />
                 <circle cx="8" cy="8" r="1.5" fill="currentColor" />
                 <circle cx="8" cy="13" r="1.5" fill="currentColor" />
               </svg>
-            </button>
-          )}
-        </td>
-      </>
-    );
-  };
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>
+              {actions.map((action, idx) => (
+                <Dropdown.Item key={idx} onClick={() => action.onClick(product)}>
+                  {action.icon && <i className={`${action.icon} me-2`}></i>}
+                  {action.label}
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+        ) : (
+          <button className={styles.actionButton}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="3" r="1.5" fill="currentColor" />
+              <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+              <circle cx="8" cy="13" r="1.5" fill="currentColor" />
+            </svg>
+          </button>
+        )}
+      </td>
+    </>
+  );
 
   return (
     <BoardTable

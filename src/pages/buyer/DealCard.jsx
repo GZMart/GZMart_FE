@@ -9,7 +9,9 @@ const DealCard = ({ deal, type = 'pending' }) => {
   const navigate = useNavigate();
 
   const formatTimeLeft = (time) => {
-    if (!time) return '0h : 00m : 00s';
+    if (!time) {
+      return '0h : 00m : 00s';
+    }
     const pad = (num) => String(num).padStart(2, '0');
     return `${pad(time.hours)}h : ${pad(time.minutes)}m : ${pad(time.seconds)}s`;
   };
@@ -19,7 +21,11 @@ const DealCard = ({ deal, type = 'pending' }) => {
   };
 
   return (
-    <div className={`${styles.dealCard} ${styles[`dealCard${type.charAt(0).toUpperCase() + type.slice(1)}`]}`} onClick={handleDealClick} style={{ cursor: 'pointer' }}>
+    <div
+      className={`${styles.dealCard} ${styles[`dealCard${type.charAt(0).toUpperCase() + type.slice(1)}`]}`}
+      onClick={handleDealClick}
+      style={{ cursor: 'pointer' }}
+    >
       <div className={styles.dealCardTopSection}>
         {/* Product Image - Left Side */}
         <div className={styles.dealCardImage}>
@@ -55,7 +61,9 @@ const DealCard = ({ deal, type = 'pending' }) => {
       </div>
 
       {/* Bottom Section - Full Width */}
-      <div className={`${styles.dealBottomBar} ${styles[`dealBottom${type.charAt(0).toUpperCase() + type.slice(1)}`]}`}>
+      <div
+        className={`${styles.dealBottomBar} ${styles[`dealBottom${type.charAt(0).toUpperCase() + type.slice(1)}`]}`}
+      >
         <div className={styles.dealTimeLeft}>
           <span className={styles.dealTimeLabel}>Deal Ending in</span>
           <span className={styles.dealTimeValue}>

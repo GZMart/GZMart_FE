@@ -46,7 +46,9 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
   white-space: nowrap;
 }
 .btnPrimary:hover {
@@ -71,7 +73,9 @@
   align-items: center;
   gap: 0.875rem;
   border-left: 3px solid var(--accent, #1a56db);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 .statCard:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -137,7 +141,10 @@
   border-radius: 10px;
   text-decoration: none;
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 .actionCard:hover {
   border-color: var(--accent, #1a56db);
@@ -183,7 +190,9 @@
 
 .actionArrow {
   flex-shrink: 0;
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
 }
 
 /* ─── Tables Grid ────────────────────────────────────────────── */
@@ -588,7 +597,10 @@
   background: #fff;
   outline: none;
 }
-.xrInput:focus { border-color: #d97706; box-shadow: 0 0 0 2px rgba(217,119,6,0.15); }
+.xrInput:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15);
+}
 
 .xrInputNote {
   width: 200px;
@@ -600,7 +612,9 @@
   background: #fff;
   outline: none;
 }
-.xrInputNote:focus { border-color: #d97706; }
+.xrInputNote:focus {
+  border-color: #d97706;
+}
 
 .xrActions {
   display: flex;
@@ -654,34 +668,53 @@
   color: #d97706;
   border-color: #fcd34d;
 }
-.xrBtnSync:hover:not(:disabled) { background: #fef3c7; border-color: #f59e0b; }
-.xrBtnSync:disabled { opacity: 0.6; cursor: not-allowed; }
+.xrBtnSync:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+.xrBtnSync:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .xrBtnEdit {
   background: #fff;
   color: #6d28d9;
   border-color: #c4b5fd;
 }
-.xrBtnEdit:hover { background: #ede9fe; }
+.xrBtnEdit:hover {
+  background: #ede9fe;
+}
 
 .xrBtnSave {
   background: #059669;
   color: #fff;
   border-color: #059669;
 }
-.xrBtnSave:hover:not(:disabled) { background: #047857; }
-.xrBtnSave:disabled { opacity: 0.6; cursor: not-allowed; }
+.xrBtnSave:hover:not(:disabled) {
+  background: #047857;
+}
+.xrBtnSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .xrBtnCancel {
   background: #fff;
   color: #6b7280;
   border-color: #e5e7eb;
 }
-.xrBtnCancel:hover { background: #f9fafb; }
+.xrBtnCancel:hover {
+  background: #f9fafb;
+}
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinning {

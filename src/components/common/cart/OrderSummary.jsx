@@ -98,7 +98,9 @@ const OrderSummary = ({
 
         <div className="d-flex justify-content-between mb-4">
           <span className="fw-bold fs-5">Total Price</span>
-          <span className="fw-bold fs-5" style={{ color: '#741E20' }}>{formatCurrency(total)}</span>
+          <span className="fw-bold fs-5" style={{ color: '#741E20' }}>
+            {formatCurrency(total)}
+          </span>
         </div>
 
         <Button

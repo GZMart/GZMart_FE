@@ -1,15 +1,41 @@
-import { useState, useEffect, useCallback, useMemo, useContext, createContext, useRef } from 'react';
 import {
-  Button, Table, Modal, Form, Input, Select,
-  InputNumber, Popconfirm, message, Tooltip, Space, Badge,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useContext,
+  createContext,
+  useRef,
+} from 'react';
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  Popconfirm,
+  message,
+  Tooltip,
+  Space,
+  Badge,
 } from 'antd';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined,
-  TagsOutlined, AppstoreOutlined,
-  CaretRightOutlined, CaretDownOutlined,
-  MinusSquareOutlined, PlusSquareOutlined,
-  SearchOutlined, FilterOutlined, SortAscendingOutlined,
-  CloseCircleFilled, HolderOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  TagsOutlined,
+  AppstoreOutlined,
+  CaretRightOutlined,
+  CaretDownOutlined,
+  MinusSquareOutlined,
+  PlusSquareOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  SortAscendingOutlined,
+  CloseCircleFilled,
+  HolderOutlined,
 } from '@ant-design/icons';
 import {
   DndContext,
@@ -36,20 +62,25 @@ const { TextArea } = Input;
 /* ─── BoolToggle — replaces Switch in form ──────────────── */
 const BoolToggle = ({ value, onChange, trueLabel, falseLabel, trueColor }) => {
   const colors = {
-    green:  { bg: '#16a34a', shadow: 'rgba(22,163,74,.25)' },
-    amber:  { bg: '#d97706', shadow: 'rgba(217,119,6,.25)' },
+    green: { bg: '#16a34a', shadow: 'rgba(22,163,74,.25)' },
+    amber: { bg: '#d97706', shadow: 'rgba(217,119,6,.25)' },
   };
   const c = colors[trueColor] || colors.green;
   return (
-    <div style={{
-      display: 'flex',
-      background: '#f3f4f6',
-      borderRadius: 9,
-      padding: 3,
-      gap: 2,
-      width: '100%',
-    }}>
-      {[{ val: false, label: falseLabel }, { val: true, label: trueLabel }].map(({ val, label }) => {
+    <div
+      style={{
+        display: 'flex',
+        background: '#f3f4f6',
+        borderRadius: 9,
+        padding: 3,
+        gap: 2,
+        width: '100%',
+      }}
+    >
+      {[
+        { val: false, label: falseLabel },
+        { val: true, label: trueLabel },
+      ].map(({ val, label }) => {
         const active = value === val;
         const isTrue = val === true;
         return (
@@ -68,7 +99,9 @@ const BoolToggle = ({ value, onChange, trueLabel, falseLabel, trueColor }) => {
               transition: 'all .18s',
               background: active ? (isTrue ? c.bg : '#6b7280') : 'rgba(255,255,255,0.7)',
               color: active ? '#fff' : '#374151',
-              boxShadow: active ? `0 2px 8px ${isTrue ? c.shadow : 'rgba(107,114,128,.3)'}` : 'none',
+              boxShadow: active
+                ? `0 2px 8px ${isTrue ? c.shadow : 'rgba(107,114,128,.3)'}`
+                : 'none',
               letterSpacing: '.2px',
             }}
           >
@@ -84,7 +117,9 @@ const BoolToggle = ({ value, onChange, trueLabel, falseLabel, trueColor }) => {
 const flattenTree = (list, result = []) => {
   list.forEach((cat) => {
     result.push(cat);
-    if (cat.children?.length > 0) flattenTree(cat.children, result);
+    if (cat.children?.length > 0) {
+      flattenTree(cat.children, result);
+    }
   });
   return result;
 };
@@ -105,14 +140,14 @@ const sortTree = (list, compareFn) =>
 
 // Only name sort remains (no order sort — order is controlled by drag)
 const SORT_OPTIONS = [
-  { value: 'none',      label: 'Default order' },
-  { value: 'name-asc',  label: 'A → Z' },
+  { value: 'none', label: 'Default order' },
+  { value: 'name-asc', label: 'A → Z' },
   { value: 'name-desc', label: 'Z → A' },
 ];
 
 /* ─── DnD row context ───────────────────────────────────────── */
 const DragHandleContext = createContext({});
-const RootIdsContext    = createContext(new Set());
+const RootIdsContext = createContext(new Set());
 
 /* ─── DnD Sortable Row — only for root-level rows ────────── */
 const SortableRootRow = (props) => {
@@ -136,8 +171,10 @@ const SortableRootRow = (props) => {
 /* ─── Smart row — delegates to sortable or plain ─────────── */
 const SortableRow = (props) => {
   const rootIds = useContext(RootIdsContext);
-  const rowKey  = props['data-row-key'];
-  if (rootIds.has(rowKey)) return <SortableRootRow {...props} />;
+  const rowKey = props['data-row-key'];
+  if (rootIds.has(rowKey)) {
+    return <SortableRootRow {...props} />;
+  }
   // Sub-category rows: plain tr, no DnD interference
   return (
     <DragHandleContext.Provider value={{}}>
@@ -166,30 +203,28 @@ const DragHandle = () => {
 /* ─── component ──────────────────────────────────────────── */
 const CategoriesPage = () => {
   const [rawCategories, setRawCategories] = useState([]);
-  const [treeData, setTreeData]           = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [expandedKeys, setExpandedKeys]   = useState([]);
-  const [saving, setSaving]               = useState(false);
-  const [activeId, setActiveId]           = useState(null);
-  const isFirstLoad                       = useRef(true);
+  const [treeData, setTreeData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedKeys, setExpandedKeys] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [activeId, setActiveId] = useState(null);
+  const isFirstLoad = useRef(true);
 
   // Search / filter / sort
-  const [search, setSearch]               = useState('');
-  const [statusFilter, setStatusFilter]   = useState('all');
-  const [sortKey, setSortKey]             = useState('none');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortKey, setSortKey] = useState('none');
 
   // Modal
-  const [showModal, setShowModal]         = useState(false);
-  const [editMode, setEditMode]           = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [currentCategory, setCurrentCategory] = useState(null);
-  const [submitting, setSubmitting]       = useState(false);
-  const [form]                            = Form.useForm();
-  const watchedParentId                   = Form.useWatch('parentId', form);
+  const [submitting, setSubmitting] = useState(false);
+  const [form] = Form.useForm();
+  const watchedParentId = Form.useWatch('parentId', form);
 
   // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   /* ------ data ------ */
   const fetchCategories = useCallback(async () => {
@@ -213,21 +248,26 @@ const CategoriesPage = () => {
     }
   }, []);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   /* ------ derived ------ */
   const flat = useMemo(() => flattenTree(rawCategories), [rawCategories]);
-  const totalCount    = flat.length;
-  const activeCount   = flat.filter((c) => c.status === 'active').length;
+  const totalCount = flat.length;
+  const activeCount = flat.filter((c) => c.status === 'active').length;
   const inactiveCount = totalCount - activeCount;
-  const isFiltering   = search.trim() !== '' || statusFilter !== 'all';
+  const isFiltering = search.trim() !== '' || statusFilter !== 'all';
   const isDragDisabled = isFiltering || sortKey !== 'none';
 
   const compareFn = useMemo(() => {
     switch (sortKey) {
-      case 'name-asc':  return (a, b) => a.name.localeCompare(b.name);
-      case 'name-desc': return (a, b) => b.name.localeCompare(a.name);
-      default:          return null;
+      case 'name-asc':
+        return (a, b) => a.name.localeCompare(b.name);
+      case 'name-desc':
+        return (a, b) => b.name.localeCompare(a.name);
+      default:
+        return null;
     }
   }, [sortKey]);
 
@@ -236,10 +276,11 @@ const CategoriesPage = () => {
       const q = search.trim().toLowerCase();
       const filtered = flat
         .filter((cat) => {
-          const matchSearch = !q
-            || cat.name.toLowerCase().includes(q)
-            || (cat.slug || '').toLowerCase().includes(q)
-            || (cat.description || '').toLowerCase().includes(q);
+          const matchSearch =
+            !q ||
+            cat.name.toLowerCase().includes(q) ||
+            (cat.slug || '').toLowerCase().includes(q) ||
+            (cat.description || '').toLowerCase().includes(q);
           const matchStatus = statusFilter === 'all' || cat.status === statusFilter;
           return matchSearch && matchStatus;
         })
@@ -256,34 +297,40 @@ const CategoriesPage = () => {
   );
 
   // Set of root-level keys — used by SortableRow to decide DnD vs plain row
-  const rootIdsSet = useMemo(
-    () => new Set(treeData.map((c) => c.key)),
-    [treeData]
-  );
+  const rootIdsSet = useMemo(() => new Set(treeData.map((c) => c.key)), [treeData]);
 
   /* ------ drag helpers ------ */
-  const findParentInTree = useCallback((id) => {
-    for (const root of treeData) {
-      if (root.children?.some((c) => c.key === id)) return root;
-    }
-    return null;
-  }, [treeData]);
+  const findParentInTree = useCallback(
+    (id) => {
+      for (const root of treeData) {
+        if (root.children?.some((c) => c.key === id)) {
+          return root;
+        }
+      }
+      return null;
+    },
+    [treeData]
+  );
 
   /* ------ drag handlers ------ */
   const handleDragStart = ({ active }) => setActiveId(active.id);
 
   const handleDragEnd = async ({ active, over }) => {
     setActiveId(null);
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      return;
+    }
 
     const activeIsRoot = treeData.some((c) => c.key === active.id);
-    const overIsRoot   = treeData.some((c) => c.key === over.id);
+    const overIsRoot = treeData.some((c) => c.key === over.id);
 
     if (activeIsRoot && overIsRoot) {
       // ── Root-level reordering ──────────────────────────────────────
       const oldIndex = treeData.findIndex((c) => c.key === active.id);
       const newIndex = treeData.findIndex((c) => c.key === over.id);
-      if (oldIndex === -1 || newIndex === -1) return;
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
 
       const newTree = arrayMove(treeData, oldIndex, newIndex);
       setTreeData(newTree);
@@ -297,7 +344,9 @@ const CategoriesPage = () => {
           const newRaw = [...prev];
           items.forEach(({ id, order }) => {
             const cat = newRaw.find((c) => c._id === id);
-            if (cat) cat.order = order;
+            if (cat) {
+              cat.order = order;
+            }
           });
           return newRaw;
         });
@@ -310,13 +359,17 @@ const CategoriesPage = () => {
     } else if (!activeIsRoot && !overIsRoot) {
       // ── Sub-category reordering (within same parent) ───────────────
       const activeParent = findParentInTree(active.id);
-      const overParent   = findParentInTree(over.id);
-      if (!activeParent || !overParent || activeParent.key !== overParent.key) return;
+      const overParent = findParentInTree(over.id);
+      if (!activeParent || !overParent || activeParent.key !== overParent.key) {
+        return;
+      }
 
       const siblings = activeParent.children;
       const oldIndex = siblings.findIndex((c) => c.key === active.id);
       const newIndex = siblings.findIndex((c) => c.key === over.id);
-      if (oldIndex === -1 || newIndex === -1) return;
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
 
       const newSiblings = arrayMove(siblings, oldIndex, newIndex);
       setTreeData((prev) =>
@@ -340,11 +393,14 @@ const CategoriesPage = () => {
     // Cross-level drag: ignore silently
   };
 
-  const allKeys     = flat.map((c) => c._id);
+  const allKeys = flat.map((c) => c._id);
   const allExpanded = expandedKeys.length === allKeys.length;
-  const hasFilters  = search || statusFilter !== 'all';
+  const hasFilters = search || statusFilter !== 'all';
 
-  const clearFilters = () => { setSearch(''); setStatusFilter('all'); };
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+  };
 
   /* ------ modal ------ */
   const handleOpenModal = (category = null) => {
@@ -352,16 +408,18 @@ const CategoriesPage = () => {
       setEditMode(true);
       setCurrentCategory(category);
       form.setFieldsValue({
-        name:         category.name || '',
-        description:  category.description || '',
+        name: category.name || '',
+        description: category.description || '',
         parentId: category.parentId
-          ? typeof category.parentId === 'object' ? category.parentId._id : category.parentId
+          ? typeof category.parentId === 'object'
+            ? category.parentId._id
+            : category.parentId
           : null,
-        slug:         category.slug || '',
-        image:        category.image || '',
+        slug: category.slug || '',
+        image: category.image || '',
         displayOrder: category.order ?? category.displayOrder ?? 0,
-        isActive:     category.status ? category.status === 'active' : true,
-        isFeatured:   category.isFeatured ?? false,
+        isActive: category.status ? category.status === 'active' : true,
+        isFeatured: category.isFeatured ?? false,
       });
     } else {
       setEditMode(false);
@@ -372,22 +430,27 @@ const CategoriesPage = () => {
     setShowModal(true);
   };
 
-  const handleCloseModal = () => { setShowModal(false); form.resetFields(); };
+  const handleCloseModal = () => {
+    setShowModal(false);
+    form.resetFields();
+  };
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
       const payload = {
-        name:        values.name,
+        name: values.name,
         description: values.description || '',
-        image:       values.image || '',
-        order:       Number(values.displayOrder) || 0,
-        status:      values.isActive ? 'active' : 'inactive',
-        isFeatured:  values.isFeatured ?? false,
-        parentId:    values.parentId || null,
+        image: values.image || '',
+        order: Number(values.displayOrder) || 0,
+        status: values.isActive ? 'active' : 'inactive',
+        isFeatured: values.isFeatured ?? false,
+        parentId: values.parentId || null,
       };
-      if (values.slug?.trim()) payload.slug = values.slug.trim();
+      if (values.slug?.trim()) {
+        payload.slug = values.slug.trim();
+      }
 
       if (editMode && currentCategory) {
         await categoryService.update(currentCategory._id, payload);
@@ -399,7 +462,9 @@ const CategoriesPage = () => {
       fetchCategories();
       handleCloseModal();
     } catch (err) {
-      if (err?.errorFields) return;
+      if (err?.errorFields) {
+        return;
+      }
       message.error(err?.message || 'Failed to save category');
     } finally {
       setSubmitting(false);
@@ -436,9 +501,7 @@ const CategoriesPage = () => {
       key: 'drag',
       width: 36,
       render: (_, record) =>
-        !isDragDisabled
-          ? <DragHandle />
-          : <span className={styles.dragPlaceholder} />,
+        !isDragDisabled ? <DragHandle /> : <span className={styles.dragPlaceholder} />,
     },
     {
       title: 'Category',
@@ -446,7 +509,9 @@ const CategoriesPage = () => {
       key: 'name',
       render: (name, record) => (
         <div className={styles.nameCellInner}>
-          <span className={`${styles.depthDot} ${styles[`depth${Math.min(record._depth ?? 0, 2)}`]}`} />
+          <span
+            className={`${styles.depthDot} ${styles[`depth${Math.min(record._depth ?? 0, 2)}`]}`}
+          />
           <TagsOutlined className={styles.catIconDefault} />
           <span className={(record._depth ?? 0) === 0 ? styles.nameRoot : styles.nameChild}>
             {name}
@@ -478,9 +543,11 @@ const CategoriesPage = () => {
       width: 100,
       align: 'center',
       render: (status) =>
-        status === 'active'
-          ? <Badge status="success" text="Active" />
-          : <Badge status="default" text="Inactive" />,
+        status === 'active' ? (
+          <Badge status="success" text="Active" />
+        ) : (
+          <Badge status="default" text="Inactive" />
+        ),
     },
     {
       title: '',
@@ -495,7 +562,9 @@ const CategoriesPage = () => {
             {canAddSub && (
               <Tooltip title={`Add sub-category under "${record.name}"`} placement="top">
                 <Button
-                  type="text" size="small" icon={<PlusOutlined />}
+                  type="text"
+                  size="small"
+                  icon={<PlusOutlined />}
                   className={styles.btnAddSub}
                   onClick={() => handleAddSubcategory(record)}
                 />
@@ -503,23 +572,34 @@ const CategoriesPage = () => {
             )}
             <Tooltip title="Edit" placement="top">
               <Button
-                type="text" size="small" icon={<EditOutlined />}
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
                 className={styles.btnEdit}
                 onClick={() => handleOpenModal(record)}
               />
             </Tooltip>
             <Popconfirm
               title={`Delete "${record.name}"?`}
-              description={record.children ? 'Remove sub-categories first.' : 'This cannot be undone.'}
+              description={
+                record.children ? 'Remove sub-categories first.' : 'This cannot be undone.'
+              }
               onConfirm={() => handleDelete(record)}
-              okText="Delete" cancelText="Cancel"
+              okText="Delete"
+              cancelText="Cancel"
               okButtonProps={{ danger: true }}
               disabled={!!record.children}
             >
-              <Tooltip title={record.children ? 'Remove sub-categories first' : 'Delete'} placement="top">
+              <Tooltip
+                title={record.children ? 'Remove sub-categories first' : 'Delete'}
+                placement="top"
+              >
                 <Button
-                  type="text" size="small" icon={<DeleteOutlined />}
-                  className={styles.btnDelete} danger
+                  type="text"
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  className={styles.btnDelete}
+                  danger
                   disabled={!!record.children}
                 />
               </Tooltip>
@@ -530,9 +610,13 @@ const CategoriesPage = () => {
     },
   ];
 
-  const excludedIds   = useMemo(() => {
+  const excludedIds = useMemo(() => {
     const ids = new Set([currentCategory?._id]);
-    const walk = (list) => list?.forEach((c) => { ids.add(c._id); walk(c.children); });
+    const walk = (list) =>
+      list?.forEach((c) => {
+        ids.add(c._id);
+        walk(c.children);
+      });
     walk(currentCategory?.children ? [currentCategory] : []);
     return ids;
   }, [currentCategory]);
@@ -546,13 +630,20 @@ const CategoriesPage = () => {
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.headerIcon}><AppstoreOutlined /></div>
+          <div className={styles.headerIcon}>
+            <AppstoreOutlined />
+          </div>
           <div>
             <h2 className={styles.h2}>Category Management</h2>
             <p className={styles.subtitle}>Manage product categories &amp; hierarchy</p>
           </div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} className={styles.btnAdd} onClick={() => handleOpenModal()}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          className={styles.btnAdd}
+          onClick={() => handleOpenModal()}
+        >
           Add Category
         </Button>
       </div>
@@ -560,8 +651,8 @@ const CategoriesPage = () => {
       {/* Stats */}
       <div className={styles.stats}>
         {[
-          { label: 'Total',    value: totalCount,    cls: 'statTotal' },
-          { label: 'Active',   value: activeCount,   cls: 'statActive' },
+          { label: 'Total', value: totalCount, cls: 'statTotal' },
+          { label: 'Active', value: activeCount, cls: 'statActive' },
           { label: 'Inactive', value: inactiveCount, cls: 'statInactive' },
         ].map(({ label, value, cls }) => (
           <div key={label} className={`${styles.statCard} ${styles[cls]}`}>
@@ -590,8 +681,8 @@ const CategoriesPage = () => {
               className={styles.filterSelect}
               suffixIcon={<FilterOutlined />}
               options={[
-                { value: 'all',      label: 'All status' },
-                { value: 'active',   label: 'Active only' },
+                { value: 'all', label: 'All status' },
+                { value: 'active', label: 'Active only' },
                 { value: 'inactive', label: 'Inactive only' },
               ]}
             />
@@ -603,7 +694,12 @@ const CategoriesPage = () => {
               options={SORT_OPTIONS}
             />
             {hasFilters && (
-              <Button type="text" icon={<CloseCircleFilled />} onClick={clearFilters} className={styles.btnClear}>
+              <Button
+                type="text"
+                icon={<CloseCircleFilled />}
+                onClick={clearFilters}
+                className={styles.btnClear}
+              >
                 Clear
               </Button>
             )}
@@ -616,7 +712,8 @@ const CategoriesPage = () => {
             )}
             {!isDragDisabled && !isFiltering && (
               <Button
-                size="small" type="text"
+                size="small"
+                type="text"
                 icon={allExpanded ? <MinusSquareOutlined /> : <PlusSquareOutlined />}
                 onClick={() => setExpandedKeys(allExpanded ? [] : allKeys)}
                 className={styles.btnToggleAll}
@@ -634,63 +731,62 @@ const CategoriesPage = () => {
 
         {/* DnD wrapper — only active when not filtering, sort=none */}
         <RootIdsContext.Provider value={isDragDisabled ? new Set() : rootIdsSet}>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={allSortableIds}
-            strategy={verticalListSortingStrategy}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           >
-            <Table
-              columns={columns}
-              dataSource={displayData}
-              rowKey="key"
-              loading={loading}
-              pagination={false}
-              components={
-                !isDragDisabled
-                  ? { body: { row: SortableRow } }
-                  : undefined
-              }
-              expandable={isFiltering ? undefined : {
-                expandedRowKeys: expandedKeys,
-                onExpandedRowsChange: setExpandedKeys,
-                expandIcon: ({ expanded, onExpand, record, expandable: isExp }) =>
-                  isExp ? (
-                    <button
-                      className={`${styles.expandBtn} ${expanded ? styles.expandBtnOpen : ''}`}
-                      onClick={(e) => onExpand(record, e)}
-                      aria-label={expanded ? 'Collapse' : 'Expand'}
-                    >
-                      {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
-                    </button>
-                  ) : <span className={styles.expandPlaceholder} />,
-                indentSize: 20,
-              }}
-              rowClassName={(record) =>
-                (record._depth ?? 0) === 0 ? styles.rowRoot : styles.rowChild
-              }
-              locale={{
-                emptyText: isFiltering
-                  ? `No categories match "${search}"${statusFilter !== 'all' ? ` (${statusFilter})` : ''}`
-                  : 'No categories yet.',
-              }}
-            />
-          </SortableContext>
+            <SortableContext items={allSortableIds} strategy={verticalListSortingStrategy}>
+              <Table
+                columns={columns}
+                dataSource={displayData}
+                rowKey="key"
+                loading={loading}
+                pagination={false}
+                components={!isDragDisabled ? { body: { row: SortableRow } } : undefined}
+                expandable={
+                  isFiltering
+                    ? undefined
+                    : {
+                        expandedRowKeys: expandedKeys,
+                        onExpandedRowsChange: setExpandedKeys,
+                        expandIcon: ({ expanded, onExpand, record, expandable: isExp }) =>
+                          isExp ? (
+                            <button
+                              className={`${styles.expandBtn} ${expanded ? styles.expandBtnOpen : ''}`}
+                              onClick={(e) => onExpand(record, e)}
+                              aria-label={expanded ? 'Collapse' : 'Expand'}
+                            >
+                              {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+                            </button>
+                          ) : (
+                            <span className={styles.expandPlaceholder} />
+                          ),
+                        indentSize: 20,
+                      }
+                }
+                rowClassName={(record) =>
+                  (record._depth ?? 0) === 0 ? styles.rowRoot : styles.rowChild
+                }
+                locale={{
+                  emptyText: isFiltering
+                    ? `No categories match "${search}"${statusFilter !== 'all' ? ` (${statusFilter})` : ''}`
+                    : 'No categories yet.',
+                }}
+              />
+            </SortableContext>
 
-          {/* Drag overlay — show ghost of dragged row */}
-          <DragOverlay>
-            {activeCat && (
-              <div className={styles.dragOverlay}>
-                <HolderOutlined className={styles.dragOverlayIcon} />
-                <span>{activeCat.name}</span>
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+            {/* Drag overlay — show ghost of dragged row */}
+            <DragOverlay>
+              {activeCat && (
+                <div className={styles.dragOverlay}>
+                  <HolderOutlined className={styles.dragOverlayIcon} />
+                  <span>{activeCat.name}</span>
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
         </RootIdsContext.Provider>
       </div>
 
@@ -698,7 +794,9 @@ const CategoriesPage = () => {
       <Modal
         title={
           <div className={styles.modalHeader}>
-            <div className={`${styles.modalHeaderIcon} ${editMode ? styles.modalIconEdit : styles.modalIconAdd}`}>
+            <div
+              className={`${styles.modalHeaderIcon} ${editMode ? styles.modalIconEdit : styles.modalIconAdd}`}
+            >
               {editMode ? <EditOutlined /> : <PlusOutlined />}
             </div>
             <div>
@@ -706,7 +804,9 @@ const CategoriesPage = () => {
                 {editMode ? 'Edit Category' : 'New Category'}
               </div>
               <div className={styles.modalHeaderSub}>
-                {editMode ? 'Update category details below' : 'Fill in the details to create a category'}
+                {editMode
+                  ? 'Update category details below'
+                  : 'Fill in the details to create a category'}
               </div>
             </div>
           </div>
@@ -722,7 +822,6 @@ const CategoriesPage = () => {
         className={styles.categoryModal}
       >
         <Form form={form} layout="vertical" className={styles.form}>
-
           {/* ── Top panel: Image + Basic Info ── */}
           <div className={styles.formTopPanel}>
             {/* Left: Image */}
@@ -751,8 +850,16 @@ const CategoriesPage = () => {
                 />
               </Form.Item>
 
-              <Form.Item label="Description" name="description" style={{ marginTop: 16, marginBottom: 0 }}>
-                <TextArea rows={3} placeholder="Brief description of this category…" style={{ resize: 'none' }} />
+              <Form.Item
+                label="Description"
+                name="description"
+                style={{ marginTop: 16, marginBottom: 0 }}
+              >
+                <TextArea
+                  rows={3}
+                  placeholder="Brief description of this category…"
+                  style={{ resize: 'none' }}
+                />
               </Form.Item>
             </div>
           </div>
@@ -800,10 +907,8 @@ const CategoriesPage = () => {
               <BoolToggle trueLabel="Featured" falseLabel="Standard" trueColor="amber" />
             </Form.Item>
           </div>
-
         </Form>
       </Modal>
-
     </div>
   );
 };

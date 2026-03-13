@@ -10,8 +10,8 @@
 }
 
 .dealCardTopSection {
-    display: flex;
-    flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 
 .dealCard.dealCardPending {
@@ -360,4 +360,3 @@
     display: none;
   }
 }
-

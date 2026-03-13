@@ -53,13 +53,8 @@ const MyReturnsPage = () => {
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
-  const getTypeBadge = (type) => {
-    return type === 'refund' ? (
-      <Badge bg="info">Hoàn tiền</Badge>
-    ) : (
-      <Badge bg="warning">Đổi hàng</Badge>
-    );
-  };
+  const getTypeBadge = (type) =>
+    type === 'refund' ? <Badge bg="info">Hoàn tiền</Badge> : <Badge bg="warning">Đổi hàng</Badge>;
 
   const getReasonText = (reason) => {
     const reasonMap = {

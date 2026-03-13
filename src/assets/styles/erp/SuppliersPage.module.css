@@ -5,29 +5,29 @@
 
 /* ── Design Tokens ─────────────────────────────────────────────── */
 :root {
-  --sp-bg:           #f1f5f9;
-  --sp-surface:      #ffffff;
-  --sp-surface-2:    #f8fafc;
-  --sp-border:       #e2e8f0;
-  --sp-text:         #0f172a;
-  --sp-text-2:       #475569;
-  --sp-text-muted:   #94a3b8;
-  --sp-indigo:       #6366f1;
-  --sp-indigo-dark:  #4f46e5;
+  --sp-bg: #f1f5f9;
+  --sp-surface: #ffffff;
+  --sp-surface-2: #f8fafc;
+  --sp-border: #e2e8f0;
+  --sp-text: #0f172a;
+  --sp-text-2: #475569;
+  --sp-text-muted: #94a3b8;
+  --sp-indigo: #6366f1;
+  --sp-indigo-dark: #4f46e5;
   --sp-indigo-light: #eef2ff;
-  --sp-indigo-ring:  rgba(99, 102, 241, 0.15);
-  --sp-green:        #059669;
-  --sp-green-light:  #d1fae5;
-  --sp-red:          #dc2626;
-  --sp-red-light:    #fee2e2;
-  --sp-amber:        #d97706;
-  --sp-amber-light:  #fef3c7;
-  --sp-radius-sm:    6px;
-  --sp-radius:       10px;
-  --sp-radius-lg:    14px;
-  --sp-shadow:       0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-  --sp-shadow-lg:    0 4px 20px rgba(0,0,0,0.08), 0 12px 40px rgba(0,0,0,0.06);
-  --sp-transition:   150ms ease;
+  --sp-indigo-ring: rgba(99, 102, 241, 0.15);
+  --sp-green: #059669;
+  --sp-green-light: #d1fae5;
+  --sp-red: #dc2626;
+  --sp-red-light: #fee2e2;
+  --sp-amber: #d97706;
+  --sp-amber-light: #fef3c7;
+  --sp-radius-sm: 6px;
+  --sp-radius: 10px;
+  --sp-radius-lg: 14px;
+  --sp-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --sp-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.08), 0 12px 40px rgba(0, 0, 0, 0.06);
+  --sp-transition: 150ms ease;
 }
 
 /* ── Page Layout ───────────────────────────────────────────────── */
@@ -71,12 +71,19 @@
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: background var(--sp-transition), box-shadow var(--sp-transition);
+  transition:
+    background var(--sp-transition),
+    box-shadow var(--sp-transition);
   box-shadow: 0 2px 8px var(--sp-indigo-ring);
   white-space: nowrap;
 }
-.btnPrimary:hover { background: var(--sp-indigo-dark); box-shadow: 0 4px 16px rgba(99,102,241,0.30); }
-.btnPrimary:active { transform: translateY(1px); }
+.btnPrimary:hover {
+  background: var(--sp-indigo-dark);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+.btnPrimary:active {
+  transform: translateY(1px);
+}
 
 .btnSecondary {
   display: inline-flex;
@@ -90,9 +97,14 @@
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: background var(--sp-transition), border-color var(--sp-transition);
+  transition:
+    background var(--sp-transition),
+    border-color var(--sp-transition);
 }
-.btnSecondary:hover { background: var(--sp-surface-2); border-color: #cbd5e1; }
+.btnSecondary:hover {
+  background: var(--sp-surface-2);
+  border-color: #cbd5e1;
+}
 
 /* ── Alert ─────────────────────────────────────────────────────── */
 .alert {
@@ -126,9 +138,14 @@
   align-items: center;
   gap: 0.875rem;
   box-shadow: var(--sp-shadow);
-  transition: box-shadow var(--sp-transition), border-color var(--sp-transition);
+  transition:
+    box-shadow var(--sp-transition),
+    border-color var(--sp-transition);
 }
-.statCard:hover { box-shadow: var(--sp-shadow-lg); border-color: #c7d2fe; }
+.statCard:hover {
+  box-shadow: var(--sp-shadow-lg);
+  border-color: #c7d2fe;
+}
 
 .statIcon {
   width: 40px;
@@ -139,8 +156,6 @@
   justify-content: center;
   flex-shrink: 0;
 }
-
-
 
 .statValue {
   font-size: 1.375rem;
@@ -190,7 +205,9 @@
   font-size: 0.875rem;
   color: var(--sp-text);
   background: var(--sp-surface);
-  transition: border-color var(--sp-transition), box-shadow var(--sp-transition);
+  transition:
+    border-color var(--sp-transition),
+    box-shadow var(--sp-transition);
   box-sizing: border-box;
 }
 .searchInput:focus {
@@ -198,7 +215,9 @@
   border-color: var(--sp-indigo);
   box-shadow: 0 0 0 3px var(--sp-indigo-ring);
 }
-.searchInput::placeholder { color: var(--sp-text-muted); }
+.searchInput::placeholder {
+  color: var(--sp-text-muted);
+}
 
 .filterSelect {
   padding: 0.6rem 0.875rem;
@@ -254,13 +273,17 @@
   vertical-align: middle;
 }
 
-.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
 
 .table tbody tr {
   transition: background var(--sp-transition);
   cursor: default;
 }
-.table tbody tr:hover { background: var(--sp-surface-2); }
+.table tbody tr:hover {
+  background: var(--sp-surface-2);
+}
 
 /* ── Supplier Name + Avatar ────────────────────────────────────── */
 .supplierCell {
@@ -293,7 +316,10 @@
   transition: color var(--sp-transition);
   display: block;
 }
-.supplierLink:hover { color: var(--sp-indigo-dark); text-decoration: underline; }
+.supplierLink:hover {
+  color: var(--sp-indigo-dark);
+  text-decoration: underline;
+}
 
 .supplierMeta {
   font-size: 0.72rem;
@@ -403,7 +429,9 @@
   font-weight: 500;
   cursor: pointer;
   border: 1.5px solid transparent;
-  transition: background var(--sp-transition), border-color var(--sp-transition);
+  transition:
+    background var(--sp-transition),
+    border-color var(--sp-transition);
   white-space: nowrap;
 }
 
@@ -412,21 +440,28 @@
   color: var(--sp-indigo-dark);
   border-color: #c7d2fe;
 }
-.btnView:hover { background: #e0e7ff; }
+.btnView:hover {
+  background: #e0e7ff;
+}
 
 .btnEdit {
   background: var(--sp-surface-2);
   color: var(--sp-text-2);
   border-color: var(--sp-border);
 }
-.btnEdit:hover { background: #e2e8f0; border-color: #94a3b8; }
+.btnEdit:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
 
 .btnDelete {
   background: var(--sp-red-light);
   color: var(--sp-red);
   border-color: #fca5a5;
 }
-.btnDelete:hover { background: #fecaca; }
+.btnDelete:hover {
+  background: #fecaca;
+}
 
 /* ── Empty State ───────────────────────────────────────────────── */
 .emptyState {
@@ -468,10 +503,18 @@
   font-weight: 500;
   color: var(--sp-text-2);
   cursor: pointer;
-  transition: background var(--sp-transition), border-color var(--sp-transition);
+  transition:
+    background var(--sp-transition),
+    border-color var(--sp-transition);
 }
-.pageBtn:hover:not(:disabled) { background: var(--sp-surface-2); border-color: #94a3b8; }
-.pageBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pageBtn:hover:not(:disabled) {
+  background: var(--sp-surface-2);
+  border-color: #94a3b8;
+}
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .pageInfo {
   font-size: 0.8rem;
@@ -489,8 +532,12 @@
   animation: fadeInOv 180ms ease;
 }
 @keyframes fadeInOv {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .drawer {
@@ -503,13 +550,17 @@
   display: flex;
   flex-direction: column;
   background: var(--sp-bg);
-  box-shadow: -8px 0 40px rgba(0,0,0,0.12);
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.12);
   animation: slideInDr 240ms cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 @keyframes slideInDr {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 .drawerHeader {
@@ -565,22 +616,29 @@
   justify-content: center;
   transition: background var(--sp-transition);
 }
-.drawerCloseBtn:hover { background: var(--sp-border); }
+.drawerCloseBtn:hover {
+  background: var(--sp-border);
+}
 
 .drawerBody {
   flex: 1;
   overflow-y: auto;
   padding: 1.25rem 1.5rem;
 }
-.drawerBody::-webkit-scrollbar { width: 5px; }
-.drawerBody::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+.drawerBody::-webkit-scrollbar {
+  width: 5px;
+}
+.drawerBody::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
 
 .drawerFooter {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 0.875rem 1.5rem;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   border-top: 1.5px solid var(--sp-border);
   flex-shrink: 0;
@@ -644,7 +702,9 @@
   font-size: 0.875rem;
   color: var(--sp-text);
   background: var(--sp-surface);
-  transition: border-color var(--sp-transition), box-shadow var(--sp-transition);
+  transition:
+    border-color var(--sp-transition),
+    box-shadow var(--sp-transition);
   width: 100%;
   box-sizing: border-box;
 }
@@ -655,9 +715,14 @@
   border-color: var(--sp-indigo);
   box-shadow: 0 0 0 3px var(--sp-indigo-ring);
 }
-.formGroup textarea { resize: vertical; min-height: 72px; }
+.formGroup textarea {
+  resize: vertical;
+  min-height: 72px;
+}
 
-.required { color: #f43f5e; }
+.required {
+  color: #f43f5e;
+}
 
 /* ── Confirm Delete Modal ──────────────────────────────────────── */
 .confirmOverlay {
@@ -683,8 +748,14 @@
   animation: popIn 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes popIn {
-  from { transform: scale(0.94); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .confirmIcon {
@@ -733,20 +804,42 @@
   cursor: pointer;
   transition: background var(--sp-transition);
 }
-.btnDanger:hover { background: #b91c1c; }
+.btnDanger:hover {
+  background: #b91c1c;
+}
 
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
-  .statsRow { grid-template-columns: repeat(2, 1fr); }
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
-  .container { padding: 1rem 1rem 3rem; }
-  .statsRow { grid-template-columns: repeat(2, 1fr); }
-  .toolbar { flex-wrap: wrap; }
-  .searchWrap { max-width: 100%; flex: none; width: 100%; }
-  .tableWrap { overflow-x: auto; }
-  .formGrid { grid-template-columns: 1fr; }
-  .drawer { width: 100vw; }
-  .drawerBody { padding: 1rem; }
+  .container {
+    padding: 1rem 1rem 3rem;
+  }
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .searchWrap {
+    max-width: 100%;
+    flex: none;
+    width: 100%;
+  }
+  .tableWrap {
+    overflow-x: auto;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .drawer {
+    width: 100vw;
+  }
+  .drawerBody {
+    padding: 1rem;
+  }
 }

@@ -203,50 +203,48 @@ const TopCategories = () => {
 };
 
 // Component CategoryCard để tránh code lặp
-const CategoryCard = ({ cat, index }) => {
-  return (
-    <Link
-      to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat._id || cat.id}`}
-      style={{ textDecoration: 'none' }}
+const CategoryCard = ({ cat, index }) => (
+  <Link
+    to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat._id || cat.id}`}
+    style={{ textDecoration: 'none' }}
+  >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="d-flex flex-column align-items-center"
+      style={{ cursor: 'pointer', width: '120px' }}
     >
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05 }}
-        className="d-flex flex-column align-items-center"
-        style={{ cursor: 'pointer', width: '120px' }}
+        whileHover={{
+          scale: 1.1,
+          borderColor: '#0D6EFD',
+          boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+        }}
+        className="rounded-circle d-flex align-items-center justify-content-center mb-3 bg-light position-relative"
+        style={{
+          width: '120px',
+          height: '120px',
+          border: '2px solid transparent',
+          transition: 'border-color 0.3s ease',
+          overflow: 'hidden',
+        }}
       >
-        <motion.div
-          whileHover={{
-            scale: 1.1,
-            borderColor: '#0D6EFD',
-            boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-          }}
-          className="rounded-circle d-flex align-items-center justify-content-center mb-3 bg-light position-relative"
+        <img
+          src={cat.image || cat.imageUrl || 'https://via.placeholder.com/120'}
+          alt={cat.name}
+          className="img-fluid"
           style={{
-            width: '120px',
-            height: '120px',
-            border: '2px solid transparent',
-            transition: 'border-color 0.3s ease',
-            overflow: 'hidden',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
           }}
-        >
-          <img
-            src={cat.image || cat.imageUrl || 'https://via.placeholder.com/120'}
-            alt={cat.name}
-            className="img-fluid"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        </motion.div>
-
-        <span className="fw-semibold text-dark text-center">{cat.name}</span>
+        />
       </motion.div>
-    </Link>
-  );
-};
+
+      <span className="fw-semibold text-dark text-center">{cat.name}</span>
+    </motion.div>
+  </Link>
+);
 
 export default TopCategories;

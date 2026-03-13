@@ -17,7 +17,9 @@ const TransactionPinModal = ({ show, onHide, onConfirm, title = 'Transaction Pin
   }, [show]);
 
   const handlePinChange = (index, value) => {
-    if (value.length > 1) return; // Only allow single digit
+    if (value.length > 1) {
+      return;
+    } // Only allow single digit
 
     const newPin = [...pin];
     newPin[index] = value.replace(/\D/g, ''); // Only numbers
@@ -123,4 +125,3 @@ TransactionPinModal.propTypes = {
 };
 
 export default TransactionPinModal;
-

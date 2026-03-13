@@ -91,7 +91,7 @@ const ShippingPolicy = () => {
                         </span>
                       );
                     }
-                    return word + ' ';
+                    return `${word} `;
                   })}
                 </p>
               ))}

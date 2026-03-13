@@ -1,386 +1,386 @@
 /* ShopProgramForm.module.css - Enhanced UI/UX */
 
 .container {
-    background-color: #f5f7fa;
-    min-height: 100vh;
+  background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
 /* Sections */
 .section {
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    margin-bottom: 20px;
-    transition: box-shadow 0.2s ease;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  transition: box-shadow 0.2s ease;
 }
 
 .section:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .sectionTitle {
-    font-weight: 600;
-    font-size: 16px;
-    color: #1a1a2e;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f0f0f0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #1a1a2e;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sectionTitle::before {
-    content: '';
-    width: 4px;
-    height: 20px;
-    background: linear-gradient(180deg, #1890ff 0%, #096dd9 100%);
-    border-radius: 2px;
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(180deg, #1890ff 0%, #096dd9 100%);
+  border-radius: 2px;
 }
 
 /* Form Fields */
 .label {
-    font-size: 14px;
-    color: #333;
-    font-weight: 500;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
 }
 
 .input {
-    border-radius: 6px;
-    border: 1px solid #d9d9d9;
-    transition: all 0.2s ease;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.2s ease;
 }
 
 .input:focus {
-    border-color: #1890ff;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
 .hint {
-    font-size: 12px;
-    color: #8c8c8c;
-    font-style: italic;
+  font-size: 12px;
+  color: #8c8c8c;
+  font-style: italic;
 }
 
 .datePicker {
-    border-radius: 6px;
+  border-radius: 6px;
 }
 
 /* Products Section Header */
 .sectionHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
 .productCount {
-    font-size: 13px;
-    color: #666;
-    background: #f0f2f5;
-    padding: 4px 10px;
-    border-radius: 12px;
+  font-size: 13px;
+  color: #666;
+  background: #f0f2f5;
+  padding: 4px 10px;
+  border-radius: 12px;
 }
 
 /* Batch Settings Row */
 .batchRow {
-    background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .batchLabel {
-    min-width: 160px;
+  min-width: 160px;
 }
 
 .batchLabel .small {
-    font-weight: 600;
-    color: #333;
-    font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
 }
 
 .batchFields {
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-    flex-wrap: wrap;
-    flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+  flex: 1;
 }
 
 .batchField {
-    min-width: 150px;
+  min-width: 150px;
 }
 
 .batchField .small {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px !important;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px !important;
 }
 
 .batchActions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .applyBtn {
-    background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-    border: none;
-    padding: 6px 16px;
-    font-weight: 500;
-    transition: all 0.2s ease;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  padding: 6px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .applyBtn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
 }
 
 .deleteBtn {
-    padding: 6px 10px;
-    transition: all 0.2s ease;
+  padding: 6px 10px;
+  transition: all 0.2s ease;
 }
 
 .deleteBtn:hover {
-    background-color: #dc3545;
-    color: white;
+  background-color: #dc3545;
+  color: white;
 }
 
 /* Table */
 .tableWrapper {
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    overflow: hidden;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .productTable {
-    margin-bottom: 0;
-    font-size: 13px;
+  margin-bottom: 0;
+  font-size: 13px;
 }
 
 .productTable thead th {
-    background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
-    color: #595959;
-    font-weight: 600;
-    font-size: 12px;
-    padding: 12px 14px;
-    border-bottom: 1px solid #e8e8e8;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  color: #595959;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e8e8e8;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .productTable tbody td {
-    padding: 12px 14px;
-    vertical-align: middle;
-    border-bottom: 1px solid #f0f0f0;
+  padding: 12px 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 /* Product Row */
 .productRow {
-    background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
 }
 
 .productRow:hover {
-    background: linear-gradient(135deg, #f0f5ff 0%, #e6f0ff 100%);
+  background: linear-gradient(135deg, #f0f5ff 0%, #e6f0ff 100%);
 }
 
 .productImage {
-    width: 44px;
-    height: 44px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid #e8e8e8;
-    transition: transform 0.2s ease;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  transition: transform 0.2s ease;
 }
 
 .productImage:hover {
-    transform: scale(1.05);
+  transform: scale(1.05);
 }
 
 /* Variant Row */
 .variantRow td {
-    background-color: white;
+  background-color: white;
 }
 
 .variantRow:hover td {
-    background-color: #fafafa;
+  background-color: #fafafa;
 }
 
 .variantName {
-    padding-left: 32px !important;
-    color: #595959;
-    font-size: 13px;
+  padding-left: 32px !important;
+  color: #595959;
+  font-size: 13px;
 }
 
 .originalPrice {
-    color: #8c8c8c;
-    text-decoration: line-through;
-    font-size: 12px;
+  color: #8c8c8c;
+  text-decoration: line-through;
+  font-size: 12px;
 }
 
 /* Input Fields in Table */
 .priceInput {
-    max-width: 130px;
+  max-width: 130px;
 }
 
 .priceInput .input-group-text {
-    background-color: #f5f5f5;
-    border-color: #d9d9d9;
-    font-size: 12px;
-    padding: 4px 10px;
-    color: #595959;
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  font-size: 12px;
+  padding: 4px 10px;
+  color: #595959;
 }
 
 .priceInput .form-control {
-    font-size: 13px;
-    border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  border-radius: 0 6px 6px 0;
 }
 
 .discountInput {
-    max-width: 165px;
+  max-width: 165px;
 }
 
 .discountInput .input-group-text {
-    background-color: #f5f5f5;
-    border-color: #d9d9d9;
-    font-size: 11px;
-    padding: 4px 6px;
-    color: #595959;
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  font-size: 11px;
+  padding: 4px 6px;
+  color: #595959;
 }
 
 .discountInput .form-control {
-    font-size: 13px;
-    max-width: 55px;
+  font-size: 13px;
+  max-width: 55px;
 }
 
 .stockCell {
-    color: #1890ff;
-    font-weight: 600;
+  color: #1890ff;
+  font-weight: 600;
 }
 
 .promoQty {
-    color: #1890ff;
+  color: #1890ff;
 }
 
 .promoQtySelect {
-    font-size: 12px;
-    max-width: 90px;
-    border-radius: 6px;
+  font-size: 12px;
+  max-width: 90px;
+  border-radius: 6px;
 }
 
 .promoQtyInput {
-    font-size: 12px;
-    max-width: 60px;
-    border-radius: 6px;
+  font-size: 12px;
+  max-width: 60px;
+  border-radius: 6px;
 }
 
 .limitSelect {
-    font-size: 12px;
-    max-width: 90px;
-    border-radius: 6px;
+  font-size: 12px;
+  max-width: 90px;
+  border-radius: 6px;
 }
 
 .orderLimitInput {
-    font-size: 12px;
-    max-width: 60px;
-    border-radius: 6px;
+  font-size: 12px;
+  max-width: 60px;
+  border-radius: 6px;
 }
 
 .enableSwitch {
-    transform: scale(1.15);
+  transform: scale(1.15);
 }
 
 .enableSwitch .form-check-input:checked {
-    background-color: #52c41a;
-    border-color: #52c41a;
+  background-color: #52c41a;
+  border-color: #52c41a;
 }
 
 /* Footer */
 .footer {
-    position: sticky;
-    bottom: 0;
-    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-    border-top: 1px solid #e8e8e8;
-    padding: 16px 24px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin: 0 -24px -24px;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  border-top: 1px solid #e8e8e8;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 0 -24px -24px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .cancelBtn {
-    min-width: 100px;
+  min-width: 100px;
 }
 
 .submitBtn {
-    background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-    border: none;
-    min-width: 120px;
-    font-weight: 500;
-    transition: all 0.2s ease;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  min-width: 120px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .submitBtn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
 }
 
 /* Action Buttons */
 .addProductBtn {
-    background: linear-gradient(135deg, #ff7a45 0%, #fa541c 100%);
-    border: none;
-    font-weight: 500;
-    transition: all 0.2s ease;
+  background: linear-gradient(135deg, #ff7a45 0%, #fa541c 100%);
+  border: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .addProductBtn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(250, 84, 28, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(250, 84, 28, 0.35);
 }
 
 .batchToggleBtn {
-    border-color: #d9d9d9;
-    color: #595959;
-    transition: all 0.2s ease;
+  border-color: #d9d9d9;
+  color: #595959;
+  transition: all 0.2s ease;
 }
 
 .batchToggleBtn:hover {
-    border-color: #1890ff;
-    color: #1890ff;
+  border-color: #1890ff;
+  color: #1890ff;
 }
 
 /* Responsive */
 @media (max-width: 992px) {
-    .batchRow {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .batchFields {
-        width: 100%;
-    }
-    
-    .batchActions {
-        margin-left: 0;
-        margin-top: 12px;
-    }
+  .batchRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .batchFields {
+    width: 100%;
+  }
+
+  .batchActions {
+    margin-left: 0;
+    margin-top: 12px;
+  }
 }
 
 @media (max-width: 768px) {
-    .tableWrapper {
-        overflow-x: auto;
-    }
-    
-    .productTable {
-        min-width: 900px;
-    }
+  .tableWrapper {
+    overflow-x: auto;
+  }
+
+  .productTable {
+    min-width: 900px;
+  }
 }

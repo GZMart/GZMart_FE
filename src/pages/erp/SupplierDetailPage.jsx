@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchSupplierById, clearCurrentSupplier, updateSupplier } from '../../store/slices/erpSlice';
+import {
+  fetchSupplierById,
+  clearCurrentSupplier,
+  updateSupplier,
+} from '../../store/slices/erpSlice';
 import * as erpService from '../../services/api/erpService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import SupplierDrawer from '../../components/erp/SupplierDrawer';
@@ -78,20 +82,23 @@ const SupplierDetailPage = () => {
     dispatch(fetchSupplierById(id));
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount || 0);
-  };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '—';
+    if (!dateString) {
+      return '—';
+    }
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
   const getSupplierInitials = (name) => {
-    if (!name) return 'S';
+    if (!name) {
+      return 'S';
+    }
     return name
       .split(' ')
       .map((w) => w[0])
@@ -119,9 +126,15 @@ const SupplierDetailPage = () => {
   };
 
   const getScoreConfig = (score) => {
-    if (score >= 80) return { label: 'Excellent Supplier', Icon: CheckCircle2, className: styles.scoreExcellent };
-    if (score >= 60) return { label: 'Good Supplier', Icon: ThumbsUp, className: styles.scoreGood };
-    if (score >= 40) return { label: 'Average Supplier', Icon: AlertTriangle, className: styles.scoreAverage };
+    if (score >= 80) {
+      return { label: 'Excellent Supplier', Icon: CheckCircle2, className: styles.scoreExcellent };
+    }
+    if (score >= 60) {
+      return { label: 'Good Supplier', Icon: ThumbsUp, className: styles.scoreGood };
+    }
+    if (score >= 40) {
+      return { label: 'Average Supplier', Icon: AlertTriangle, className: styles.scoreAverage };
+    }
     return { label: 'Needs Improvement', Icon: XCircle, className: styles.scorePoor };
   };
 
@@ -206,10 +219,7 @@ const SupplierDetailPage = () => {
 
         <div className={styles.headerRight}>
           <span className={statusConfig.className}>{statusConfig.label}</span>
-          <button
-            className={styles.btnEdit}
-            onClick={() => setEditDrawerOpen(true)}
-          >
+          <button className={styles.btnEdit} onClick={() => setEditDrawerOpen(true)}>
             <PencilLine size={15} />
             Edit
           </button>
@@ -250,16 +260,21 @@ const SupplierDetailPage = () => {
           <div className={styles.scoreDisplay}>
             <div className={styles.scoreRing}>
               <svg viewBox="0 0 120 120" className={styles.scoreRingSvg}>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" strokeWidth="10" />
                 <circle
-                  cx="60" cy="60" r="50"
+                  cx="60"
+                  cy="60"
+                  r="50"
                   fill="none"
-                  stroke="#e5e7eb"
-                  strokeWidth="10"
-                />
-                <circle
-                  cx="60" cy="60" r="50"
-                  fill="none"
-                  stroke={score >= 80 ? '#10b981' : score >= 60 ? '#3b82f6' : score >= 40 ? '#f59e0b' : '#ef4444'}
+                  stroke={
+                    score >= 80
+                      ? '#10b981'
+                      : score >= 60
+                        ? '#3b82f6'
+                        : score >= 40
+                          ? '#f59e0b'
+                          : '#ef4444'
+                  }
                   strokeWidth="10"
                   strokeLinecap="round"
                   strokeDasharray={`${(score / 100) * 314} 314`}
@@ -280,10 +295,7 @@ const SupplierDetailPage = () => {
           </div>
 
           <div className={styles.scoreBar}>
-            <div
-              className={styles.scoreFill}
-              style={{ width: `${score}%` }}
-            />
+            <div className={styles.scoreFill} style={{ width: `${score}%` }} />
           </div>
           <div className={styles.scoreBarLabels}>
             <span>0</span>
@@ -297,7 +309,11 @@ const SupplierDetailPage = () => {
       {analytics && (
         <div className={styles.statsGrid}>
           {statCards.map(({ icon: Icon, label, value, accentColor, bgColor }) => (
-            <div key={label} className={styles.statCard} style={{ '--accent': accentColor, '--bg': bgColor }}>
+            <div
+              key={label}
+              className={styles.statCard}
+              style={{ '--accent': accentColor, '--bg': bgColor }}
+            >
               <div className={styles.statIconWrap}>
                 <Icon size={20} strokeWidth={2} color={accentColor} />
               </div>
@@ -315,7 +331,9 @@ const SupplierDetailPage = () => {
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitleRow}>
             <ClipboardList size={18} strokeWidth={2} color="#1a56db" />
-            <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>Purchase History</h2>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>
+              Purchase History
+            </h2>
           </div>
 
           <div className={styles.filterWrap}>
@@ -386,7 +404,8 @@ const SupplierDetailPage = () => {
                   Prev
                 </button>
                 <span className={styles.paginationInfo}>
-                  Page <strong>{filters.page}</strong> of <strong>{purchaseHistory.pagination.totalPages}</strong>
+                  Page <strong>{filters.page}</strong> of{' '}
+                  <strong>{purchaseHistory.pagination.totalPages}</strong>
                 </span>
                 <button
                   className={styles.paginationBtn}

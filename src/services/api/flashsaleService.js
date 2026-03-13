@@ -16,17 +16,13 @@ export const flashsaleService = {
    * @param {string} [params.sortBy] - Sort field (createdAt, newest-first, oldest-first, startDate, endDate)
    * @returns {Promise} Flash sales list with pagination info
    */
-  getAll: async (params = {}) => {
-    return await axiosClient.get(BASE_URL, { params });
-  },
+  getAll: async (params = {}) => await axiosClient.get(BASE_URL, { params }),
 
   /**
    * Get all active flash sales
    * @returns {Promise} Active flash sales list
    */
-  getActive: async () => {
-    return await axiosClient.get(`${BASE_URL}/active`);
-  },
+  getActive: async () => await axiosClient.get(`${BASE_URL}/active`),
 
   /**
    * Create a new flash sale
@@ -38,9 +34,7 @@ export const flashsaleService = {
    * @param {string} flashSaleData.endAt - End date and time in ISO 8601 format (required)
    * @returns {Promise} Created flash sale object
    */
-  create: async (flashSaleData) => {
-    return await axiosClient.post(BASE_URL, flashSaleData);
-  },
+  create: async (flashSaleData) => await axiosClient.post(BASE_URL, flashSaleData),
 
   /**
    * Create a flash sale campaign with multiple SKU variants in one request
@@ -57,27 +51,21 @@ export const flashsaleService = {
    * @param {number} [payload.variants[].purchaseLimit]
    * @returns {Promise} Created flash sale campaign object
    */
-  createBatch: async (payload) => {
-    return await axiosClient.post(`${BASE_URL}/batch`, payload);
-  },
+  createBatch: async (payload) => await axiosClient.post(`${BASE_URL}/batch`, payload),
 
   /**
    * Get flash sale details by ID
    * @param {string} id - Flash sale ID
    * @returns {Promise} Flash sale details object
    */
-  getById: async (id) => {
-    return await axiosClient.get(`${BASE_URL}/${id}`);
-  },
+  getById: async (id) => await axiosClient.get(`${BASE_URL}/${id}`),
 
   /**
    * Get flash sale statistics
    * @param {string} id - Flash sale ID
    * @returns {Promise} Statistics object (sold, discount amount, revenue, etc.)
    */
-  getStats: async (id) => {
-    return await axiosClient.get(`${BASE_URL}/${id}/stats`);
-  },
+  getStats: async (id) => await axiosClient.get(`${BASE_URL}/${id}/stats`),
 
   /**
    * Search within flash sale products
@@ -88,9 +76,8 @@ export const flashsaleService = {
    * @param {number} [params.limit=10] - Items per page (optional)
    * @returns {Promise} Search results with pagination
    */
-  search: async (id, q, params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/${id}/search`, { params: { q, ...params } });
-  },
+  search: async (id, q, params = {}) =>
+    await axiosClient.get(`${BASE_URL}/${id}/search`, { params: { q, ...params } }),
 
   /**
    * Update flash sale
@@ -102,18 +89,14 @@ export const flashsaleService = {
    * @param {string} [updateData.endAt] - End date and time in ISO 8601 format
    * @returns {Promise} Updated flash sale object
    */
-  update: async (id, updateData) => {
-    return await axiosClient.put(`${BASE_URL}/${id}`, updateData);
-  },
+  update: async (id, updateData) => await axiosClient.put(`${BASE_URL}/${id}`, updateData),
 
   /**
    * Delete flash sale
    * @param {string} id - Flash sale ID
    * @returns {Promise} Deletion confirmation
    */
-  delete: async (id) => {
-    return await axiosClient.delete(`${BASE_URL}/${id}`);
-  },
+  delete: async (id) => await axiosClient.delete(`${BASE_URL}/${id}`),
 };
 
 export default flashsaleService;

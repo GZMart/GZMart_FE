@@ -7,29 +7,24 @@ import PropTypes from 'prop-types';
  * Displays list of wallet transactions
  */
 const TransactionHistory = ({ transactions = [], onViewAll }) => {
-  const getTransactionIcon = (type) => {
-    return (
-      <div
-        className="rounded-circle d-flex align-items-center justify-content-center"
-        style={{
-          width: '40px',
-          height: '40px',
-          backgroundColor: '#E3F2FD',
-          color: '#1976D2',
-        }}
-      >
-        <i className="bi bi-arrow-left-right"></i>
-      </div>
-    );
-  };
+  const getTransactionIcon = (type) => (
+    <div
+      className="rounded-circle d-flex align-items-center justify-content-center"
+      style={{
+        width: '40px',
+        height: '40px',
+        backgroundColor: '#E3F2FD',
+        color: '#1976D2',
+      }}
+    >
+      <i className="bi bi-arrow-left-right"></i>
+    </div>
+  );
 
-  const getTransactionColor = (amount) => {
-    return amount >= 0 ? 'text-success' : 'text-danger';
-  };
+  const getTransactionColor = (amount) => (amount >= 0 ? 'text-success' : 'text-danger');
 
-  const formatTransactionAmount = (amount) => {
-    return amount >= 0 ? `+ ${formatCurrency(Math.abs(amount))}` : `- ${formatCurrency(Math.abs(amount))}`;
-  };
+  const formatTransactionAmount = (amount) =>
+    amount >= 0 ? `+ ${formatCurrency(Math.abs(amount))}` : `- ${formatCurrency(Math.abs(amount))}`;
 
   return (
     <Card className="border-0 shadow-sm">
@@ -64,7 +59,9 @@ const TransactionHistory = ({ transactions = [], onViewAll }) => {
                     <p className="mb-1 fw-semibold">{transaction.description || 'Transaction'}</p>
                     <div className="d-flex justify-content-between align-items-center">
                       <small className="text-muted">
-                        {transaction.date ? formatDate(transaction.date, 'MMM dd, yy') : 'Apr 25, 22'}
+                        {transaction.date
+                          ? formatDate(transaction.date, 'MMM dd, yy')
+                          : 'Apr 25, 22'}
                       </small>
                       <small className="text-muted me-3">
                         Balance: {formatCurrency(transaction.balance || 0)}
@@ -101,4 +98,3 @@ TransactionHistory.propTypes = {
 };
 
 export default TransactionHistory;
-

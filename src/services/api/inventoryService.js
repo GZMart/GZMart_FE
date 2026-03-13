@@ -37,8 +37,7 @@ const inventoryService = {
    * GET /api/inventory/transactions
    * params: { productId?, sku?, type?, startDate?, endDate?, page?, limit? }
    */
-  getTransactions: async (params = {}) =>
-    axiosClient.get(`${BASE}/transactions`, { params }),
+  getTransactions: async (params = {}) => axiosClient.get(`${BASE}/transactions`, { params }),
 
   /**
    * Single transaction by ID
@@ -50,8 +49,7 @@ const inventoryService = {
    * Product inventory summary (all models/SKUs for one product)
    * GET /api/inventory/summary/:productId
    */
-  getProductSummary: async (productId) =>
-    axiosClient.get(`${BASE}/summary/${productId}`),
+  getProductSummary: async (productId) => axiosClient.get(`${BASE}/summary/${productId}`),
 
   /**
    * Aggregate stats (total stock, low stock count, out of stock count, etc.)

@@ -37,7 +37,9 @@ const CloudinaryUpload = ({ value, onChange, hint }) => {
       setUploading(true);
       const res = await axiosClient.post('/api/upload/single', formData);
       const url = res?.data?.url || res?.url;
-      if (!url) throw new Error('No URL returned from server');
+      if (!url) {
+        throw new Error('No URL returned from server');
+      }
       onChange?.(url);
       message.success('Image uploaded!');
     } catch (err) {
@@ -59,11 +61,7 @@ const CloudinaryUpload = ({ value, onChange, hint }) => {
         <div className={styles.preview}>
           <img src={value} alt="Category" className={styles.previewImg} />
           <div className={styles.previewOverlay}>
-            <Upload
-              showUploadList={false}
-              customRequest={handleUpload}
-              accept="image/*"
-            >
+            <Upload showUploadList={false} customRequest={handleUpload} accept="image/*">
               <button className={styles.overlayBtn} type="button" title="Change image">
                 {uploading ? <LoadingOutlined /> : <PlusOutlined />}
                 <span>{uploading ? 'Uploading…' : 'Change'}</span>
@@ -89,7 +87,11 @@ const CloudinaryUpload = ({ value, onChange, hint }) => {
           disabled={uploading}
         >
           <div className={styles.uploadTrigger}>
-            {uploading ? <LoadingOutlined className={styles.uploadIcon} /> : <PlusOutlined className={styles.uploadIcon} />}
+            {uploading ? (
+              <LoadingOutlined className={styles.uploadIcon} />
+            ) : (
+              <PlusOutlined className={styles.uploadIcon} />
+            )}
             <span className={styles.uploadText}>
               {uploading ? 'Uploading…' : 'Click to upload'}
             </span>

@@ -1,4 +1,3 @@
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 class AIChatService {
@@ -42,14 +41,13 @@ class AIChatService {
 
   async sendMessage(message, onStream, onComplete, onError) {
     try {
-      
       const response = await fetch(`${API_BASE_URL}/api/ai/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: message,
+          message,
           conversationId: this.conversationId || null,
         }),
       });
@@ -69,7 +67,9 @@ class AIChatService {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          break;
+        }
 
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n').filter(Boolean);

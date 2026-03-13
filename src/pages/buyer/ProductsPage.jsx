@@ -8,7 +8,6 @@ import Pagination from '@components/common/Pagination';
 import { productService } from '../../services/api';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 
-
 const locations = [
   { id: 'hanoi', name: 'Hà Nội' },
   { id: 'hcm', name: 'Hồ Chí Minh' },
@@ -16,8 +15,6 @@ const locations = [
   { id: 'cantho', name: 'Cần Thơ' },
   { id: 'haiphong', name: 'Hải Phòng' },
 ];
-
-
 
 const ratings = [
   { id: '5star', value: 5 },
@@ -31,12 +28,11 @@ const ProductsPage = () => {
   const searchQuery = searchParams.get('q');
 
   // ... breadcrumb logic (omitted for brevity in replacement if possible, but replace tool needs context)
-  // Re-inserting logic requires matching context. 
+  // Re-inserting logic requires matching context.
   // Easier to just insert key blocks separately or careful replacement.
 
   // Let's target the top of the file for ratings constant first
   // And then the state variables.
-
 
   // Dynamic breadcrumb based on search query
   const breadcrumbItems = useMemo(() => {
@@ -129,7 +125,6 @@ const ProductsPage = () => {
     itemsToShow,
   ]);
 
-
   // Fetch products with filters
   useEffect(() => {
     let isMounted = true;
@@ -143,7 +138,9 @@ const ProductsPage = () => {
         }
         const response = await productService.getProductsAdvanced(apiFilters);
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         // Backend returns data directly, not nested in data.data
         const productsData = Array.isArray(response.data)
@@ -179,12 +176,12 @@ const ProductsPage = () => {
           setProducts(transformed);
         } else {
           setProducts((prev) => {
-            const currentIds = new Set(prev.map(p => p.id));
-            const newProducts = transformed.filter(p => !currentIds.has(p.id));
+            const currentIds = new Set(prev.map((p) => p.id));
+            const newProducts = transformed.filter((p) => !currentIds.has(p.id));
             return [...prev, ...newProducts];
           });
         }
-        
+
         setTotalCount(response.count || response.pagination?.total || 0);
         setTotalPages(response.pagination?.pages || Math.ceil((response.count || 0) / itemsToShow));
         setLoading(false);
@@ -200,12 +197,17 @@ const ProductsPage = () => {
               setProducts((prev) =>
                 prev.map((p) => {
                   const promo = promoMap[p.id];
-                  if (!promo) return p;
+                  if (!promo) {
+                    return p;
+                  }
 
                   const updated = { ...p };
 
                   // Shop program price override
-                  if (promo.shopProgram && promo.shopProgram.salePrice < promo.shopProgram.originalPrice) {
+                  if (
+                    promo.shopProgram &&
+                    promo.shopProgram.salePrice < promo.shopProgram.originalPrice
+                  ) {
                     updated.price = promo.shopProgram.salePrice;
                     updated.originalPrice = promo.shopProgram.originalPrice;
                     updated.promotionType = 'shopProgram';
@@ -214,8 +216,9 @@ const ProductsPage = () => {
                   // Combo promotion info
                   if (promo.comboPromotions && promo.comboPromotions.length > 0) {
                     const combo = promo.comboPromotions[0];
-                    const bestTier = combo.tiers?.reduce((best, t) =>
-                      (t.value > (best?.value || 0)) ? t : best, null
+                    const bestTier = combo.tiers?.reduce(
+                      (best, t) => (t.value > (best?.value || 0) ? t : best),
+                      null
                     );
                     updated.comboPromotion = {
                       name: combo.name,
@@ -259,7 +262,9 @@ const ProductsPage = () => {
       try {
         const response = await productService.getAvailableFilters();
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         const brandsData = response.data?.data?.brands || [];
         setBrands(brandsData.map((b) => ({ id: b._id, name: b.name })));
@@ -278,7 +283,9 @@ const ProductsPage = () => {
 
   // Only apply client-side filters that are NOT handled by API
   const filteredProducts = useMemo(() => {
-    if (!products.length) return [];
+    if (!products.length) {
+      return [];
+    }
 
     return products.filter((product) => {
       // Size filter (not in API, needs client-side filtering)
@@ -292,7 +299,9 @@ const ProductsPage = () => {
                 size.toLowerCase().includes(opt.toLowerCase())
             )
           );
-          if (!hasMatchingSize) return false;
+          if (!hasMatchingSize) {
+            return false;
+          }
         } else {
           // No tier variations, skip this product
           return false;
@@ -305,7 +314,9 @@ const ProductsPage = () => {
 
   // Only re-sort if needed (API already sorts, but we may need to sort filtered results)
   const sortedProducts = useMemo(() => {
-    if (!filteredProducts.length) return [];
+    if (!filteredProducts.length) {
+      return [];
+    }
 
     // If no client-side filters applied, return as-is (API already sorted)
     if (selectedSizes.length === 0) {
@@ -387,8 +398,12 @@ const ProductsPage = () => {
   const lastElementRef = useCallback(
     (node) => {
       // Don't trigger if currently loading new page or first load
-      if (loading || isFetchingMore) return;
-      if (observer.current) observer.current.disconnect();
+      if (loading || isFetchingMore) {
+        return;
+      }
+      if (observer.current) {
+        observer.current.disconnect();
+      }
 
       observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && page < totalPages) {
@@ -396,7 +411,9 @@ const ProductsPage = () => {
         }
       });
 
-      if (node) observer.current.observe(node);
+      if (node) {
+        observer.current.observe(node);
+      }
     },
     [loading, isFetchingMore, page, totalPages]
   );
@@ -709,7 +726,13 @@ const ProductsPage = () => {
               <div className={styles.productGrid}>
                 {displayedProducts.map((product, index) => {
                   if (index === displayedProducts.length - 1) {
-                    return <ProductCard ref={lastElementRef} key={`${product.id}-${index}`} product={product} />;
+                    return (
+                      <ProductCard
+                        ref={lastElementRef}
+                        key={`${product.id}-${index}`}
+                        product={product}
+                      />
+                    );
                   }
                   return <ProductCard key={`${product.id}-${index}`} product={product} />;
                 })}
@@ -718,7 +741,13 @@ const ProductsPage = () => {
               <div className={styles.productList}>
                 {displayedProducts.map((product, index) => {
                   if (index === displayedProducts.length - 1) {
-                    return <ProductListItem ref={lastElementRef} key={`${product.id}-${index}`} product={product} />;
+                    return (
+                      <ProductListItem
+                        ref={lastElementRef}
+                        key={`${product.id}-${index}`}
+                        product={product}
+                      />
+                    );
                   }
                   return <ProductListItem key={`${product.id}-${index}`} product={product} />;
                 })}

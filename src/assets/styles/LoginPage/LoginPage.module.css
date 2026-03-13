@@ -67,7 +67,7 @@
 }
 
 .flashBadge {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -82,7 +82,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #F5F5F5;
+  background: #f5f5f5;
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   max-width: 600px;
@@ -125,14 +125,14 @@
 }
 
 .navIconLink:hover {
-  color: #FF6B6B;
+  color: #ff6b6b;
 }
 
 .categoryMenu {
   display: flex;
   gap: 1rem;
   padding: 1rem 0;
-  border-top: 1px solid #F0F0F0;
+  border-top: 1px solid #f0f0f0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -361,7 +361,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) scale(1);
   }
   50% {
@@ -392,7 +393,8 @@
 }
 
 @keyframes handleSwing {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(-50%) rotate(0deg);
   }
   50% {
@@ -442,7 +444,8 @@
 }
 
 @keyframes itemPop {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.3;
   }
@@ -464,7 +467,8 @@
 }
 
 @keyframes cartFloat {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(0, 0) rotate(0deg);
   }
   25% {
@@ -548,7 +552,8 @@
 }
 
 @keyframes priceRotate {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(0deg) scale(1);
   }
   50% {
@@ -589,7 +594,8 @@
 }
 
 @keyframes decorFloat {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) scale(1);
     opacity: 0.3;
   }
@@ -810,7 +816,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   transition: left 0.5s ease;
 }
 
@@ -913,7 +919,7 @@
   line-height: 1;
   letter-spacing: 0.01em;
   color: white;
-  background: linear-gradient(135deg, #1877F2 0%, #0d5dbf 100%);
+  background: linear-gradient(135deg, #1877f2 0%, #0d5dbf 100%);
   border: none;
   border-radius: 14px;
   cursor: pointer;
@@ -1001,7 +1007,7 @@
 }
 
 .browseAll a {
-  color: #FFB84D !important;
+  color: #ffb84d !important;
   font-weight: 600;
 }
 
@@ -1784,7 +1790,7 @@
 }
 
 .otpInput:not(:placeholder-shown) {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   background: #f1f9f1;
 }
 
@@ -1988,12 +1994,24 @@
   transition: all 0.3s ease;
 }
 
-.otpDigit:nth-child(1) { animation-delay: 0s; }
-.otpDigit:nth-child(2) { animation-delay: 0.1s; }
-.otpDigit:nth-child(3) { animation-delay: 0.2s; }
-.otpDigit:nth-child(4) { animation-delay: 0.3s; }
-.otpDigit:nth-child(5) { animation-delay: 0.4s; }
-.otpDigit:nth-child(6) { animation-delay: 0.5s; }
+.otpDigit:nth-child(1) {
+  animation-delay: 0s;
+}
+.otpDigit:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.otpDigit:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.otpDigit:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.otpDigit:nth-child(5) {
+  animation-delay: 0.4s;
+}
+.otpDigit:nth-child(6) {
+  animation-delay: 0.5s;
+}
 
 /* Floating decorative numbers */
 .otpFloatingNumber {
@@ -2057,7 +2075,8 @@
 
 /* Animations for OTP */
 @keyframes digitPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
     border-color: #667eea;
@@ -2070,7 +2089,8 @@
 }
 
 @keyframes floatNumber {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
     opacity: 0.2;
   }
@@ -2081,7 +2101,8 @@
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -2170,4 +2191,3 @@
     font-size: 1.5rem;
   }
 }
-
