@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react';
 import { Card, Button, Row, Col } from 'react-bootstrap';
-import { products as mockProducts } from '@utils/data/mockData';
 import { formatCurrency } from '@utils/formatters';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { addToCart } from '@store/slices/cartSlice';
+import { productService } from '@services/api/productService';
 import PropTypes from 'prop-types';
 
 /**
  * Helper to convert product from mockData to cart format
  */
 const convertProductForCart = (product) => {
-  const variant = product.variantsArray?.[0];
+  const activeModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
   return {
-    id: variant?.sku_code || product._id,
+    id: activeModel.sku_code || activeModel._id || product._id,
     _id: product._id,
     name: product.name,
-    description: product.summary,
-    image: product.mainImage || product.images?.[0],
-    price: variant?.selling_price || product.finalPrice || product.price?.regular || 0,
-    originalPrice: product.price?.regular,
-    discount: product.price?.discountPercent || 0,
-    brand: product.brand,
+    description: product.summary || product.description,
+    image: product.images?.[0] || activeModel.image,
+    price: activeModel.price || product.price || 0,
+    originalPrice: activeModel.originalPrice || product.originalPrice || 0,
+    discount: product.discount || 0,
+    brand: product.brand?._id || product.brandId || product.brand,
+    rawProduct: product, // Store original product for Add To Cart logic
   };
 };
 
@@ -33,29 +36,64 @@ const RecommendSection = ({ limit = 4 }) => {
   const [loading, setLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
-    // Use mock data for recommendations
-    setLoading(true);
-    try {
-      // Get products that are on sale or new, limit to requested amount
-      const recommended = mockProducts
-        .filter((p) => p.status && (p.price?.isOnSale || p.isNew))
-        .slice(0, limit * 2)
-        .map(convertProductForCart);
-      setProducts(recommended);
-    } catch (error) {
-      console.error('Error loading recommended products:', error);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
+    let isMounted = true;
+    const fetchRecommendations = async () => {
+      setLoading(true);
+      try {
+        const response = await productService.getTrendingProducts(limit * 2);
+        if (isMounted && response.success && response.data) {
+          const recommended = response.data.map(convertProductForCart);
+          setProducts(recommended);
+        } else if (isMounted) {
+          setProducts([]);
+        }
+      } catch (error) {
+        console.error('Error loading trending products:', error);
+        if (isMounted) {
+          setProducts([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchRecommendations();
+
+    return () => {
+      isMounted = false;
+    };
   }, [limit]);
 
   const handleAddToCart = (product) => {
-    // Convert back to full product format for cart
-    const fullProduct = mockProducts.find((p) => p._id === product._id);
+    if (!user) {
+      toast.info('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+
+    const fullProduct = product.rawProduct;
     if (fullProduct) {
+      const models = fullProduct.models || [];
+      const activeModel = models.find((m) => m.isActive) || models[0] || {};
+
+      let colorValue = 'N/A';
+      let sizeValue = 'N/A';
+
+      if (fullProduct.tier_variations && fullProduct.tier_variations.length > 0) {
+        if (activeModel.tierIndex && activeModel.tierIndex.length > 0) {
+          colorValue = fullProduct.tier_variations[0]?.options?.[activeModel.tierIndex[0]] || 'N/A';
+          if (activeModel.tierIndex.length > 1) {
+            sizeValue = fullProduct.tier_variations[1]?.options?.[activeModel.tierIndex[1]] || 'N/A';
+          }
+        }
+      }
+
       const cartItem = {
         id: product.id,
         _id: product._id,
@@ -63,19 +101,29 @@ const RecommendSection = ({ limit = 4 }) => {
         description: product.description,
         image: product.image,
         price: product.price,
-        color: fullProduct.variantsArray?.[0]?.color || 'N/A',
-        size: fullProduct.variantsArray?.[0]?.size || 'N/A',
-        variant:
-          `${fullProduct.variantsArray?.[0]?.size || ''} - ${fullProduct.variantsArray?.[0]?.color || ''}`.trim(),
+        color: colorValue,
+        size: sizeValue,
+        variant: (sizeValue !== 'N/A' ? `${sizeValue} - ${colorValue}` : colorValue).trim() || 'Default',
         sku: product.id,
         brand: product.brand,
       };
-      dispatch(addToCart({ 
-        product: cartItem, 
-        quantity: 1,
-        color: cartItem.color,
-        size: cartItem.size
-      }));
+
+      const addItemAsync = async () => {
+        try {
+          await dispatch(addToCart({
+            product: cartItem,
+            quantity: 1,
+            color: cartItem.color,
+            size: cartItem.size
+          })).unwrap();
+          toast.success('Added to cart successfully!');
+        } catch (err) {
+          console.error('Add to cart error:', err);
+          toast.error(typeof err === 'string' ? err : 'Failed to add item to cart');
+        }
+      };
+
+      addItemAsync();
     }
   };
 
@@ -147,7 +195,7 @@ const RecommendSection = ({ limit = 4 }) => {
                       e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
                     }}
                   />
-                  {product.discount && (
+                  {product.discount > 0 && (
                     <span
                       className="badge bg-danger position-absolute top-0 end-0 m-2"
                       style={{ fontSize: '0.75rem' }}
@@ -162,7 +210,7 @@ const RecommendSection = ({ limit = 4 }) => {
                   </Card.Title>
                   <div className="mt-auto">
                     <div className="d-flex align-items-center gap-2 mb-2">
-                      <span className="fw-bold text-primary">
+                      <span className="fw-bold" style={{ color: '#741E20' }}>
                         {formatCurrency(product.price || 0)}
                       </span>
                       {product.originalPrice && product.originalPrice > product.price && (
@@ -177,9 +225,18 @@ const RecommendSection = ({ limit = 4 }) => {
                       )}
                     </div>
                     <Button
-                      variant="outline-primary"
+                      variant="outline-danger"
                       size="sm"
-                      className="w-100"
+                      className="w-100 fw-semibold fw-medium"
+                      style={{ color: '#B13C36', borderColor: '#B13C36' }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#B13C36';
+                        e.target.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = 'transparent';
+                        e.target.style.color = '#B13C36';
+                      }}
                       onClick={() => handleAddToCart(product)}
                     >
                       Add to cart
