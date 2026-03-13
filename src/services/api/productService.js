@@ -265,6 +265,15 @@ export const productService = {
       params: { productId, quantity },
     });
   },
+
+  /**
+   * Toggle product status (hide = inactive, unhide = active)
+   * @param {string} id - Product ID
+   * @param {string} status - 'active' | 'inactive' | 'draft'
+   */
+  toggleStatus: async (id, status) => {
+    return await axiosClient.patch(`${BASE_URL}/${id}/status`, { status });
+  },
 };
 
 export default productService;

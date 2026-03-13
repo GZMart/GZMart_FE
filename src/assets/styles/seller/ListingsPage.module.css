@@ -89,7 +89,7 @@
 
 .statActive   { color: #059669; }
 .statDraft    { color: #d97706; }
-.statInactive { color: #dc2626; }
+.statHidden   { color: #94a3b8; }
 
 .statLabel {
   font-size: 12px;
@@ -378,7 +378,9 @@
   white-space: nowrap;
 }
 .badgeActive   { background: #ecfdf5; color: #059669; }
-.badgeInactive { background: #fef2f2; color: #dc2626; }
+.badgeHidden   { background: #f1f5f9; color: #64748b; }
+.badgeOutOfStock { background: #fef2f2; color: #dc2626; }
+.badgeInactive { background: #f1f5f9; color: #64748b; }
 .badgeDraft    { background: #fffbeb; color: #d97706; }
 .badgePending  { background: #f0f9ff; color: #0284c7; }
 .badgeApproved { background: #ecfdf5; color: #059669; }
@@ -421,6 +423,23 @@
   background: #f0f4ff;
   border-color: #c7d2fe;
   color: #1a56db;
+}
+
+/* Hidden row — dim to signal product is not visible in storefront */
+.rowHidden {
+  opacity: 0.55;
+}
+.rowHidden:hover {
+  opacity: 0.75;
+  background: #fafbff;
+}
+
+/* Spin animation for toggle loading */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinIcon {
+  animation: spin 0.7s linear infinite;
 }
 
 /* ─── Table footer ──────────────────────────────────────────────── */

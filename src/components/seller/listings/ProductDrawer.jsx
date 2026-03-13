@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Form, Row, Col, Spinner, Nav } from 'react-bootstrap';
+import { createPortal } from 'react-dom';
+import { Form, Row, Col } from 'react-bootstrap';
 import { productService } from '../../../services/api/productService';
 import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
 import TiersEditor from './TiersEditor';
 import VariantsTable from './VariantsTable';
-import styles from '../../../assets/styles/seller/AddProductModal.module.css';
+import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
-const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
+const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [attributes, setAttributes] = useState([]);
@@ -37,11 +38,15 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
   // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
   const skipGenerateModelsRef = useRef(false);
 
-  // Fetch categories on mount
+  // Fetch categories on mount + body scroll lock
   useEffect(() => {
     if (show) {
       fetchCategories();
+      document.body.classList.add('drawer-open');
+    } else {
+      document.body.classList.remove('drawer-open');
     }
+    return () => document.body.classList.remove('drawer-open');
   }, [show]);
 
   // Pre-fill form when editing
@@ -55,7 +60,9 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
             ? editingProduct.categoryId._id
             : editingProduct.categoryId || '',
         originalPrice: editingProduct.originalPrice || '',
-        costPrice: editingProduct.costPrice || '',
+        // costPrice lives in models[0].costPrice (synced from InventoryItem).
+        // Product schema has no top-level costPrice — read from first model.
+        costPrice: editingProduct.models?.[0]?.costPrice || '',
         stock: editingProduct.stock || '',
         tags: editingProduct.tags?.join(', ') || '',
         sku: editingProduct.sku || '',
@@ -420,8 +427,9 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
       }
     });
 
-    // For simple products, stock is required
-    if (productType === 'simple') {
+    // For simple products, stock is required only on CREATE
+    // In edit mode, stock is controlled via the Inventory page
+    if (productType === 'simple' && !isEditMode) {
       if (!formData.stock || parseInt(formData.stock) < 0) {
         newErrors.stock = 'Valid stock quantity is required';
       }
@@ -458,13 +466,24 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
         newErrors.models = `Too many variants (${models.length}). Maximum 200 allowed.`;
       }
 
-      // Validate each model has price and stock
+      // Validate models: skip stock check in edit mode (stock is managed by Inventory)
       const invalidModels = models.filter(
-        (model) => !model.price || model.price <= 0 || model.stock < 0
+        (model) => !model.price || model.price <= 0 || (!isEditMode && model.stock < 0)
       );
       if (invalidModels.length > 0) {
-        newErrors.models = `${invalidModels.length} variant(s) have invalid price or stock`;
+        newErrors.models = `${invalidModels.length} variant(s) have invalid price${!isEditMode ? ' or stock' : ''}`;
       }
+
+      // Every SKU must have an image
+      const noImageCount = models.filter((m) => !m.imageFile && !m.image).length;
+      if (noImageCount > 0) {
+        newErrors.modelImages = `${noImageCount} SKU${noImageCount !== 1 ? 's are' : ' is'} missing an image. Add an image to every variant before saving.`;
+      }
+    }
+
+    // Simple product must have at least 1 product image
+    if (productType === 'simple' && imagePreviews.length === 0) {
+      newErrors.images = 'At least one product image is required before saving.';
     }
 
     // SKU is optional - backend will auto-generate if not provided
@@ -504,28 +523,33 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
       }
 
       // Prepare models based on product type
+      // In edit mode, costPrice is NEVER sent — it is owned by InventoryItem
+      // and synced back to Product.models via the Inventory adjust flow.
       let productModels;
       if (productType === 'simple') {
-        // Simple product - single model
         productModels = [
           {
             ...(formData.sku.trim() && { sku: formData.sku.trim().toUpperCase() }),
             price: parseFloat(formData.originalPrice),
-            costPrice: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
+            // Only include costPrice on CREATE — Inventory manages it on edit
+            ...(!isEditMode && formData.costPrice
+              ? { costPrice: parseFloat(formData.costPrice) }
+              : {}),
             stock: parseInt(formData.stock),
             tierIndex: [],
           },
         ];
       } else {
-        // Variant product - multiple models from tiers
         productModels = models.map((model) => ({
           ...(model._id && { _id: model._id }),
           tierIndex: model.tierIndex,
           price: parseFloat(model.price),
-          ...(model.costPrice && { costPrice: parseFloat(model.costPrice) }),
+          // Only include costPrice on CREATE
+          ...(!isEditMode && model.costPrice
+            ? { costPrice: parseFloat(model.costPrice) }
+            : {}),
           stock: parseInt(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
-          // Preserve existing image URL if no new file is being uploaded
           ...(!model.imageFile && model.image && { image: model.image }),
         }));
       }
@@ -863,412 +887,265 @@ const AddProductModal = ({ show, onHide, onSuccess, editingProduct }) => {
     }
   };
 
-  return (
-    <Modal show={show} onHide={handleClose} size="xl" centered scrollable>
-      <Modal.Header closeButton>
-        <Modal.Title>{isEditMode ? 'Edit Product' : 'Add New Product'}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form onSubmit={handleSubmit}>
-          {errors.submit && (
-            <div className="alert alert-danger" role="alert">
-              {errors.submit}
+
+  // ── Save-guard: all SKUs need images ──────────────────────────
+  const missingVariantImages =
+    productType === 'variant' ? models.filter((m) => !m.imageFile && !m.image).length : 0;
+  const missingProductImage = productType === 'simple' && imagePreviews.length === 0;
+  const saveBlocked = missingVariantImages > 0 || missingProductImage;
+  const saveBlockReason = missingVariantImages > 0
+    ? `${missingVariantImages} SKU${missingVariantImages !== 1 ? 's are' : ' is'} missing an image`
+    : missingProductImage
+    ? 'Add at least one product image'
+    : '';
+
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        className={`${styles.drawerBackdrop} ${show ? styles.drawerBackdropVisible : ''}`}
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+      {/* Drawer panel */}
+      <div
+        className={`${styles.drawerPanel} ${show ? styles.drawerPanelOpen : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEditMode ? 'Edit Product' : 'Add New Product'}
+      >
+        {/* Header */}
+        <div className={styles.drawerHeader}>
+          <div className={styles.drawerHeaderLeft}>
+            <button type="button" className={styles.drawerCloseBtn} onClick={handleClose} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <div>
+              <h2 className={styles.drawerTitle}>{isEditMode ? 'Edit Product' : 'Add New Product'}</h2>
+              <p className={styles.drawerSubtitle}>{isEditMode ? 'Update product details below' : 'Fill in the details to list a new product'}</p>
             </div>
-          )}
+          </div>
+          <div className={styles.drawerHeaderRight}>
+            {isEditMode && <span className={styles.editingBadge}>Editing</span>}
+            <button type="button" className={styles.drawerSaveBtn} onClick={handleSubmit} disabled={loading || saveBlocked} title={saveBlockReason || undefined}>
+              {loading ? (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>{isEditMode ? 'Updating...' : 'Saving...'}</>) : (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>{isEditMode ? 'Update Product' : 'Save Product'}</>)}
+            </button>
+          </div>
+        </div>
 
-          {/* Two-column layout: Left = product info + variants, Right = attributes + media */}
-          <Row className="g-4">
-            {/* ── LEFT COLUMN ── */}
-            <Col xl={7} lg={12}>
-              {/* Product Name */}
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  Product Name <span className="text-danger">*</span>
-                </Form.Label>
-                <Form.Control
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  isInvalid={!!errors.name}
-                  placeholder="Enter product name"
-                  disabled={loading}
-                />
-                <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
-              </Form.Group>
-
-              {/* Category + Product Type */}
+        {/* Scrollable Body */}
+        <div className={styles.drawerBody}>
+          <Form onSubmit={handleSubmit}>
+            {errors.submit && (<div className={`${styles.alert} ${styles.alertDanger}`} role="alert">{errors.submit}</div>)}
+            <div>
+              {/* ── Basic Info ── */}
+              <div className={styles.sectionHeader}><span className={styles.sectionNum}>1</span>Basic Information</div>
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>
-                      Category <span className="text-danger">*</span>
-                    </Form.Label>
-                    <Form.Select
-                      name="categoryId"
-                      value={formData.categoryId}
-                      onChange={handleChange}
-                      isInvalid={!!errors.categoryId}
-                      disabled={loading}
-                    >
-                      <option value="">Select category</option>
-                      {categories.map((category) => (
-                        <option key={category._id} value={category._id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">
-                      {errors.categoryId}
-                    </Form.Control.Feedback>
+                    <label className={styles.formLabel}>Product Name <span className={styles.required}>*</span></label>
+                    <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} placeholder="e.g. Premium Cotton T-Shirt" disabled={loading} className={`${styles.formControl} ${errors.name ? styles.invalid : ''}`}/>
+                    {errors.name && <div className={styles.invalidFeedback}>{errors.name}</div>}
                   </Form.Group>
                 </Col>
-                <Col md={6}>
+                <Col md={3}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Product Type</Form.Label>
-                    <Nav variant="pills" className="mb-2">
-                      <Nav.Item>
-                        <Nav.Link
-                          active={productType === 'simple'}
-                          onClick={() => setProductType('simple')}
-                          disabled={loading}
-                        >
-                          Simple
-                        </Nav.Link>
-                      </Nav.Item>
-                      <Nav.Item>
-                        <Nav.Link
-                          active={productType === 'variant'}
-                          onClick={() => setProductType('variant')}
-                          disabled={loading}
-                        >
-                          With Variations
-                        </Nav.Link>
-                      </Nav.Item>
-                    </Nav>
+                    <label className={styles.formLabel}>Category <span className={styles.required}>*</span></label>
+                    <Form.Select name="categoryId" value={formData.categoryId} onChange={handleChange} isInvalid={!!errors.categoryId} disabled={loading} className={`${styles.formControl} ${errors.categoryId ? styles.invalid : ''}`}>
+                      <option value="">Select category...</option>
+                      {categories.map((cat) => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
+                    </Form.Select>
+                    {errors.categoryId && <div className={styles.invalidFeedback}>{errors.categoryId}</div>}
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <label className={styles.formLabel}>Product Type</label>
+                    <div className={styles.typeSwitcher}>
+                      <button type="button" className={`${styles.typeBtn} ${productType === 'simple' ? styles.typeBtnActive : ''}`} onClick={() => setProductType('simple')} disabled={loading}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Simple
+                      </button>
+                      <button type="button" className={`${styles.typeBtn} ${productType === 'variant' ? styles.typeBtnActive : ''}`} onClick={() => setProductType('variant')} disabled={loading}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Variants
+                      </button>
+                    </div>
                   </Form.Group>
                 </Col>
               </Row>
 
-              {/* Price / Cost / Stock / SKU */}
+              {/* ── Pricing & Stock ── */}
+              <div className={styles.sectionHeader}><span className={styles.sectionNum}>2</span>Pricing &amp; Stock</div>
               <Row>
-                <Col md={4}>
+                <Col md={3}>
                   <Form.Group className="mb-3">
-                    <Form.Label>
-                      Price (₫) <span className="text-danger">*</span>
-                    </Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="originalPrice"
-                      value={formData.originalPrice}
-                      onChange={handleChange}
-                      isInvalid={!!errors.originalPrice}
-                      placeholder="150000"
-                      min="0"
-                      disabled={loading}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.originalPrice}
-                    </Form.Control.Feedback>
-                    {productType === 'variant' && (
-                      <Form.Text className="text-muted">Base price</Form.Text>
-                    )}
+                    <label className={styles.formLabel}>Price (₫) <span className={styles.required}>*</span></label>
+                    <div className={styles.inputAddon}><span className={styles.addonPrefix}>₫</span>
+                      <Form.Control type="number" name="originalPrice" value={formData.originalPrice} onChange={handleChange} isInvalid={!!errors.originalPrice} placeholder="150000" min="0" disabled={loading} className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}/>
+                    </div>
+                    {errors.originalPrice && <div className={styles.invalidFeedback}>{errors.originalPrice}</div>}
                   </Form.Group>
                 </Col>
-                <Col md={4}>
+                <Col md={3}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Cost Price (₫)</Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="costPrice"
-                      value={formData.costPrice}
-                      onChange={handleChange}
-                      placeholder="80000"
-                      min="0"
-                      disabled={loading}
-                    />
-                    {productType === 'variant' && (
-                      <Form.Text className="text-muted">Base cost</Form.Text>
-                    )}
+                    <label className={styles.formLabel}>
+                      Cost Price (₫)
+                      {isEditMode && <span className={styles.lockBadge}>Locked</span>}
+                    </label>
+                    <div className={styles.inputAddon}><span className={styles.addonPrefix}>₫</span>
+                      <Form.Control type="number" name="costPrice" value={formData.costPrice} onChange={handleChange} placeholder="80000" min="0" disabled={loading || isEditMode} readOnly={isEditMode} className={`${styles.formControl} ${styles.withPrefix}`}/>
+                    </div>
+                    {isEditMode && (() => {
+                      const src = editingProduct?.models?.[0]?.costSource;
+                      const poId = editingProduct?.models?.[0]?.costSourcePoId;
+                      return (
+                        <div className={styles.stockLockedNote}>
+                          {src === 'po' && poId ? (
+                            <>
+                              <span className={styles.costSourceBadgePo}>via PO</span>
+                              {' · '}
+                              <a href="/seller/erp/purchase-orders" target="_blank" rel="noopener noreferrer">
+                                View POs ↗
+                              </a>
+                            </>
+                          ) : (
+                            <>
+                              <span className={styles.costSourceBadgeManual}>Manual</span>
+                              {' · update via '}
+                              <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">Inventory</a>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </Form.Group>
                 </Col>
-                {productType === 'simple' && (
-                  <Col md={4}>
+                {productType === 'simple' && (<>
+                  <Col md={2}>
                     <Form.Group className="mb-3">
-                      <Form.Label>
-                        Stock <span className="text-danger">*</span>
-                      </Form.Label>
-                      <Form.Control
-                        type="number"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleChange}
-                        isInvalid={!!errors.stock}
-                        placeholder="100"
-                        min="0"
-                        disabled={loading}
-                      />
-                      <Form.Control.Feedback type="invalid">{errors.stock}</Form.Control.Feedback>
+                      <label className={styles.formLabel}>Stock {isEditMode ? <span className={styles.lockBadge}>Locked</span> : <span className={styles.required}>*</span>}</label>
+                      <Form.Control type="number" name="stock" value={formData.stock} onChange={handleChange} isInvalid={!!errors.stock} placeholder="100" min="0" disabled={loading || isEditMode} readOnly={isEditMode} className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}/>
+                      {isEditMode ? (<div className={styles.stockLockedNote}>Via <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">Inventory</a></div>) : (errors.stock && <div className={styles.invalidFeedback}>{errors.stock}</div>)}
                     </Form.Group>
                   </Col>
-                )}
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <label className={styles.formLabel}>SKU <span className={styles.optionalBadge}>Optional</span></label>
+                      <Form.Control type="text" name="sku" value={formData.sku} onChange={handleChange} isInvalid={!!errors.sku} placeholder="Auto-generated if left blank" disabled={loading} className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}/>
+                      {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
+                    </Form.Group>
+                  </Col>
+                </>)}
               </Row>
 
-              {productType === 'simple' && (
-                <Form.Group className="mb-3">
-                  <Form.Label>SKU (Optional)</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="sku"
-                    value={formData.sku}
-                    onChange={handleChange}
-                    isInvalid={!!errors.sku}
-                    placeholder="Auto-generated if left blank"
-                    disabled={loading}
-                  />
-                  <Form.Text className="text-muted">Leave blank to auto-generate</Form.Text>
-                  <Form.Control.Feedback type="invalid">{errors.sku}</Form.Control.Feedback>
-                </Form.Group>
-              )}
+              {/* ── Details ── */}
+              <div className={styles.sectionHeader}><span className={styles.sectionNum}>3</span>Details</div>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <label className={styles.formLabel}>Tags</label>
+                    <Form.Control type="text" name="tags" value={formData.tags} onChange={handleChange} placeholder="shirt, cotton, summer..." disabled={loading} className={styles.formControl}/>
+                    <p className={styles.textMuted}>Separate tags with commas</p>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <label className={styles.formLabel}>Description</label>
+                    <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} placeholder="Describe your product..." disabled={loading} className={styles.formControl}/>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-              {/* Tags */}
-              <Form.Group className="mb-3">
-                <Form.Label>Tags</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="tags"
-                  value={formData.tags}
-                  onChange={handleChange}
-                  placeholder="test, product, new (comma-separated)"
-                  disabled={loading}
-                />
-                <Form.Text className="text-muted">Separate tags with commas</Form.Text>
-              </Form.Group>
-
-              {/* Description */}
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Enter product description"
-                  disabled={loading}
-                />
-              </Form.Group>
-
-              {/* Tiers + Variants */}
-              {productType === 'variant' && (
+              {/* ── Attributes (if any) ── */}
+              {attributes.length > 0 && (
                 <>
-                  <hr className="my-3" />
-                  <h6 className="mb-3 text-muted">Product Variations</h6>
-                  {errors.tiers && <div className="alert alert-danger">{errors.tiers}</div>}
-                  <TiersEditor tiers={tiers} onChange={setTiers} disabled={loading} />
-
-                  {models.length > 0 && (
-                    <>
-                      <hr className="my-3" />
-                      <h6 className="mb-3 text-muted">
-                        Variants ({models.length}){' '}
-                        {models.length > 200 && <span className="text-danger">⚠️ Max 200</span>}
-                      </h6>
-                      {errors.models && <div className="alert alert-danger">{errors.models}</div>}
-                      <VariantsTable
-                        models={models}
-                        onChange={setModels}
-                        tiers={tiers}
-                        disabled={loading}
-                      />
-                    </>
-                  )}
+                  <div className={styles.sectionHeader}>Attributes</div>
+                  <Row>{attributes.map((attr) => <Col md={4} key={attr._id}>{renderAttributeField(attr)}</Col>)}</Row>
                 </>
               )}
-            </Col>
 
-            {/* ── RIGHT COLUMN ── */}
-            <Col xl={5} lg={12}>
-              {/* Vertical divider only on xl */}
-              <div className={styles.rightPanel}>
-                {/* Dynamic Attributes */}
-                {attributes.length > 0 && (
-                  <>
-                    <h6 className="mb-3 text-muted">Product Attributes</h6>
-                    <Row>
-                      {attributes.map((attr) => (
-                        <Col md={6} key={attr._id}>
-                          {renderAttributeField(attr)}
-                        </Col>
-                      ))}
-                    </Row>
-                    <hr className="my-3" />
-                  </>
-                )}
+              {/* ── Variations ── */}
+              {productType === 'variant' && (
+                <>
+                  <div className={styles.sectionHeader}><span className={styles.sectionNum}>4</span>Variations</div>
+                  {errors.tiers && <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.tiers}</div>}
+                  <TiersEditor tiers={tiers} onChange={setTiers} disabled={loading} />
+                  {models.length > 0 && (<>
+                    <div className={styles.variantCountBadge}>{models.length} variant{models.length !== 1 ? 's' : ''} generated{models.length > 200 && <span className={styles.overLimitBadge}> (max 200)</span>}</div>
+                    {errors.models && <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.models}</div>}
+                    <VariantsTable models={models} onChange={setModels} tiers={tiers} disabled={loading} isEditMode={isEditMode}/>
+                    {missingVariantImages > 0 && (
+                      <div className={`${styles.alert} ${styles.alertWarning}`}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <strong>{missingVariantImages} SKU{missingVariantImages !== 1 ? 's are' : ' is'} missing an image.</strong>&nbsp;Upload an image for every variant — Save will be unlocked once all SKUs have images.
+                      </div>
+                    )}
+                    {errors.modelImages && <div className={`${styles.alert} ${styles.alertDanger}`}>{errors.modelImages}</div>}
+                  </>)}
+                </>
+              )}
 
-                {/* Product Media */}
-                <h6 className="mb-3 text-muted">Product Media</h6>
-
+              {/* ── Media ── */}
+              <div className={styles.sectionHeader}>Media</div>
+              <div className={styles.mediaRow}>
                 {/* Size Chart */}
-                <Form.Group className="mb-3">
-                  <Form.Label>Size Chart (Optional)</Form.Label>
-                  <Form.Control
-                    type="file"
-                    accept="image/*"
-                    onChange={handleSizeChartUpload}
-                    disabled={loading || !!sizeChart}
-                    isInvalid={!!errors.sizeChart}
-                  />
-                  <Form.Control.Feedback type="invalid">{errors.sizeChart}</Form.Control.Feedback>
-                  <Form.Text className="text-muted">Max 5MB. PNG, JPG, JPEG</Form.Text>
-                  {sizeChartPreview && (
-                    <div className="mt-2 position-relative d-inline-block">
-                      <img
-                        src={sizeChartPreview}
-                        alt="Size chart preview"
-                        style={{ width: '120px', height: 'auto', borderRadius: '4px' }}
-                      />
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={handleRemoveSizeChart}
-                        className="position-absolute top-0 end-0 m-1"
-                        style={{ padding: '0.15rem 0.4rem' }}
-                      >
-                        ×
-                      </Button>
-                    </div>
+                <div className={styles.mediaBlock}>
+                  <div className={styles.mediaBlockHeader}><span className={styles.mediaBlockTitle}>Size Chart</span><span className={styles.mediaBlockHint}>Optional</span></div>
+                  {sizeChartPreview ? (
+                    <div className={styles.previewSingle}><img src={sizeChartPreview} alt="Size chart" className={styles.previewSingleImg}/><button type="button" className={styles.removeBtn} onClick={handleRemoveSizeChart} aria-label="Remove"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
+                  ) : (
+                    <label className={`${styles.uploadZone} ${(loading || !!sizeChart) ? styles.uploadDisabled : ''}`}>
+                      <input type="file" accept="image/*" onChange={handleSizeChartUpload} disabled={loading || !!sizeChart} className={styles.fileInputHidden}/>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <span className={styles.uploadZoneText}>Click to upload</span>
+                    </label>
                   )}
-                </Form.Group>
+                </div>
 
-                {/* Product Images */}
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Product Images{' '}
-                    <span className="text-muted" style={{ fontWeight: 400 }}>
-                      ({imagePreviews.length}/10)
-                    </span>
-                  </Form.Label>
-                  <Form.Control
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImagesUpload}
-                    disabled={loading || images.length >= 10}
-                    isInvalid={!!errors.images}
-                  />
-                  <Form.Control.Feedback type="invalid">{errors.images}</Form.Control.Feedback>
-                  <Form.Text className="text-muted">Max 10 images, 5MB each.</Form.Text>
-                  {imagePreviews.length > 0 && (
-                    <div className="d-flex flex-wrap gap-2 mt-2">
-                      {imagePreviews.map((preview, index) => (
-                        <div key={index} className="position-relative" style={{ width: '72px' }}>
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            style={{
-                              width: '72px',
-                              height: '72px',
-                              objectFit: 'cover',
-                              borderRadius: '4px',
-                              border: '1px solid #dee2e6',
-                            }}
-                          />
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleRemoveImage(index)}
-                            className="position-absolute top-0 end-0"
-                            style={{ padding: '0px 4px', fontSize: '10px', lineHeight: 1 }}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                {/* Images */}
+                <div className={styles.mediaBlock} style={{flex:2}}>
+                  <div className={styles.mediaBlockHeader}><span className={styles.mediaBlockTitle}>Product Images <span className={styles.mediaCount}>{imagePreviews.length}/10</span></span><span className={styles.mediaBlockHint}>{productType === 'simple' ? <span className={styles.required}>Required</span> : 'Max 10 · 5MB'}</span></div>
+                  <div className={styles.imageGrid}>
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className={styles.imageThumb}>
+                        <img src={preview} alt={`Preview ${index + 1}`} className={styles.imageThumbImg}/>
+                        {index === 0 && <span className={styles.primaryBadge}>Main</span>}
+                        <button type="button" className={styles.removeBtn} onClick={() => handleRemoveImage(index)} aria-label="Remove"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
+                      </div>
+                    ))}
+                    {imagePreviews.length < 10 && (<label className={`${styles.imageAddBtn} ${loading ? styles.uploadDisabled : ''}`}><input type="file" accept="image/*" multiple onChange={handleImagesUpload} disabled={loading || images.length >= 10} className={styles.fileInputHidden}/><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></label>)}
+                  </div>
+                  {errors.images && <div className={styles.invalidFeedback} style={{marginTop:'0.375rem'}}>{errors.images}</div>}
+                  {productType === 'simple' && missingProductImage && !errors.images && (
+                    <p className={styles.textMuted} style={{marginTop:'0.25rem',color:'#d97706'}}>⚠ At least one image is required to save</p>
                   )}
-                </Form.Group>
+                </div>
 
-                {/* Product Videos */}
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    Product Videos{' '}
-                    <span className="text-muted" style={{ fontWeight: 400 }}>
-                      ({videoPreviews.length}/3)
-                    </span>
-                  </Form.Label>
-                  <Form.Control
-                    type="file"
-                    accept="video/*"
-                    multiple
-                    onChange={handleVideosUpload}
-                    disabled={loading || videos.length >= 3}
-                    isInvalid={!!errors.videos}
-                  />
-                  <Form.Control.Feedback type="invalid">{errors.videos}</Form.Control.Feedback>
-                  <Form.Text className="text-muted">Max 3 videos, 50MB each.</Form.Text>
-                  {videoPreviews.length > 0 && (
-                    <div className="d-flex flex-wrap gap-2 mt-2">
-                      {videoPreviews.map((preview, index) => (
-                        <div key={index} className="position-relative" style={{ width: '120px' }}>
-                          <video
-                            src={preview}
-                            style={{
-                              width: '100%',
-                              height: '80px',
-                              objectFit: 'cover',
-                              borderRadius: '4px',
-                            }}
-                            controls
-                          />
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleRemoveVideo(index)}
-                            className="position-absolute top-0 end-0"
-                            style={{ padding: '0px 4px', fontSize: '10px', lineHeight: 1 }}
-                          >
-                            ×
-                          </Button>
-                          <small className="d-block text-muted mt-1 text-truncate">
-                            {videos[index]?.name}
-                          </small>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Form.Group>
+                {/* Videos */}
+                <div className={styles.mediaBlock}>
+                  <div className={styles.mediaBlockHeader}><span className={styles.mediaBlockTitle}>Videos <span className={styles.mediaCount}>{videoPreviews.length}/3</span></span><span className={styles.mediaBlockHint}>Max 3 · 50MB</span></div>
+                  {videoPreviews.length > 0 && (<div className={styles.videoList}>{videoPreviews.map((preview, index) => (<div key={index} className={styles.videoItem}><video src={preview} className={styles.videoPreview} controls/><span className={styles.videoName}>{videos[index]?.name}</span><button type="button" className={styles.removeBtn} onClick={() => handleRemoveVideo(index)} aria-label="Remove"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>))}</div>)}
+                  {videoPreviews.length < 3 && (<label className={`${styles.uploadZone} ${(loading || videos.length >= 3) ? styles.uploadDisabled : ''}`}><input type="file" accept="video/*" multiple onChange={handleVideosUpload} disabled={loading || videos.length >= 3} className={styles.fileInputHidden}/><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span className={styles.uploadZoneText}>Click to upload video</span></label>)}
+                </div>
               </div>
-            </Col>
-          </Row>
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose} disabled={loading}>
-          Cancel
-        </Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-          {loading ? (
-            <>
-              <Spinner
-                as="span"
-                animation="border"
-                size="sm"
-                role="status"
-                aria-hidden="true"
-                className="me-2"
-              />
-              {isEditMode ? 'Updating...' : 'Creating...'}
-            </>
-          ) : isEditMode ? (
-            'Update Product'
-          ) : (
-            'Add Product'
-          )}
-        </Button>
-      </Modal.Footer>
-    </Modal>
+            </div>
+
+          </Form>
+        </div>
+
+        {/* Footer */}
+        <div className={styles.drawerFooter}>
+          <button type="button" className={styles.btnSecondary} onClick={handleClose} disabled={loading}>Cancel</button>
+          <button type="button" className={styles.btnPrimary} onClick={handleSubmit} disabled={loading || saveBlocked} title={saveBlockReason || undefined}>
+            {loading ? 'Saving...' : (isEditMode ? 'Update Product' : 'Save Product')}
+            {saveBlocked && !loading && <span className={styles.saveBtnHint}>&nbsp;· {saveBlockReason}</span>}
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body
   );
 };
 
-export default AddProductModal;
+export default ProductDrawer;

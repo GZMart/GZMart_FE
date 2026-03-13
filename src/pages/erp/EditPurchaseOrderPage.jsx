@@ -6,6 +6,7 @@ import {
   updatePurchaseOrder,
   fetchSuppliers,
   clearCurrentPurchaseOrder,
+  fetchExchangeRate,
 } from '../../store/slices/erpSlice';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import styles from '@assets/styles/erp/CreatePurchaseOrderPage.module.css';
@@ -390,7 +391,7 @@ const EditPurchaseOrderPage = () => {
   const { id }     = useParams();
   const dispatch   = useDispatch();
   const navigate   = useNavigate();
-  const { currentPurchaseOrder: po, loading, suppliers } = useSelector((s) => s.erp);
+  const { currentPurchaseOrder: po, loading, suppliers, exchangeRate: liveRate } = useSelector((s) => s.erp);
 
   const [supplierId,           setSupplierId]           = useState('');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
@@ -420,6 +421,7 @@ const EditPurchaseOrderPage = () => {
   useEffect(() => {
     dispatch(fetchPurchaseOrderById(id));
     dispatch(fetchSuppliers({ limit: 100 }));
+    dispatch(fetchExchangeRate());
     return () => { dispatch(clearCurrentPurchaseOrder()); };
   }, [dispatch, id]);
 
@@ -427,7 +429,7 @@ const EditPurchaseOrderPage = () => {
   useEffect(() => {
     if (!po) return;
     if (po.status !== 'Draft') {
-      navigate(`/erp/purchase-orders/${id}`, { replace: true });
+      navigate(`/seller/erp/purchase-orders/${id}`, { replace: true });
       return;
     }
 
@@ -555,7 +557,7 @@ const EditPurchaseOrderPage = () => {
     setSaving(true);
     try {
       await dispatch(updatePurchaseOrder({ id, updateData })).unwrap();
-      navigate(`/erp/purchase-orders/${id}`);
+      navigate(`/seller/erp/purchase-orders/${id}`);
     } catch (err) {
       setSubmitError(err.message || err.error || 'Cannot update order. Please try again.');
     } finally {
@@ -572,9 +574,9 @@ const EditPurchaseOrderPage = () => {
       <nav style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#94a3b8' }}>
         <button onClick={() => navigate('/erp')}                            style={bcBtn}>ERP</button>
         <ChevRight />
-        <button onClick={() => navigate('/erp/purchase-orders')}           style={bcBtn}>Purchase Orders</button>
+        <button onClick={() => navigate('/seller/erp/purchase-orders')}           style={bcBtn}>Purchase Orders</button>
         <ChevRight />
-        <button onClick={() => navigate(`/erp/purchase-orders/${id}`)}     style={bcBtn}>{po.code}</button>
+        <button onClick={() => navigate(`/seller/erp/purchase-orders/${id}`)}     style={bcBtn}>{po.code}</button>
         <ChevRight />
         <span style={{ color: '#475569', fontWeight: 500 }}>Edit</span>
       </nav>
@@ -667,11 +669,23 @@ const EditPurchaseOrderPage = () => {
         <div className={styles.formGrid3}>
           <div className={styles.formGroup}>
             <label>Exchange Rate ¥ CNY → VND</label>
-            <input type="number" min="0"
+            <input type="number" min="1" step="any"
               value={importConfig.exchangeRate}
               onChange={(e) => setImportConfig(c => ({ ...c, exchangeRate: e.target.value }))}
               placeholder="3500" />
-            <span className={styles.hint}>Default: 3,500 VND/¥</span>
+            {liveRate?.rate ? (
+              <span className={styles.rateHint}>
+                Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
+                {Number(importConfig.exchangeRate) !== liveRate.rate && (
+                  <button type="button" className={styles.rateSyncBtn}
+                    onClick={() => setImportConfig(c => ({ ...c, exchangeRate: liveRate.rate }))}>
+                    ↻ Use
+                  </button>
+                )}
+              </span>
+            ) : (
+              <span className={styles.hint}>Default: 3,500 VND/¥</span>
+            )}
           </div>
           <div className={styles.formGroup}>
             <label>Buying Service Fee (%)</label>
@@ -798,7 +812,7 @@ const EditPurchaseOrderPage = () => {
         <button
           type="button"
           className={styles.btnSecondary}
-          onClick={() => navigate(`/erp/purchase-orders/${id}`)}
+          onClick={() => navigate(`/seller/erp/purchase-orders/${id}`)}
           disabled={saving}
         >
           Cancel
