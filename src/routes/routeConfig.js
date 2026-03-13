@@ -62,6 +62,7 @@ const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboProm
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
+const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
@@ -519,6 +520,13 @@ export const routeConfig = [
   {
     path: '/seller/promotions/edit/addon/:id',
     element: AddOnDealForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/notifications',
+    element: ShopNotificationsPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

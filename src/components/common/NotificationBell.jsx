@@ -128,7 +128,11 @@ const NotificationBell = () => {
     }
     
     if (notification.type === 'ORDER') {
-      navigate('/buyer/orders');
+      if (notification.relatedData?.orderId) {
+         navigate(`/buyer/orders/${notification.relatedData.orderId}`);
+      } else {
+         navigate('/buyer/orders');
+      }
     } else if (notification.type === 'PROMOTION') {
        navigate(PUBLIC_ROUTES.DEALS);
     }

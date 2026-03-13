@@ -510,6 +510,8 @@
       "all": "All Notifications",
       "order": "Order Updates",
       "promotion": "Promotions",
+      "flash_sale": "Flash Sales",
+      "voucher": "Vouchers",
       "wallet": "Wallet Updates",
       "system": "System Updates"
     }
