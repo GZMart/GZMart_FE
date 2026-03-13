@@ -23,6 +23,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Bước 1.5: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       # Bước 2: Deploy dự án lên Vercel
       - name: Deploy GZMart to Vercel
         uses: amondnet/vercel-action@v25
@@ -41,6 +47,3 @@ jobs:
 
           # ID của dự án trên Vercel
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID}}
-
-          # Chỉ định thư mục chứa mã nguồn cần deploy (GZMart Frontend)
-          working-directory: ./GZMart_FE
