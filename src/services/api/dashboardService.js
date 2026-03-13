@@ -100,6 +100,37 @@ export const dashboardService = {
     return await axiosClient.get(`${BASE_URL}/comparison`, { params });
   },
 
+  /**
+   * Get profit and loss analysis by period
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='daily'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @returns {Promise} P&L data grouped by period with { _id, revenue, cost, quantity, orders, profit }
+   */
+  getProfitLossAnalysis: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/profit-loss`, { params });
+  },
+
+  /**
+   * Get expense analysis (product cost vs shipping cost)
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @returns {Promise} Expense breakdown with { totalProductCost, totalShippingCost, totalExpense, breakdownByType }
+   */
+  getExpenseAnalysis: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/expense`, { params });
+  },
+
+  /**
+   * Get top selling products with profit analysis
+   * @param {object} params - Query parameters
+   * @param {number} [params.limit=10] - Number of products to retrieve
+   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @returns {Promise} Array of products with { _id, name, totalQuantity, totalRevenue, cost, profit, profitMargin }
+   */
+  getTopSellingProductsWithProfit: async (params = {}) => {
+    return await axiosClient.get(`${BASE_URL}/top-products-profit`, { params });
+  },
+
   // ============= ADMIN DASHBOARD ENDPOINTS =============
 
   /**

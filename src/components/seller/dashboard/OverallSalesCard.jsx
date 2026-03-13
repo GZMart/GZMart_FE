@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Calendar } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import styles from '../../../assets/styles/seller/Dashboard.module.css';
 
@@ -9,14 +9,7 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
     <div className={styles.chartCard}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h3 className={styles.chartCardTitle}>Overall Sales</h3>
-        <button className={styles.dateButton}>
-          <Calendar size={16} />
-          This Month
-        </button>
-      </div>
-      
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
           <div className={styles.salesValue}>
             {chartData.length > 0 ? formatCurrency(chartData[chartData.length - 1].revenue || 0) : formatCurrency(0)}
           </div>
@@ -26,7 +19,7 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
           </span>
         </div>
       </div>
-
+      
       <div className={styles.chartContainer}>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">

@@ -83,6 +83,11 @@ const OrdersPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, currentPage]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
   const fetchOrders = async (page) => {
     try {
       setLoading(true);
@@ -432,15 +437,6 @@ const OrdersPage = () => {
                     {/* Status, Payment, and Actions - Only show on first item */}
                     {index === 0 && (
                       <div className={styles.orderActions}>
-                        <button
-                          className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          title="Dispatch Order"
-                        >
-                          DISPATCH
-                        </button>
                         <button
                           className={`${styles.actionButton} ${styles.actionButtonOutline}`}
                           onClick={(e) => {
