@@ -16,6 +16,7 @@ const NAV_ITEMS = [
     section: 'USER MANAGEMENT',
     items: [
       { to: ADMIN_ROUTES.USERS, icon: 'bi bi-people', label: 'Users' },
+      { to: ADMIN_ROUTES.SELLER_APPLICATIONS, icon: 'bi bi-shop', label: 'Seller Applications' },
     ],
   },
   {
@@ -71,6 +72,7 @@ const NAV_ITEMS = [
 const PAGE_TITLES = {
   [ADMIN_ROUTES.DASHBOARD]: 'Dashboard',
   [ADMIN_ROUTES.USERS]: 'User Management',
+  [ADMIN_ROUTES.SELLER_APPLICATIONS]: 'Seller Applications',
   [ADMIN_ROUTES.CATEGORIES]: 'Categories',
   [ADMIN_ROUTES.ATTRIBUTES]: 'Attributes',
   [ADMIN_ROUTES.SYSTEM_VOUCHERS]: 'System Vouchers',
