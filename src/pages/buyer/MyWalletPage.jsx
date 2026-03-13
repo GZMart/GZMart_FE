@@ -1,224 +1,221 @@
-import { Container, Row, Col, Button } from 'react-bootstrap';
-import { useState } from 'react';
+import { Container, Row, Col, Button, Card, Table, Badge, Spinner, Alert } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { PUBLIC_ROUTES } from '@constants/routes';
-import WalletCard from '@components/common/wallet/WalletCard';
-import BalanceCard from '@components/common/wallet/BalanceCard';
-import TransactionHistory from '@components/common/wallet/TransactionHistory';
-import FundWalletModal from '@components/common/wallet/FundWalletModal';
-import TransactionPinModal from '@components/common/wallet/TransactionPinModal';
-import TransactionSuccessModal from '@components/common/wallet/TransactionSuccessModal';
+import rmaService from '@services/api/rmaService';
 
 /**
  * My Wallet Page Component
- * Displays wallet information, balance, and transaction history
+ * Displays wallet coin balance and transaction history
  */
 const MyWalletPage = () => {
   const navigate = useNavigate();
 
-  // Mock data - replace with actual data from API/Redux
-  const [balance, setBalance] = useState(5000);
-  const [cardholderName] = useState('SUPRAVA SAHA');
-  const [cardNumber] = useState('1234123412341234');
-  const [expiryDate] = useState('06/24');
+  const [loading, setLoading] = useState(true);
+  const [walletData, setWalletData] = useState(null);
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState(null);
 
-  // Modal states
-  const [showFundModal, setShowFundModal] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [pendingTransaction, setPendingTransaction] = useState(null);
+  useEffect(() => {
+    fetchWalletInfo();
+  }, []);
 
-  // Mock transactions - replace with actual data
-  const [transactions] = useState([
-    {
-      id: 1,
-      type: 'withdrawal',
-      description: 'Withdrawal Initiated for Product Name and Product ID',
-      amount: -2490,
-      balance: 5000,
-      date: new Date('2022-04-25'),
-    },
-    {
-      id: 2,
-      type: 'deposit',
-      description: 'Withdrawal Initiated for Product Name and Product ID',
-      amount: 2490,
-      balance: 5000,
-      date: new Date('2022-04-25'),
-    },
-    {
-      id: 3,
-      type: 'withdrawal',
-      description: 'Withdrawal Initiated for Product Name and Product ID',
-      amount: -2490,
-      balance: 5000,
-      date: new Date('2022-04-25'),
-    },
-  ]);
+  const fetchWalletInfo = async () => {
+    try {
+      setLoading(true);
+      const response = await rmaService.getWalletInfo();
+
+      setWalletData(response.data);
+      setBalance(response.data.balance || 0);
+      setTransactions(response.data.transactions || []);
+      setStats(response.data.stats || {});
+    } catch (error) {
+      console.error('Error fetching wallet info:', error);
+      toast.error('Không thể tải thông tin ví');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     navigate(PUBLIC_ROUTES.HOME);
   };
 
-  const handleFundWallet = () => {
-    setShowFundModal(true);
+  const getTransactionTypeBadge = (type) => {
+    const typeMap = {
+      refund: { bg: 'success', icon: '↓', text: 'Hoàn tiền' },
+      purchase: { bg: 'danger', icon: '↑', text: 'Mua hàng' },
+      reward: { bg: 'info', icon: '↓', text: 'Thưởng' },
+      admin_adjustment: { bg: 'warning', icon: '~', text: 'Điều chỉnh' },
+      promotion: { bg: 'primary', icon: '↓', text: 'Khuyến mãi' },
+      withdrawal: { bg: 'secondary', icon: '↑', text: 'Rút tiền' },
+    };
+
+    const config = typeMap[type] || { bg: 'secondary', icon: '?', text: type };
+    return (
+      <Badge bg={config.bg}>
+        {config.icon} {config.text}
+      </Badge>
+    );
   };
 
-  const handleFundProceed = (fundData) => {
-    setPendingTransaction(fundData);
-    setShowFundModal(false);
-    setShowPinModal(true);
-  };
-
-  const handlePinConfirm = (pin) => {
-    // TODO: Verify PIN and process transaction
-    // For now, just simulate success
-    // eslint-disable-next-line no-console
-    console.log('PIN confirmed:', pin);
-    // eslint-disable-next-line no-console
-    console.log('Transaction data:', pendingTransaction);
-
-    // Update balance (mock)
-    if (pendingTransaction) {
-      setBalance((prev) => prev + pendingTransaction.amount);
-    }
-
-    setShowPinModal(false);
-    setShowSuccessModal(true);
-    setPendingTransaction(null);
-  };
-
-  const handleSuccessClose = () => {
-    setShowSuccessModal(false);
-  };
-
-  const handleViewAllTransactions = () => {
-    // TODO: Navigate to full transaction history page
-    // eslint-disable-next-line no-console
-    console.log('View all transactions');
-  };
+  if (loading) {
+    return (
+      <Container className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-3">Đang tải thông tin ví...</p>
+      </Container>
+    );
+  }
 
   return (
-    <div className="my-wallet-page bg-white" style={{ minHeight: '100vh' }}>
-      <div className="py-4">
-        <Container>
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-start mb-4">
-            <div className="d-flex align-items-start">
-              <Button
-                variant="link"
-                className="p-0 text-decoration-none d-flex align-items-center"
-                onClick={handleBack}
-                style={{ color: '#000' }}
-              >
-                <div
-                  className="rounded-circle border d-flex align-items-center justify-content-center me-3"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    borderColor: '#dee2e6',
-                  }}
-                >
-                  <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
-                </div>
-              </Button>
-              <div>
-                <h1 className="fw-bold mb-1" style={{ fontSize: '2rem' }}>
-                  My Wallet
-                </h1>
-                <p className="text-muted mb-0">Let&apos;s create your account</p>
-              </div>
-            </div>
-            <Button variant="link" className="p-0">
-              <i className="bi bi-share fs-5"></i>
-            </Button>
-          </div>
-        </Container>
-
-        {/* Main Content */}
-        <Container>
-          <Row style={{ marginTop: '35px' }}>
-            {/* Card and Balance Row */}
-            <Col xs={12} className="mb-4">
-              <Row>
-                <Col md={6} className="mb-3 mb-md-0">
-                  <WalletCard
-                    cardholderName={cardholderName}
-                    cardNumber={cardNumber}
-                    expiryDate={expiryDate}
-                  />
-                </Col>
-                <Col md={6}>
-                  <BalanceCard
-                    balance={balance}
-                    currency="VND"
-                    status="Active"
-                    changePercentage={23.12}
-                  />
-                </Col>
-              </Row>
-            </Col>
-
-            {/* Action Buttons */}
-            <Col xs={12} className="mb-4">
-              <Row>
-                <Col md={6} className="mb-2 mb-md-0">
-                  <Button variant="primary" className="w-100">
-                    <i className="bi bi-lock me-2"></i>
-                    Need Help?
-                  </Button>
-                </Col>
-                <Col md={6}>
-                  <Button variant="primary" className="w-100" onClick={handleFundWallet}>
-                    <i className="bi bi-wallet me-2"></i>
-                    Add Money to Wallet
-                  </Button>
-                </Col>
-              </Row>
-            </Col>
-
-            {/* Add Card Button */}
-            <Col xs={12} className="mb-4">
-              <Button variant="light" className="w-100 border">
-                <i className="bi bi-plus-circle me-2"></i>
-                Add card
-              </Button>
-            </Col>
-
-            {/* Transaction History */}
-            <Col xs={12}>
-              <TransactionHistory
-                transactions={transactions}
-                onViewAll={handleViewAllTransactions}
-              />
-            </Col>
-          </Row>
-        </Container>
+    <Container className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2>Ví Coin Của Tôi</h2>
+        <Button variant="outline-primary" onClick={() => navigate('/buyer/returns')}>
+          Yêu cầu đổi trả
+        </Button>
       </div>
 
-      {/* Modals */}
-      <FundWalletModal
-        show={showFundModal}
-        onHide={() => setShowFundModal(false)}
-        currentBalance={balance}
-        onProceed={handleFundProceed}
-      />
+      {/* Balance Card */}
+      <Card className="mb-4 shadow-sm">
+        <Card.Body className="p-4">
+          <Row className="align-items-center">
+            <Col md={6}>
+              <div className="mb-3">
+                <h6 className="text-muted mb-1">Số dư khả dụng</h6>
+                <h1 className="display-4 text-primary mb-0">
+                  {balance.toLocaleString('vi-VN')}
+                  <span className="fs-4 text-muted ms-2">coins</span>
+                </h1>
+              </div>
+              <p className="text-muted mb-0">
+                <i className="bi bi-info-circle me-2"></i>1 coin = 1 VND (dùng cho đơn hàng tiếp
+                theo)
+              </p>
+            </Col>
+            <Col md={6}>
+              {stats && (
+                <Card className="bg-light">
+                  <Card.Body>
+                    <h6 className="mb-3">Thống kê</h6>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Tổng nhận:</span>
+                      <strong className="text-success">
+                        +{stats.totalEarned?.toLocaleString('vi-VN') || 0} coins
+                      </strong>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Tổng chi:</span>
+                      <strong className="text-danger">
+                        -{stats.totalSpent?.toLocaleString('vi-VN') || 0} coins
+                      </strong>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span className="text-muted">Giao dịch:</span>
+                      <strong>{stats.transactionCount || 0}</strong>
+                    </div>
+                  </Card.Body>
+                </Card>
+              )}
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
-      <TransactionPinModal
-        show={showPinModal}
-        onHide={() => {
-          setShowPinModal(false);
-          setPendingTransaction(null);
-        }}
-        onConfirm={handlePinConfirm}
-      />
+      {/* Info Alert */}
+      <Alert variant="info" className="mb-4">
+        <Alert.Heading>💰 Cách nhận Coin</Alert.Heading>
+        <ul className="mb-0">
+          <li>Hoàn tiền từ yêu cầu đổi trả thành công</li>
+          <li>Thưởng từ chương trình khuyến mãi</li>
+          <li>Điểm thưởng từ đơn hàng hoàn thành</li>
+        </ul>
+      </Alert>
 
-      <TransactionSuccessModal
-        show={showSuccessModal}
-        onHide={handleSuccessClose}
-        message="Transaction Successful"
-      />
-    </div>
+      {/* Transaction History */}
+      <Card className="shadow-sm">
+        <Card.Header className="bg-white">
+          <h5 className="mb-0">Lịch Sử Giao Dịch</h5>
+        </Card.Header>
+        <Card.Body>
+          {transactions.length === 0 ? (
+            <Alert variant="secondary" className="text-center">
+              <p className="mb-0">Chưa có giao dịch nào</p>
+            </Alert>
+          ) : (
+            <Table responsive hover>
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Loại</th>
+                  <th>Mô tả</th>
+                  <th className="text-end">Số tiền</th>
+                  <th className="text-end">Số dư sau</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => (
+                  <tr key={tx._id}>
+                    <td className="text-muted" style={{ fontSize: '0.9rem' }}>
+                      {new Date(tx.createdAt).toLocaleDateString('vi-VN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td>{getTransactionTypeBadge(tx.type)}</td>
+                    <td>
+                      {tx.description}
+                      {tx.reference?.returnRequestId && (
+                        <div className="text-muted small">
+                          RMA: {tx.metadata?.requestNumber || 'N/A'}
+                        </div>
+                      )}
+                      {tx.reference?.orderId && (
+                        <div className="text-muted small">
+                          Đơn hàng: {tx.metadata?.orderNumber || 'N/A'}
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-end">
+                      <strong className={tx.amount >= 0 ? 'text-success' : 'text-danger'}>
+                        {tx.amount >= 0 ? '+' : ''}
+                        {tx.amount.toLocaleString('vi-VN')} coins
+                      </strong>
+                    </td>
+                    <td className="text-end text-muted">
+                      {tx.balanceAfter.toLocaleString('vi-VN')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Help Section */}
+      <Card className="mt-4 border-primary">
+        <Card.Body>
+          <h6 className="mb-3">
+            <i className="bi bi-question-circle me-2"></i>
+            Cần trợ giúp?
+          </h6>
+          <p className="text-muted mb-3">
+            Nếu bạn có thắc mắc về ví coin hoặc giao dịch, vui lòng liên hệ bộ phận hỗ trợ.
+          </p>
+          <Button variant="outline-primary" size="sm">
+            <i className="bi bi-envelope me-2"></i>
+            Liên hệ hỗ trợ
+          </Button>
+        </Card.Body>
+      </Card>
+    </Container>
   );
 };
 

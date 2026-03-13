@@ -1,0 +1,92 @@
+/* =============================================================
+   Admin Users Page  —  aligned with indigo design system
+   ============================================================= */
+
+.usersPage {
+  padding: 0;
+  background: transparent;
+  min-height: 0;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.headerIcon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  color: #4f46e5;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.header h1 {
+  margin: 0 0 2px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+.subtitle {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* ── Filter bar ────────────────────────────────────────────── */
+.tableWrap {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #f0f0f0;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  background: #fafafa;
+  flex-wrap: wrap;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 992px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .header h1 {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .header h1 {
+    font-size: 1rem;
+  }
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterBar > * {
+    width: 100% !important;
+  }
+}

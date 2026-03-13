@@ -39,7 +39,10 @@ const OrderSummary = ({
     if (onCheckout) {
       onCheckout({ includeGiftBox, total });
     } else {
-      navigate(BUYER_ROUTES.CHECKOUT);
+      // Pass selected items to checkout page
+      navigate(BUYER_ROUTES.CHECKOUT, {
+        state: { selectedItems },
+      });
     }
   };
 
@@ -95,13 +98,15 @@ const OrderSummary = ({
 
         <div className="d-flex justify-content-between mb-4">
           <span className="fw-bold fs-5">Total Price</span>
-          <span className="fw-bold fs-5 text-primary">{formatCurrency(total)}</span>
+          <span className="fw-bold fs-5" style={{ color: '#741E20' }}>
+            {formatCurrency(total)}
+          </span>
         </div>
 
         <Button
-          variant="primary"
           size="lg"
-          className="w-100"
+          className="w-100 border-0 text-white fw-bold"
+          style={{ backgroundColor: '#B13C36' }}
           onClick={handleCheckout}
           disabled={isCartEmpty}
         >

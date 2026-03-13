@@ -1,0 +1,203 @@
+.order-tracking-enhanced {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.tracking-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.tracking-card .ant-steps {
+  margin-top: 24px;
+}
+
+.map-container {
+  margin-top: 24px;
+  border-radius: 8px;
+}
+
+.delivery-map {
+  min-height: 400px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-placeholder {
+  text-align: center;
+  color: white;
+  padding: 40px;
+}
+
+.map-placeholder h3 {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.map-placeholder p {
+  font-size: 16px;
+  margin: 8px 0;
+}
+
+.animation-info {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 4px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 4px;
+  transition: width 1s linear;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.action-buttons .ant-btn {
+  min-width: 200px;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .order-tracking-enhanced {
+    padding: 16px;
+  }
+
+  .delivery-map {
+    min-height: 300px;
+  }
+
+  .map-placeholder {
+    padding: 20px;
+  }
+
+  .map-placeholder h3 {
+    font-size: 20px;
+  }
+
+  .map-placeholder p {
+    font-size: 14px;
+  }
+
+  .action-buttons .ant-btn {
+    min-width: 150px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  /* Smaller steps for mobile */
+  .tracking-card .ant-steps-item-icon {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 14px !important;
+  }
+
+  .tracking-card .ant-steps-item-title {
+    font-size: 13px !important;
+    line-height: 28px !important;
+  }
+
+  .tracking-card .ant-steps-item-description {
+    font-size: 11px !important;
+  }
+
+  .tracking-card .ant-steps-item-tail {
+    top: 14px !important;
+  }
+}
+
+/* Custom step styling */
+.tracking-card .ant-steps-item-icon {
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 16px !important;
+}
+
+.tracking-card .ant-steps-item-title {
+  font-size: 14px !important;
+  line-height: 32px !important;
+}
+
+.tracking-card .ant-steps-item-description {
+  font-size: 12px !important;
+}
+
+.tracking-card .ant-steps-item-tail {
+  top: 16px !important;
+  padding: 0 10px !important;
+}
+
+.tracking-card .ant-steps-item-tail::after {
+  height: 2px !important;
+  background-color: #e8e8e8 !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon {
+  background-color: #52c41a !important;
+  border-color: #52c41a !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon {
+  color: white !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-tail::after {
+  background-color: #52c41a !important;
+}
+
+.ant-steps-item-process .ant-steps-item-icon {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+.ant-steps-item-process .ant-steps-item-icon > .ant-steps-icon {
+  color: white !important;
+}
+
+.ant-steps-item-wait .ant-steps-item-icon {
+  background-color: #f0f0f0 !important;
+  border-color: #d9d9d9 !important;
+}
+
+.ant-steps-item-wait .ant-steps-item-icon > .ant-steps-icon {
+  color: rgba(0, 0, 0, 0.25) !important;
+}

@@ -1,230 +1,366 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Badge } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { Star, Heart, Eye, ShoppingCart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { productService } from '../../services/api';
+import { PUBLIC_ROUTES } from '../../constants/routes';
 
-const MAIN_PRODUCT = {
-  id: 1,
-  title: 'Korean Style Oversized Blazer Set with Pleated Skirt - Beige',
-  image:
-    'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=500&q=80',
-  description:
-    'Trendy design, high-quality snow rain fabric that keeps its shape. Perfect for work or casual outings, easy to mix & match.',
-  rating: 5,
-  reviews: 1250,
-  price: '450,000',
-  originalPrice: '650,000',
-  badges: [
-    { text: '30% OFF', bg: 'warning', color: 'dark' },
-    { text: 'BEST SELLER', bg: 'danger', color: 'white' },
-  ],
+// Helper to format price
+const formatPrice = (price) => {
+  if (!price && price !== 0) {
+    return '0';
+  }
+  return new Intl.NumberFormat('vi-VN').format(price);
 };
 
-const SIDE_PRODUCTS = [
-  {
-    id: 2,
-    title: 'Mini Soft Leather Crossbody Bag Ulzzang Style',
-    image:
-      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=300&q=80',
-    price: '150,000',
-    badges: [{ text: 'SOLD OUT', bg: 'secondary', color: 'white' }],
-    isSoldOut: true,
-  },
-  {
-    id: 3,
-    title: 'Baby Tee Cotton T-Shirt 4-Way Stretch',
-    image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=300&q=80',
-    price: '89,000',
-    badges: [],
-  },
-  {
-    id: 4,
-    title: 'Chunky High-Sole Sneakers Figure Flattering',
-    image:
-      'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=300&q=80',
-    price: '320,000',
-    originalPrice: '400,000',
-    badges: [{ text: '20% OFF', bg: 'warning', color: 'dark' }],
-  },
-  {
-    id: 5,
-    title: 'Unisex Round Rim Khaki Bucket Hat',
-    image:
-      'https://images.unsplash.com/photo-1534215754734-18e55d13e346?auto=format&fit=crop&w=300&q=80',
-    price: '75,000',
-    badges: [],
-  },
-  {
-    id: 6,
-    title: 'Retro High-Waist Wide Leg Jeans',
-    image:
-      'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=300&q=80',
-    price: '280,000',
-    badges: [],
-  },
-  {
-    id: 7,
-    title: 'Vintage Square Frame Fashion Sunglasses',
-    image:
-      'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=300&q=80',
-    price: '60,000',
-    originalPrice: '120,000',
-    badges: [{ text: '50% OFF', bg: 'warning', color: 'dark' }],
-  },
-  {
-    id: 8,
-    title: 'High-Waist Plaid Tennis Skirt',
-    image:
-      'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=300&q=80',
-    price: '135,000',
-    badges: [{ text: 'HOT', bg: 'danger', color: 'white' }],
-  },
-  {
-    id: 9,
-    title: 'Bear Pattern High Neck Socks Set (5 Pairs)',
-    image:
-      'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&w=300&q=80',
-    price: '45,000',
-    originalPrice: '60,000',
-    badges: [{ text: 'SALE', bg: 'info', color: 'white' }],
-  },
-];
+// Helper to calculate discount percentage
+const calculateDiscount = (originalPrice, salePrice) => {
+  if (!originalPrice || !salePrice || originalPrice <= salePrice) {
+    return 0;
+  }
+  return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+};
 
-const MainProductItem = ({ product }) => (
-  <div className="h-100 p-4 d-flex flex-column">
-    <div className="d-flex flex-column gap-1 position-absolute m-3 z-1">
-      {product.badges.map((badge, idx) => (
-        <Badge key={idx} bg={badge.bg} text={badge.color} className="rounded-1 px-2 py-1 fw-bold">
-          {badge.text}
-        </Badge>
-      ))}
-    </div>
+// Helper to get product image
+const getProductImage = (product) => {
+  if (product?.images?.length > 0) {
+    return product.images[0];
+  }
+  if (product?.image) {
+    return product.image;
+  }
+  if (product?.models?.length > 0 && product.models[0]?.image) {
+    return product.models[0].image;
+  }
+  return 'https://via.placeholder.com/400x400?text=No+Image';
+};
 
-    <div
-      className="mb-3 d-flex align-items-center justify-content-center w-100"
-      style={{ height: '320px' }}
-    >
-      <img
-        src={product.image}
-        alt={product.title}
-        className="img-fluid"
-        style={{ maxHeight: '100%', width: '100%', objectFit: 'cover' }}
-      />
-    </div>
+// Helper to get product price (sale price or regular price)
+const getProductPrice = (product) => {
+  // Try to get first active model
+  const activeModel = product?.models?.find((m) => m.isActive) || product?.models?.[0];
 
-    <div className="d-flex flex-column flex-grow-1">
-      {/* UPDATE HERE: Added bg-light, padding, and borderRadius */}
-      <div
-        className="d-flex align-items-center mb-2 px-2 py-1 bg-light border border-light-subtle"
-        style={{ borderRadius: '10px', width: 'fit-content' }}
-      >
-        <div className="d-flex text-warning">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} size={14} fill="#FFC107" strokeWidth={0} />
-          ))}
-        </div>
-        <span className="text-secondary ms-2 small">({product.reviews} sold)</span>
-      </div>
+  if (activeModel) {
+    return {
+      price: activeModel.salePrice || activeModel.price || 0,
+      originalPrice: activeModel.salePrice ? activeModel.price : null,
+      stock: activeModel.stock || 0,
+    };
+  }
 
-      <h5 className="fw-bold mb-2 lh-base">{product.title}</h5>
-
-      <div className="mb-3">
-        <span className="text-decoration-line-through text-secondary me-2">
-          {product.originalPrice}₫
-        </span>
-        <span className="fw-bold fs-4 text-primary">{product.price}₫</span>
-      </div>
-
-      <p className="text-secondary small mb-4">{product.description}</p>
-
-      <div className="mt-auto d-flex gap-2 w-100">
-        <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
-          <Heart size={20} />
-        </Button>
-        <Button
-          variant="primary"
-          className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
-          style={{ backgroundColor: '#007bff' }}
-        >
-          <ShoppingCart size={18} /> ADD TO CART
-        </Button>
-        <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
-          <Eye size={20} />
-        </Button>
-      </div>
-    </div>
-  </div>
-);
-
-const SmallProductItem = ({ product }) => (
-  <div className="h-100 p-3 d-flex flex-column position-relative">
-    {product.badges.length > 0 && (
-      <div className="position-absolute top-0 start-0 m-2 z-1">
-        <Badge
-          bg={product.badges[0].bg}
-          text={product.badges[0].color}
-          className="rounded-1 px-2 py-1 fw-bold"
-        >
-          {product.badges[0].text}
-        </Badge>
-      </div>
-    )}
-
-    <div
-      className="d-flex align-items-center justify-content-center mb-3"
-      style={{ height: '220px' }}
-    >
-      <img
-        src={product.image}
-        className="w-100 h-100"
-        style={{ objectFit: 'cover' }}
-        alt={product.title}
-      />
-    </div>
-
-    <div className="d-flex flex-column flex-grow-1">
-      <h6
-        className="fw-semibold mb-2 text-dark"
-        style={{
-          lineHeight: '1.4',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-          minHeight: '45px',
-        }}
-        title={product.title}
-      >
-        {product.title}
-      </h6>
-
-      <div className="mt-auto">
-        {product.originalPrice && (
-          <span className="text-decoration-line-through text-secondary me-2 small">
-            {product.originalPrice}₫
-          </span>
-        )}
-        <span className="fw-bold text-primary">{product.price}₫</span>
-      </div>
-    </div>
-  </div>
-);
+  return {
+    price: product?.price || 0,
+    originalPrice: product?.originalPrice || null,
+    stock: product?.stock || 0,
+  };
+};
 
 const FrequentlyBoughtTogether = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        // Use trending products instead of getAll for better relevance
+        const response = await productService.getTrendingProducts(9);
+        const apiData = Array.isArray(response) ? response : response.data || [];
+        setProducts(apiData);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <Container className="py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
+  if (!products || products.length === 0) {
+    return (
+      <section className="py-5">
+        <Container>
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
+          </div>
+          <hr className="my-4 text-secondary opacity-25" />
+          <div className="text-center py-5">
+            <p className="text-muted fs-5">No products available at the moment</p>
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
+  // Safe check: need at least 1 product
+  if (!products || products.length === 0 || !products[0]) {
+    return (
+      <section className="py-5">
+        <Container>
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
+            <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
+              <Button
+                className="fw-bold px-4 border-0 text-dark"
+                style={{ backgroundColor: '#FFC107', borderRadius: '4px' }}
+              >
+                VIEW ALL
+              </Button>
+            </Link>
+          </div>
+          <hr className="my-4 text-secondary opacity-25" />
+          <div className="text-center py-5">
+            <p className="text-muted fs-5">No products available at the moment</p>
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
+  // Transform API data to component format
+  const mainProduct = products[0];
+  const mainPriceInfo = getProductPrice(mainProduct);
+  const mainDiscount = calculateDiscount(mainPriceInfo.originalPrice, mainPriceInfo.price);
+
+  const MAIN_PRODUCT = {
+    id: mainProduct._id,
+    title: mainProduct.name,
+    image: getProductImage(mainProduct),
+    description: mainProduct.description || 'Featured trending product',
+    rating: mainProduct.rating || 5,
+    reviews: mainProduct.sold || mainProduct.reviewCount || 0,
+    price: mainPriceInfo.price,
+    originalPrice: mainPriceInfo.originalPrice,
+    stock: mainPriceInfo.stock,
+    badges: [
+      mainDiscount > 0 && {
+        text: `${mainDiscount}% OFF`,
+        bg: 'warning',
+        color: 'dark',
+      },
+      mainProduct.isFeatured && { text: 'BEST SELLER', bg: 'danger', color: 'white' },
+      mainProduct.isNew && { text: 'NEW', bg: 'success', color: 'white' },
+    ].filter(Boolean),
+  };
+
+  const SIDE_PRODUCTS = products.slice(1, 9).map((product) => {
+    const priceInfo = getProductPrice(product);
+    const discount = calculateDiscount(priceInfo.originalPrice, priceInfo.price);
+
+    return {
+      id: product._id,
+      title: product.name,
+      image: getProductImage(product),
+      price: priceInfo.price,
+      originalPrice: priceInfo.originalPrice,
+      stock: priceInfo.stock,
+      badges: [
+        priceInfo.stock === 0 && { text: 'SOLD OUT', bg: 'secondary', color: 'white' },
+        discount > 0 && { text: `${discount}% OFF`, bg: 'warning', color: 'dark' },
+        product.isHot && { text: 'HOT', bg: 'danger', color: 'white' },
+        product.isNew && { text: 'NEW', bg: 'success', color: 'white' },
+      ].filter(Boolean),
+      isSoldOut: priceInfo.stock === 0,
+    };
+  });
+
+  const MainProductItem = ({ product }) => (
+    <Link
+      to={`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', product.id)}`}
+      style={{ textDecoration: 'none', color: 'inherit' }}
+    >
+      <motion.div
+        className="h-100 p-4 d-flex flex-column"
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="d-flex flex-column gap-1 position-absolute m-3 z-1">
+          {product.badges.map((badge, idx) => (
+            <Badge
+              key={idx}
+              bg={badge.bg}
+              text={badge.color}
+              className="rounded-1 px-2 py-1 fw-bold"
+            >
+              {badge.text}
+            </Badge>
+          ))}
+        </div>
+
+        <div
+          className="mb-3 d-flex align-items-center justify-content-center w-100"
+          style={{ height: '320px' }}
+        >
+          <img
+            src={product.image}
+            alt={product.title}
+            className="img-fluid"
+            style={{ maxHeight: '100%', width: '100%', objectFit: 'contain' }}
+          />
+        </div>
+
+        <div className="d-flex flex-column flex-grow-1">
+          <div
+            className="d-flex align-items-center mb-2 px-2 py-1 bg-light border border-light-subtle"
+            style={{ borderRadius: '10px', width: 'fit-content' }}
+          >
+            <div className="d-flex text-warning">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={14} fill="#FFC107" strokeWidth={0} />
+              ))}
+            </div>
+            <span className="text-secondary ms-2 small">({product.reviews} sold)</span>
+          </div>
+
+          <h5 className="fw-bold mb-2 lh-base">{product.title}</h5>
+
+          <div className="mb-3">
+            {product.originalPrice && (
+              <span className="text-decoration-line-through text-secondary me-2">
+                {formatPrice(product.originalPrice)}₫
+              </span>
+            )}
+            <span className="fw-bold fs-4 text-primary">{formatPrice(product.price)}₫</span>
+          </div>
+
+          <p
+            className="text-secondary small mb-4"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {product.description}
+          </p>
+
+          <div className="mt-auto d-flex gap-2 w-100">
+            <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
+              <Heart size={20} />
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
+              style={{ backgroundColor: '#007bff' }}
+              disabled={product.stock === 0}
+            >
+              <ShoppingCart size={18} /> {product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
+            </Button>
+            <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
+              <Eye size={20} />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+
+  const SmallProductItem = ({ product }) => (
+    <Link
+      to={`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', product.id)}`}
+      style={{ textDecoration: 'none', color: 'inherit' }}
+    >
+      <motion.div
+        className="h-100 p-3 d-flex flex-column position-relative"
+        whileHover={{ y: -5 }}
+        transition={{ duration: 0.2 }}
+      >
+        {product.badges.length > 0 && (
+          <div className="position-absolute top-0 start-0 m-2 z-1">
+            <Badge
+              bg={product.badges[0].bg}
+              text={product.badges[0].color}
+              className="rounded-1 px-2 py-1 fw-bold small"
+            >
+              {product.badges[0].text}
+            </Badge>
+          </div>
+        )}
+
+        <div
+          className="d-flex align-items-center justify-content-center mb-3 bg-light rounded"
+          style={{ height: '200px', overflow: 'hidden' }}
+        >
+          <img
+            src={product.image}
+            className="img-fluid"
+            style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+            alt={product.title}
+          />
+        </div>
+
+        <div className="d-flex flex-column flex-grow-1">
+          <h6
+            className="fw-semibold mb-2 text-dark"
+            style={{
+              lineHeight: '1.4',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: '42px',
+            }}
+            title={product.title}
+          >
+            {product.title}
+          </h6>
+
+          <div className="mt-auto">
+            {product.originalPrice && (
+              <div className="mb-1">
+                <span className="text-decoration-line-through text-secondary me-2 small">
+                  {formatPrice(product.originalPrice)}₫
+                </span>
+              </div>
+            )}
+            <span className="fw-bold text-primary fs-6">{formatPrice(product.price)}₫</span>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+
   return (
     <section className="py-5">
       <Container>
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
-          <Button
-            className="fw-bold px-4 border-0 text-dark"
-            style={{ backgroundColor: '#FFC107', borderRadius: '4px' }}
-          >
-            VIEW ALL
-          </Button>
+          <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+              whileTap={{ scale: 0.95 }}
+              className="d-flex align-items-center justify-content-center px-4 py-2 rounded fw-bold text-dark border-0"
+              style={{ backgroundColor: '#FFC107' }}
+            >
+              VIEW ALL
+            </motion.button>
+          </Link>
         </div>
 
-        <div className="border border-light-subtle">
+        <hr className="my-4 text-secondary opacity-25" />
+
+        <motion.div
+          className="border border-light-subtle rounded"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
           <Row className="g-0">
             <Col lg={3} md={12} className="border-end border-light-subtle">
               <MainProductItem product={MAIN_PRODUCT} />
@@ -250,7 +386,7 @@ const FrequentlyBoughtTogether = () => {
               </Row>
             </Col>
           </Row>
-        </div>
+        </motion.div>
       </Container>
     </section>
   );

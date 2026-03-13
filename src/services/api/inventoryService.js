@@ -1,145 +1,62 @@
-import { api } from '../axiosClient';
-import { API_VERSION } from '@constants';
+import axiosClient from '../axiosClient';
 
-const BASE_URL = `${API_VERSION}/inventory`;
+// Backend routes are at /api/inventory (NOT /api/v1/inventory)
+const BASE = '/api/inventory';
 
-/**
- * Inventory API Service (ERP Module)
- */
-export const inventoryService = {
+const inventoryService = {
   /**
-   * Get all inventory items
-   * @param {object} params - Query parameters (filters, pagination, etc.)
-   * @returns {Promise} Inventory items list
+   * Adjust stock to a specific quantity (direct set)
+   * POST /api/inventory/adjust
+   * body: { productId, modelId, sku, newStock, note?, warehouseId? }
    */
-  getInventoryItems: async (params = {}) => {
-    return api.get(BASE_URL, { params });
-  },
+  adjustStock: async (data) => axiosClient.post(`${BASE}/adjust`, data),
 
   /**
-   * Get single inventory item by ID
-   * @param {string} id - Inventory item ID
-   * @returns {Promise} Inventory item details
+   * Add incoming stock
+   * POST /api/inventory/stock-in
+   * body: { productId, modelId, sku, quantity, costPrice?, note?, warehouseId? }
    */
-  getInventoryItemById: async (id) => {
-    return api.get(`${BASE_URL}/${id}`);
-  },
+  stockIn: async (data) => axiosClient.post(`${BASE}/stock-in`, data),
 
   /**
-   * Create new inventory item
-   * @param {object} itemData - Inventory item data
-   * @returns {Promise} Created inventory item
+   * Remove stock (manual out)
+   * POST /api/inventory/stock-out
+   * body: { productId, modelId, sku, quantity, note?, warehouseId? }
    */
-  createInventoryItem: async (itemData) => {
-    return api.post(BASE_URL, itemData);
-  },
+  stockOut: async (data) => axiosClient.post(`${BASE}/stock-out`, data),
 
   /**
-   * Update inventory item
-   * @param {string} id - Inventory item ID
-   * @param {object} itemData - Updated item data
-   * @returns {Promise} Updated inventory item
+   * Bulk update multiple SKUs at once
+   * POST /api/inventory/bulk-update
+   * body: { updates: [{ productId, modelId, sku, newStock, note? }] }
    */
-  updateInventoryItem: async (id, itemData) => {
-    return api.put(`${BASE_URL}/${id}`, itemData);
-  },
+  bulkUpdate: async (updates) => axiosClient.post(`${BASE}/bulk-update`, { updates }),
 
   /**
-   * Delete inventory item
-   * @param {string} id - Inventory item ID
-   * @returns {Promise} Deletion response
+   * List all transactions (movements), filterable
+   * GET /api/inventory/transactions
+   * params: { productId?, sku?, type?, startDate?, endDate?, page?, limit? }
    */
-  deleteInventoryItem: async (id) => {
-    return api.delete(`${BASE_URL}/${id}`);
-  },
+  getTransactions: async (params = {}) => axiosClient.get(`${BASE}/transactions`, { params }),
 
   /**
-   * Adjust inventory quantity
-   * @param {string} id - Inventory item ID
-   * @param {object} adjustmentData - { quantity, reason, notes }
-   * @returns {Promise} Adjustment response
+   * Single transaction by ID
+   * GET /api/inventory/transactions/:id
    */
-  adjustQuantity: async (id, adjustmentData) => {
-    return api.post(`${BASE_URL}/${id}/adjust`, adjustmentData);
-  },
+  getTransaction: async (id) => axiosClient.get(`${BASE}/transactions/${id}`),
 
   /**
-   * Get stock movements/history
-   * @param {string} itemId - Inventory item ID
-   * @param {object} params - Query parameters
-   * @returns {Promise} Stock movements
+   * Product inventory summary (all models/SKUs for one product)
+   * GET /api/inventory/summary/:productId
    */
-  getStockMovements: async (itemId, params = {}) => {
-    return api.get(`${BASE_URL}/${itemId}/movements`, { params });
-  },
+  getProductSummary: async (productId) => axiosClient.get(`${BASE}/summary/${productId}`),
 
   /**
-   * Get low stock alerts
-   * @param {object} params - Query parameters
-   * @returns {Promise} Low stock items
+   * Aggregate stats (total stock, low stock count, out of stock count, etc.)
+   * GET /api/inventory/stats
+   * params: { startDate?, endDate?, productId? }
    */
-  getLowStockAlerts: async (params = {}) => {
-    return api.get(`${BASE_URL}/alerts/low-stock`, { params });
-  },
-
-  /**
-   * Get out of stock items
-   * @param {object} params - Query parameters
-   * @returns {Promise} Out of stock items
-   */
-  getOutOfStockItems: async (params = {}) => {
-    return api.get(`${BASE_URL}/alerts/out-of-stock`, { params });
-  },
-
-  /**
-   * Perform stock count/audit
-   * @param {object} countData - Stock count data
-   * @returns {Promise} Stock count response
-   */
-  performStockCount: async (countData) => {
-    return api.post(`${BASE_URL}/stock-count`, countData);
-  },
-
-  /**
-   * Get inventory statistics
-   * @param {object} params - Query parameters
-   * @returns {Promise} Inventory statistics
-   */
-  getStatistics: async (params = {}) => {
-    return api.get(`${BASE_URL}/statistics`, { params });
-  },
-
-  /**
-   * Get inventory valuation
-   * @param {object} params - Query parameters
-   * @returns {Promise} Inventory valuation data
-   */
-  getInventoryValuation: async (params = {}) => {
-    return api.get(`${BASE_URL}/valuation`, { params });
-  },
-
-  /**
-   * Export inventory to CSV/Excel
-   * @param {object} params - Export parameters
-   * @returns {Promise} Export file
-   */
-  exportInventory: async (params = {}) => {
-    return api.get(`${BASE_URL}/export`, {
-      params,
-      responseType: 'blob',
-    });
-  },
-
-  /**
-   * Bulk import inventory
-   * @param {FormData} formData - CSV/Excel file
-   * @returns {Promise} Import response
-   */
-  importInventory: async (formData) => {
-    return api.post(`${BASE_URL}/import`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
+  getStats: async (params = {}) => axiosClient.get(`${BASE}/stats`, { params }),
 };
 
 export default inventoryService;

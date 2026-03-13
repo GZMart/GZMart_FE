@@ -1,0 +1,1011 @@
+/* =============================================================
+   Admin — Attributes Page  (premium redesign)
+   ============================================================= */
+
+/* ── Page ─────────────────────────────────────────────────── */
+.page {
+  padding: 2px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.headerIcon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+.headerIcon svg {
+  width: 22px;
+  height: 22px;
+}
+.h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+.subtitle {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0;
+}
+.btnAdd {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: linear-gradient(130deg, #4f46e5, #4338ca) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 8px 18px !important;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35) !important;
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s !important;
+  cursor: pointer !important;
+}
+.btnAdd:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(79, 70, 229, 0.45) !important;
+}
+.btnAdd svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Stat cards ───────────────────────────────────────────── */
+.stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.statCard {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: default;
+  transition: transform 0.15s;
+}
+.statCard:hover {
+  transform: translateY(-2px);
+}
+
+.statTotal {
+  background: #f5f3ff;
+  border-color: #ede9fe;
+}
+.statRequired {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.statFilter {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.statNum {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.statTotal .statNum {
+  color: #4f46e5;
+}
+.statRequired .statNum {
+  color: #d97706;
+}
+.statFilter .statNum {
+  color: #16a34a;
+}
+
+.statLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #6b7280;
+}
+
+/* ── Table wrapper ────────────────────────────────────────── */
+.tableWrap {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #f0f0f0;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  flex-wrap: wrap;
+  background: #fafafa;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  color: #9ca3af;
+  pointer-events: none;
+  width: 15px;
+  height: 15px;
+}
+.searchInput {
+  padding: 6px 10px 6px 32px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  width: 220px !important;
+  outline: none !important;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s !important;
+  background: #fff !important;
+  color: #111827 !important;
+}
+.searchInput:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+}
+
+.filterSelect {
+  padding: 6px 30px 6px 10px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  outline: none !important;
+  transition: border-color 0.15s !important;
+  height: 36px !important;
+  background: #fff !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  min-width: 160px !important;
+}
+.filterSelect:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+}
+
+.btnClear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #ef4444;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.btnClear:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.btnClear svg {
+  width: 13px;
+  height: 13px;
+}
+
+.resultCount {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  border-radius: 10px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ── Active category pill ──────────────────────────────────── */
+.activeCatPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4f46e5;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 20px;
+  padding: 3px 6px 3px 10px;
+  white-space: nowrap;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+.activeCatPillDot {
+  width: 6px;
+  height: 6px;
+  background: #4f46e5;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.activeCatPillX {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: #c7d2fe;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #4f46e5;
+  padding: 0;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.activeCatPillX:hover {
+  background: #a5b4fc;
+}
+.activeCatPillX svg {
+  width: 9px;
+  height: 9px;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Table ────────────────────────────────────────────────── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.table thead tr {
+  background: #f9fafb;
+  border-bottom: 1px solid #f0f0f0;
+}
+.table thead th {
+  padding: 10px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7280;
+  text-align: left;
+  white-space: nowrap;
+}
+.table thead th.center {
+  text-align: center;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.12s;
+}
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+.table tbody tr:hover {
+  background: #f8f8ff;
+}
+
+.table td {
+  padding: 10px 14px;
+  vertical-align: middle;
+  color: #374151;
+}
+.table td.center {
+  text-align: center;
+}
+
+/* Name cell */
+.attrName {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+/* Slug */
+.slugCode {
+  font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  font-size: 11.5px;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* Category pill */
+.catPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #4f46e5;
+  background: #eef2ff;
+  border-radius: 20px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+/* Status pills in table */
+.pillYes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.pillYesRequired {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.pillYesFilter {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.pillNo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #f9fafb;
+  color: #9ca3af;
+  border: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.pillDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pillYesRequired .pillDot {
+  background: #d97706;
+}
+.pillYesFilter .pillDot {
+  background: #16a34a;
+}
+.pillNo .pillDot {
+  background: #d1d5db;
+}
+
+/* Option tags in cell */
+.optionTagsCell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 220px;
+}
+.optTag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+.optTagMore {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 20px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+.emptyDash {
+  color: #d1d5db;
+}
+
+/* Action buttons */
+.btnEdit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #6366f1;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.btnEdit:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.btnEdit svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btnDelete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #9ca3af;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.btnDelete:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+.btnDelete svg {
+  width: 15px;
+  height: 15px;
+}
+
+.actionsCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Empty State ──────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  color: #9ca3af;
+  gap: 12px;
+}
+.emptyIcon {
+  width: 48px;
+  height: 48px;
+  color: #d1d5db;
+}
+.emptyTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+.emptyText {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin: 0;
+  text-align: center;
+}
+.emptyBtn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: linear-gradient(130deg, #4f46e5, #4338ca) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 8px 18px !important;
+  margin-top: 4px !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  transition:
+    transform 0.15s,
+    box-shadow 0.2s !important;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3) !important;
+}
+.emptyBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(79, 70, 229, 0.4) !important;
+}
+
+/* ── Loading spinner ──────────────────────────────────────── */
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+}
+
+/* ── Alert toast ──────────────────────────────────────────── */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  animation: slideIn 0.25s ease-out;
+}
+.toastSuccess {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+.toastError {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+.toast svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Modal ────────────────────────────────────────────────── */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.modalHeaderIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modalHeaderIcon svg {
+  width: 20px;
+  height: 20px;
+}
+.modalIconAdd {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.modalIconEdit {
+  background: #fff7ed;
+  color: #d97706;
+}
+
+.modalHeaderTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+  margin: 0;
+}
+.modalHeaderSub {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 2px 0 0;
+}
+
+/* Form section divider */
+.formDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 14px;
+  color: #9ca3af;
+}
+.formDivider::before,
+.formDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #f0f0f0;
+}
+.formDividerLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+/* Options area */
+.optionsArea {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+.optionInputRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.optionField {
+  flex: 1;
+  padding: 7px 12px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  outline: none !important;
+  transition: border-color 0.15s !important;
+  background: #fff !important;
+}
+.optionField:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+}
+.btnAddOpt {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 7px 14px !important;
+  background: #eef2ff !important;
+  border: 1px solid #c7d2fe !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #4f46e5 !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+  white-space: nowrap !important;
+}
+.btnAddOpt:hover {
+  background: #e0e7ff !important;
+}
+.btnAddOpt svg {
+  width: 14px;
+  height: 14px;
+}
+
+.optionTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+}
+.optionTagItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  padding: 3px 10px 3px 12px;
+}
+.btnRemoveOpt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: #e5e7eb;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btnRemoveOpt:hover {
+  background: #fecaca;
+  color: #dc2626;
+}
+.btnRemoveOpt svg {
+  width: 10px;
+  height: 10px;
+}
+
+.optionsHint {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
+/* ── Toggle switch cards ─────────────────────────────────── */
+.toggleRow {
+  display: flex;
+  gap: 12px;
+}
+.toggleDivider {
+  display: none;
+}
+
+.toggleCard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
+  user-select: none;
+}
+.toggleCard:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Active state colors per type */
+.toggleCardRequired.toggleCardActive {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.08);
+}
+.toggleCardFilter.toggleCardActive {
+  background: #f0fdf4;
+  border-color: #86efac;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+}
+
+/* The pill switch track */
+.switchTrack {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: #d1d5db;
+  flex-shrink: 0;
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toggleCardRequired.toggleCardActive .switchTrack {
+  background: #d97706;
+}
+.toggleCardFilter.toggleCardActive .switchTrack {
+  background: #16a34a;
+}
+
+/* The knob */
+.switchTrack::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toggleCardActive .switchTrack::after {
+  transform: translateX(18px);
+}
+
+.switchInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.switchLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.2;
+  transition: color 0.2s;
+}
+.toggleCardRequired.toggleCardActive .switchLabel {
+  color: #92400e;
+}
+.toggleCardFilter.toggleCardActive .switchLabel {
+  color: #166534;
+}
+
+.switchHint {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  line-height: 1.3;
+}
+
+/* ── Delete Confirm Modal ─────────────────────────────────── */
+.deleteModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+.deleteModalCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+.deleteModalIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+.deleteModalIcon svg {
+  width: 24px;
+  height: 24px;
+}
+.deleteModalTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+.deleteModalText {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.deleteModalName {
+  font-weight: 600;
+  color: #111827;
+}
+.deleteModalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btnDeleteConfirm {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 9px 22px !important;
+  background: #ef4444 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+.btnDeleteConfirm:hover {
+  background: #dc2626 !important;
+}
+.btnDeleteCancel {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 9px 22px !important;
+  background: #f3f4f6 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+}
+.btnDeleteCancel:hover {
+  background: #e5e7eb !important;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .stats {
+    gap: 8px;
+  }
+  .h2 {
+    font-size: 1.1rem;
+  }
+  .searchInput {
+    width: 160px !important;
+  }
+  .filterSelect {
+    min-width: 120px !important;
+  }
+  .optionTagsCell {
+    max-width: 140px;
+  }
+}
+@media (max-width: 576px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterBar {
+    flex-direction: column;
+  }
+  .searchInput {
+    width: 100% !important;
+  }
+  .filterSelect {
+    width: 100% !important;
+  }
+  .resultCount {
+    margin-left: 0;
+  }
+}

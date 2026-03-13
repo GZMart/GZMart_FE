@@ -1,0 +1,48 @@
+name: Format & Build GZMart
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build_and_format:
+    name: Format Check, Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      # Bước 1: Lấy mã nguồn
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Bước 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # Bước 3: Cài đặt dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Bước 4: Kiểm tra định dạng code bằng Prettier
+      - name: Check code formatting
+        run: npm run format:check
+        continue-on-error: true
+
+      # Bước 5: Chạy linter
+      - name: Run Lint
+        run: npm run lint
+        continue-on-error: false
+
+      # Bước 6: Build dự án
+      - name: Build Project
+        run: CI=false npm run build
+        continue-on-error: false

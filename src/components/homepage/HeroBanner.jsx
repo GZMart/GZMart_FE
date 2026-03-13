@@ -1,188 +1,412 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-// --- Custom Styles (Có thể tách ra file CSS riêng) ---
+// --- 1. CONSTANTS & STYLES ---
+const COLORS = {
+  bg: '#f8f9fa',
+  accent: '#f6c243',
+  textWhite: '#fff',
+  textDark: '#333',
+};
+
 const styles = {
-  bannerContainer: {
-    backgroundColor: '#0a58ca', // Màu nền xanh chủ đạo
+  heroBannerWrapper: {
     position: 'relative',
-    overflow: 'hidden',
-    minHeight: '400px', // Chiều cao tối thiểu
+    width: '100%',
+    maxWidth: '1300px',
+    height: '450px',
+    margin: '0 auto',
+    zIndex: 1,
+    fontFamily: "'Poppins', sans-serif",
   },
-  // Tạo họa tiết nền màu vàng bằng CSS (đơn giản hóa)
-  bgDecoration: {
+
+  // Nút tròn trang trí (Notch)
+  heroBannerNotch: {
     position: 'absolute',
-    top: '-30%',
-    right: '-20%',
-    width: '70%',
-    paddingBottom: '70%', // Tạo hình vuông để bo tròn
-    backgroundColor: '#fca311', // Màu vàng cam
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '100px',
+    height: '100px',
+    backgroundColor: COLORS.bg,
     borderRadius: '50%',
-    zIndex: 0,
-    opacity: 0.9,
+    pointerEvents: 'none',
+    zIndex: 10,
   },
-  bgDecorationLine: {
+  heroBannerNotchLeft: { left: '-50px' },
+  heroBannerNotchRight: { right: '-50px' },
+
+  // Nút điều hướng (Btn)
+  heroBannerBtn: {
     position: 'absolute',
-    top: '10%',
-    right: '30%',
-    width: '400px',
-    height: '400px',
-    border: '2px solid rgba(255,255,255,0.2)',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '60px',
+    height: '60px',
+    backgroundColor: '#fff',
+    color: '#333',
+    border: '2px solid #eaeaea',
     borderRadius: '50%',
-    zIndex: 0,
-  },
-  // Style cho nút điều hướng tròn màu trắng
-  controlBtn: {
-    width: '50px',
-    height: '50px',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: '50%',
+    cursor: 'pointer',
+    zIndex: 20,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#000',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s ease',
   },
-  productImage: {
-    maxHeight: '500px',
-    objectFit: 'contain',
-    transform: 'rotate(-15deg) translateX(20px)', // Xoay nhẹ để tạo hiệu ứng động
-    zIndex: 2,
+  heroBannerBtnPrev: { left: '-30px' },
+  heroBannerBtnNext: { right: '-30px' },
+
+  // Khung chứa slide
+  heroBannerCard: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    borderRadius: '20px',
+    zIndex: 5,
+    background: '#000',
+    overflow: 'hidden',
+  },
+  heroBannerInner: {
+    width: '100%',
+    height: '100%',
     position: 'relative',
   },
+  heroBannerTrack: {
+    display: 'flex',
+    height: '100%',
+    transition: 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)',
+  },
+
+  // Slide đơn lẻ
+  heroBannerSlide: {
+    minWidth: '100%',
+    height: '100%',
+    position: 'relative',
+    display: 'flex',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  },
+  heroBannerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(120deg, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.3) 100%)',
+    zIndex: 1,
+  },
+  heroBannerGrid: {
+    position: 'relative',
+    zIndex: 2,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 80px',
+  },
+
+  // Cột nội dung (Text)
+  heroBannerTextCol: {
+    flex: 1,
+    textAlign: 'left',
+    maxWidth: '55%',
+  },
+  heroBannerTopTag: {
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    color: COLORS.accent,
+    marginBottom: '8px',
+    display: 'block',
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+  heroBannerHeading: {
+    fontFamily: "'Anton', sans-serif",
+    fontSize: '4rem',
+    lineHeight: 1,
+    marginBottom: '10px',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    whiteSpace: 'pre-line',
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+  heroBannerPromo: {
+    fontSize: '2.2rem',
+    fontWeight: 800,
+    color: '#fff',
+    display: 'block',
+    marginBottom: '10px',
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+  heroBannerDesc: {
+    fontSize: '0.95rem',
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: 300,
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: '0.5s ease-out',
+  },
+
+  // Cột ảnh (Image)
+  heroBannerImgCol: {
+    flex: 1,
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  heroBannerTiltImg: {
+    width: '320px',
+    height: 'auto',
+    objectFit: 'contain',
+    transform: 'rotate(-15deg)',
+    filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))',
+    transition: 'transform 0.5s ease',
+    opacity: 0,
+  },
+
+  // Trạng thái Active (Animation state)
+  heroBannerActiveElem: {
+    opacity: 1,
+    transform: 'translateY(0)',
+  },
+  heroBannerActiveImg: {
+    opacity: 1,
+    transform: 'rotate(-15deg) translateX(0)',
+    transition: 'all 0.8s ease-out 0.2s',
+  },
+
+  // Dots Navigation
+  heroBannerNav: {
+    position: 'absolute',
+    bottom: '30px',
+    left: '80px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    zIndex: 10,
+  },
+  heroBannerIndicator: {
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.4)',
+    cursor: 'pointer',
+    border: 'none',
+    padding: 0,
+    transition: 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+  },
+  heroBannerActiveIndicator: {
+    background: COLORS.accent,
+    width: '45px',
+    borderRadius: '10px',
+  },
 };
-// ----------------------------------------------------
 
+// --- 2. COMPONENT ---
 const HeroBanner = () => {
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // DATA (Giả lập)
+  const fakeData = [
+    {
+      id: 1,
+      bgImage:
+        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop',
+      productImage:
+        'https://png.pngtree.com/png-vector/20240309/ourmid/pngtree-the-smartwatch-banner-png-image_11919210.png',
+      tag: 'Best Deal Online on',
+      title: 'Smart Watches',
+      promoPrefix: 'UP TO',
+      promoHighlight: '50% OFF',
+      desc: '*Applicable to Series 7 and above models.',
+    },
+    {
+      id: 2,
+      bgImage:
+        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=2070&auto=format&fit=crop',
+      productImage:
+        'https://png.pngtree.com/png-clipart/20241210/original/pngtree-nike-shoes-transparent-png-image_17778783.png',
+      tag: 'New Collection',
+      title: 'Latest Nike Shoes',
+      promoPrefix: 'FLAT',
+      promoHighlight: '30% OFF',
+      desc: 'Free shipping for orders placed today.',
+    },
+    {
+      id: 3,
+      bgImage:
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop',
+      productImage:
+        'https://www.gonoise.com/cdn/shop/files/3_f6efac49-e93c-4cf1-93db-313be862cab9.webp?v=1720759166',
+      tag: 'Premium Sound',
+      title: 'Wireless Headset',
+      promoPrefix: 'BUY 1',
+      promoHighlight: 'GET 1',
+      desc: 'Limited quantity gift combo.',
+    },
+  ];
+
+  useEffect(() => {
+    setBanners(fakeData);
+    setLoading(false);
+  }, []);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+  }, [banners.length]);
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
+  }, [banners.length]);
+
+  useEffect(() => {
+    if (loading || banners.length === 0) {
+      return;
+    }
+    const interval = setInterval(() => handleNext(), 5000);
+    return () => clearInterval(interval);
+  }, [currentIndex, loading, banners, handleNext]);
+
+  if (loading || !banners.length) {
+    return null;
+  }
+
   return (
-    <section>
-      <div id="heroBannerCarousel" className="carousel slide" data-bs-ride="carousel">
-        {/* --- 1. Carousel Indicators (Các chấm tròn bên dưới) --- */}
-        <div
-          className="carousel-indicators justify-content-start container ms-auto mb-4"
-          style={{
-            zIndex: 2,
-            position: 'absolute',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-          }}
+    <>
+      <div style={styles.heroBannerWrapper}>
+        {/* Notch */}
+        <div style={{ ...styles.heroBannerNotch, ...styles.heroBannerNotchLeft }}></div>
+        <div style={{ ...styles.heroBannerNotch, ...styles.heroBannerNotchRight }}></div>
+
+        {/* Buttons */}
+        <button
+          style={{ ...styles.heroBannerBtn, ...styles.heroBannerBtnPrev }}
+          onClick={handlePrev}
+          aria-label="Previous Slide"
         >
-          {/* Custom CSS cho indicators để tạo thanh dài và chấm tròn */}
-          <style>
-            {`
-              .banner-indicator {
-                width: 8px !important;
-                height: 8px !important;
-                border-radius: 50%;
-                background-color: rgba(255,255,255,0.5) !important;
-                border: none !important;
-                margin: 0 4px !important;
-                transition: all 0.3s ease;
-              }
-              .banner-indicator.active {
-                width: 25px !important;
-                border-radius: 4px;
-                background-color: #fff !important;
-              }
-            `}
-          </style>
-          <button
-            type="button"
-            data-bs-target="#heroBannerCarousel"
-            data-bs-slide-to="0"
-            className="active banner-indicator"
-            aria-current="true"
-            aria-label="Slide 1"
-          ></button>
-          <button
-            type="button"
-            data-bs-target="#heroBannerCarousel"
-            data-bs-slide-to="1"
-            className="banner-indicator"
-            aria-label="Slide 2"
-          ></button>
-          <button
-            type="button"
-            data-bs-target="#heroBannerCarousel"
-            data-bs-slide-to="2"
-            className="banner-indicator"
-            aria-label="Slide 3"
-          ></button>
-          {/* Thêm các chấm khác nếu cần */}
-        </div>
+          <ChevronLeft size={24} />
+        </button>
+        <button
+          style={{ ...styles.heroBannerBtn, ...styles.heroBannerBtnNext }}
+          onClick={handleNext}
+          aria-label="Next Slide"
+        >
+          <ChevronRight size={24} />
+        </button>
 
-        {/* --- 2. Carousel Inner (Nội dung chính) --- */}
-        <div className="carousel-inner">
-          {/* --- Slide 1 (Active) --- */}
-          <div className="carousel-item active" style={styles.bannerContainer}>
-            {/* Họa tiết trang trí nền */}
-            <div style={styles.bgDecoration}></div>
-            <div style={styles.bgDecorationLine}></div>
+        {/* Main Card */}
+        <div style={styles.heroBannerCard}>
+          <div style={styles.heroBannerInner}>
+            <div
+              style={{
+                ...styles.heroBannerTrack,
+                transform: `translateX(-${currentIndex * 100}%)`,
+              }}
+            >
+              {banners.map((banner, index) => {
+                const isActive = index === currentIndex;
 
-            <div className="container h-100 position-relative" style={{ zIndex: 1 }}>
-              <div className="row align-items-center h-100 py-5">
-                {/* Left Content: Text */}
-                <div className="col-md-6 col-lg-6 text-white py-5">
-                  <h5 className="fw-light mb-3 fs-4">Best Deal Online on smart watches</h5>
-                  <h1
-                    className="display-3 fw-bolder text-uppercase mb-3"
-                    style={{ letterSpacing: '-1px' }}
+                return (
+                  <div
+                    key={banner.id}
+                    style={{
+                      ...styles.heroBannerSlide,
+                      backgroundImage: `url(${banner.bgImage})`,
+                    }}
                   >
-                    LATEST NIKE SHOES
-                  </h1>
-                  <p className="fs-3 fw-light mb-4">
-                    UP to <span className="fw-bold">80% OFF</span>
-                  </p>
-                  {/* Nút bấm (Tùy chọn thêm) */}
-                  {/* <button className="btn btn-light btn-lg rounded-pill px-4 fw-bold">Shop Now</button> */}
-                </div>
+                    <div style={styles.heroBannerOverlay}></div>
+                    <div style={styles.heroBannerGrid}>
+                      {/* Text Column */}
+                      <div style={styles.heroBannerTextCol}>
+                        <span
+                          style={{
+                            ...styles.heroBannerTopTag,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.1s',
+                          }}
+                        >
+                          {banner.tag}
+                        </span>
 
-                {/* Right Content: Image */}
-                <div className="col-md-6 col-lg-6 text-center text-md-end">
-                  <img
-                    src="/nike-shoes-banner.png" // <-- Đảm bảo bạn có ảnh này trong folder public
-                    alt="Nike Shoes"
-                    className="img-fluid"
-                    style={styles.productImage}
-                  />
-                </div>
-              </div>
+                        <h1
+                          style={{
+                            ...styles.heroBannerHeading,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.3s',
+                          }}
+                        >
+                          {banner.title}
+                        </h1>
+
+                        <div
+                          style={{
+                            ...styles.heroBannerPromo,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.5s',
+                          }}
+                        >
+                          {banner.promoPrefix}{' '}
+                          <span style={{ color: COLORS.accent }}>{banner.promoHighlight}</span>
+                        </div>
+
+                        <p
+                          style={{
+                            ...styles.heroBannerDesc,
+                            ...(isActive ? styles.heroBannerActiveElem : {}),
+                            transitionDelay: '0.6s',
+                          }}
+                        >
+                          {banner.desc}
+                        </p>
+                      </div>
+
+                      {/* Image Column */}
+                      <div style={styles.heroBannerImgCol}>
+                        <img
+                          src={banner.productImage}
+                          alt={banner.title}
+                          style={{
+                            ...styles.heroBannerTiltImg,
+                            ...(isActive ? styles.heroBannerActiveImg : {}),
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* --- Slide 2 (Ví dụ để test carousel) --- */}
-          {/* Bạn có thể copy structure Slide 1 xuống đây và thay đổi nội dung/màu sắc */}
-          {/* <div className="carousel-item" style={{...styles.bannerContainer, backgroundColor: '#5a0000'}}> ... </div> */}
+          {/* Indicators / Dots */}
+          <div style={styles.heroBannerNav}>
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                style={{
+                  ...styles.heroBannerIndicator,
+                  ...(index === currentIndex ? styles.heroBannerActiveIndicator : {}),
+                }}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
-
-        {/* --- 3. Carousel Controls (Nút mũi tên) --- */}
-        <button
-          className="carousel-control-prev"
-          type="button"
-          data-bs-target="#heroBannerCarousel"
-          data-bs-slide="prev"
-          style={{ width: '8%', zIndex: 3 }}
-        >
-          <span style={styles.controlBtn}>
-            <ChevronLeft size={28} />
-          </span>
-          <span className="visually-hidden">Previous</span>
-        </button>
-        <button
-          className="carousel-control-next"
-          type="button"
-          data-bs-target="#heroBannerCarousel"
-          data-bs-slide="next"
-          style={{ width: '8%', zIndex: 3 }}
-        >
-          <span style={styles.controlBtn}>
-            <ChevronRight size={28} />
-          </span>
-          <span className="visually-hidden">Next</span>
-        </button>
       </div>
-    </section>
+    </>
   );
 };
 

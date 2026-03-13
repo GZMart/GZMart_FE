@@ -87,6 +87,16 @@ body {
   }
 }
 
+/* Spin Animation for Loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -104,4 +114,62 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Animation Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide Down Animation for Mega Menu */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Pulse animation for HOT DEAL badge */
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Custom scrollbar for mega menu */
+.mega-menu-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mega-menu-scroll::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.mega-menu-scroll::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 3px;
+}
+
+.mega-menu-scroll::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* Hover effect for discount card button */
+.discount-btn-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.4) !important;
 }

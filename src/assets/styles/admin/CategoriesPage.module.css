@@ -1,0 +1,649 @@
+/* =============================================================
+   Admin — Categories Page  (tree-table edition)
+   ============================================================= */
+
+/* ── Page ─────────────────────────────────────────────────── */
+.page {
+  padding: 2px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.headerIcon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+  color: #4f46e5;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+.subtitle {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0;
+}
+.btnAdd {
+  background: linear-gradient(130deg, #4f46e5, #7c3aed) !important;
+  border: none !important;
+  border-radius: 9px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.35) !important;
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s !important;
+}
+.btnAdd:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(79, 70, 229, 0.45) !important;
+}
+
+/* ── Stat cards ───────────────────────────────────────────── */
+.stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.statCard {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: default;
+  transition: transform 0.15s;
+}
+.statCard:hover {
+  transform: translateY(-2px);
+}
+
+.statTotal {
+  background: #f5f3ff;
+  border-color: #ede9fe;
+}
+.statActive {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.statInactive {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.statNum {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.statTotal .statNum {
+  color: #4f46e5;
+}
+.statActive .statNum {
+  color: #16a34a;
+}
+.statInactive .statNum {
+  color: #9ca3af;
+}
+
+.statLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #6b7280;
+}
+
+/* ── Table wrapper ────────────────────────────────────────── */
+.tableWrap {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #f0f0f0;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* Toolbar */
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f5f5f5;
+  flex-wrap: wrap;
+}
+
+/* Filter bar (search + selects + clear) */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchInput {
+  width: 240px !important;
+  border-radius: 8px !important;
+}
+.searchInput :global(.ant-input-prefix) {
+  color: #9ca3af;
+}
+.searchInput:focus-within {
+  border-color: #6366f1 !important;
+}
+
+.searchIcon {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.filterSelect {
+  width: 140px !important;
+}
+.filterSelect :global(.ant-select-selector) {
+  border-radius: 8px !important;
+}
+
+.btnClear {
+  color: #ef4444 !important;
+  font-size: 13px !important;
+  padding: 0 8px !important;
+}
+.btnClear:hover {
+  color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
+
+/* Right side of toolbar */
+.toolbarRight {
+  flex-shrink: 0;
+}
+
+.resultCount {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  border-radius: 10px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.tableTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.btnToggleAll {
+  font-size: 0.8rem !important;
+  color: #6366f1 !important;
+  gap: 4px;
+}
+.btnToggleAll:hover {
+  color: #4338ca !important;
+}
+
+/* Row depths */
+.rowRoot td {
+  background: #ffffff !important;
+}
+.rowChild td {
+  background: #fafafa !important;
+}
+
+/* Row hover */
+:global(.ant-table-tbody > tr.rowRoot:hover > td),
+:global(.ant-table-tbody > tr.rowChild:hover > td) {
+  background: #f0f4ff !important;
+}
+
+/* ── Expand button ────────────────────────────────────────── */
+.expandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 10px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-right: 4px;
+  padding: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+.expandBtn:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+  background: #f0f4ff;
+}
+.expandBtnOpen {
+  border-color: #6366f1;
+  color: #6366f1;
+  background: #eef2ff;
+}
+.expandPlaceholder {
+  display: inline-block;
+  width: 20px;
+  margin-right: 4px;
+}
+
+/* ── Name cell ────────────────────────────────────────────── */
+.nameCellInner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Depth dot — little color stripe */
+.depthDot {
+  display: inline-block;
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.depth0 {
+  background: #4f46e5;
+}
+.depth1 {
+  background: #0ea5e9;
+}
+.depth2 {
+  background: #10b981;
+}
+
+.catIcon,
+.catIconDefault {
+  font-size: 13px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.catIcon {
+  color: #6366f1;
+}
+
+.nameRoot {
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.92rem;
+}
+.nameChild {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.childCount {
+  margin-left: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #a5b4fc;
+  background: #eef2ff;
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+/* ── Slug ─────────────────────────────────────────────────── */
+.slugCode {
+  font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  font-size: 11.5px;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* ── Empty ────────────────────────────────────────────────── */
+.empty {
+  color: #d1d5db;
+}
+
+/* ── Order pill ───────────────────────────────────────────── */
+.orderPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: #f3f4f6;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  padding: 0 6px;
+}
+
+/* ── Action buttons ───────────────────────────────────────── */
+.btnAddSub {
+  color: #8b5cf6 !important;
+  border-radius: 7px !important;
+}
+.btnAddSub:hover {
+  background: #f5f3ff !important;
+}
+
+.btnEdit {
+  color: #6366f1 !important;
+  border-radius: 7px !important;
+}
+.btnEdit:hover {
+  background: #eef2ff !important;
+}
+
+.btnDelete {
+  border-radius: 7px !important;
+}
+.btnDelete:hover:not(:disabled) {
+  background: #fef2f2 !important;
+}
+
+/* ── Modal header ─────────────────────────────────────────── */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.modalHeaderIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.modalIconAdd {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.modalIconEdit {
+  background: #fff7ed;
+  color: #d97706;
+}
+
+.modalHeaderTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+}
+.modalHeaderSub {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 1px;
+}
+
+/* ── Form layout ──────────────────────────────────────────── */
+.form {
+  padding-top: 4px;
+}
+
+/* Top panel: [image | basic info] */
+.formTopPanel {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.formImageCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formSectionLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Override CloudinaryUpload trigger size to fill column */
+.formImageCol :global(.wrapper) {
+  width: 100%;
+}
+.formImageCol :global(.uploadTrigger),
+.formImageCol :global(.preview) {
+  width: 100% !important;
+  height: 140px !important;
+}
+
+.formInfoCol {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Divider with label */
+.formDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 16px;
+  color: #9ca3af;
+}
+.formDivider::before,
+.formDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #f0f0f0;
+}
+.formDividerLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+/* Settings 4-column grid */
+.formSettingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px 16px;
+  align-items: start;
+}
+
+/* Parent takes full row (span 2 on cols 1-2 explicitly in JSX) */
+.formSettingsGrid :global(.ant-form-item) {
+  margin-bottom: 0;
+}
+
+/* Switch + hint text */
+.switchField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 4px;
+}
+.switchHint {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  line-height: 1.3;
+}
+
+/* Status + Featured toggle row */
+.toggleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+
+.toggleDivider {
+  width: 1px;
+  background: #e5e7eb;
+  align-self: stretch;
+  margin: 0 16px;
+  flex-shrink: 0;
+}
+
+.formRow {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.formRow > :global(.ant-form-item) {
+  min-width: 120px;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .formTopPanel {
+    grid-template-columns: 1fr;
+  }
+  .formSettingsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .formSettingsGrid > *[style*='span 2'] {
+    grid-column: span 2;
+  }
+  .formRow {
+    flex-direction: column;
+  }
+  .formRow > :global(.ant-form-item) {
+    width: 100% !important;
+  }
+  .stats {
+    gap: 8px;
+  }
+  .h2 {
+    font-size: 1.1rem;
+  }
+}
+
+/* Featured switch — amber to distinguish from Active (green) */
+.switchFeatured:global(.ant-switch-checked) {
+  background: #d97706 !important;
+}
+
+/* ── Drag handle ──────────────────────────────────────────── */
+.dragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #d1d5db;
+  cursor: grab;
+  border-radius: 5px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+  padding: 0;
+  font-size: 14px;
+}
+.dragHandle:hover {
+  color: #6366f1;
+  background: #eef2ff;
+}
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragPlaceholder {
+  display: inline-block;
+  width: 24px;
+}
+
+/* ── DragOverlay ghost ─────────────────────────────────────── */
+.dragOverlay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid #6366f1;
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.dragOverlayIcon {
+  color: #6366f1;
+  font-size: 16px;
+}
+
+/* ── Toolbar badges ────────────────────────────────────────── */
+.savingBadge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #d97706;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 2px 10px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.dndHint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-style: italic;
+}

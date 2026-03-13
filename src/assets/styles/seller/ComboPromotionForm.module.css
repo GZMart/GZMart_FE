@@ -1,0 +1,389 @@
+/* ComboPromotionForm.module.css - Professional UI/UX */
+
+.container {
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+/* Sections */
+.section {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  transition: box-shadow 0.2s ease;
+}
+
+.section:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1a1a2e;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(180deg, #1890ff 0%, #096dd9 100%);
+  border-radius: 2px;
+}
+
+/* Form Fields */
+.label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.input {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.2s ease;
+  max-width: 400px;
+}
+
+.input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-style: italic;
+}
+
+.datePicker {
+  border-radius: 6px;
+  max-width: 400px;
+}
+
+/* Radio Options */
+.radioOption {
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.radioOption:hover {
+  color: #1890ff;
+}
+
+/* Tier Container - Compact Design */
+.tierContainer {
+  background: #fafbfc;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+  max-width: 600px;
+}
+
+.tierHeader {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 12px;
+}
+
+.tierHeaderLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tierList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tierRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tierIndex {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+.tierLabel {
+  font-size: 13px;
+  color: #595959;
+  white-space: nowrap;
+}
+
+.tierInput {
+  width: 70px !important;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.tierInput:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  outline: none;
+}
+
+.tierSuffix {
+  font-size: 12px;
+  color: #595959;
+  background-color: #f0f0f0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tierDeleteBtn {
+  margin-left: auto;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.tierDeleteBtn:hover {
+  opacity: 1;
+}
+
+.addTierBtn {
+  color: #1890ff;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 8px 0 0 0;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.addTierBtn:hover {
+  color: #096dd9;
+  text-decoration: none;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 48px 20px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.emptyState:hover {
+  border-color: #1890ff;
+  background-color: #f0f5ff;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  color: #bfbfbf;
+  display: block;
+  margin-bottom: 12px;
+}
+
+/* Batch Row */
+.batchRow {
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.batchLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.batchActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Product Table */
+.productTable {
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.productTable thead th {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  color: #595959;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8e8e8;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.productTable tbody td {
+  padding: 10px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.productTable tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.productTable tbody tr:hover {
+  background-color: #f0f5ff;
+}
+
+.productInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.productImage {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.productName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a2e;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productCode {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+.enableSwitch {
+  transform: scale(1.1);
+}
+
+.enableSwitch .form-check-input:checked {
+  background-color: #52c41a;
+  border-color: #52c41a;
+}
+
+/* Footer */
+.footer {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  border-top: 1px solid #e8e8e8;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 24px -24px -24px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cancelBtn {
+  min-width: 100px;
+}
+
+.submitBtn {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  min-width: 120px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.submitBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+}
+
+/* Action Buttons */
+.addProductBtn {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.addProductBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tierRow {
+    flex-wrap: wrap;
+  }
+
+  .tierInput {
+    width: 60px !important;
+  }
+
+  .batchRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .batchActions {
+    width: 100%;
+  }
+
+  .productInfo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cancelBtn,
+  .submitBtn {
+    width: 100%;
+  }
+}

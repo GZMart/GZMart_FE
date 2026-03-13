@@ -1,128 +1,565 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
+import { Image } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { addToCart } from '../../store/slices/cartSlice';
 import Breadcrumb from '../../components/common/Breadcrumb';
 import ProductCard from '../../components/common/ProductCard';
-import {
-  products,
-  getProductWithDeal,
-  generateAllProducts,
-  shippingMethods,
-  getProductImages,
-  findModel,
-  getPriceRange,
-  isInStock,
-} from '../../utils/data/ProductsPage_MockData';
+import ShopInfoCard from '../../components/common/ShopInfoCard';
+import RequireLoginModal from '../../components/common/RequireLoginModal';
+import ProductReviewSection from '../../components/buyer/ProductReviewSection';
+import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
+import { productService } from '../../services/api';
+import { flashsaleService } from '../../services/api/flashsaleService';
+import promotionBuyerService from '../../services/api/promotionBuyerService';
+import * as favouriteService from '../../services/api/favouriteService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
+
+const getShippingMethods = (t) => [
+  {
+    name: t('product_details.shipping_method.free.name'),
+    description: t('product_details.shipping_method.free.description'),
+    icon: 'bi-truck',
+  },
+  {
+    name: t('product_details.shipping_method.express.name'),
+    description: t('product_details.shipping_method.express.description'),
+    icon: 'bi-lightning',
+  },
+  {
+    name: t('product_details.shipping_method.pickup.name'),
+    description: t('product_details.shipping_method.pickup.description'),
+    icon: 'bi-shop',
+  },
+];
+
+const isInStock = (product, activeModel) => {
+  if (activeModel && activeModel.stock !== undefined) {
+    return activeModel.stock > 0;
+  }
+  return product && product.stock > 0;
+};
+
+const getPriceRange = (product) => {
+  if (!product || !product.models || product.models.length === 0) {
+    return { min: product?.price || 0, max: product?.price || 0 };
+  }
+  const prices = product.models.map((m) => m.price);
+  return { min: Math.min(...prices), max: Math.max(...prices) };
+};
+
+const findModel = (product, tierIndex) => {
+  if (!product || !product.models || !tierIndex || tierIndex.length === 0) {
+    return null;
+  }
+  // Backend models use 'tierIndex' (e.g., [0, 1])
+  return product.models.find(
+    (m) =>
+      m.tierIndex &&
+      m.tierIndex.length === tierIndex.length &&
+      m.tierIndex.every((val, i) => val === tierIndex[i])
+  );
+};
+
+const getProductImages = (product) => {
+  if (!product) {
+    return [];
+  }
+  // Prefer images from the first tier (usually Color) if available and populated
+  if (product.tier_variations && product.tier_variations.length > 0) {
+    const firstTier = product.tier_variations[0];
+    if (firstTier.images && firstTier.images.length > 0) {
+      // Flatten or collect images? Usually tier images are one per option.
+      // Shopee logic: Main Product Images + Tier Images?
+      // For now, return product images, but clicking a color variant changes the main image.
+      return product.images || [];
+    }
+  }
+  return product.images || (product.image ? [product.image] : []);
+};
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedTierIndex, setSelectedTierIndex] = useState([]); // Shopee-style: [colorIndex, sizeIndex]
+  const [selectedTierIndex, setSelectedTierIndex] = useState([]); // [tier0_index, tier1_index]
+  const [hoveredTierIndex, setHoveredTierIndex] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showSizeChart, setShowSizeChart] = useState(false);
 
-  // Get product details
-  const product = useMemo(() => {
-    const foundProduct = products.find((p) => p.id === parseInt(id));
-    return foundProduct ? getProductWithDeal(foundProduct) : null;
+  const [product, setProduct] = useState(null);
+  const [flashSale, setFlashSale] = useState(null);
+  const [promotions, setPromotions] = useState(null);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [activeModel, setActiveModel] = useState(null); // The specifically selected variant
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [frequentlyBought, setFrequentlyBought] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const user = useSelector((state) => state.auth.user);
+
+  // Fetch product details
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const fetchFlashSale = async (productId) => {
+          if (!productId) {
+            return null;
+          }
+          try {
+            // First try to fetch from getActive
+            const response = await flashsaleService.getActive();
+            const allFlashSales = Array.isArray(response)
+              ? response
+              : response.data?.data || response.data || [];
+
+            // Find flash sale for this product
+            const flashSale = allFlashSales.find((fs) => {
+              const prodId = fs.productId?._id || fs.productId?.id || fs.productId;
+              return prodId === productId;
+            });
+
+            if (flashSale) {
+              console.log('✅ Flash sale found for product:', flashSale);
+              return flashSale;
+            }
+
+            return null;
+          } catch (err) {
+            console.error('Error fetching flash sales:', err);
+            return null;
+          }
+        };
+
+        const [productResponse, relatedResponse, frequentlyBoughtResponse, promotionsResponse] =
+          await Promise.all([
+            productService.getById(id),
+            productService.getRelatedProducts(id, 8).catch(() => ({ data: [] })),
+            productService.getFeaturedProducts(4).catch(() => ({ data: [] })),
+            promotionBuyerService.getProductPromotions(id).catch(() => ({ data: null })),
+          ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const productData = productResponse.data?.data || productResponse.data || productResponse;
+
+        // Fetch flash sale data by matching product ID
+        console.log('🔍 Product ID:', productData?._id);
+        const flashSaleData = await fetchFlashSale(productData?._id);
+        if (flashSaleData) {
+          setFlashSale(flashSaleData);
+        } else {
+          console.log('⚠️ No active flash sale found for this product');
+        }
+
+        if (!productData || !productData._id) {
+          setError('Product not found');
+          return;
+        }
+
+        // Map Backend 'tiers' to Frontend 'tier_variations'
+        // Ensure tiers have 'name', 'options', 'images'
+        const tiers = productData.tiers || [];
+
+        // Find default active model (first one with stock, or just first one)
+        const defaultModel =
+          productData.models?.find((m) => m.stock > 0) || productData.models?.[0] || {};
+
+        // Initial selection: if tiers exist, select 0,0... or null if user must select
+        // Usually better to select the first valid option or nothing.
+        // Let's default to [0, 0] if tiers exist so user sees a price immediately.
+        const initialSelection = tiers.length > 0 ? tiers.map(() => 0) : [];
+
+        const transformed = {
+          ...productData,
+          id: productData._id,
+          tier_variations: tiers,
+          models: productData.models || [],
+          price: productData.originalPrice || 0,
+          flashSale: productData.flashSale || {
+            timeText: 'FLASH SALE STARTS IN 21:00, TODAY',
+          },
+          shopVouchers: productData.shopVouchers || [{ discount: 'Save 10k' }],
+          shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
+          warranty: productData.warranty || 'Free return within 15 days • Warranty included',
+          soldCount: productData.soldCount || productData.sold || 0,
+          wishlistCount: productData.wishlistCount || productData.favoriteCount || 0,
+        };
+
+        setProduct(transformed);
+        setSelectedTierIndex(initialSelection);
+
+        // Set initial active model based on initial selection
+        if (initialSelection.length > 0) {
+          const model = findModel(transformed, initialSelection);
+          if (model) {
+            setActiveModel(model);
+          }
+        } else if (productData.models?.length === 1) {
+          // Case: No tiers, just one model (simple product)
+          setActiveModel(productData.models[0]);
+        }
+
+        // Transform related & freq bought ... (Use existing logic or simplify)
+        const processRelated = (res) => {
+          const list = Array.isArray(res) ? res : res.data || [];
+          return list.map((p) => {
+            const minModelPrice =
+              p.models?.length > 0 ? Math.min(...p.models.map((m) => m.price)) : p.originalPrice;
+            return {
+              ...p,
+              id: p._id,
+              image:
+                p.images?.[0] ||
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+              price: minModelPrice ?? p.originalPrice ?? 0,
+            };
+          });
+        };
+
+        setRelatedProducts(processRelated(relatedResponse));
+        setFrequentlyBought(processRelated(frequentlyBoughtResponse));
+
+        // Set promotions data
+        const promoData = promotionsResponse?.data || promotionsResponse;
+        if (promoData) {
+          setPromotions(promoData);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching product:', err);
+          setError(err.response?.data?.message || 'Failed to load product');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (id) {
+      fetchAllData();
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  // Generate related products (same category)
-  const relatedProducts = useMemo(() => {
-    if (!product) {
-      return [];
-    }
-    const allProducts = generateAllProducts();
-    return allProducts
-      .filter((p) => p.category === product.category && p.id !== product.id)
-      .slice(0, 8);
-  }, [product]);
-
-  // Generate frequently bought together products
-  const frequentlyBought = useMemo(() => {
-    const allProducts = generateAllProducts();
-    return allProducts.slice(0, 4);
-  }, []);
-
-  // Get all images from tier_variations (Shopee-style)
-  const productImages = useMemo(() => {
-    if (product && product.tier_variations) {
-      return getProductImages(product);
-    }
-    // Fallback for products without tier_variations
-    return product?.image ? [product.image] : [];
-  }, [product]);
-
-  const breadcrumbItems = useMemo(() => [
-    { label: 'Home', path: '/', icon: 'bi-house' },
-    { label: 'Shop', path: '/products' },
-    { label: product?.category || 'Category', path: `/products?category=${product?.category}` },
-    { label: product?.name || '' },
-  ], [product]);
-
+  // Update countdown timer
   useEffect(() => {
-    if (product && product.tier_variations) {
-      // Initialize tier_index: [0, 0] for 2 tiers, [0] for 1 tier
-      const initialIndex = product.tier_variations.map(() => 0);
-      setSelectedTierIndex(initialIndex);
+    if (!flashSale || !flashSale.endAt) {
+      return;
     }
-  }, [product]);
 
-  if (!product) {
-    return (
-      <div className={styles.notFound}>
-        <h2>Product Not Found</h2>
-        <button onClick={() => navigate('/products')}>Back to Products</button>
-      </div>
-    );
-  }
+    const updateCountdown = () => {
+      const now = new Date();
+      const end = new Date(flashSale.endAt);
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown({ days, hours, minutes, seconds });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [flashSale]);
+
+  // Check if product is in favourites
+  useEffect(() => {
+    const checkFavouriteStatus = async () => {
+      if (user && product?._id) {
+        try {
+          const response = await favouriteService.checkInFavourites(product._id);
+          const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
+          setIsFavourite(isInFav);
+        } catch (error) {
+          console.error('Error checking favourite status:', error);
+        }
+      } else {
+        setIsFavourite(false);
+      }
+    };
+    checkFavouriteStatus();
+  }, [user, product?._id]);
+
+  // Check if an option should be disabled based on *other* current selections
+  const isOptionDisabled = (tierLevel, optionIndex) => {
+    if (!product || !product.models) {
+      return false;
+    }
+
+    // Construct target criteria to check availability
+    const targetIndices = [...selectedTierIndex];
+    targetIndices[tierLevel] = optionIndex;
+
+    const matchingModel = findModel(product, targetIndices);
+
+    // Disable if no matching model or stock is 0
+    if (!matchingModel) {
+      return true;
+    }
+    return matchingModel.stock <= 0;
+  };
+
+  const handleTierChange = (tierLevel, optionIndex) => {
+    if (isOptionDisabled(tierLevel, optionIndex)) {
+      return;
+    }
+
+    const newIndex = [...selectedTierIndex];
+    newIndex[tierLevel] = optionIndex;
+    setSelectedTierIndex(newIndex);
+
+    // Update Image if this tier has images (color tier)
+    const tier = product.tier_variations?.[tierLevel];
+    if (tier?.images && tier.images.length > optionIndex) {
+      setSelectedImage(optionIndex);
+    }
+
+    // Update Active Model
+    const matchingModel = findModel(product, newIndex);
+    setActiveModel(matchingModel); // Can be null if combination doesn't exist
+  };
 
   const handleQuantityChange = (delta) => {
     setQuantity((prev) => Math.max(1, prev + delta));
   };
 
-  const handleTierChange = (tierLevel, optionIndex) => {
-    const newIndex = [...selectedTierIndex];
-    newIndex[tierLevel] = optionIndex;
-    setSelectedTierIndex(newIndex);
+  const currentPrice = useMemo(() => {
+    if (activeModel) {
+      return activeModel.price;
+    }
+    if (product) {
+      const range = getPriceRange(product);
+      return range.min; // Show min price by default
+    }
+    return 0;
+  }, [activeModel, product]);
 
-    // Jump to image if changing first tier (usually Color)
-    if (tierLevel === 0) {
-      setSelectedImage(optionIndex);
+  const currentStock = useMemo(() => {
+    if (activeModel) {
+      return activeModel.stock;
+    }
+    return product?.stock || 0;
+  }, [activeModel, product]);
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (!product) {
+      return;
+    }
+
+    // Validate Selection
+    if (product.tier_variations?.length > 0) {
+      if (selectedTierIndex.some((idx) => idx === null || idx === undefined)) {
+        toast.error(t('product_details.toast_select_all'));
+        return;
+      }
+      if (!activeModel) {
+        toast.error(t('product_details.toast_unavailable'));
+        return;
+      }
+    }
+
+    setAddingToCart(true);
+    try {
+      // Stock Check
+      const stockCheck = activeModel
+        ? await productService.checkStockAvailability(product.id, activeModel._id, quantity)
+        : { data: { available: true } };
+
+      if (!stockCheck.data?.available) {
+        toast.error(
+          `${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`
+        );
+        setAddingToCart(false);
+        return;
+      }
+
+      // Determine Color and Size strings for Cart
+      let color = 'Default';
+      let size = 'Default';
+
+      if (product.tier_variations?.length > 0) {
+        product.tier_variations.forEach((tier, idx) => {
+          const selectedOption = tier.options[selectedTierIndex[idx]];
+          const tierNameLower = tier.name.toLowerCase();
+
+          if (
+            tierNameLower.includes('color') ||
+            tierNameLower.includes('màu') ||
+            tierNameLower.includes('mau')
+          ) {
+            color = selectedOption;
+          } else if (
+            tierNameLower.includes('size') ||
+            tierNameLower.includes('kích') ||
+            tierNameLower.includes('kich')
+          ) {
+            size = selectedOption;
+          }
+        });
+      }
+
+      // Dispatch Add to Cart
+      await dispatch(
+        addToCart({
+          product,
+          quantity,
+          color,
+          size,
+        })
+      ).unwrap();
+
+      toast.success(t('product_details.toast_add_cart_success'));
+    } catch (err) {
+      console.error('Add to cart error:', err);
+      toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
+    } finally {
+      setAddingToCart(false);
     }
   };
 
-  const handleTierHover = (tierLevel, optionIndex) => {
-    const newIndex = [...selectedTierIndex];
-    newIndex[tierLevel] = optionIndex;
-    setHoveredTierIndex(newIndex);
+  const handleBuyNow = () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    handleAddToCart();
+    navigate('/cart');
+  };
 
-    // Preview image if hovering first tier (usually Color)
-    if (tierLevel === 0) {
-      setSelectedImage(optionIndex);
+  const formatSavedCount = (count) => {
+    if (!count) {
+      return 0;
+    }
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1).replace('.0', '')}k`;
+    }
+    return count;
+  };
+
+  const handleToggleFavourite = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      setFavouriteLoading(true);
+      if (isFavourite) {
+        await favouriteService.removeFromFavourites(product._id);
+        setIsFavourite(false);
+        setProduct((prev) => ({
+          ...prev,
+          wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1),
+        }));
+        toast.success(t('product_details.toast_wishlist_remove'));
+      } else {
+        await favouriteService.addToFavourites(product._id);
+        setIsFavourite(true);
+        setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
+        toast.success(t('product_details.toast_wishlist_add'));
+      }
+    } catch (error) {
+      console.error('Error toggling favourite:', error);
+      toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
+    } finally {
+      setFavouriteLoading(false);
     }
   };
 
-  const handleAddToCart = () => {};
+  if (loading) {
+    return (
+      <div className={styles.productDetailsPage}>
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
+      </div>
+    );
+  }
 
-  const handleBuyNow = () => {};
+  if (error || !product) {
+    return (
+      <div className={styles.notFound}>
+        <h2>{error || t('product_details.err_product_not_found')}</h2>
+        <button onClick={() => navigate('/products')}>
+          {t('product_details.back_to_products')}
+        </button>
+      </div>
+    );
+  }
 
-  const handleGetDeal = () => {};
+  const productImages = getProductImages(product);
 
   return (
     <div className={styles.productDetailsPage}>
-      <Breadcrumb items={breadcrumbItems} />
+      <Breadcrumb
+        items={[
+          { label: t('product_details.breadcrumb_home'), path: '/', icon: 'bi-house' },
+          { label: t('product_details.breadcrumb_shop'), path: '/products' },
+          {
+            label:
+              typeof product.category === 'string'
+                ? product.category
+                : product.category?.name || 'Products',
+            path: `/products?category=${product.categoryId || ''}`,
+          },
+          { label: product.name },
+        ].filter((item) => item.label)}
+      />
 
       <div className={styles.productContainer}>
-        {/* Product Images Section */}
+        {/* Images */}
         <div className={styles.imageSection}>
-          <div className={styles.mainImage}>
-            <img src={productImages[selectedImage]} alt={product.name} />
+          <div className={styles.mainImage} style={{ position: 'relative' }}>
+            <Image.PreviewGroup items={productImages}>
+              <Image
+                src={productImages[selectedImage]}
+                alt={product.name}
+                width="100%"
+                style={{ objectFit: 'cover', borderRadius: '12px', minHeight: '300px' }}
+              />
+            </Image.PreviewGroup>
             {product.badge && (
-              <span className={`${styles.badge} ${styles[product.badgeColor]}`}>
+              <span
+                className={`${styles.badge} ${styles[product.badgeColor]}`}
+                style={{ zIndex: 10, position: 'absolute', top: '15px', left: '15px' }}
+              >
                 {product.badge}
               </span>
             )}
@@ -134,385 +571,351 @@ const ProductDetailsPage = () => {
                 className={`${styles.thumbnail} ${selectedImage === index ? styles.active : ''}`}
                 onClick={() => setSelectedImage(index)}
               >
-                <img src={img} alt={`${product.name} ${index + 1}`} />
+                <img src={img} alt={`Thumbnail ${index + 1}`} />
               </div>
             ))}
           </div>
+
+          {/* Share Section */}
+          <div className={styles.shareSection}>
+            <span className={styles.shareLabel}>Share:</span>
+            <div className={styles.shareButtons}>
+              <button
+                className={`${styles.shareButton} ${styles.facebook}`}
+                title="Share on Facebook"
+                onClick={() => {
+                  const url = `https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-facebook"></i>
+              </button>
+              <button
+                className={`${styles.shareButton} ${styles.messenger}`}
+                title="Share via Messenger"
+                onClick={() => {
+                  const url = `https://www.messenger.com/share?link=${window.location.href}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-chat-dots"></i>
+              </button>
+              <button
+                className={`${styles.shareButton} ${styles.x}`}
+                title="Share on X (Twitter)"
+                onClick={() => {
+                  const url = `https://twitter.com/intent/tweet?url=${window.location.href}&text=${product.name}`;
+                  window.open(url, '_blank', 'width=600,height=400');
+                }}
+              >
+                <i className="bi bi-twitter-x"></i>
+              </button>
+            </div>
+            <div className={styles.favouriteSpacer}>
+              <button
+                className={`${styles.shareButton} ${!isFavourite ? styles.unfavourite : styles.isFavourite}`}
+                onClick={handleToggleFavourite}
+                disabled={favouriteLoading}
+                title={isFavourite ? 'Remove from saved' : 'Save this product'}
+              >
+                <i className={`bi bi-heart`}></i>
+              </button>
+              <span className={styles.saveLabel}>
+                {isFavourite
+                  ? `Saved (${formatSavedCount(product.wishlistCount)})`
+                  : `Save (${formatSavedCount(product.wishlistCount)})`}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Product Info Section */}
+        {/* Info */}
         <div className={styles.infoSection}>
-          <div className={styles.productHeader}>
-            <div className={styles.rating}>
-              <div className={styles.stars}>
-                {'★'.repeat(Math.floor(product.rating))}
-                {'☆'.repeat(5 - Math.floor(product.rating))}
-                <span className={styles.ratingNumber}>{product.rating}</span>
-              </div>
-              <span className={styles.reviews}>({product.reviews} Reviews)</span>
-            </div>
-          </div>
-
+          {/* 1. Product Title */}
           <h1 className={styles.productTitle}>{product.name}</h1>
 
-          <div className={styles.metaInfo}>
-            {product.attributes
-              ?.filter((attr) => attr.type === 'fixed')
-              .sort((a, b) => a.order - b.order)
-              .map((attr) => {
-                if (attr.key === 'availability') {
-                  return (
-                    <div key={attr.key} className={styles.metaItem}>
-                      <span className={styles.label}>{attr.label}:</span>
-                      <span
-                        className={`${styles.stock} ${isInStock(product) ? styles.inStock : styles.outOfStock}`}
-                      >
-                        <i
-                          className={`bi ${isInStock(product) ? 'bi-check-circle' : 'bi-x-circle'}`}
-                        ></i>
-                        {attr.value}
-                      </span>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={attr.key} className={styles.metaItem}>
-                    <span className={styles.label}>{attr.label}:</span>
-                    <span className={styles.value}>{attr.value}</span>
-                  </div>
-                );
-              })}
+          {/* 2. Rating Bar */}
+          <div className={styles.ratingSection}>
+            <div className={styles.ratingStars}>
+              {[...Array(5)].map((_, i) => (
+                <i
+                  key={i}
+                  className={`bi ${i < Math.floor(product.rating || 0) ? 'bi-star-fill' : 'bi-star'}`}
+                ></i>
+              ))}
+            </div>
+            <span className={styles.ratingValue}>{product.rating || 0}</span>
+            <span className={styles.ratingDivider}>|</span>
+            <span className={styles.reviewCount}>
+              // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
+            </span>
+            //{' '}
+            <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
+              // {t('product_details.stat_sold')} {product.sold || 0}
+              {product.reviewCount
+                ? product.reviewCount >= 1000
+                  ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
+                  : product.reviewCount
+                : '0'}{' '}
+              Ratings
+            </span>
+            <span className={styles.ratingDivider}>|</span>
+            <span className={styles.soldCount}>
+              {product.sold
+                ? product.sold >= 1000
+                  ? `${(product.sold / 1000).toFixed(1).replace('.0', '')}k+`
+                  : `${product.sold}+`
+                : '0+'}{' '}
+              Sold
+            </span>
           </div>
 
-          {/* Price Section */}
+          {/* 3. Price Section */}
           <div className={styles.priceSection}>
+            {flashSale && (flashSale.status === 'active' || !flashSale.status) && (
+              <div className={styles.flashSaleContainer}>
+                <div className={styles.flashSaleInfo}>
+                  <i className={`bi bi-lightning-fill ${styles.flashSaleIcon}`}></i>
+                  <span className={styles.flashSaleLabel}>FLASH SALE</span>
+                </div>
+                <div className={styles.flashSaleTimer}>
+                  {countdown.days}d : {countdown.hours}h : {countdown.minutes}m :{' '}
+                  {countdown.seconds}s
+                </div>
+              </div>
+            )}
             <div className={styles.priceRow}>
-              <span className={styles.label}>Price:</span>
-              <div className={styles.priceInfo}>
-                {(() => {
-                  const selectedModel =
-                    product.models && selectedTierIndex.length > 0
-                      ? findModel(product, selectedTierIndex)
-                      : null;
-                  const displayPrice = selectedModel ? selectedModel.price : product.price;
-                  const priceRange = getPriceRange(product);
+              {flashSale && (flashSale.status === 'active' || !flashSale.status) ? (
+                <>
+                  <span className={`${styles.currentPrice} ${styles.currentPriceFlashSale}`}>
+                    {formatCurrency(flashSale.salePrice)}
+                  </span>
+                  <span className={styles.originalPrice}>
+                    {formatCurrency(product.originalPrice)}
+                  </span>
+                  <span className={styles.discount}>
+                    -{Math.round((1 - flashSale.salePrice / product.originalPrice) * 100)}%
+                  </span>
+                </>
+              ) : promotions?.shopProgram &&
+                promotions.shopProgram.salePrice < promotions.shopProgram.originalPrice ? (
+                <>
+                  <span className={styles.currentPrice}>
+                    {formatCurrency(promotions.shopProgram.salePrice)}
+                  </span>
+                  <span className={styles.originalPrice}>
+                    {formatCurrency(promotions.shopProgram.originalPrice)}
+                  </span>
+                  <span className={styles.discount}>-{promotions.shopProgram.discount}%</span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.currentPrice}>{formatCurrency(currentPrice)}</span>
+                  {product.originalPrice > currentPrice && (
+                    <>
+                      <span className={styles.originalPrice}>
+                        {formatCurrency(product.originalPrice)}
+                      </span>
+                      <span className={styles.discount}>
+                        -{Math.round((1 - currentPrice / product.originalPrice) * 100)}%
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 4. Deals & Offers — compact grouped section */}
+          {((product.shopVouchers && product.shopVouchers.length > 0) ||
+            promotions?.comboPromotions?.length > 0 ||
+            promotions?.addOnDeals?.length > 0) && (
+            <div className={styles.dealsSection}>
+              <div className={styles.dealsSectionHeader}>
+                <i className="bi bi-tag-fill"></i>
+                <span>Deals & Offers</span>
+              </div>
+
+              {/* Vouchers — horizontal compact row */}
+              {product.shopVouchers && product.shopVouchers.length > 0 && (
+                <div className={styles.voucherRow}>
+                  <span className={styles.voucherRowLabel}>Vouchers:</span>
+                  <div className={styles.voucherChips}>
+                    {product.shopVouchers.map((voucher, idx) => (
+                      <span key={idx} className={styles.voucherChip}>
+                        {voucher.discount}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Combo Promotions — inline */}
+              {promotions?.comboPromotions?.length > 0 && (
+                <div className={styles.dealItem}>
+                  <ComboPromotionBanner combos={promotions.comboPromotions} />
+                </div>
+              )}
+
+              {/* Add-on Deals — inline */}
+              {promotions?.addOnDeals?.length > 0 && (
+                <div className={styles.dealItem}>
+                  <AddOnDealCards deals={promotions.addOnDeals} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 5. Variant Selection */}
+          {product.tier_variations?.map((tier, tierIdx) => (
+            <div key={tierIdx} className={styles.tierSection}>
+              <div className={styles.tierHeader}>
+                <span className={styles.tierLabel}>{tier.name}:</span>
+              </div>
+              <div className={styles.tierOptions}>
+                {tier.options.map((option, optIdx) => {
+                  const isSelected = selectedTierIndex[tierIdx] === optIdx;
+                  const isDisabled = isOptionDisabled(tierIdx, optIdx);
 
                   return (
-                    <>
-                      <span className={styles.currentPrice}>{formatCurrency(displayPrice)}</span>
-                      {priceRange.min !== priceRange.max && (
-                        <span className={styles.priceRange}>
-                          ({formatCurrency(priceRange.min)} - {formatCurrency(priceRange.max)})
-                        </span>
-                      )}
-                      {product.originalPrice && (
-                        <>
-                          <span className={styles.originalPrice}>
-                            {formatCurrency(product.originalPrice)}
-                          </span>
-                          <span className={styles.discount}>{product.discount}% OFF</span>
-                        </>
-                      )}
-                    </>
+                    <button
+                      key={optIdx}
+                      className={`
+                        ${styles.tierOption} 
+                        ${isSelected ? styles.active : ''}
+                        ${isDisabled ? styles.disabled : ''}
+                      `}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          handleTierChange(tierIdx, optIdx);
+                        }
+                      }}
+                      disabled={isDisabled}
+                      title={isDisabled ? t('product_details.stat_status_inactive') : option}
+                    >
+                      {option}
+                    </button>
                   );
-                })()}
+                })}
               </div>
             </div>
-            {product.dealId && product.dealStatus === 'active' && (
-              <div className={styles.dealPrice}>
-                <span className={styles.label}>Get it for:</span>
-                <span className={styles.dealAmount}>
-                  {formatCurrency(Math.floor(product.price * 0.9))}
-                </span>
+          ))}
+
+          {/* 6. Quantity & Actions */}
+          <div className={styles.actionsSection}>
+            <div className={styles.quantitySelector}>
+              <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
+                -
+              </button>
+              <input type="text" value={quantity} readOnly />
+              <button onClick={() => handleQuantityChange(1)} disabled={quantity >= currentStock}>
+                +
+              </button>
+            </div>
+            <div className={styles.actionButtons}>
+              <button
+                className={styles.addBtn}
+                onClick={handleAddToCart}
+                disabled={addingToCart || currentStock <= 0}
+              >
+                {addingToCart ? t('product_details.loading') : t('product_details.btn_add_to_cart')}
+              </button>
+              <button
+                className={styles.buyBtn}
+                onClick={handleBuyNow}
+                disabled={addingToCart || currentStock <= 0}
+              >
+                {t('product_details.btn_buy_now')}
+              </button>
+              <button
+                className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
+                onClick={handleToggleFavourite}
+                disabled={favouriteLoading}
+                title={
+                  isFavourite
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.toast_wishlist_add')
+                }
+              >
+                <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                {favouriteLoading
+                  ? t('product_details.loading')
+                  : isFavourite
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.favorite')}
+              </button>
+            </div>
+            {currentStock <= 0 && (
+              <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
+            )}
+            {currentStock > 0 && currentStock < 10 && (
+              <div className="text-warning mt-2">
+                {t('product_details.only_left', { stock: currentStock })}
               </div>
             )}
           </div>
 
-          {/* Tier Variations - First Tier (Usually Color) */}
-          {product.tier_variations && product.tier_variations.length > 0 && (
-            <div className={styles.colorSection}>
-              <div className={styles.colorHeader}>
-                <span className={styles.label}>{product.tier_variations[0].name}:</span>
-                <span className={styles.selectedValue}>
-                  {selectedTierIndex.length > 0
-                    ? product.tier_variations[0].options[selectedTierIndex[0]]
-                    : product.tier_variations[0].options[0]}
-                </span>
-              </div>
-              <div className={styles.colorOptions}>
-                {product.tier_variations[0].options.map((option, index) => (
-                  <div
-                    key={index}
-                    className={`${styles.colorOption} ${
-                      selectedTierIndex[0] === index ? styles.active : ''
-                    }`}
-                    onClick={() => handleTierChange(0, index)}
-                    onMouseEnter={() => handleTierHover(0, index)}
-                    onMouseLeave={() => setHoveredTierIndex(null)}
-                    title={option}
-                  >
-                    {product.tier_variations[0].images[index] ? (
-                      <img
-                        src={product.tier_variations[0].images[index]}
-                        alt={option}
-                        className={styles.colorImage}
-                      />
-                    ) : (
-                      <div className={styles.colorCircle}>
-                        <span className={styles.colorText}>{option}</span>
-                      </div>
-                    )}
-                    {selectedTierIndex[0] === index && <i className="bi bi-check-circle-fill"></i>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tier Variations - Second Tier (Usually Size) */}
-          {product.tier_variations && product.tier_variations.length > 1 && (
-            <div className={styles.sizeSection}>
-              <div className={styles.sizeHeader}>
-                <span className={styles.label}>{product.tier_variations[1].name}:</span>
-                <span className={styles.sizeValue}>
-                  {selectedTierIndex.length > 1
-                    ? product.tier_variations[1].options[selectedTierIndex[1]]
-                    : product.tier_variations[1].options[0]}
-                </span>{' '}
-                {product.sizeChart && (
-                  <button
-                    className={styles.sizeChartBtn}
-                    onClick={() => setShowSizeChart(!showSizeChart)}
-                  >
-                    <i className="bi bi-rulers"></i>
-                    Size Chart
-                  </button>
-                )}{' '}
-              </div>
-              <div className={styles.sizeOptions}>
-                {product.tier_variations[1].options.map((option, index) => (
-                  <button
-                    key={index}
-                    className={`${styles.sizeButton} ${
-                      selectedTierIndex[1] === index ? styles.active : ''
-                    }`}
-                    onClick={() => handleTierChange(1, index)}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-
-              {/* Size Chart - Image or Table */}
-              {showSizeChart && product.sizeChart && (
-                <div className={styles.sizeChartTable}>
-                  {product.sizeChart.type === 'image' && product.sizeChart.imageUrl ? (
-                    // Display uploaded size chart image (Shopee style)
-                    <div className={styles.sizeChartImage}>
-                      <img
-                        src={product.sizeChart.imageUrl}
-                        alt="Size Chart"
-                        className={styles.sizeChartImg}
-                      />
-                      <p className={styles.sizeChartNote}>
-                        <i className="bi bi-info-circle"></i> Size chart provided by the shop
-                      </p>
-                    </div>
-                  ) : (
-                    // Display table format if no image or type is 'table'
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Size</th>
-                          {product.sizeChart.table?.measurements[0] &&
-                            Object.keys(product.sizeChart.table.measurements[0])
-                              .filter((key) => key !== 'size')
-                              .map((key) => (
-                                <th key={key}>
-                                  {key.charAt(0).toUpperCase() + key.slice(1)} (
-                                  {product.sizeChart.table.unit})
-                                </th>
-                              ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {product.sizeChart.table?.measurements.map((measurement, index) => (
-                          <tr key={index}>
-                            <td>
-                              <strong>{measurement.size}</strong>
-                            </td>
-                            {Object.entries(measurement)
-                              .filter(([key]) => key !== 'size')
-                              .map(([key, value]) => (
-                                <td key={key}>{value}</td>
-                              ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Deal Information */}
-          {product.dealId && product.dealStatus === 'active' && (
-            <div className={styles.dealSection}>
-              <div className={styles.dealGrid}>
-                {/* Left Side - Deal Stats */}
-                <div className={styles.dealLeft}>
-                  <div className={styles.dealItem}>
-                    <div className={styles.dealItemLabel}>Deal Members Filled</div>
-                    <div className={styles.dealItemValue}>
-                      {product.dealSoldCount}/{product.dealQuantityLimit}
-                    </div>
-                  </div>
-                  <div className={styles.dealItem}>
-                    <div className={styles.dealItemLabel}>Current Deal Price</div>
-                    <div className={styles.dealItemValue}>
-                      {formatCurrency(Math.floor(product.price * 0.9))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side - Buyer Count & Indicator */}
-                <div className={styles.dealRight}>
-                  <div className={styles.dealItem}>
-                    <div className={styles.dealItemLabel}>No. Of Buyers In Deal</div>
-                    <div className={styles.dealItemValue}>{product.dealSoldCount}</div>
-                  </div>
-                  <div className={styles.dealItem}>
-                    <div className={styles.dealItemLabel}>Deal Trend Indicator</div>
-                    <div className={styles.gaugeContainer}>
-                      <svg className={styles.gauge} viewBox="0 0 100 50">
-                        <path
-                          className={styles.gaugeBackground}
-                          d="M 10 45 A 40 40 0 0 1 90 45"
-                          fill="none"
-                          strokeWidth="8"
-                        />
-                        <path
-                          className={styles.gaugeFill}
-                          d="M 10 45 A 40 40 0 0 1 90 45"
-                          fill="none"
-                          strokeWidth="8"
-                          strokeDasharray={`${(product.dealSoldCount / product.dealQuantityLimit) * 126} 126`}
-                        />
-                        <line
-                          className={styles.gaugeNeedle}
-                          x1="50"
-                          y1="45"
-                          x2="50"
-                          y2="15"
-                          strokeWidth="2"
-                          transform={`rotate(${-90 + (product.dealSoldCount / product.dealQuantityLimit) * 180} 50 45)`}
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom - Deal Timer */}
-              <div className={styles.dealTimer}>
-                <div className={styles.timerLabel}>{product.badge} !</div>
-                <div className={styles.timerBar}>
-                  <div
-                    className={styles.timerFill}
-                    style={{
-                      width: `${(product.dealSoldCount / product.dealQuantityLimit) * 100}%`,
-                    }}
-                  ></div>
+          {/* 7. Shipping & Warranty — compact */}
+          <div className={styles.shippingInfoSection}>
+            <div className={styles.shippingInfoItem}>
+              <i className="bi bi-truck"></i>
+              <div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_shipping')}</div>
+                <div className={styles.shippingDetail}>
+                  {product.shippingInfo || t('product_details.default_shipping_detail')}
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Quantity and Actions */}
-          <div className={styles.actionsSection}>
-            <div className={styles.quantitySelector}>
-              <button onClick={() => handleQuantityChange(-1)}>-</button>
-              <input type="text" value={quantity} readOnly />
-              <button onClick={() => handleQuantityChange(1)}>+</button>
-            </div>
-
-            <div className={styles.actionButtons}>
-              {product.dealId && product.dealStatus === 'active' && (
-                <button className={styles.getDealBtn} onClick={handleGetDeal}>
-                  <i className="bi bi-lightning-fill"></i>
-                  GET DEALS (100%)
-                </button>
-              )}
-              <button className={styles.addBtn} onClick={handleAddToCart}>
-                <i className="bi bi-cart-plus"></i>
-                ADD
-              </button>
-              <button className={styles.buyBtn} onClick={handleBuyNow}>
-                <i className="bi bi-bag-check"></i>
-                BUY
-              </button>
-            </div>
-          </div>
-
-          {/* Wishlist and Compare */}
-          <div className={styles.secondaryActions}>
-            <button className={styles.iconBtn}>
-              <i className="bi bi-heart"></i>
-              Add to Wishlist
-            </button>
-            <button className={styles.iconBtn}>
-              <i className="bi bi-arrow-left-right"></i>
-              Add to Compare
-            </button>
-          </div>
-
-          {/* Share */}
-          <div className={styles.shareSection}>
-            <span className={styles.shareLabel}>Share product:</span>
-            <div className={styles.shareIcons}>
-              <button className={styles.shareIcon}>
-                <i className="bi bi-link-45deg"></i>
-              </button>
-              <button className={styles.shareIcon}>
-                <i className="bi bi-facebook"></i>
-              </button>
-              <button className={styles.shareIcon}>
-                <i className="bi bi-twitter"></i>
-              </button>
-              <button className={styles.shareIcon}>
-                <i className="bi bi-pinterest"></i>
-              </button>
-            </div>
-          </div>
-
-          {/* Payment Methods */}
-          <div className={styles.paymentSection}>
-            <div className={styles.secureCheckout}>
+            <div className={styles.shippingInfoItem}>
               <i className="bi bi-shield-check"></i>
-              <span>100% Genuine Safe Checkout</span>
+              <div>
+                <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
+                <div className={styles.shippingDetail}>
+                  {product.warranty || t('product_details.default_warranty_detail')}
+                </div>
+              </div>
             </div>
-            <div className={styles.paymentMethods}>
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
-                alt="Visa"
-              />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-                alt="Mastercard"
-              />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg"
-                alt="PayPal"
-              />
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg"
-                alt="AmEx"
-              />
+          </div>
+
+          {/* 8. Meta Info */}
+          <div className={styles.metaInfo}>
+            <div className={styles.metaItem}>
+              <span>{t('product_details.label_stock')}:</span> {currentStock}
+            </div>
+            <div className={styles.metaItem}>
+              <span>{t('product_details.label_sku')}:</span>{' '}
+              {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Shop Info Section */}
+      {(product.sellerId || true) && (
+        <div className={styles.shopSection}>
+          <ShopInfoCard
+            seller={product.sellerId}
+            showViewShop={true}
+            productInfo={{
+              productId: product._id,
+              name: product.name,
+              image: product.images?.[0] || '',
+              price: currentPrice,
+              originalPrice: product.originalPrice || null,
+              variant:
+                selectedTierIndex.length > 0
+                  ? product.tier_variations
+                      ?.map((t, i) => t.options[selectedTierIndex[i]])
+                      .filter(Boolean)
+                      .join(' - ')
+                  : null,
+              slug: product.slug || product._id,
+              rating: product.rating || 0,
+              hasVoucher: product.shopVouchers && product.shopVouchers.length > 0,
+            }}
+          />
+        </div>
+      )}
 
       {/* Product Details Tabs */}
       <div className={styles.detailsSection}>
@@ -521,45 +924,45 @@ const ProductDetailsPage = () => {
             className={`${styles.tab} ${activeTab === 'description' ? styles.active : ''}`}
             onClick={() => setActiveTab('description')}
           >
-            DESCRIPTION
+            {t('product_details.tab_description_upper')}
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'additional' ? styles.active : ''}`}
             onClick={() => setActiveTab('additional')}
           >
-            ADDITIONAL INFORMATION
+            {t('product_details.tab_additional_upper')}
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'review' ? styles.active : ''}`}
             onClick={() => setActiveTab('review')}
           >
-            REVIEW
+            {t('product_details.tab_review_upper')}
           </button>
         </div>
 
         <div className={styles.tabContent}>
           {activeTab === 'description' && (
             <div className={styles.description}>
-              <h3>Description</h3>
+              <h3>{t('product_details.title_description')}</h3>
               {product.descriptionText?.map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
-              )) || <p>No description available.</p>}
+              )) || <p>{t('product_details.no_description')}</p>}
 
               <div className={styles.features}>
-                <h4>Feature</h4>
+                <h4>{t('product_details.title_features')}</h4>
                 <div className={styles.featureGrid}>
                   {product.features?.map((feature, index) => (
                     <div key={index} className={styles.featureItem}>
                       <i className="bi bi-check-circle-fill"></i>
                       <span>{feature}</span>
                     </div>
-                  )) || <p>No features available.</p>}
+                  )) || <p>{t('product_details.no_features')}</p>}
                 </div>
               </div>
 
               <div className={styles.shippingInfo}>
-                <h4>Shipping Information</h4>
-                {shippingMethods.map((method, index) => (
+                <h4>{t('product_details.title_shipping_info')}</h4>
+                {getShippingMethods(t).map((method, index) => (
                   <div key={index} className={styles.shippingItem}>
                     <i className={`bi ${method.icon}`}></i>
                     <div>
@@ -574,10 +977,9 @@ const ProductDetailsPage = () => {
 
           {activeTab === 'additional' && (
             <div className={styles.additionalInfo}>
-              <h3>Additional Information</h3>
+              <h3>{t('product_details.title_additional_info')}</h3>
               <table className={styles.infoTable}>
                 <tbody>
-                  {/* Render all attributes (fixed + custom) dynamically */}
                   {product.attributes
                     ?.sort((a, b) => a.order - b.order)
                     .map((attr) => (
@@ -586,9 +988,11 @@ const ProductDetailsPage = () => {
                         <td className={styles.value}>{attr.value}</td>
                       </tr>
                     ))}
-                  {product.tier_variations && product.tier_variations.length > 0 && (
+                  {product.tier_variations?.length > 0 && (
                     <tr>
-                      <td className={styles.label}>Available Variations</td>
+                      <td className={styles.label}>
+                        {t('product_details.label_available_variations')}
+                      </td>
                       <td className={styles.value}>
                         {product.tier_variations.map((tier, idx) => (
                           <div key={idx}>
@@ -641,45 +1045,15 @@ const ProductDetailsPage = () => {
             </div>
           )}
 
-          {activeTab === 'review' && (
-            <div className={styles.reviews}>
-              <h3>Customer Reviews</h3>
-              <div className={styles.reviewSummary}>
-                <div className={styles.averageRating}>
-                  <div className={styles.ratingNumber}>{product.rating}</div>
-                  <div className={styles.stars}>
-                    {'★'.repeat(Math.floor(product.rating))}
-                    {'☆'.repeat(5 - Math.floor(product.rating))}
-                  </div>
-                  <div className={styles.totalReviews}>{product.reviews} Reviews</div>
-                </div>
-              </div>
-              <div className={styles.reviewList}>
-                {product.productReviews?.length > 0 ? (
-                  product.productReviews.map((review) => (
-                    <div key={review.id} className={styles.reviewItem}>
-                      <div className={styles.reviewHeader}>
-                        <strong>{review.author}</strong>
-                        <span className={styles.reviewDate}>{review.date}</span>
-                      </div>
-                      <div className={styles.reviewRating}>{'★'.repeat(review.rating)}</div>
-                      <p>{review.comment}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p>No reviews yet. Be the first to review this product!</p>
-                )}
-              </div>
-            </div>
-          )}
+          {activeTab === 'review' && <ProductReviewSection product={product} />}
         </div>
       </div>
 
       {/* Frequently Bought Together */}
       <div className={styles.frequentlyBought}>
         <div className={styles.sectionHeader}>
-          <h2>FREQUENTLY BOUGHT TOGETHER</h2>
-          <button className={styles.viewAllBtn}>VIEW ALL</button>
+          <h2>{t('product_details.frequently_bought')}</h2>
+          <button className={styles.viewAllBtn}>{t('product_details.view_all')}</button>
         </div>
         <div className={styles.productGrid}>
           {frequentlyBought.map((item) => (
@@ -691,8 +1065,8 @@ const ProductDetailsPage = () => {
       {/* Related Products */}
       <div className={styles.relatedProducts}>
         <div className={styles.sectionHeader}>
-          <h2>RELATED PRODUCTS</h2>
-          <button className={styles.viewAllBtn}>VIEW ALL</button>
+          <h2>{t('product_details.related_products')}</h2>
+          <button className={styles.viewAllBtn}>{t('product_details.view_all')}</button>
         </div>
         <div className={styles.productGrid}>
           {relatedProducts.slice(0, 4).map((item) => (
@@ -700,6 +1074,9 @@ const ProductDetailsPage = () => {
           ))}
         </div>
       </div>
+
+      {/* Login Required Modal */}
+      <RequireLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 };

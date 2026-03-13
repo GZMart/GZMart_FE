@@ -1,0 +1,602 @@
+/* ================================================================
+   FlashSales.module.css — GZMart Seller Flash Sale Management
+   Design: Energy/urgency theme — amber accent, clean white cards
+   Consistent with ListingsPage design language
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ─── Outer container ──────────────────────────────────────────── */
+.container {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  padding: 28px 32px;
+  min-height: 100%;
+}
+
+/* ─── Header ───────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Overview stats card ──────────────────────────────────────── */
+.overviewCard {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+/* ─── Toolbar ──────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.tabsGroup {
+  display: flex;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.tab:hover:not(.tabActive) {
+  background: rgba(255, 255, 255, 0.7);
+  color: #334155;
+}
+.tabActive {
+  background: #fff;
+  color: #e84949;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tabCount {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 1px 6px;
+  line-height: 1.5;
+  transition: all 0.15s;
+}
+.tabActive .tabCount {
+  background: #fee2e2;
+  color: #e84949;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─── Table section ────────────────────────────────────────────── */
+.tableSection {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.fsTable :global(.ant-table-thead > tr > th) {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e8ecf0 !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 16px !important;
+}
+
+.fsTable :global(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 14px 16px !important;
+  font-size: 13px !important;
+  color: #475569 !important;
+  transition: background 0.1s !important;
+}
+
+.fsTable :global(.ant-table-tbody > tr:hover > td) {
+  background: #fafbff !important;
+}
+
+.fsTable :global(.ant-table-tbody > tr:last-child > td) {
+  border-bottom: none !important;
+}
+
+.fsTable :global(.ant-table-expanded-row > td) {
+  background: #f8fafc !important;
+  padding: 0 !important;
+}
+
+.fsTable :global(.ant-pagination) {
+  padding: 12px 16px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  margin: 0 !important;
+}
+
+.overviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.overviewHeadLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.overviewIcon {
+  color: #e84949 !important;
+  font-size: 16px !important;
+}
+
+.overviewTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.overviewSub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.overviewStatsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid #f1f5f9;
+}
+
+.statCell {
+  padding: 20px 24px;
+  border-right: 1px solid #f1f5f9;
+  cursor: default;
+  transition: background 0.12s;
+}
+
+.statCell:hover {
+  background: #fafbff;
+}
+
+.statCell:last-child {
+  border-right: none;
+}
+
+.statCellLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.statCellInfo {
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
+.statCellValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.statCellChange {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.changeUp {
+  color: #059669;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.changeDown {
+  color: #dc2626;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.changeFlat {
+  color: #94a3b8;
+}
+
+/* ─── Filter toolbar card ──────────────────────────────────────── */
+.filterCard {
+  background: #fff !important;
+  border: 1px solid #e8ecf0 !important;
+  border-radius: 12px !important;
+  margin-bottom: 12px;
+}
+
+.filterBar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ─── Table card ───────────────────────────────────────────────── */
+.card {
+  background: #fff !important;
+  border: 1px solid #e8ecf0 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+.card :global(.ant-card-body) {
+  padding: 0 !important;
+}
+
+.card :global(.ant-table) {
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.card :global(.ant-table-thead > tr > th) {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e8ecf0 !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 16px !important;
+}
+
+.card :global(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 14px 16px !important;
+  font-size: 13px !important;
+  color: #475569 !important;
+  transition: background 0.1s !important;
+}
+
+.card :global(.ant-table-tbody > tr:hover > td) {
+  background: #fafbff !important;
+}
+
+.card :global(.ant-table-tbody > tr:last-child > td) {
+  border-bottom: none !important;
+}
+
+.card :global(.ant-table-expanded-row > td) {
+  background: #f8fafc !important;
+  padding: 12px 8px !important;
+}
+
+.card :global(.ant-pagination) {
+  padding: 12px 16px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  margin: 0 !important;
+}
+
+/* ─── Campaign cell ────────────────────────────────────────────── */
+.campaignCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.campaignName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.campaignProduct {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.skuTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  font-size: 11px;
+  padding: 2px 9px;
+  margin-top: 2px;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ─── Price column ─────────────────────────────────────────────── */
+.priceColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.salePrice {
+  font-weight: 700;
+  color: #e84949;
+  font-size: 14px;
+  letter-spacing: -0.3px;
+}
+
+.originalPrice {
+  font-size: 12px;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+/* ─── Quantity / progress ──────────────────────────────────────── */
+.quantityColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sold {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  transition: width 0.3s ease;
+  border-radius: 20px;
+  min-width: 0;
+}
+
+/* ─── Time column ──────────────────────────────────────────────── */
+.timeColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.timeLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ─── Status badges ────────────────────────────────────────────── */
+.statusActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #a7f3d0;
+}
+
+.statusUpcoming {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+}
+
+.statusEnded {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.statusCancelled {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #fecaca;
+}
+
+/* ─── Variant (nested) table ────────────────────────────────────── */
+.variantSku {
+  display: inline-block;
+  font-size: 11.5px;
+  font-family: 'Courier New', monospace;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 7px;
+  color: #475569;
+}
+
+/* ─── Stats card (legacy - for stats modals) ───────────────────── */
+.statsContainer {
+  padding: 8px 0;
+}
+
+.productInfo {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.productInfo h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.sku {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: 'Courier New', monospace;
+}
+
+.timeInfo {
+  background: #f0f9ff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid #38bdf8;
+}
+
+.timeInfo p {
+  margin: 4px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.timeInfo strong {
+  color: #0f172a;
+  margin-right: 6px;
+}
+
+.progressContainer {
+  background: #f0fdf4;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 3px solid #4ade80;
+}
+
+.fullProgressBar {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.fullProgress {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  transition: width 0.3s ease;
+  border-radius: 20px;
+}
+
+/* ─── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .overviewStatsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .statCell:nth-child(2) {
+    border-right: none;
+  }
+  .statCell:nth-child(3) {
+    border-top: 1px solid #f1f5f9;
+  }
+}
+
+@media (max-width: 600px) {
+  .overviewStatsRow {
+    grid-template-columns: 1fr;
+  }
+  .statCell {
+    border-right: none !important;
+    border-top: 1px solid #f1f5f9;
+  }
+  .statCell:first-child {
+    border-top: none;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

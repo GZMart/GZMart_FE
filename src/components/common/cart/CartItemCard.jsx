@@ -88,10 +88,12 @@ const CartItemCard = ({ item, isSelected = false, onSelect }) => {
                 </div>
               )}
             </div>
-            <p className="mb-0">
-              <span className="fw-bold text-primary">{formatCurrency(item.price || 0)}</span>
-              <span className="text-muted small ms-2">per item</span>
-            </p>
+            <div className="d-flex align-items-center gap-2 mb-2 mb-md-0">
+              <span className="fw-bold" style={{ color: '#B13C36' }}>
+                {formatCurrency(item.price || 0)}
+              </span>
+              <span className="text-muted small">per item</span>
+            </div>
           </Col>
 
           {/* Quantity Controls */}

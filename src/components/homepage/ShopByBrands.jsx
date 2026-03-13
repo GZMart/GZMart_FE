@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { PUBLIC_ROUTES } from '../../constants/routes';
 
 // --- CẤU HÌNH DATA ---
 const BRANDS = [
@@ -42,14 +44,32 @@ const ShopByBrands = () => {
   return (
     <div className="container py-5">
       {/* Tiêu đề section */}
-      <motion.h3
-        initial={{ opacity: 0, x: -20 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        className="fw-bold mb-4 text-dark"
-      >
-        SHOP BY BRANDS
-      </motion.h3>
+      <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4">
+        <motion.h3
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="fw-bold text-dark mb-3 mb-md-0"
+        >
+          SHOP BY BRANDS
+        </motion.h3>
+
+        <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
+          <motion.button
+            whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+            whileTap={{ scale: 0.95 }}
+            className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
+            style={{
+              backgroundColor: '#FCBD01',
+              border: 'none',
+            }}
+          >
+            VIEW ALL
+          </motion.button>
+        </Link>
+      </div>
+
+      <hr className="my-4 text-secondary opacity-25" />
 
       {/* Lưới thương hiệu */}
       <div className="row g-3">

@@ -1,64 +1,296 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
-import {
-  breadcrumbItems,
-  generateAllProducts,
-  sizes,
-  locations,
-  shippingUnits,
-  brands,
-  shopTypes,
-  conditions,
-  paymentOptions,
-  ratings,
-  services,
-  priceRanges,
-  discounts,
-  availabilityOptions,
-  isInStock,
-  getPriceRange,
-} from '@utils/data/ProductsPage_MockData';
+import Pagination from '@components/common/Pagination';
+import { productService } from '../../services/api';
+import promotionBuyerService from '../../services/api/promotionBuyerService';
+
+const locations = [
+  { id: 'hanoi', name: 'Hà Nội' },
+  { id: 'hcm', name: 'Hồ Chí Minh' },
+  { id: 'danang', name: 'Đà Nẵng' },
+  { id: 'cantho', name: 'Cần Thơ' },
+  { id: 'haiphong', name: 'Hải Phòng' },
+];
+
+const ratings = [
+  { id: '5star', value: 5 },
+  { id: '4star', value: 4 },
+  { id: '3star', value: 3 },
+];
 
 const ProductsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q');
+
+  // ... breadcrumb logic (omitted for brevity in replacement if possible, but replace tool needs context)
+  // Re-inserting logic requires matching context.
+  // Easier to just insert key blocks separately or careful replacement.
+
+  // Let's target the top of the file for ratings constant first
+  // And then the state variables.
+
+  // Dynamic breadcrumb based on search query
+  const breadcrumbItems = useMemo(() => {
+    const items = [{ label: 'Home', path: '/' }];
+
+    if (searchQuery) {
+      items.push(
+        { label: 'Products', path: '/products' },
+        { label: `Search: "${searchQuery}"`, path: `/products?q=${searchQuery}`, isActive: true }
+      );
+    } else {
+      items.push({ label: 'Products', path: '/products', isActive: true });
+    }
+
+    return items;
+  }, [searchQuery]);
+
   const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(9);
+  const [itemsToShow, setItemsToShow] = useState(12);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [sortBy, setSortBy] = useState('position');
   const [selectedLocations, setSelectedLocations] = useState([]);
-  const [selectedShippingUnits, setSelectedShippingUnits] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000000 });
-  const [selectedShopTypes, setSelectedShopTypes] = useState([]);
-  const [selectedConditions, setSelectedConditions] = useState([]);
-  const [selectedPaymentOptions, setSelectedPaymentOptions] = useState([]);
   const [selectedRatings, setSelectedRatings] = useState([]);
-  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedAvailability, setSelectedAvailability] = useState([]);
-  const [openSections, setOpenSections] = useState({});
+  const [openSections, setOpenSections] = useState({
+    location: true,
+    brand: true,
+    priceRange: true,
+    rating: true,
+  });
+  const [products, setProducts] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Temporary filter states (before Apply)
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
-  const allProducts = generateAllProducts();
+  // Infinite scroll
+  const loaderRef = useRef(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Filter products based on selections
-  const filteredProducts = useMemo(() => allProducts.filter((product) => {
-      // Brand filter
-      if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
-        return false;
+  // Memoize filters to prevent unnecessary API calls
+  const apiFilters = useMemo(() => {
+    const searchQuery = searchParams.get('q');
+    const filters = {
+      page,
+      limit: itemsToShow,
+      search: searchQuery || undefined,
+      brand: selectedBrands.length > 0 ? selectedBrands.join(',') : undefined,
+      minPrice: priceRange.min > 0 ? priceRange.min : undefined,
+      maxPrice: priceRange.max < 10000000 ? priceRange.max : undefined,
+      minDiscount:
+        selectedDiscounts.length > 0
+          ? Math.max(...selectedDiscounts.map((d) => parseInt(d)))
+          : undefined,
+      minRating:
+        selectedRatings.length > 0 ? Math.max(...selectedRatings.map((r) => r.value)) : undefined,
+      inStock: selectedAvailability.includes('inStock') ? 'true' : undefined,
+      location: selectedLocations.length > 0 ? selectedLocations.join(',') : undefined,
+      sortBy:
+        sortBy === 'price-asc' || sortBy === 'price-desc'
+          ? 'originalPrice' // Fixed: Map to backend field
+          : sortBy === 'name'
+            ? 'name'
+            : sortBy === 'position'
+              ? 'createdAt' // Map Position to Newest
+              : 'isFeatured',
+      sortOrder: sortBy === 'price-desc' || sortBy === 'position' ? 'desc' : 'asc',
+    };
+    // Remove undefined values
+    Object.keys(filters).forEach((key) => filters[key] === undefined && delete filters[key]);
+    return filters;
+  }, [
+    searchParams,
+    selectedBrands,
+    priceRange.min,
+    priceRange.max,
+    selectedDiscounts,
+    selectedRatings,
+    selectedAvailability,
+    selectedLocations,
+    sortBy,
+    page,
+    itemsToShow,
+  ]);
+
+  // Fetch products with filters
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProducts = async () => {
+      try {
+        if (page === 1) {
+          setLoading(true);
+        } else {
+          setIsFetchingMore(true);
+        }
+        const response = await productService.getProductsAdvanced(apiFilters);
+
+        if (!isMounted) {
+          return;
+        }
+
+        // Backend returns data directly, not nested in data.data
+        const productsData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
+        // Transform backend data to component format
+        const transformed = productsData.map((product) => {
+          // Get price from models array (first active model)
+          const activeModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
+
+          return {
+            id: product._id,
+            name: product.name,
+            image:
+              product.images?.[0] ||
+              activeModel.image ||
+              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
+            price: activeModel.price || product.price || 0,
+            originalPrice: activeModel.originalPrice || product.originalPrice || 0,
+            discount: product.discount || 0,
+            rating: product.rating || 5,
+            sold: product.sold || 0,
+            reviews: product.sold || 0,
+            stock: activeModel.stock || product.stock || 0,
+            brand: product.brand?._id || product.brandId,
+            tier_variations: product.tier_variations,
+            isFeatured: product.isFeatured,
+            isHot: product.isHot,
+          };
+        });
+
+        if (page === 1) {
+          setProducts(transformed);
+        } else {
+          setProducts((prev) => {
+            const currentIds = new Set(prev.map((p) => p.id));
+            const newProducts = transformed.filter((p) => !currentIds.has(p.id));
+            return [...prev, ...newProducts];
+          });
+        }
+
+        setTotalCount(response.count || response.pagination?.total || 0);
+        setTotalPages(response.pagination?.pages || Math.ceil((response.count || 0) / itemsToShow));
+        setLoading(false);
+        setIsFetchingMore(false);
+
+        // Fetch promotions for all visible products
+        const productIds = transformed.map((p) => p.id).filter(Boolean);
+        if (productIds.length > 0) {
+          try {
+            const promoResponse = await promotionBuyerService.getProductPromotionsBatch(productIds);
+            const promoMap = promoResponse?.data || promoResponse;
+            if (promoMap && typeof promoMap === 'object') {
+              setProducts((prev) =>
+                prev.map((p) => {
+                  const promo = promoMap[p.id];
+                  if (!promo) {
+                    return p;
+                  }
+
+                  const updated = { ...p };
+
+                  // Shop program price override
+                  if (
+                    promo.shopProgram &&
+                    promo.shopProgram.salePrice < promo.shopProgram.originalPrice
+                  ) {
+                    updated.price = promo.shopProgram.salePrice;
+                    updated.originalPrice = promo.shopProgram.originalPrice;
+                    updated.promotionType = 'shopProgram';
+                  }
+
+                  // Combo promotion info
+                  if (promo.comboPromotions && promo.comboPromotions.length > 0) {
+                    const combo = promo.comboPromotions[0];
+                    const bestTier = combo.tiers?.reduce(
+                      (best, t) => (t.value > (best?.value || 0) ? t : best),
+                      null
+                    );
+                    updated.comboPromotion = {
+                      name: combo.name,
+                      comboType: combo.comboType,
+                      bestDiscount: bestTier?.value || 0,
+                    };
+                  }
+
+                  return updated;
+                })
+              );
+            }
+          } catch (promoErr) {
+            console.error('Error fetching batch promotions:', promoErr);
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('❌ Error fetching products:', err);
+          console.error('Error details:', err.response?.data || err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          setIsFetchingMore(false);
+        }
       }
+    };
+    fetchProducts();
 
-      // Size filter (check in tier_variations)
+    return () => {
+      isMounted = false;
+    };
+  }, [apiFilters, searchParams, selectedBrands, itemsToShow, page]);
+
+  // Fetch available brands for filter
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchBrands = async () => {
+      try {
+        const response = await productService.getAvailableFilters();
+
+        if (!isMounted) {
+          return;
+        }
+
+        const brandsData = response.data?.data?.brands || [];
+        setBrands(brandsData.map((b) => ({ id: b._id, name: b.name })));
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching brands:', err);
+        }
+      }
+    };
+    fetchBrands();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Only apply client-side filters that are NOT handled by API
+  const filteredProducts = useMemo(() => {
+    if (!products.length) {
+      return [];
+    }
+
+    return products.filter((product) => {
+      // Size filter (not in API, needs client-side filtering)
       if (selectedSizes.length > 0) {
         if (product.tier_variations && product.tier_variations.length > 1) {
-          // Check if second tier (usually Size) has any matching option
           const sizeTier = product.tier_variations[1];
           const hasMatchingSize = selectedSizes.some((size) =>
             sizeTier.options.some(
@@ -68,64 +300,30 @@ const ProductsPage = () => {
             )
           );
           if (!hasMatchingSize) {
-return false;
-}
-        } else if (product.size) {
-          // Fallback for old schema
-          const hasMatchingSize = selectedSizes.some((size) => product.size.includes(size));
-          if (!hasMatchingSize) {
-return false;
-}
+            return false;
+          }
+        } else {
+          // No tier variations, skip this product
+          return false;
         }
       }
 
-      // Price range filter (checkbox or slider)
-      if (selectedPriceRanges.length > 0) {
-        const inPriceRange = selectedPriceRanges.some((rangeId) => {
-          const range = priceRanges.find((r) => r.id === rangeId);
-          return product.price >= range.min && product.price <= range.max;
-        });
-        if (!inPriceRange) {
-return false;
-}
-      } else if (priceRange.min > 0 || priceRange.max < 10000000) {
-        // Use slider values if no checkbox selected
-        if (product.price < priceRange.min || product.price > priceRange.max) {
-return false;
-}
-      }
-
-      // Discount filter
-      if (selectedDiscounts.length > 0) {
-        const maxDiscount = Math.max(...selectedDiscounts.map((d) => parseInt(d)));
-        if (product.discount < maxDiscount) {
-return false;
-}
-      }
-
-      // Availability filter (use helper function)
-      if (selectedAvailability.length > 0) {
-        const productInStock = isInStock(product);
-        if (selectedAvailability.includes('inStock') && !productInStock) {
-return false;
-}
-        if (selectedAvailability.includes('outOfStock') && productInStock) {
-return false;
-}
-      }
-
       return true;
-    }), [
-    allProducts,
-    selectedBrands,
-    selectedSizes,
-    selectedPriceRanges,
-    selectedDiscounts,
-    selectedAvailability,
-  ]);
+    });
+  }, [products, selectedSizes]);
 
-  // Sort products
+  // Only re-sort if needed (API already sorts, but we may need to sort filtered results)
   const sortedProducts = useMemo(() => {
+    if (!filteredProducts.length) {
+      return [];
+    }
+
+    // If no client-side filters applied, return as-is (API already sorted)
+    if (selectedSizes.length === 0) {
+      return filteredProducts;
+    }
+
+    // If client-side filtered, need to re-sort
     const sorted = [...filteredProducts];
 
     switch (sortBy) {
@@ -138,29 +336,37 @@ return false;
       default:
         return sorted;
     }
-  }, [filteredProducts, sortBy]);
+  }, [filteredProducts, sortBy, selectedSizes]);
 
-  const totalProducts = filteredProducts.length;
-  const displayedProducts = sortedProducts.slice(0, itemsToShow);
+  const totalProducts = totalCount || filteredProducts.length;
+  const displayedProducts = sortedProducts; // Already paginated from API
+
+  // Skeleton Card Component
+  const SkeletonCard = () => (
+    <div className={styles.skeletonCard}>
+      <div className={styles.skeletonImage}></div>
+      <div className={styles.skeletonInfo}>
+        <div className={styles.skeletonLine} style={{ width: '80%' }}></div>
+        <div className={styles.skeletonLine} style={{ width: '60%' }}></div>
+        <div className={styles.skeletonLine} style={{ width: '40%' }}></div>
+      </div>
+    </div>
+  );
 
   const toggleFilter = (filterType, value) => {
     const setters = {
       location: setSelectedLocations,
-      shippingUnit: setSelectedShippingUnits,
       brand: setSelectedBrands,
       size: setSelectedSizes,
-      priceRange: setSelectedPriceRanges,
-      shopType: setSelectedShopTypes,
-      condition: setSelectedConditions,
-      payment: setSelectedPaymentOptions,
+      // priceRange handled separately via min/max state
       rating: setSelectedRatings,
-      service: setSelectedServices,
       discount: setSelectedDiscounts,
       availability: setSelectedAvailability,
     };
 
     const setter = setters[filterType];
     setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+    setPage(1); // Reset page when filter changes
   };
 
   const toggleSection = (section) => {
@@ -172,13 +378,45 @@ return false;
 
   const handleApplyPriceFilter = () => {
     setPriceRange(tempPriceRange);
+    setPage(1);
   };
 
   const handleResetPriceFilter = () => {
     const defaultRange = { min: 0, max: 10000000 };
     setTempPriceRange(defaultRange);
     setPriceRange(defaultRange);
+    setPage(1);
   };
+
+  // Reset page when search query changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  // Infinite Scroll Observer
+  const observer = useRef();
+  const lastElementRef = useCallback(
+    (node) => {
+      // Don't trigger if currently loading new page or first load
+      if (loading || isFetchingMore) {
+        return;
+      }
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && page < totalPages) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) {
+        observer.current.observe(node);
+      }
+    },
+    [loading, isFetchingMore, page, totalPages]
+  );
 
   return (
     <div className={styles.productsPage}>
@@ -217,7 +455,8 @@ return false;
               )}
             </div>
 
-            {/* Shipping Unit Filter */}
+            {/* Shipping Unit Filter - Hidden (Unsupported) */}
+            {/*
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shipping')}>
                 <span className={styles.filterTitle}>Shipping Unit</span>
@@ -225,20 +464,16 @@ return false;
               </button>
               {openSections.shipping && (
                 <div className={styles.filterContent}>
-                  {shippingUnits.map((unit) => (
-                    <label key={unit.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShippingUnits.includes(unit.id)}
-                        onChange={() => toggleFilter('shippingUnit', unit.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{unit.name}</span>
+                  {['Fast Delivery', 'Standard'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+            */}
 
             {/* Brand Filter */}
             <div className={styles.filterSection}>
@@ -318,7 +553,8 @@ return false;
               )}
             </div>
 
-            {/* Shop Type Filter */}
+            {/* Shop Type Filter - Hidden (Unsupported) */}
+            {/*
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shopType')}>
                 <span className={styles.filterTitle}>Shop Type</span>
@@ -326,23 +562,19 @@ return false;
               </button>
               {openSections.shopType && (
                 <div className={styles.filterContent}>
-                  {shopTypes.map((type) => (
-                    <label key={type.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedShopTypes.includes(type.id)}
-                        onChange={() => toggleFilter('shopType', type.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{type.name}</span>
+                  {['Official Mall', 'Preferred', 'Local'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
-                  <button className={styles.showMoreBtn}>More</button>
                 </div>
               )}
             </div>
+            */}
 
-            {/* Condition Filter */}
+            {/* Condition Filter - Hidden (Unsupported) */}
+            {/*
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('condition')}>
                 <span className={styles.filterTitle}>Condition</span>
@@ -350,43 +582,36 @@ return false;
               </button>
               {openSections.condition && (
                 <div className={styles.filterContent}>
-                  {conditions.map((condition) => (
-                    <label key={condition.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedConditions.includes(condition.id)}
-                        onChange={() => toggleFilter('condition', condition.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{condition.name}</span>
+                   {['New', 'Used'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+            */}
 
-            {/* Payment Options Filter */}
-            <div className={styles.filterSection}>
+            {/* Payment Options Filter - Hidden (Unsupported) */}
+            {/*
+             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('payment')}>
                 <span className={styles.filterTitle}>Payment Options</span>
                 <i className={`bi bi-chevron-${openSections.payment ? 'up' : 'down'}`}></i>
               </button>
               {openSections.payment && (
                 <div className={styles.filterContent}>
-                  {paymentOptions.map((option) => (
-                    <label key={option.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedPaymentOptions.includes(option.id)}
-                        onChange={() => toggleFilter('payment', option.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{option.name}</span>
+                   {['COD', 'Credit Card'].map((opt) => (
+                    <label key={opt} className={styles.checkboxLabel}>
+                      <input type="checkbox" className={styles.checkbox} />
+                      <span className={styles.brandName}>{opt}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+            */}
 
             {/* Rating Filter */}
             <div className={styles.filterSection}>
@@ -419,29 +644,6 @@ return false;
                 </div>
               )}
             </div>
-
-            {/* Services Filter */}
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('services')}>
-                <span className={styles.filterTitle}>Services & Promotions</span>
-                <i className={`bi bi-chevron-${openSections.services ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.services && (
-                <div className={styles.filterContent}>
-                  {services.map((service) => (
-                    <label key={service.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedServices.includes(service.id)}
-                        onChange={() => toggleFilter('service', service.id)}
-                        className={styles.checkbox}
-                      />
-                      <span className={styles.brandName}>{service.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
           </aside>
 
           {/* Main Content */}
@@ -452,7 +654,9 @@ return false;
                 <i className="bi bi-arrow-left"></i>
               </button>
 
-              <h1 className={styles.pageTitle}>All Products</h1>
+              <h1 className={styles.pageTitle}>
+                {searchQuery ? `Search Results for "${searchQuery}"` : 'All Products'}
+              </h1>
 
               <div className={styles.productsControls}>
                 <div className={styles.viewToggle}>
@@ -473,7 +677,7 @@ return false;
                 </div>
 
                 <div className={styles.infoText}>
-                  Showing 1 - {displayedProducts.length} of {totalProducts} items
+                  Showing {displayedProducts.length} of {totalProducts} items
                 </div>
 
                 <div className={styles.filterGroup}>
@@ -506,17 +710,56 @@ return false;
             </div>
 
             {/* Product Grid/List */}
-            {viewMode === 'grid' ? (
+            {loading && page === 1 ? (
               <div className={styles.productGrid}>
-                {displayedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {[...Array(itemsToShow)].map((_, i) => (
+                  <SkeletonCard key={i} />
                 ))}
+              </div>
+            ) : displayedProducts.length === 0 ? (
+              <div className={styles.emptyState}>
+                <i className="bi bi-search" style={{ fontSize: '48px', color: '#d1d5db' }}></i>
+                <h3>No products found</h3>
+                <p>Try adjusting your filters or search query</p>
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className={styles.productGrid}>
+                {displayedProducts.map((product, index) => {
+                  if (index === displayedProducts.length - 1) {
+                    return (
+                      <ProductCard
+                        ref={lastElementRef}
+                        key={`${product.id}-${index}`}
+                        product={product}
+                      />
+                    );
+                  }
+                  return <ProductCard key={`${product.id}-${index}`} product={product} />;
+                })}
               </div>
             ) : (
               <div className={styles.productList}>
-                {displayedProducts.map((product) => (
-                  <ProductListItem key={product.id} product={product} />
-                ))}
+                {displayedProducts.map((product, index) => {
+                  if (index === displayedProducts.length - 1) {
+                    return (
+                      <ProductListItem
+                        ref={lastElementRef}
+                        key={`${product.id}-${index}`}
+                        product={product}
+                      />
+                    );
+                  }
+                  return <ProductListItem key={`${product.id}-${index}`} product={product} />;
+                })}
+              </div>
+            )}
+
+            {/* Loading More Indicator */}
+            {isFetchingMore && (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
               </div>
             )}
           </main>

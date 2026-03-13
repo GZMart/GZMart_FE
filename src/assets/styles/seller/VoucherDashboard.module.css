@@ -1,0 +1,250 @@
+/* VoucherDashboard.module.css */
+
+/* Variables */
+:root {
+  --primary-blue: #1890ff; /* Ant Design Blue */
+  --primary-blue-hover: #40a9ff;
+  --bg-blue-light: #e6f7ff;
+  --text-dark: #1f2937;
+  --text-muted: #6b7280;
+}
+
+/* Base Styles */
+.container {
+  background-color: #f0f2f5; /* Seller Portal Background */
+  min-height: 100vh;
+}
+
+.titleSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: #262626;
+  margin-bottom: 4px;
+}
+
+.pageSubtitle {
+  color: #8c8c8c;
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+/* Banner */
+.bannerCard {
+  border-radius: 8px;
+  border: none;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  margin-bottom: 32px;
+}
+
+.bannerBackground {
+  background: linear-gradient(100deg, #e6f7ff 0%, #ffffff 60%);
+  position: relative;
+}
+
+.bannerAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: #1890ff;
+}
+
+.bannerIconCircle {
+  padding: 1rem;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bannerIcon {
+  font-size: 2.5rem;
+  color: #1890ff;
+}
+
+.btnPrimary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: white;
+  font-weight: 500;
+  padding: 8px 20px;
+}
+
+.btnPrimary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+  color: white;
+}
+
+/* Voucher Type Grid */
+.sectionTitle {
+  font-weight: 700;
+  padding-left: 12px;
+  border-left: 4px solid #1890ff; /* Blue accent */
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.voucherCard {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border: 1px solid #f0f0f0;
+  border-left: 4px solid transparent;
+  background-color: white;
+  cursor: pointer;
+  border-radius: 8px;
+  height: 100%;
+}
+
+.voucherCard:hover {
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-4px);
+  border-left: 4px solid #1890ff;
+}
+
+.iconCircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #e6f7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #262626;
+}
+
+.cardDesc {
+  color: #8c8c8c;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  min-height: 40px;
+}
+
+/* Tabs & Filter */
+.listCard {
+  border: none;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+}
+
+.tabNav {
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.tabLink {
+  padding: 6px 16px;
+  border-radius: 20px !important;
+  font-size: 14px;
+  color: #666;
+  border: 1px solid #f0f0f0;
+  font-weight: 500;
+  background-color: white;
+}
+
+.tabLinkActive {
+  background-color: #1890ff !important;
+  color: white !important;
+  border-color: #1890ff !important;
+}
+
+/* Table */
+.tableHeader th {
+  background-color: #fafafa;
+  color: #595959;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #f0f0f0;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.tableContainer {
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+.voucherCode {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  font-size: 13px;
+  color: #595959;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.discountText {
+  color: #1890ff;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.statusBadge {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* Actions */
+.actionBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  transition: all 0.2s;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.actionBtn:hover {
+  background-color: #f5f5f5;
+  color: #1890ff; /* Blue on hover */
+}
+
+.actionBtnDelete:hover {
+  background-color: #fff1f0;
+  color: #ff4d4f; /* Red for delete */
+}
+
+/* Utilities */
+.cursorPointer {
+  cursor: pointer;
+}
+
+.textPrimary {
+  color: #1890ff !important;
+}
+
+.textSecondary {
+  color: #8c8c8c !important;
+}

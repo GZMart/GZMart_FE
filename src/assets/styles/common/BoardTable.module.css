@@ -1,0 +1,112 @@
+/* Board Table Component Styles */
+/* Based on seller's ListingsTable design */
+
+.tableContainer {
+  overflow-x: auto;
+  background-color: #ffffff;
+  border-radius: 0;
+}
+
+/* Board Header */
+.boardHeader {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.boardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* Table Styles */
+.boardTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeaderRow {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tableHeader {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background-color: #fafafa;
+  white-space: nowrap;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.tableCell {
+  padding: 18px 16px;
+  vertical-align: middle;
+  font-size: 13px;
+  color: #374151;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #0066cc;
+}
+
+/* Table Footer */
+.tableFooter {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.showingText {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem !important;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tableContainer {
+    overflow-x: scroll;
+  }
+
+  .boardTable {
+    min-width: 800px;
+  }
+
+  .tableHeader {
+    padding: 12px 10px;
+    font-size: 10px;
+  }
+
+  .tableCell {
+    padding: 14px 10px;
+    font-size: 12px;
+  }
+
+  .boardTitle {
+    font-size: 14px;
+  }
+}

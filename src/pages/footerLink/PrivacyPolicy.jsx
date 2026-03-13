@@ -229,7 +229,7 @@ const PrivacyPolicy = () => {
                         </span>
                       );
                     }
-                    return word + ' ';
+                    return `${word} `;
                   })}
                 </p>
               ))}
