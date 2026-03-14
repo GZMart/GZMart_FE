@@ -134,6 +134,19 @@ export const orderSellerService = {
    * Legacy method - alias for getHistory
    */
   getOrderHistory: async (orderId) => await axiosClient.get(`${BASE_URL}/${orderId}/history`),
+
+  /**
+   * Start shipping / dispatch order (packing → shipping)
+   * Initiates GPS delivery tracking timer
+   * @param {string} orderId - Order ID
+   * @param {object} [coordinates] - Optional GPS coordinates { seller: {lat,lng}, buyer: {lat,lng} }
+   * @returns {Promise} Updated order with tracking info
+   */
+  startShipping: async (orderId, coordinates = null) =>
+    await axiosClient.put(
+      `${BASE_URL}/${orderId}/start-shipping`,
+      coordinates ? { coordinates } : {},
+    ),
 };
 
 export default orderSellerService;

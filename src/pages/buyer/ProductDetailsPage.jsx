@@ -944,9 +944,23 @@ const ProductDetailsPage = () => {
           {activeTab === 'description' && (
             <div className={styles.description}>
               <h3>{t('product_details.title_description')}</h3>
-              {product.descriptionText?.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              )) || <p>{t('product_details.no_description')}</p>}
+              {product.description && /<[a-z][\s\S]*>/i.test(product.description) ? (
+                <div
+                  className={styles.descriptionHtml}
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              ) : (() => {
+                const paragraphs =
+                  product.descriptionText ||
+                  (product.description || '')
+                    .split(/\n+/)
+                    .filter(Boolean);
+                return paragraphs.length > 0 ? (
+                  paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                ) : (
+                  <p>{t('product_details.no_description')}</p>
+                );
+              })()}
 
               <div className={styles.features}>
                 <h4>{t('product_details.title_features')}</h4>

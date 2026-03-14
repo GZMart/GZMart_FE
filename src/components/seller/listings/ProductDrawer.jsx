@@ -6,6 +6,7 @@ import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
 import TiersEditor from './TiersEditor';
 import VariantsTable from './VariantsTable';
+import RichTextEditor from '../../common/RichTextEditor';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
 const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
@@ -535,6 +536,9 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       // In edit mode, costPrice is NEVER sent — it is owned by InventoryItem
       // and synced back to Product.models via the Inventory adjust flow.
       let productModels;
+      // Normalize stock to avoid NaN/null — backend uses totalStock for status (active vs out_of_stock)
+      const safeStock = (val) => Math.max(0, parseInt(val, 10) || 0);
+
       if (productType === 'simple') {
         productModels = [
           {
@@ -544,7 +548,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             ...(!isEditMode && formData.costPrice
               ? { costPrice: parseFloat(formData.costPrice) }
               : {}),
-            stock: parseInt(formData.stock),
+            stock: safeStock(formData.stock),
             tierIndex: [],
           },
         ];
@@ -555,7 +559,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           price: parseFloat(model.price),
           // Only include costPrice on CREATE
           ...(!isEditMode && model.costPrice ? { costPrice: parseFloat(model.costPrice) } : {}),
-          stock: parseInt(model.stock),
+          stock: safeStock(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
           ...(!model.imageFile && model.image && { image: model.image }),
         }));
@@ -1276,15 +1280,14 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <label className={styles.formLabel}>Description</label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      name="description"
+                    <RichTextEditor
                       value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Describe your product..."
+                      onChange={(html) =>
+                        setFormData((prev) => ({ ...prev, description: html || '' }))
+                      }
+                      placeholder="Mô tả sản phẩm... Có thể thêm ảnh bằng nút 📷 trên thanh công cụ"
                       disabled={loading}
-                      className={styles.formControl}
+                      minHeight={200}
                     />
                   </Form.Group>
                 </Col>

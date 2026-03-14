@@ -1,0 +1,139 @@
+/* ============================================================
+   Order Status Timeline — CSS Module
+   Uses Seller Portal design tokens (--sp-*) from index.css
+   ============================================================ */
+
+@keyframes dotPop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- Container ---------- */
+.timeline {
+  padding: 2px 0;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: var(--sp-text-muted, #9ca3af);
+  font-style: italic;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ---------- Timeline Item ---------- */
+.timelineItem {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+  padding-bottom: 18px;
+  position: relative;
+}
+
+.timelineItem:last-child {
+  padding-bottom: 0;
+}
+
+/* Vertical connector */
+.timelineItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 26px;
+  width: 2px;
+  height: calc(100% - 26px);
+  background: var(--sp-border-light, #f1f3f5);
+}
+
+/* ---------- Dot ---------- */
+.dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid transparent;
+  animation: dotPop 0.2s ease both;
+  position: relative;
+  z-index: 1;
+}
+
+.dot svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Dot variants */
+.dotPending                      { background: #fef9c3; border-color: #fde68a; color: #854d0e; }
+.dotProcessing                   { background: var(--sp-hover-bg, #f0f4ff); border-color: #c7d2fe; color: var(--sp-primary, #1a56db); }
+.dotShipped,
+.dotDelivered,
+.dotCompleted                    { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+.dotCancelled,
+.dotUnderInvestigation           { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+.dotRefunded,
+.dotRefundPending                { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+.dotDeliveredPendingConfirmation { background: #fef9c3; border-color: #fde68a; color: #854d0e; }
+.dotDefault                      { background: var(--sp-surface-hover, #f4f6f9); border-color: var(--sp-border, #e8ecf0); color: var(--sp-text-muted, #9ca3af); }
+
+/* ---------- Content ---------- */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 3px;
+}
+
+.statusLabel {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  width: fit-content;
+}
+
+/* Label colors match dots */
+.labelPending                      { background: #fef9c3; color: #854d0e; }
+.labelProcessing                   { background: var(--sp-active-bg, #eef2ff); color: var(--sp-primary, #1a56db); }
+.labelShipped,
+.labelDelivered,
+.labelCompleted                    { background: #dcfce7; color: #15803d; }
+.labelCancelled,
+.labelUnderInvestigation           { background: #fee2e2; color: #b91c1c; }
+.labelRefunded,
+.labelRefundPending                { background: #fff7ed; color: #c2410c; }
+.labelDeliveredPendingConfirmation { background: #fef9c3; color: #854d0e; }
+.labelDefault                      { background: var(--sp-surface-hover, #f4f6f9); color: var(--sp-text-secondary, #4b5563); }
+
+.reason {
+  font-size: 12.5px;
+  color: var(--sp-text-primary, #111827);
+  font-weight: 500;
+  margin: 0;
+}
+
+.notes {
+  font-size: 12px;
+  color: var(--sp-text-muted, #9ca3af);
+  margin: 0;
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--sp-text-muted, #9ca3af);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  margin-top: 1px;
+}
+
+.meta strong {
+  color: var(--sp-text-secondary, #4b5563);
+  font-weight: 600;
+}

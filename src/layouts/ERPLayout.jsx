@@ -151,7 +151,7 @@ const ERPLayout = ({ children }) => {
           <div className={styles.topbarRight}>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
-              <NotificationBell />
+              <NotificationBell triggerClassName={styles.iconBtn} dropdownWidth="380px" />
             </div>
 
             {/* Profile dropdown */}
