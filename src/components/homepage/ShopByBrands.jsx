@@ -55,17 +55,18 @@ const ShopByBrands = () => {
         </motion.h3>
 
         <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
-          <motion.button
-            whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
-            whileTap={{ scale: 0.95 }}
-            className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
-            style={{
-              backgroundColor: '#FCBD01',
-              border: 'none',
-            }}
-          >
-            VIEW ALL
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
+              whileTap={{ scale: 0.95 }}
+              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white btn-primary"
+              style={{
+                backgroundColor: 'var(--color-primary)',
+                border: 'none',
+
+              }}
+            >
+              VIEW ALL
+            </motion.button>
         </Link>
       </div>
 
@@ -102,7 +103,7 @@ const ShopByBrands = () => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';
                   e.target.parentNode.innerText = brand.name;
-                  e.target.parentNode.style.color = '#555';
+                  e.target.parentNode.style.color = 'var(--color-gray-700)';
                   e.target.parentNode.style.fontWeight = 'bold';
                 }}
               />

@@ -112,6 +112,11 @@ const OrdersPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, currentPage]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
   const fetchOrders = async (page) => {
     try {
       setLoading(true);
@@ -454,25 +459,6 @@ const OrdersPage = () => {
                     {/* Actions — only on first item */}
                     {index === 0 && (
                       <div className={styles.orderActions}>
-                        {TERMINAL_STATUSES.includes(order.status) ? (
-                          <button
-                            className={`${styles.actionButton} ${styles.actionButtonOutline}`}
-                            onClick={(e) => handleViewDetail(e, order._id)}
-                            title="View Order Detail"
-                          >
-                            <ExternalLink size={13} />
-                            View Detail
-                          </button>
-                        ) : (
-                          <button
-                            className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
-                            onClick={(e) => handleOpenStatusModal(e, order)}
-                            title="Update Order Status"
-                          >
-                            <Edit2 size={13} />
-                            Update Status
-                          </button>
-                        )}
                         <button
                           className={`${styles.actionButton} ${styles.actionButtonOutline}`}
                           onClick={(e) => handleMessageBuyer(e, order)}

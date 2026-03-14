@@ -804,23 +804,6 @@ const ProductDetailsPage = () => {
               >
                 {t('product_details.btn_buy_now')}
               </button>
-              <button
-                className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
-                onClick={handleToggleFavourite}
-                disabled={favouriteLoading}
-                title={
-                  isFavourite
-                    ? t('product_details.toast_wishlist_remove')
-                    : t('product_details.toast_wishlist_add')
-                }
-              >
-                <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {favouriteLoading
-                  ? t('product_details.loading')
-                  : isFavourite
-                    ? t('product_details.toast_wishlist_remove')
-                    : t('product_details.favorite')}
-              </button>
             </div>
             {currentStock <= 0 && (
               <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
@@ -1036,7 +1019,9 @@ const ProductDetailsPage = () => {
             </div>
           )}
 
-          {activeTab === 'review' && <ProductReviewSection product={product} />}
+          {activeTab === 'review' && (
+            <ProductReviewSection product={product} />
+          )}
         </div>
       </div>
 

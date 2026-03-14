@@ -665,19 +665,6 @@ const ProfilePage = () => {
     setReviewingOrder(null);
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await orderService.submitReview(reviewingOrder._id, reviewData);
-      // if (response.success) {
-      //   toast.success('Review submitted successfully');
-      //   setShowReviewModal(false);
-      //   setReviewingOrder(null);
-      // }
-
-      // Temporary: Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success('Review submitted successfully');
-      setShowReviewModal(false);
-      setReviewingOrder(null);
       // Optional: Refresh order list after successful review submission
       //if (activeTab === 'orders') {
       //await fetchOrders(pagination.page);
@@ -1122,7 +1109,7 @@ const ProfilePage = () => {
 
             {/* Search Bar */}
             <div className={styles.orderSearchBar}>
-              <Search size={20} color="#9CA3AF" />
+              <Search size={20} color="#6b7280" />
               <input
                 type="text"
                 placeholder="Search by Shop name, Order ID or Product name"
@@ -1159,7 +1146,7 @@ const ProfilePage = () => {
                     {/* Order Header */}
                     <div className={styles.orderCardHeader}>
                       <div className={styles.orderCardHeaderLeft}>
-                        <Store size={16} color="#EF4444" strokeWidth={2} />
+                        <Store size={16} color="#B13C36" strokeWidth={2} />
                         <span className={styles.shopName}>
                           {order.items?.[0]?.productId?.sellerId?.fullName || 'GZMart Shop'}
                         </span>
@@ -1328,7 +1315,7 @@ const ProfilePage = () => {
                 <div className={styles.orderDetailsSection}>
                   <div className={styles.orderDetailsShopHeader}>
                     <div className={styles.orderDetailsShopHeaderLeft}>
-                      <Store size={18} color="#EF4444" strokeWidth={2} />
+                      <Store size={18} color="#B13C36" strokeWidth={2} />
                       <span className={styles.orderDetailsShopName}>
                         {selectedOrderDetails.items?.[0]?.productId?.sellerId?.fullName ||
                           'GZMart Shop'}
@@ -1842,21 +1829,6 @@ const ProfilePage = () => {
         orderNumber={reviewingOrder?.orderNumber}
         isSubmitting={reviewSubmitting}
         orderId={reviewingOrder?._id}
-      />
-
-      {/* Return/Refund Request Modal */}
-      <ReturnRequestModal
-        show={showReturnModal}
-        order={selectedOrderDetails}
-        onHide={() => setShowReturnModal(false)}
-        onSuccess={(returnRequest) => {
-          toast.success('Return request submitted successfully!');
-          setShowReturnModal(false);
-          // Optionally refresh order details
-          if (selectedOrderDetails?._id) {
-            fetchOrderDetails(selectedOrderDetails._id);
-          }
-        }}
       />
     </div>
   );

@@ -1837,7 +1837,7 @@ const FlashSalesPage = () => {
                   </div>
                   {!selectedFlashSale ? (
                     <div
-                      style={{ marginTop: 4, color: '#1890ff', cursor: 'pointer' }}
+                      style={{ marginTop: 4, color: 'var(--color-primary)', cursor: 'pointer' }}
                       onClick={() => setCurrentStep(0)}
                     >
                       ✏️ Edit campaign info
@@ -1908,11 +1908,11 @@ const FlashSalesPage = () => {
                   product,
                 }))}
                 optionRender={(option) => (
-                  <Space>
+                    <Space>
                     <Avatar src={option.data.product.images?.[0]} shape="square" size={40} />
                     <div>
                       <div style={{ fontWeight: 500 }}>{option.data.product.name}</div>
-                      <div style={{ fontSize: '12px', color: '#888' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-gray-300)' }}>
                         SKU: {option.data.product.sku}
                       </div>
                     </div>
@@ -1929,7 +1929,7 @@ const FlashSalesPage = () => {
                     style={{
                       marginBottom: 16,
                       padding: 12,
-                      background: '#f5f5f5',
+                      background: 'var(--color-gray-100)',
                       borderRadius: 8,
                       display: 'flex',
                       gap: 12,
