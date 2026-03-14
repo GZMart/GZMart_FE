@@ -132,7 +132,7 @@ const ProductDetailsPage = () => {
             }
 
             return null;
-          } catch (err) {
+          } catch {
             return null;
           }
         };
@@ -165,8 +165,6 @@ const ProductDetailsPage = () => {
         // Map Backend 'tiers' to Frontend 'tier_variations'
         // Ensure tiers have 'name', 'options', 'images'
         const tiers = productData.tiers || [];
-
-        // Find default active model (first one with stock, or just first one)
         // Initial selection: if tiers exist, select 0,0... or null if user must select
         // Usually better to select the first valid option or nothing.
         // Let's default to [0, 0] if tiers exist so user sees a price immediately.
@@ -965,9 +963,23 @@ const ProductDetailsPage = () => {
           {activeTab === 'description' && (
             <div className={styles.description}>
               <h3>{t('product_details.title_description')}</h3>
-              {product.descriptionText?.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              )) || <p>{t('product_details.no_description')}</p>}
+              {product.description && /<[a-z][\s\S]*>/i.test(product.description) ? (
+                <div
+                  className={styles.descriptionHtml}
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              ) : (
+                (() => {
+                  const paragraphs =
+                    product.descriptionText ||
+                    (product.description || '').split(/\n+/).filter(Boolean);
+                  return paragraphs.length > 0 ? (
+                    paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  ) : (
+                    <p>{t('product_details.no_description')}</p>
+                  );
+                })()
+              )}
 
               <div className={styles.features}>
                 <h4>{t('product_details.title_features')}</h4>

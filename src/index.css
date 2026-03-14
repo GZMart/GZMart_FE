@@ -30,6 +30,47 @@
   --color-gray-900: #111827;
 }
 
+/* ============================================================
+   Seller Portal Design Tokens (--sp-*)
+   Source of truth: ERPLayout.module.css sidebar colors
+   ============================================================ */
+:root {
+  /* Brand */
+  --sp-primary:         #1a56db;
+  --sp-primary-dark:    #0f3fa8;
+  --sp-primary-light:   #3b82f6;
+  --sp-primary-gradient: linear-gradient(135deg, #1a56db 0%, #0f3fa8 100%);
+
+  /* Surfaces */
+  --sp-bg:              #f8f9fa;
+  --sp-surface:         #ffffff;
+  --sp-surface-hover:   #f4f6f9;
+  --sp-active-bg:       #eef2ff;
+  --sp-hover-bg:        #f0f4ff;
+
+  /* Borders */
+  --sp-border:          #e8ecf0;
+  --sp-border-light:    #f1f3f5;
+
+  /* Text */
+  --sp-text-primary:    #111827;
+  --sp-text-secondary:  #4b5563;
+  --sp-text-muted:      #9ca3af;
+  --sp-text-label:      #b0b7c3;
+
+  /* Status colors — consistent with sidebar dot */
+  --sp-blue:            #1a56db;
+  --sp-blue-bg:         #dbeafe;
+
+  /* Focus ring */
+  --sp-focus-ring:      rgba(26, 86, 219, 0.18);
+
+  /* Shadows */
+  --sp-shadow-sm:       0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  --sp-shadow-md:       0 2px 8px rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.05);
+  --sp-primary-glow:    0 4px 14px rgba(26, 86, 219, 0.28);
+}
+
 * {
   margin: 0;
   padding: 0;

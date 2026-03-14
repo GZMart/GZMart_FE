@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Trash2, Edit, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Printer,
+  Trash2,
+  Edit,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
+} from 'lucide-react';
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import OrderStatusTimeline from '../../components/seller/orders/OrderStatusTimeline';
 import { orderSellerService } from '../../services/api/orderSellerService';
@@ -9,6 +18,7 @@ import styles from '../../assets/styles/seller/OrderDetailsPage.module.css';
 
 const OrderDetailsPage = () => {
   const { id: orderId } = useParams();
+  const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
   const [history, setHistory] = useState([]);
@@ -17,38 +27,7 @@ const OrderDetailsPage = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch order details
-  useEffect(() => {
-    const fetchOrderDetails = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const [orderResponse, historyResponse] = await Promise.all([
-          orderSellerService.getById(orderId),
-          orderSellerService.getHistory(orderId),
-        ]);
-
-        if (orderResponse.success) {
-          setOrder(orderResponse.data);
-        } else {
-          setError('Failed to load order details');
-        }
-
-        if (historyResponse.success) {
-          setHistory(historyResponse.data?.history || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch order details:', err);
-        setError(err.message || 'Failed to load order details');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrderDetails();
-  }, [orderId]);
-
-  const refetchOrderDetails = async () => {
+  const fetchOrderDetails = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -75,35 +54,36 @@ const OrderDetailsPage = () => {
     }
   };
 
-  const handleStatusModalClose = () => {
-    setShowStatusModal(false);
-  };
+  useEffect(() => {
+    fetchOrderDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   const handleStatusUpdateSuccess = () => {
-    handleStatusModalClose();
-    refetchOrderDetails();
+    setShowStatusModal(false);
+    fetchOrderDetails();
   };
 
   const handleCancelOrder = async () => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        setActionLoading(true);
-        const response = await orderSellerService.cancel(orderId, {
-          cancellationReason: 'Cancelled by seller',
-        });
-
-        if (response.success) {
-          alert('Order cancelled successfully');
-          refetchOrderDetails();
-        } else {
-          alert('Failed to cancel order');
-        }
-      } catch (err) {
-        console.error('Error cancelling order:', err);
-        alert('Error cancelling order');
-      } finally {
-        setActionLoading(false);
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const response = await orderSellerService.cancel(orderId, {
+        cancellationReason: 'Cancelled by seller',
+      });
+      if (response.success) {
+        alert('Order cancelled successfully');
+        fetchOrderDetails();
+      } else {
+        alert('Failed to cancel order');
       }
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      alert('Error cancelling order');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -111,9 +91,7 @@ const OrderDetailsPage = () => {
     try {
       setActionLoading(true);
       const response = await orderSellerService.getDeliveryNote(orderId);
-
       if (response.success) {
-        // Create a new window with the HTML content
         const printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write(response.html || response.data?.html);
         printWindow.document.close();
@@ -129,45 +107,42 @@ const OrderDetailsPage = () => {
     }
   };
 
-  // Get status badge info
   const getStatusBadgeInfo = (status) => {
     const statusInfo = {
-      pending: { bg: styles.statusPending, label: 'Pending', icon: Clock },
-      processing: { bg: styles.statusProcessing, label: 'Processing', icon: Clock },
-      shipped: { bg: styles.statusShipped, label: 'Shipped', icon: CheckCircle },
-      delivered: { bg: styles.statusDelivered, label: 'Delivered', icon: CheckCircle },
+      pending: { bg: styles.statusPending, label: 'Pending', Icon: Clock },
+      processing: { bg: styles.statusProcessing, label: 'Processing', Icon: Clock },
+      shipped: { bg: styles.statusShipped, label: 'Shipped', Icon: CheckCircle },
+      delivered: { bg: styles.statusDelivered, label: 'Delivered', Icon: CheckCircle },
       delivered_pending_confirmation: {
         bg: styles.statusPendingConfirmation,
         label: 'Pending Confirmation',
-        icon: AlertCircle,
+        Icon: AlertCircle,
       },
-      completed: { bg: styles.statusCompleted, label: 'Completed', icon: CheckCircle },
-      cancelled: { bg: styles.statusCancelled, label: 'Cancelled', icon: AlertCircle },
-      refunded: { bg: styles.statusRefunded, label: 'Refunded', icon: AlertCircle },
-      refund_pending: { bg: styles.statusPending, label: 'Refund Pending', icon: Clock },
+      completed: { bg: styles.statusCompleted, label: 'Completed', Icon: CheckCircle },
+      cancelled: { bg: styles.statusCancelled, label: 'Cancelled', Icon: AlertCircle },
+      refunded: { bg: styles.statusRefunded, label: 'Refunded', Icon: AlertCircle },
+      refund_pending: { bg: styles.statusPending, label: 'Refund Pending', Icon: Clock },
       under_investigation: {
         bg: styles.statusUnderInvestigation,
         label: 'Under Investigation',
-        icon: AlertCircle,
+        Icon: AlertCircle,
       },
     };
     return statusInfo[status] || statusInfo.pending;
   };
 
-  // Get payment status badge info
   const getPaymentStatusBadgeInfo = (status) => {
     const paymentStatusInfo = {
-      pending: { bg: styles.paymentPending, label: 'Pending', icon: Clock },
-      paid: { bg: styles.paymentPaid, label: 'Paid', icon: CheckCircle },
-      completed: { bg: styles.paymentCompleted, label: 'Paid', icon: CheckCircle },
-      failed: { bg: styles.paymentFailed, label: 'Failed', icon: AlertCircle },
-      refunded: { bg: styles.paymentRefunded, label: 'Refunded', icon: AlertCircle },
-      refund_pending: { bg: styles.paymentPending, label: 'Refund Pending', icon: Clock },
+      pending: { bg: styles.paymentPending, label: 'Pending', Icon: Clock },
+      paid: { bg: styles.paymentPaid, label: 'Paid', Icon: CheckCircle },
+      completed: { bg: styles.paymentCompleted, label: 'Paid', Icon: CheckCircle },
+      failed: { bg: styles.paymentFailed, label: 'Failed', Icon: AlertCircle },
+      refunded: { bg: styles.paymentRefunded, label: 'Refunded', Icon: AlertCircle },
+      refund_pending: { bg: styles.paymentPending, label: 'Refund Pending', Icon: Clock },
     };
     return paymentStatusInfo[status] || paymentStatusInfo.pending;
   };
 
-  // Prepare items table data
   const itemsTableData =
     order?.items?.map((item, idx) => ({
       key: idx,
@@ -179,36 +154,38 @@ const OrderDetailsPage = () => {
       tierSelections: item.tierSelections,
     })) || [];
 
-  // Show loading state
+  // — Loading —
   if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingState}>
-          <div className={styles.spinner}></div>
+          <div className={styles.spinner} />
         </div>
       </div>
     );
   }
 
-  // Show error state
+  // — Error —
   if (error || !order) {
     return (
       <div className={styles.container}>
         <button
           className={styles.backButton}
-          onClick={() => (window.location.href = '/seller/orders')}
+          onClick={() => navigate('/seller/orders')}
           title="Back to Orders"
         >
           <ArrowLeft size={18} />
         </button>
         <div className={styles.errorState}>
-          <div className={styles.errorIcon}>⚠️</div>
+          <div className={styles.errorIconWrapper}>
+            <AlertTriangle />
+          </div>
           <div className={styles.errorTitle}>Error Loading Order</div>
           <div className={styles.errorMessage}>{error || 'Order not found'}</div>
           <button
-            className={styles.actionButtonPrimary}
-            style={{ margin: '0 auto' }}
-            onClick={() => (window.location.href = '/seller/orders')}
+            className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
+            style={{ maxWidth: 180, margin: '0 auto' }}
+            onClick={() => navigate('/seller/orders')}
           >
             Back to Orders
           </button>
@@ -217,12 +194,19 @@ const OrderDetailsPage = () => {
     );
   }
 
+  const orderStatus = getStatusBadgeInfo(order.status);
+  const OrderStatusIcon = orderStatus.icon || Clock;
+  const paymentStatus = getPaymentStatusBadgeInfo(order.paymentStatus);
+  const PaymentStatusIcon = paymentStatus.icon || Clock;
+
+  const isTerminal = order.status === 'completed' || order.status === 'cancelled';
+
   return (
     <div className={styles.container}>
       {/* Back Button */}
       <button
         className={styles.backButton}
-        onClick={() => (window.location.href = '/seller/orders')}
+        onClick={() => navigate('/seller/orders')}
         title="Back to Orders"
       >
         <ArrowLeft size={18} />
@@ -230,41 +214,38 @@ const OrderDetailsPage = () => {
 
       {/* Header */}
       <div className={styles.header}>
-        <div>
-          <h1>Order #{order.orderNumber}</h1>
-          <p>Created on {new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.headerTitle}>
+            Order <span>#{order.orderNumber}</span>
+          </h1>
+          <p className={styles.headerSubtitle}>
+            Created on{' '}
+            {new Date(order.createdAt).toLocaleDateString('vi-VN', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
         </div>
       </div>
 
       {/* Main Content */}
       <div className={styles.content}>
         {/* Left Column */}
-        <div>
+        <div className={styles.leftColumn}>
           {/* Order Summary Card */}
-          <div className={styles.card}>
+          <div className={`${styles.card} ${styles.cardAccent}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>Order Summary</h3>
               <div className={styles.statusBadges}>
-                {(() => {
-                  const orderStatus = getStatusBadgeInfo(order.status);
-                  const OrderStatusIcon = orderStatus.icon;
-                  return (
-                    <div className={`${styles.badge} ${orderStatus.bg}`}>
-                      <OrderStatusIcon size={14} />
-                      Order: {orderStatus.label}
-                    </div>
-                  );
-                })()}
-                {(() => {
-                  const paymentStatus = getPaymentStatusBadgeInfo(order.paymentStatus);
-                  const PaymentStatusIcon = paymentStatus.icon;
-                  return (
-                    <div className={`${styles.badge} ${paymentStatus.bg}`}>
-                      <PaymentStatusIcon size={14} />
-                      Payment: {paymentStatus.label}
-                    </div>
-                  );
-                })()}
+                <div className={`${styles.badge} ${orderStatus.bg}`}>
+                  <OrderStatusIcon size={12} />
+                  {orderStatus.label}
+                </div>
+                <div className={`${styles.badge} ${paymentStatus.bg}`}>
+                  <PaymentStatusIcon size={12} />
+                  Payment: {paymentStatus.label}
+                </div>
               </div>
             </div>
 
@@ -296,7 +277,7 @@ const OrderDetailsPage = () => {
               </div>
             </div>
 
-            <div className={styles.infoDivider}></div>
+            <div className={styles.infoDivider} />
 
             <div className={styles.infoGrid}>
               <div className={styles.infoGroup}>
@@ -351,7 +332,7 @@ const OrderDetailsPage = () => {
                           <span className={styles.productTier}>
                             {Object.entries(item.tierSelections)
                               .map(([key, value]) => `${key}: ${value}`)
-                              .join(', ')}
+                              .join(' · ')}
                           </span>
                         )}
                       </div>
@@ -380,56 +361,55 @@ const OrderDetailsPage = () => {
         </div>
 
         {/* Right Column */}
-        <div>
+        <div className={styles.rightColumn}>
           {/* Order Total Card */}
           <div className={styles.totalCard}>
-            <h3 className={styles.cardTitle} style={{ marginBottom: '16px' }}>
-              Order Total
-            </h3>
+            <h3 className={styles.totalCardTitle}>Order Total</h3>
 
             <div className={styles.totalRow}>
-              <span className={styles.totalLabel}>Subtotal:</span>
+              <span className={styles.totalLabel}>Subtotal</span>
               <span className={styles.totalValue}>{formatCurrency(order.subtotal || 0)}</span>
             </div>
 
             <div className={styles.totalRow}>
-              <span className={styles.totalLabel}>Shipping:</span>
+              <span className={styles.totalLabel}>Shipping</span>
               <span className={styles.totalValue}>{formatCurrency(order.shippingCost || 0)}</span>
             </div>
 
             {order.tax > 0 && (
               <div className={styles.totalRow}>
-                <span className={styles.totalLabel}>Tax:</span>
+                <span className={styles.totalLabel}>Tax</span>
                 <span className={styles.totalValue}>{formatCurrency(order.tax)}</span>
               </div>
             )}
 
             {order.discount > 0 && (
               <div className={styles.totalRow}>
-                <span className={styles.totalLabel}>Discount:</span>
+                <span className={styles.totalLabel}>Discount</span>
                 <span className={`${styles.totalValue} ${styles.discountValue}`}>
                   -{formatCurrency(order.discount)}
                 </span>
               </div>
             )}
 
-            <div className={styles.totalDivider}></div>
+            <div className={styles.totalDivider} />
 
             <div className={styles.totalFinal}>
-              <span className={styles.totalFinalLabel}>Total:</span>
+              <span className={styles.totalFinalLabel}>Total</span>
               <span className={styles.totalFinalValue}>{formatCurrency(order.totalPrice)}</span>
             </div>
           </div>
 
           {/* Actions Card */}
           <div className={styles.actionsCard}>
+            <p className={styles.actionsTitle}>Actions</p>
             <div className={styles.actionsList}>
               <button
                 className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
                 onClick={() => setShowStatusModal(true)}
-                disabled={order.status === 'completed' || order.status === 'cancelled'}
+                disabled={isTerminal}
               >
-                <Edit size={16} />
+                <Edit size={15} />
                 Update Status
               </button>
 
@@ -438,18 +418,16 @@ const OrderDetailsPage = () => {
                 onClick={handlePrintDeliveryNote}
                 disabled={actionLoading}
               >
-                <Printer size={16} />
-                Print Delivery
+                <Printer size={15} />
+                Print Delivery Note
               </button>
 
               <button
                 className={`${styles.actionButton} ${styles.actionButtonDanger}`}
                 onClick={handleCancelOrder}
-                disabled={
-                  order.status === 'completed' || order.status === 'cancelled' || actionLoading
-                }
+                disabled={isTerminal || actionLoading}
               >
-                <Trash2 size={16} />
+                <Trash2 size={15} />
                 Cancel Order
               </button>
             </div>
@@ -462,7 +440,7 @@ const OrderDetailsPage = () => {
         <OrderStatusModal
           show={showStatusModal}
           order={order}
-          onHide={handleStatusModalClose}
+          onHide={() => setShowStatusModal(false)}
           onSuccess={handleStatusUpdateSuccess}
         />
       )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,7 @@ import { selectIsAuthenticated } from '@store/slices/authSlice';
 import socketService from '@services/socket/socketService';
 import { notificationAPI } from '@services/api';
 
-const NotificationBell = () => {
+const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -148,8 +149,23 @@ const NotificationBell = () => {
   return (
     <div className="position-relative d-inline-flex" ref={dropdownRef}>
       <div
-        className="d-flex align-items-center gap-1 cursor-pointer"
+        className={`d-flex align-items-center gap-1 cursor-pointer ${triggerClassName}`}
         onClick={handleToggleDropdown}
+        aria-label={t('notifications.title')}
+        style={
+          !triggerClassName
+            ? {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                position: 'relative',
+              }
+            : undefined
+        }
       >
         <div className="position-relative d-flex align-items-center justify-content-center">
           <Bell size={14} />
@@ -175,7 +191,7 @@ const NotificationBell = () => {
           style={{
             top: 'calc(100% + 10px)',
             right: 0,
-            width: '400px',
+            width: dropdownWidth,
             zIndex: 1050,
             cursor: 'default',
           }}
@@ -257,6 +273,7 @@ const NotificationBell = () => {
                       {new Date(notification.createdAt).toLocaleString()}
                     </small>
                   </div>
+
                   {!notification.isRead && (
                     <div className="ms-2 d-flex align-items-center">
                       <div
@@ -290,6 +307,11 @@ const NotificationBell = () => {
       )}
     </div>
   );
+};
+
+NotificationBell.propTypes = {
+  triggerClassName: PropTypes.string,
+  dropdownWidth: PropTypes.string,
 };
 
 export default NotificationBell;

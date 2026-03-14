@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Clock,
   Cog,
@@ -8,96 +9,104 @@ import {
   AlertCircle,
   XCircle,
   RefreshCw,
-  CreditCard,
-  Wallet,
+  MessageSquare,
+  Edit2,
+  ExternalLink,
+  Package,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import { orderSellerService } from '../../services/api/orderSellerService';
+import { chatService } from '../../services/api/chatService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/OrdersPage.module.css';
 
+/* ─── CSS class name helpers ──────────────────────────────────── */
+const STATUS_CONFIG = {
+  pending:                        { label: 'Pending',              Icon: Clock,         cls: 'statusPending' },
+  processing:                     { label: 'Processing',           Icon: Cog,           cls: 'statusProcessing' },
+  shipped:                        { label: 'Shipped',              Icon: Truck,         cls: 'statusShipped' },
+  delivered:                      { label: 'Delivered',            Icon: CheckCircle,   cls: 'statusDelivered' },
+  delivered_pending_confirmation: { label: 'Pending Confirm',      Icon: AlertCircle,   cls: 'statusDeliveredPendingConfirmation' },
+  completed:                      { label: 'Completed',            Icon: CheckCircle,   cls: 'statusCompleted' },
+  cancelled:                      { label: 'Cancelled',            Icon: XCircle,       cls: 'statusCancelled' },
+  refunded:                       { label: 'Refunded',             Icon: XCircle,       cls: 'statusRefunded' },
+  refund_pending:                 { label: 'Refund Pending',       Icon: RefreshCw,     cls: 'statusRefundPending' },
+  under_investigation:            { label: 'Under Investigation',  Icon: AlertCircle,   cls: 'statusUnderInvestigation' },
+};
+
+const PAYMENT_CONFIG = {
+  pending:        { label: 'Pending',    Icon: Clock,        cls: 'paymentPending' },
+  paid:           { label: 'Paid',       Icon: CheckCircle,  cls: 'paymentPaid' },
+  completed:      { label: 'Paid',       Icon: CheckCircle,  cls: 'paymentPaid' },
+  failed:         { label: 'Failed',     Icon: XCircle,      cls: 'paymentFailed' },
+  refunded:       { label: 'Refunded',   Icon: XCircle,      cls: 'paymentRefunded' },
+  refund_pending: { label: 'Refund Pend',Icon: RefreshCw,    cls: 'paymentPending' },
+};
+
+const STATUS_TABS = [
+  { value: 'all',                           label: 'All' },
+  { value: 'pending',                       label: 'Pending' },
+  { value: 'processing',                    label: 'Processing' },
+  { value: 'shipped',                       label: 'Shipped' },
+  { value: 'delivered',                     label: 'Delivered' },
+  { value: 'delivered_pending_confirmation',label: 'Confirm' },
+  { value: 'completed',                     label: 'Completed' },
+  { value: 'cancelled',                     label: 'Cancelled' },
+  { value: 'refund_pending',                label: 'Refund' },
+];
+
+const TERMINAL_STATUSES = ['completed', 'refunded'];
+const ITEMS_PER_PAGE = 10;
+
+/* ─── Helper ──────────────────────────────────────────────────── */
+const StatusBadge = ({ status }) => {
+  const config = STATUS_CONFIG[status] || { label: status, Icon: AlertCircle, cls: 'statusDefault' };
+  const { Icon, label, cls } = config;
+  return (
+    <span className={`${styles.statusBadge} ${styles[cls]}`}>
+      <Icon size={11} strokeWidth={2.5} />
+      {label}
+    </span>
+  );
+};
+StatusBadge.propTypes = { status: PropTypes.string };
+
+const PaymentBadge = ({ status }) => {
+  const config = PAYMENT_CONFIG[status] || { label: status, Icon: AlertCircle, cls: 'paymentPending' };
+  const { Icon, label, cls } = config;
+  return (
+    <span className={`${styles.paymentBadge} ${styles[cls]}`}>
+      <Icon size={10} strokeWidth={2.5} />
+      {label}
+    </span>
+  );
+};
+PaymentBadge.propTypes = { status: PropTypes.string };
+
+/* ─── Main Component ──────────────────────────────────────────── */
 const OrdersPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // State management
-  const [orders, setOrders] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [filters, setFilters] = useState({
-    status: searchParams.get('status') || 'all',
-    paymentMethod: 'all',
-    shippingMethod: 'all',
-    sortBy: 'newest-first',
-  });
-
+  const [orders, setOrders]               = useState([]);
+  const [currentPage, setCurrentPage]     = useState(1);
+  const [totalPages, setTotalPages]       = useState(1);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [messagingBuyer, setMessagingBuyer]   = useState(null);
 
-  const itemsPerPage = 10;
+  const [filters, setFilters] = useState({
+    status:         searchParams.get('status') || 'all',
+    paymentMethod:  'all',
+    shippingMethod: 'all',
+    sortBy:         'newest-first',
+  });
 
-  // Order status options with labels
-  const orderStatuses = [
-    { value: 'all', label: 'All Status' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'processing', label: 'Processing' },
-    { value: 'shipped', label: 'Shipped' },
-    { value: 'delivered', label: 'Delivered' },
-    { value: 'delivered_pending_confirmation', label: 'Pending Confirmation' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'refunded', label: 'Refunded' },
-    { value: 'refund_pending', label: 'Refund Pending' },
-    { value: 'under_investigation', label: 'Under Investigation' },
-  ];
-
-  // Status tag styling
-  const statusTagColors = {
-    pending: { bg: '#FFF3CD', color: '#856404', label: 'Pending', icon: Clock },
-    processing: { bg: '#D1ECF1', color: '#0C5460', label: 'Processing', icon: Cog },
-    shipped: { bg: '#D4EDDA', color: '#155724', label: 'Shipped', icon: Truck },
-    delivered: { bg: '#D4EDDA', color: '#155724', label: 'Delivered', icon: CheckCircle },
-    delivered_pending_confirmation: {
-      bg: '#FFF3CD',
-      color: '#856404',
-      label: 'Pending Confirmation',
-      icon: AlertCircle,
-    },
-    completed: { bg: '#D4EDDA', color: '#155724', label: 'Completed', icon: CheckCircle },
-    cancelled: { bg: '#F8D7DA', color: '#721C24', label: 'Cancelled', icon: XCircle },
-    refunded: { bg: '#F8D7DA', color: '#721C24', label: 'Refunded', icon: XCircle },
-    refund_pending: { bg: '#FFF3CD', color: '#856404', label: 'Refund Pending', icon: RefreshCw },
-    under_investigation: {
-      bg: '#E2E3E5',
-      color: '#383D41',
-      label: 'Under Investigation',
-      icon: AlertCircle,
-    },
-  };
-
-  // Payment status tag styling
-  const paymentStatusColors = {
-    pending: { bg: '#FFF3CD', color: '#856404', label: 'Pending', icon: Clock },
-    paid: { bg: '#D4EDDA', color: '#155724', label: 'Paid', icon: CheckCircle },
-    completed: { bg: '#D4EDDA', color: '#155724', label: 'Paid', icon: CheckCircle },
-    failed: { bg: '#F8D7DA', color: '#721C24', label: 'Failed', icon: XCircle },
-    refunded: { bg: '#F8D7DA', color: '#721C24', label: 'Refunded', icon: XCircle },
-    refund_pending: { bg: '#FFF3CD', color: '#856404', label: 'Refund Pending', icon: RefreshCw },
-  };
-
-  // Payment method icons
-  const paymentMethodIcons = {
-    cash_on_delivery: '💵 COD',
-    credit_card: '💳 Thẻ tín dụng',
-    debit_card: '💳 Thẻ ghi nợ',
-    bank_transfer: '🏦 Bank',
-    wallet: '👛 E-Wallet',
-    paypal: '🅿️ PayPal',
-  };
-
-  // Fetch orders
+  /* ─── Fetch ────────────────────────────────────────────────── */
   useEffect(() => {
     fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,23 +117,13 @@ const OrdersPage = () => {
       setLoading(true);
       setError(null);
 
-      const params = {
-        page,
-        limit: itemsPerPage,
-        sortBy: filters.sortBy,
-      };
-
-      // Add status filter if not 'all'
+      const params = { page, limit: ITEMS_PER_PAGE, sortBy: filters.sortBy };
       if (filters.status !== 'all') {
         params.status = filters.status;
       }
-
-      // Add payment method filter if not 'all'
       if (filters.paymentMethod !== 'all') {
         params.paymentMethod = filters.paymentMethod;
       }
-
-      // Add shipping method filter if not 'all'
       if (filters.shippingMethod !== 'all') {
         params.shippingMethod = filters.shippingMethod;
       }
@@ -147,54 +146,46 @@ const OrdersPage = () => {
     }
   };
 
-  const handleFilterChange = (filterName, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterName]: value,
-    }));
-    setCurrentPage(1); // Reset to first page
+  /* ─── Handlers ─────────────────────────────────────────────── */
+  const handleFilterChange = (name, value) => {
+    setFilters((prev) => ({ ...prev, [name]: value }));
+    setCurrentPage(1);
   };
 
-  // eslint-disable-next-line no-unused-vars
-  const handleViewDetails = (order) => {
-    // Navigate to order details page
-    window.location.href = `/seller/orders/${order._id}`;
+  const handleStatusTabClick = (value) => {
+    handleFilterChange('status', value);
   };
 
-  // eslint-disable-next-line no-unused-vars
-  const handleUpdateStatus = (order) => {
-    setSelectedOrder(order);
+  const handleOpenStatusModal = (e, order) => {
+    e.stopPropagation();
+    setSelectedOrder(order._originalData);
     setShowStatusModal(true);
   };
 
-  const handleStatusModalClose = () => {
-    setShowStatusModal(false);
-    setSelectedOrder(null);
+  const handleViewDetail = (e, orderId) => {
+    e.stopPropagation();
+    navigate(`/seller/orders/${orderId}`);
   };
 
-  const handleStatusUpdateSuccess = () => {
-    handleStatusModalClose();
-    fetchOrders(currentPage); // Refresh orders
+  const handleCardClick = (orderId) => {
+    navigate(`/seller/orders/${orderId}`);
   };
 
-  // eslint-disable-next-line no-unused-vars
-  const handleCancelOrder = async (orderId) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        const response = await orderSellerService.cancel(orderId, {
-          cancellationReason: 'Cancelled by seller',
-        });
-
-        if (response.success) {
-          alert('Order cancelled successfully');
-          fetchOrders(currentPage);
-        } else {
-          alert('Failed to cancel order');
-        }
-      } catch (err) {
-        console.error('Error cancelling order:', err);
-        alert('Error cancelling order');
-      }
+  const handleMessageBuyer = async (e, order) => {
+    e.stopPropagation();
+    const buyerId = order._originalData?.userId?._id || order._originalData?.userId;
+    if (!buyerId) {
+      return;
+    }
+    setMessagingBuyer(order._id);
+    try {
+      const res = await chatService.findOrCreateConversation(buyerId);
+      const conversationId = res?._id || res?.data?._id;
+      navigate('/seller/messages', { state: { conversationId } });
+    } catch (err) {
+      console.error('Failed to open chat:', err);
+    } finally {
+      setMessagingBuyer(null);
     }
   };
 
@@ -204,64 +195,96 @@ const OrdersPage = () => {
     }
   };
 
-  // Format order data for display
+  const handleStatusModalClose = () => {
+    setShowStatusModal(false);
+    setSelectedOrder(null);
+  };
+  const handleStatusUpdateSuccess = () => {
+    handleStatusModalClose();
+    fetchOrders(currentPage);
+  };
+
+  /* ─── Derived data ─────────────────────────────────────────── */
   const formattedOrders = orders.map((order) => ({
-    key: order._id,
-    _id: order._id,
-    orderNumber: order.orderNumber,
-    buyer: order.userId?.fullName || 'Unknown',
-    buyerEmail: order.userId?.email || '',
-    buyerPhone: order.userId?.phone || '',
-    totalItems: order.items?.length || 0,
-    totalPrice: order.totalPrice,
-    status: order.status,
-    paymentMethod: order.paymentMethod,
-    paymentStatus: order.paymentStatus,
-    shippingAddress: order.shippingAddress,
-    createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
+    key:            order._id,
+    _id:            order._id,
+    orderNumber:    order.orderNumber,
+    buyer:          order.userId?.fullName || 'Unknown',
+    buyerEmail:     order.userId?.email || '',
+    totalItems:     order.items?.length || 0,
+    totalPrice:     order.totalPrice,
+    status:         order.status,
+    paymentMethod:  order.paymentMethod,
+    paymentStatus:  order.paymentStatus,
+    shippingAddress:order.shippingAddress,
+    createdAt:      new Date(order.createdAt).toLocaleDateString('vi-VN'),
     items: (order.items || []).map((item) => ({
-      _id: item._id,
-      productName: item.productId?.name || 'Unknown Product',
+      _id:          item._id,
+      productName:  item.productId?.name || 'Unknown Product',
       productImage: item.productId?.images?.[0] || null,
-      price: item.price || 0,
-      quantity: item.quantity || 1,
-      sku: item.sku || '',
-      tierDetails: item.tierDetails || {},
-      model: item.tierSelections || {},
+      price:        item.price || 0,
+      quantity:     item.quantity || 1,
+      sku:          item.sku || '',
+      tierDetails:  item.tierDetails || {},
+      model:        item.tierSelections || {},
     })),
     _originalData: order,
   }));
 
-  // Show loading state
+  /* ─── Pagination helper ────────────────────────────────────── */
+  const getPaginationPages = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = [1];
+    if (currentPage > 3) {
+      pages.push('...');
+    }
+    for (let p = Math.max(2, currentPage - 1); p <= Math.min(totalPages - 1, currentPage + 1); p++) {
+      pages.push(p);
+    }
+    if (currentPage < totalPages - 2) {
+      pages.push('...');
+    }
+    pages.push(totalPages);
+    return pages;
+  };
+
+  /* ─── Render ───────────────────────────────────────────────── */
+  const renderHeader = () => (
+    <div className={styles.header}>
+      <div className={styles.headerLeft}>
+        <h1>Orders</h1>
+        <p>Manage and track orders from your customers.</p>
+      </div>
+    </div>
+  );
+
+  /* Loading */
   if (loading && orders.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h1>Orders</h1>
-            <p>Returned orders by customers.</p>
-          </div>
-        </div>
+        {renderHeader()}
         <div className={styles.loadingContainer}>
-          <div className={styles.spinner}></div>
+          <div className={styles.spinner} />
         </div>
       </div>
     );
   }
 
-  // Show error state
+  /* Error */
   if (error) {
     return (
       <div className={styles.container}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h1>Orders</h1>
-            <p>Returned orders by customers.</p>
-          </div>
-        </div>
+        {renderHeader()}
         <div className={styles.errorState}>
-          <div className={styles.errorTitle}>⚠️ Error Loading Orders</div>
-          <div className={styles.errorMessage}>{error}</div>
+          <div className={styles.errorIconWrapper}>
+            <AlertCircle size={20} />
+          </div>
+          <div className={styles.errorContent}>
+            <div className={styles.errorTitle}>Error Loading Orders</div>
+            <div className={styles.errorMessage}>{error}</div>
+          </div>
           <button className={styles.retryButton} onClick={() => fetchOrders(currentPage)}>
             Try Again
           </button>
@@ -272,49 +295,63 @@ const OrdersPage = () => {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1>Orders</h1>
-          <p>Returned orders by customers.</p>
-        </div>
+      {renderHeader()}
+
+      {/* Status Tab Filters */}
+      <div className={styles.statusTabs}>
+        {STATUS_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            className={`${styles.statusTab} ${filters.status === tab.value ? styles.statusTabActive : ''}`}
+            onClick={() => handleStatusTabClick(tab.value)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Filters */}
+      {/* Secondary Filters */}
       <div className={styles.filtersCard}>
         <div className={styles.filtersGrid}>
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Type</label>
+            <label className={styles.filterLabel}>Payment</label>
             <select
               className={styles.filterSelect}
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              value={filters.paymentMethod}
+              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             >
-              {orderStatuses.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="all">All Methods</option>
+              <option value="cash_on_delivery">Cash on Delivery</option>
+              <option value="credit_card">Credit Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="wallet">E-Wallet</option>
             </select>
           </div>
 
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Month</label>
-            <select className={styles.filterSelect} defaultValue="all">
-              <option value="all">All Months</option>
-              <option value="january">January</option>
-              <option value="february">February</option>
-              <option value="march">March</option>
+            <label className={styles.filterLabel}>Sort By</label>
+            <select
+              className={styles.filterSelect}
+              value={filters.sortBy}
+              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+            >
+              <option value="newest-first">Newest First</option>
+              <option value="oldest-first">Oldest First</option>
+              <option value="highest-total">Highest Total</option>
+              <option value="lowest-total">Lowest Total</option>
             </select>
           </div>
 
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Urgency</label>
-            <select className={styles.filterSelect} defaultValue="all">
-              <option value="all">All Urgency</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+            <label className={styles.filterLabel}>Shipping</label>
+            <select
+              className={styles.filterSelect}
+              value={filters.shippingMethod}
+              onChange={(e) => handleFilterChange('shippingMethod', e.target.value)}
+            >
+              <option value="all">All Methods</option>
+              <option value="standard">Standard</option>
+              <option value="express">Express</option>
             </select>
           </div>
         </div>
@@ -323,23 +360,33 @@ const OrdersPage = () => {
       {/* Orders List */}
       {formattedOrders.length === 0 ? (
         <div className={styles.emptyState}>
-          <div className={styles.emptyStateIcon}>📦</div>
+          <div className={styles.emptyStateIconWrapper}>
+            <Package size={28} strokeWidth={1.5} />
+          </div>
           <div className={styles.emptyStateTitle}>No Orders Found</div>
           <div className={styles.emptyStateText}>
-            Try adjusting your filters or check back later
+            {filters.status !== 'all'
+              ? `No "${STATUS_CONFIG[filters.status]?.label || filters.status}" orders yet.`
+              : 'Try adjusting your filters or check back later.'}
           </div>
         </div>
       ) : (
         <div className={styles.ordersContainer}>
-          {formattedOrders.map((order) => (
+          {formattedOrders.map((order, cardIdx) => (
             <div
               key={order._id}
               className={styles.orderCard}
-              onClick={() => handleViewDetails(order._originalData)}
+              style={{ animationDelay: `${cardIdx * 0.04}s` }}
+              onClick={() => handleCardClick(order._id)}
               role="button"
               tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleCardClick(order._id);
+                }
+              }}
             >
-              {/* Order Header with Meta Information */}
+              {/* Order Header */}
               <div className={styles.orderHeaderRow}>
                 <div className={styles.orderMeta}>
                   <div className={styles.metaItem}>
@@ -347,96 +394,26 @@ const OrdersPage = () => {
                     <span className={styles.metaValue}>{order.orderNumber}</span>
                   </div>
                   <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Purchased</span>
+                    <span className={styles.metaLabel}>Date</span>
                     <span className={styles.metaValue}>{order.createdAt}</span>
                   </div>
                   <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>Customer</span>
                     <span className={styles.metaValue}>{order.buyer}</span>
                   </div>
-
-                  {/* Status - Same format as other items */}
-                  {(() => {
-                    const statusConfig = statusTagColors[order.status];
-                    const StatusIcon = statusConfig?.icon || AlertCircle;
-                    return (
-                      <div className={styles.metaItem}>
-                        <span className={styles.metaLabel}>Status</span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '4px 10px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            backgroundColor: statusConfig?.bg || '#E2E3E5',
-                            color: statusConfig?.color || '#383D41',
-                            whiteSpace: 'nowrap',
-                            width: 'fit-content',
-                          }}
-                        >
-                          <StatusIcon size={12} />
-                          {statusConfig?.label || order.status}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  <div className={styles.metaItem}>
+                    <span className={styles.metaLabel}>Status</span>
+                    <StatusBadge status={order.status} />
+                  </div>
                 </div>
 
-                {/* Total and Payment Status - Right aligned */}
-                <div className={`${styles.metaItem} ${styles.totalPriceItem}`}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '8px',
-                      justifyContent: 'flex-start',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '2px',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <span className={styles.metaLabel} style={{ fontSize: '11px' }}>
-                        Total
-                      </span>
-                      <span
-                        className={`${styles.metaValue} ${styles.totalPriceValue}`}
-                        style={{ fontSize: '14px', fontWeight: '700' }}
-                      >
-                        {formatCurrency(order.totalPrice)}
-                      </span>
-                    </div>
-                    {(() => {
-                      const paymentConfig = paymentStatusColors[order.paymentStatus];
-                      const PaymentIcon = paymentConfig?.icon || AlertCircle;
-                      return (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '3px',
-                            padding: '3px 8px',
-                            borderRadius: '3px',
-                            fontSize: '10px',
-                            fontWeight: '600',
-                            backgroundColor: paymentConfig?.bg || '#E2E3E5',
-                            color: paymentConfig?.color || '#383D41',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          <PaymentIcon size={10} />
-                          {paymentConfig?.label || order.paymentStatus}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                {/* Total + Payment */}
+                <div className={styles.totalPriceItem}>
+                  <span className={styles.metaLabel}>Total</span>
+                  <span className={`${styles.metaValue} ${styles.totalPriceValue}`}>
+                    {formatCurrency(order.totalPrice)}
+                  </span>
+                  <PaymentBadge status={order.paymentStatus} />
                 </div>
               </div>
 
@@ -449,27 +426,20 @@ const OrdersPage = () => {
                     {/* Product Image */}
                     <div className={styles.productImage}>
                       {item.productImage ? (
-                        <img src={item.productImage} alt={item.productName} />
+                        <img src={item.productImage} alt={item.productName} loading="lazy" />
                       ) : (
-                        <div className={styles.productImagePlaceholder}>📷</div>
+                        <div className={styles.productImagePlaceholder}>
+                          <Package size={24} strokeWidth={1.5} />
+                        </div>
                       )}
                     </div>
 
                     {/* Product Details */}
                     <div className={styles.productDetails}>
                       <h3 className={styles.productName}>{item.productName}</h3>
-                      <div
-                        className={styles.productAttributesList}
-                        style={{
-                          display: 'flex',
-                          gap: '40px',
-                          flexWrap: 'wrap',
-                          justifyContent: 'space-between',
-                          maxWidth: '400px',
-                        }}
-                      >
+                      <div className={styles.productAttributesList}>
                         <div className={styles.attributeItem}>
-                          <span className={styles.attributeLabel}>Quantity:</span>
+                          <span className={styles.attributeLabel}>Qty:</span>
                           <span className={styles.attributeValue}>{item.quantity}</span>
                         </div>
                         {Object.entries(item.tierDetails || {}).map(([key, value]) => (
@@ -481,26 +451,36 @@ const OrdersPage = () => {
                       </div>
                     </div>
 
-                    {/* Status, Payment, and Actions - Only show on first item */}
+                    {/* Actions — only on first item */}
                     {index === 0 && (
                       <div className={styles.orderActions}>
-                        <button
-                          className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          title="Dispatch Order"
-                        >
-                          DISPATCH
-                        </button>
+                        {TERMINAL_STATUSES.includes(order.status) ? (
+                          <button
+                            className={`${styles.actionButton} ${styles.actionButtonOutline}`}
+                            onClick={(e) => handleViewDetail(e, order._id)}
+                            title="View Order Detail"
+                          >
+                            <ExternalLink size={13} />
+                            View Detail
+                          </button>
+                        ) : (
+                          <button
+                            className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
+                            onClick={(e) => handleOpenStatusModal(e, order)}
+                            title="Update Order Status"
+                          >
+                            <Edit2 size={13} />
+                            Update Status
+                          </button>
+                        )}
                         <button
                           className={`${styles.actionButton} ${styles.actionButtonOutline}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
+                          onClick={(e) => handleMessageBuyer(e, order)}
                           title="Message Buyer"
+                          disabled={messagingBuyer === order._id}
                         >
-                          MESSAGE BUYER
+                          <MessageSquare size={13} />
+                          {messagingBuyer === order._id ? 'Opening…' : 'Message'}
                         </button>
                       </div>
                     )}
@@ -519,23 +499,38 @@ const OrdersPage = () => {
             className={styles.paginationButton}
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
+            aria-label="Previous page"
           >
-            Previous
+            <ChevronLeft size={16} />
           </button>
-          <span className={styles.paginationInfo}>
-            Page {currentPage} of {totalPages}
-          </span>
+
+          {getPaginationPages().map((page, idx) =>
+            page === '...' ? (
+              <span key={`ellipsis-${idx}`} className={styles.paginationInfo}>…</span>
+            ) : (
+              <button
+                key={page}
+                className={`${styles.paginationButton} ${currentPage === page ? styles.paginationButtonActive : ''}`}
+                onClick={() => handlePageChange(page)}
+                aria-current={currentPage === page ? 'page' : undefined}
+              >
+                {page}
+              </button>
+            )
+          )}
+
           <button
             className={styles.paginationButton}
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
+            aria-label="Next page"
           >
-            Next
+            <ChevronRight size={16} />
           </button>
         </div>
       )}
 
-      {/* Status Modal */}
+      {/* Status Update Modal */}
       {selectedOrder && (
         <OrderStatusModal
           show={showStatusModal}
