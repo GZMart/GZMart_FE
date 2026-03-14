@@ -51,9 +51,9 @@ const CheckoutPage = () => {
           const vouchers = response.data || [];
           setApplicableVouchers(vouchers);
 
-          // Auto-select the best shop voucher
+          // Auto-select the best shop voucher (only from saved vouchers)
           const eligibleShopVouchers = vouchers.filter(
-            (v) => v.eligible && (v.type === 'shop' || v.type === 'private')
+            (v) => v.eligible && v.isSaved && (v.type === 'shop' || v.type === 'private')
           );
           if (eligibleShopVouchers.length > 0) {
             const bestShopVoucher = eligibleShopVouchers.reduce((prev, current) =>
@@ -62,9 +62,9 @@ const CheckoutPage = () => {
             setSelectedShopVoucherId(bestShopVoucher._id);
           }
 
-          // Auto-select the best product voucher
+          // Auto-select the best product voucher (only from saved vouchers)
           const eligibleProductVouchers = vouchers.filter(
-            (v) => v.eligible && v.type === 'product'
+            (v) => v.eligible && v.isSaved && v.type === 'product'
           );
           if (eligibleProductVouchers.length > 0) {
             const bestProductVoucher = eligibleProductVouchers.reduce((prev, current) =>
@@ -488,6 +488,12 @@ const CheckoutPage = () => {
     // console.log('[CHECKOUT-DEBUG] 📝 handleSubmit called, currentStep:', currentStep);
 
     if (currentStep === 1) {
+      if (!customerInfo.address) {
+        alert('Please select a shipping address before proceeding.');
+        setAddressModalView('list');
+        setShowAddressModal(true);
+        return;
+      }
       handleNext();
     } else if (currentStep === 2) {
       handleNext();
@@ -1167,7 +1173,7 @@ const CheckoutPage = () => {
           <Button
             className={`border-0 text-white ${currentStep === 1 ? 'w-100 fw-bold' : 'flex-fill fw-bold'}`}
             onClick={handleSubmit}
-            disabled={cartItems.length === 0 || isProcessing}
+            disabled={cartItems.length === 0 || isProcessing || (currentStep === 1 && !customerInfo.address)}
             style={{ backgroundColor: '#B13C36' }}
           >
             {isProcessing ? (
