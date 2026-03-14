@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
@@ -23,16 +23,8 @@ const ratings = [
 ];
 
 const ProductsPage = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q');
-
-  // ... breadcrumb logic (omitted for brevity in replacement if possible, but replace tool needs context)
-  // Re-inserting logic requires matching context.
-  // Easier to just insert key blocks separately or careful replacement.
-
-  // Let's target the top of the file for ratings constant first
-  // And then the state variables.
 
   // Dynamic breadcrumb based on search query
   const breadcrumbItems = useMemo(() => {
@@ -50,11 +42,12 @@ const ProductsPage = () => {
     return items;
   }, [searchQuery]);
 
-  const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(12);
+  const viewMode = 'grid';
+  const itemsToShow = 24;
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortBy, setSortBy] = useState('position');
+  const [sortBy, setSortBy] = useState('popular');
+  const [priceOrder, setPriceOrder] = useState('asc');
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
@@ -76,10 +69,6 @@ const ProductsPage = () => {
   // Temporary filter states (before Apply)
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
-  // Infinite scroll
-  const loaderRef = useRef(null);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-
   // Memoize filters to prevent unnecessary API calls
   const apiFilters = useMemo(() => {
     const searchQuery = searchParams.get('q');
@@ -99,14 +88,14 @@ const ProductsPage = () => {
       inStock: selectedAvailability.includes('inStock') ? 'true' : undefined,
       location: selectedLocations.length > 0 ? selectedLocations.join(',') : undefined,
       sortBy:
-        sortBy === 'price-asc' || sortBy === 'price-desc'
-          ? 'originalPrice' // Fixed: Map to backend field
-          : sortBy === 'name'
-            ? 'name'
-            : sortBy === 'position'
-              ? 'createdAt' // Map Position to Newest
-              : 'isFeatured',
-      sortOrder: sortBy === 'price-desc' || sortBy === 'position' ? 'desc' : 'asc',
+        sortBy === 'price'
+          ? 'originalPrice'
+          : sortBy === 'newest'
+            ? 'createdAt'
+            : sortBy === 'best-selling'
+              ? 'sold'
+              : 'sold',
+      sortOrder: sortBy === 'price' ? priceOrder : 'desc',
     };
     // Remove undefined values
     Object.keys(filters).forEach((key) => filters[key] === undefined && delete filters[key]);
@@ -121,6 +110,7 @@ const ProductsPage = () => {
     selectedAvailability,
     selectedLocations,
     sortBy,
+    priceOrder,
     page,
     itemsToShow,
   ]);
@@ -131,11 +121,7 @@ const ProductsPage = () => {
 
     const fetchProducts = async () => {
       try {
-        if (page === 1) {
-          setLoading(true);
-        } else {
-          setIsFetchingMore(true);
-        }
+        setLoading(true);
         const response = await productService.getProductsAdvanced(apiFilters);
 
         if (!isMounted) {
@@ -172,21 +158,11 @@ const ProductsPage = () => {
           };
         });
 
-        if (page === 1) {
-          setProducts(transformed);
-        } else {
-          setProducts((prev) => {
-            const currentIds = new Set(prev.map((p) => p.id));
-            const newProducts = transformed.filter((p) => !currentIds.has(p.id));
-            return [...prev, ...newProducts];
-          });
-        }
+        setProducts(transformed);
 
         setTotalCount(response.count || response.pagination?.total || 0);
         setTotalPages(response.pagination?.pages || Math.ceil((response.count || 0) / itemsToShow));
         setLoading(false);
-        setIsFetchingMore(false);
-
         // Fetch promotions for all visible products
         const productIds = transformed.map((p) => p.id).filter(Boolean);
         if (productIds.length > 0) {
@@ -243,7 +219,6 @@ const ProductsPage = () => {
       } finally {
         if (isMounted) {
           setLoading(false);
-          setIsFetchingMore(false);
         }
       }
     };
@@ -326,17 +301,14 @@ const ProductsPage = () => {
     // If client-side filtered, need to re-sort
     const sorted = [...filteredProducts];
 
-    switch (sortBy) {
-      case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      case 'price-asc':
-        return sorted.sort((a, b) => a.price - b.price);
-      case 'price-desc':
-        return sorted.sort((a, b) => b.price - a.price);
-      default:
-        return sorted;
+    if (sortBy === 'price') {
+      return priceOrder === 'desc'
+        ? sorted.sort((a, b) => b.price - a.price)
+        : sorted.sort((a, b) => a.price - b.price);
     }
-  }, [filteredProducts, sortBy, selectedSizes]);
+
+    return sorted;
+  }, [filteredProducts, sortBy, priceOrder, selectedSizes]);
 
   const totalProducts = totalCount || filteredProducts.length;
   const displayedProducts = sortedProducts; // Already paginated from API
@@ -393,31 +365,6 @@ const ProductsPage = () => {
     setPage(1);
   }, [searchQuery]);
 
-  // Infinite Scroll Observer
-  const observer = useRef();
-  const lastElementRef = useCallback(
-    (node) => {
-      // Don't trigger if currently loading new page or first load
-      if (loading || isFetchingMore) {
-        return;
-      }
-      if (observer.current) {
-        observer.current.disconnect();
-      }
-
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && page < totalPages) {
-          setPage((prevPage) => prevPage + 1);
-        }
-      });
-
-      if (node) {
-        observer.current.observe(node);
-      }
-    },
-    [loading, isFetchingMore, page, totalPages]
-  );
-
   return (
     <div className={styles.productsPage}>
       <Breadcrumb items={breadcrumbItems} />
@@ -427,19 +374,21 @@ const ProductsPage = () => {
           {/* Sidebar Filters */}
           <aside className={styles.sidebar}>
             <div className={styles.filterHeader}>
-              <i className="bi bi-funnel"></i>
-              <span className={styles.filterMainTitle}>Search Filters</span>
+              <i className="bi bi-funnel-fill"></i>
+              <span className={styles.filterMainTitle}>Bộ Lọc Tìm Kiếm</span>
             </div>
 
             {/* Location Filter */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('location')}>
-                <span className={styles.filterTitle}>Seller Location</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-geo-alt"></i> Nơi Bán
+                </span>
                 <i className={`bi bi-chevron-${openSections.location ? 'up' : 'down'}`}></i>
               </button>
               {openSections.location && (
                 <div className={styles.filterContent}>
-                  {locations.slice(0, 5).map((location) => (
+                  {locations.map((location) => (
                     <label key={location.id} className={styles.checkboxLabel}>
                       <input
                         type="checkbox"
@@ -447,38 +396,19 @@ const ProductsPage = () => {
                         onChange={() => toggleFilter('location', location.id)}
                         className={styles.checkbox}
                       />
-                      <span className={styles.brandName}>{location.name}</span>
-                    </label>
-                  ))}
-                  {locations.length > 5 && <button className={styles.showMoreBtn}>More</button>}
-                </div>
-              )}
-            </div>
-
-            {/* Shipping Unit Filter - Hidden (Unsupported) */}
-            {/*
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shipping')}>
-                <span className={styles.filterTitle}>Shipping Unit</span>
-                <i className={`bi bi-chevron-${openSections.shipping ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.shipping && (
-                <div className={styles.filterContent}>
-                  {['Fast Delivery', 'Standard'].map((opt) => (
-                    <label key={opt} className={styles.checkboxLabel}>
-                      <input type="checkbox" className={styles.checkbox} />
-                      <span className={styles.brandName}>{opt}</span>
+                      <span className={styles.filterItemName}>{location.name}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
-            */}
 
             {/* Brand Filter */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('brand')}>
-                <span className={styles.filterTitle}>Brand</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-tag"></i> Thương Hiệu
+                </span>
                 <i className={`bi bi-chevron-${openSections.brand ? 'up' : 'down'}`}></i>
               </button>
               {openSections.brand && (
@@ -491,10 +421,9 @@ const ProductsPage = () => {
                         onChange={() => toggleFilter('brand', brand.id)}
                         className={styles.checkbox}
                       />
-                      <span className={styles.brandName}>{brand.name}</span>
+                      <span className={styles.filterItemName}>{brand.name}</span>
                     </label>
                   ))}
-                  <button className={styles.showMoreBtn}>More</button>
                 </div>
               )}
             </div>
@@ -505,130 +434,75 @@ const ProductsPage = () => {
                 className={styles.filterHeaderBtn}
                 onClick={() => toggleSection('priceRange')}
               >
-                <span className={styles.filterTitle}>Price Range</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-cash-stack"></i> Khoảng Giá
+                </span>
                 <i className={`bi bi-chevron-${openSections.priceRange ? 'up' : 'down'}`}></i>
               </button>
               {openSections.priceRange && (
                 <div className={styles.filterContent}>
-                  <div className={styles.priceSlider}>
-                    <div className={styles.priceInputs}>
-                      <div className={styles.priceInputGroup}>
-                        <input
-                          type="number"
-                          placeholder="₫ FROM"
-                          value={tempPriceRange.min}
-                          onChange={(e) =>
-                            setTempPriceRange({ ...tempPriceRange, min: Number(e.target.value) })
-                          }
-                          className={styles.priceInput}
-                          min="0"
-                          max={tempPriceRange.max}
-                        />
-                      </div>
-                      <span className={styles.priceSeparator}>-</span>
-                      <div className={styles.priceInputGroup}>
-                        <input
-                          type="number"
-                          placeholder="₫ TO"
-                          value={tempPriceRange.max}
-                          onChange={(e) =>
-                            setTempPriceRange({ ...tempPriceRange, max: Number(e.target.value) })
-                          }
-                          className={styles.priceInput}
-                          min={tempPriceRange.min}
-                          max="100000000"
-                        />
-                      </div>
+                  <div className={styles.rangeSliderContainer}>
+                    <div className={styles.sliderTrack}>
+                      <div
+                        className={styles.sliderRange}
+                        style={{
+                          left: `${(tempPriceRange.min / 10000000) * 100}%`,
+                          right: `${100 - (tempPriceRange.max / 10000000) * 100}%`,
+                        }}
+                      ></div>
                     </div>
-                    <div className={styles.priceActions}>
-                      <button className={styles.resetBtn} onClick={handleResetPriceFilter}>
-                        Reset
-                      </button>
-                      <button className={styles.applyBtn} onClick={handleApplyPriceFilter}>
-                        Apply
-                      </button>
-                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000000"
+                      step="100000"
+                      value={tempPriceRange.min}
+                      onChange={(e) => {
+                        const val = Math.min(Number(e.target.value), tempPriceRange.max - 100000);
+                        setTempPriceRange({ ...tempPriceRange, min: val });
+                      }}
+                      className={styles.rangeInput}
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000000"
+                      step="100000"
+                      value={tempPriceRange.max}
+                      onChange={(e) => {
+                        const val = Math.max(Number(e.target.value), tempPriceRange.min + 100000);
+                        setTempPriceRange({ ...tempPriceRange, max: val });
+                      }}
+                      className={styles.rangeInput}
+                    />
                   </div>
+                  <div className={styles.rangePriceLabels}>
+                    <span>₫{tempPriceRange.min.toLocaleString()}</span>
+                    <span>₫{tempPriceRange.max.toLocaleString()}</span>
+                  </div>
+                  <button className={styles.applyBtn} onClick={handleApplyPriceFilter}>
+                    ÁP DỤNG
+                  </button>
                 </div>
               )}
             </div>
-
-            {/* Shop Type Filter - Hidden (Unsupported) */}
-            {/*
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('shopType')}>
-                <span className={styles.filterTitle}>Shop Type</span>
-                <i className={`bi bi-chevron-${openSections.shopType ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.shopType && (
-                <div className={styles.filterContent}>
-                  {['Official Mall', 'Preferred', 'Local'].map((opt) => (
-                    <label key={opt} className={styles.checkboxLabel}>
-                      <input type="checkbox" className={styles.checkbox} />
-                      <span className={styles.brandName}>{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-            */}
-
-            {/* Condition Filter - Hidden (Unsupported) */}
-            {/*
-            <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('condition')}>
-                <span className={styles.filterTitle}>Condition</span>
-                <i className={`bi bi-chevron-${openSections.condition ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.condition && (
-                <div className={styles.filterContent}>
-                   {['New', 'Used'].map((opt) => (
-                    <label key={opt} className={styles.checkboxLabel}>
-                      <input type="checkbox" className={styles.checkbox} />
-                      <span className={styles.brandName}>{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-            */}
-
-            {/* Payment Options Filter - Hidden (Unsupported) */}
-            {/*
-             <div className={styles.filterSection}>
-              <button className={styles.filterHeaderBtn} onClick={() => toggleSection('payment')}>
-                <span className={styles.filterTitle}>Payment Options</span>
-                <i className={`bi bi-chevron-${openSections.payment ? 'up' : 'down'}`}></i>
-              </button>
-              {openSections.payment && (
-                <div className={styles.filterContent}>
-                   {['COD', 'Credit Card'].map((opt) => (
-                    <label key={opt} className={styles.checkboxLabel}>
-                      <input type="checkbox" className={styles.checkbox} />
-                      <span className={styles.brandName}>{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-            */}
 
             {/* Rating Filter */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('rating')}>
-                <span className={styles.filterTitle}>Rating</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-star"></i> Đánh Giá
+                </span>
                 <i className={`bi bi-chevron-${openSections.rating ? 'up' : 'down'}`}></i>
               </button>
               {openSections.rating && (
                 <div className={styles.filterContent}>
                   {ratings.map((rating) => (
-                    <label key={rating.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRatings.includes(rating.id)}
-                        onChange={() => toggleFilter('rating', rating.id)}
-                        className={styles.checkbox}
-                      />
+                    <button
+                      key={rating.id}
+                      className={`${styles.ratingBtn} ${selectedRatings.includes(rating.id) ? styles.ratingBtnActive : ''}`}
+                      onClick={() => toggleFilter('rating', rating.id)}
+                    >
                       <div className={styles.ratingRow}>
                         {[...Array(5)].map((_, i) => (
                           <i
@@ -636,131 +510,199 @@ const ProductsPage = () => {
                             className={`bi bi-star-fill ${i < rating.value ? styles.starActive : styles.starInactive}`}
                           ></i>
                         ))}
-                        <span className={styles.brandName}>and up</span>
+                        <span className={styles.ratingText}>trở lên</span>
                       </div>
-                    </label>
+                    </button>
                   ))}
-                  <button className={styles.showMoreBtn}>More</button>
                 </div>
               )}
             </div>
+
+            {/* Clear All Button */}
+            {(selectedLocations.length > 0 || selectedBrands.length > 0 || selectedRatings.length > 0 || priceRange.min > 0 || priceRange.max < 10000000) && (
+              <div className={styles.clearAllSection}>
+                <button
+                  className={styles.clearAllBtn}
+                  onClick={() => {
+                    setSelectedLocations([]);
+                    setSelectedBrands([]);
+                    setSelectedRatings([]);
+                    handleResetPriceFilter();
+                  }}
+                >
+                  <i className="bi bi-x-circle"></i> Xóa Tất Cả
+                </button>
+              </div>
+            )}
           </aside>
 
           {/* Main Content */}
           <main className={styles.mainContent}>
-            {/* Header Controls */}
-            <div className={styles.productsHeader}>
-              <button className={styles.backButton} onClick={() => navigate(-1)}>
-                <i className="bi bi-arrow-left"></i>
-              </button>
+            {/* Result Info */}
+            {!loading && (
+              <div className={styles.resultInfo}>
+                <span className={styles.resultCount}>
+                  {searchQuery && <><i className="bi bi-search"></i> Kết quả cho <strong>&ldquo;{searchQuery}&rdquo;</strong> &middot; </>}
+                  {totalProducts} sản phẩm
+                </span>
+                {(selectedLocations.length > 0 || selectedBrands.length > 0 || selectedRatings.length > 0 || priceRange.min > 0 || priceRange.max < 10000000) && (
+                  <div className={styles.activeFilters}>
+                    {selectedLocations.map((locId) => {
+                      const loc = locations.find((l) => l.id === locId);
+                      return loc ? (
+                        <span key={locId} className={styles.filterTag}>
+                          {loc.name}
+                          <i className="bi bi-x" onClick={() => toggleFilter('location', locId)}></i>
+                        </span>
+                      ) : null;
+                    })}
+                    {selectedBrands.map((brandId) => {
+                      const brand = brands.find((b) => b.id === brandId);
+                      return brand ? (
+                        <span key={brandId} className={styles.filterTag}>
+                          {brand.name}
+                          <i className="bi bi-x" onClick={() => toggleFilter('brand', brandId)}></i>
+                        </span>
+                      ) : null;
+                    })}
+                    {(priceRange.min > 0 || priceRange.max < 10000000) && (
+                      <span className={styles.filterTag}>
+                        {priceRange.min > 0 ? `₫${priceRange.min.toLocaleString()}` : '₫0'} — {priceRange.max < 10000000 ? `₫${priceRange.max.toLocaleString()}` : '∞'}
+                        <i className="bi bi-x" onClick={handleResetPriceFilter}></i>
+                      </span>
+                    )}
+                    {selectedRatings.map((ratingId) => {
+                      const r = ratings.find((rt) => rt.id === ratingId);
+                      return r ? (
+                        <span key={ratingId} className={styles.filterTag}>
+                          {r.value}★ trở lên
+                          <i className="bi bi-x" onClick={() => toggleFilter('rating', ratingId)}></i>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
-              <h1 className={styles.pageTitle}>
-                {searchQuery ? `Search Results for "${searchQuery}"` : 'All Products'}
-              </h1>
-
-              <div className={styles.productsControls}>
-                <div className={styles.viewToggle}>
-                  <button
-                    className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
-                    onClick={() => setViewMode('grid')}
-                    aria-label="Grid view"
-                  >
-                    <i className="bi bi-grid-3x3-gap"></i>
-                  </button>
-                  <button
-                    className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
-                    onClick={() => setViewMode('list')}
-                    aria-label="List view"
-                  >
-                    <i className="bi bi-list-ul"></i>
-                  </button>
-                </div>
-
-                <div className={styles.infoText}>
-                  Showing {displayedProducts.length} of {totalProducts} items
-                </div>
-
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>To Show:</label>
-                  <select
-                    className={styles.filterSelect}
-                    value={itemsToShow}
-                    onChange={(e) => setItemsToShow(Number(e.target.value))}
-                  >
-                    <option value={9}>9</option>
-                    <option value={12}>12</option>
-                    <option value={24}>24</option>
-                    <option value={48}>48</option>
-                  </select>
-                </div>
-
-                <div className={styles.filterGroup}>
-                  <select
-                    className={styles.filterSelect}
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="position">Position</option>
-                    <option value="name">Name</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                  </select>
-                </div>
+            {/* Sort Bar */}
+            <div className={styles.sortBar}>
+              <div className={styles.sortBarLeft}>
+                <span className={styles.sortLabel}>Sắp xếp theo</span>
+                <button
+                  className={`${styles.sortBtn} ${sortBy === 'popular' ? styles.sortBtnActive : ''}`}
+                  onClick={() => {
+                    setSortBy('popular');
+                    setPage(1);
+                  }}
+                >
+                  Phổ Biến
+                </button>
+                <button
+                  className={`${styles.sortBtn} ${sortBy === 'newest' ? styles.sortBtnActive : ''}`}
+                  onClick={() => {
+                    setSortBy('newest');
+                    setPage(1);
+                  }}
+                >
+                  Mới Nhất
+                </button>
+                <button
+                  className={`${styles.sortBtn} ${sortBy === 'best-selling' ? styles.sortBtnActive : ''}`}
+                  onClick={() => {
+                    setSortBy('best-selling');
+                    setPage(1);
+                  }}
+                >
+                  Bán Chạy
+                </button>
+                <select
+                  className={`${styles.sortPriceSelect} ${sortBy === 'price' ? styles.sortPriceActive : ''}`}
+                  value={sortBy === 'price' ? priceOrder : ''}
+                  onChange={(e) => {
+                    setSortBy('price');
+                    setPriceOrder(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="" disabled>Giá</option>
+                  <option value="asc">Giá: Thấp đến Cao</option>
+                  <option value="desc">Giá: Cao đến Thấp</option>
+                </select>
+              </div>
+              <div className={styles.sortBarRight}>
+                <span className={styles.pageInfo}>
+                  <span className={styles.pageInfoCurrent}>{page}</span>/{totalPages}
+                </span>
+                <button
+                  className={styles.pageNavBtn}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+                <button
+                  className={styles.pageNavBtn}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  <i className="bi bi-chevron-right"></i>
+                </button>
               </div>
             </div>
 
             {/* Product Grid/List */}
-            {loading && page === 1 ? (
+            {loading ? (
               <div className={styles.productGrid}>
-                {[...Array(itemsToShow)].map((_, i) => (
+                {[...Array(itemsToShow > 20 ? 20 : itemsToShow)].map((_, i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
             ) : displayedProducts.length === 0 ? (
               <div className={styles.emptyState}>
-                <i className="bi bi-search" style={{ fontSize: '48px', color: '#d1d5db' }}></i>
-                <h3>No products found</h3>
-                <p>Try adjusting your filters or search query</p>
+                <div className={styles.emptyIcon}>
+                  <i className="bi bi-box-seam"></i>
+                </div>
+                <h3>Không tìm thấy sản phẩm</h3>
+                <p>Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm</p>
+                {(selectedLocations.length > 0 || selectedBrands.length > 0 || selectedRatings.length > 0 || priceRange.min > 0 || priceRange.max < 10000000) && (
+                  <button
+                    className={styles.emptyResetBtn}
+                    onClick={() => {
+                      setSelectedLocations([]);
+                      setSelectedBrands([]);
+                      setSelectedRatings([]);
+                      handleResetPriceFilter();
+                    }}
+                  >
+                    <i className="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc
+                  </button>
+                )}
               </div>
             ) : viewMode === 'grid' ? (
               <div className={styles.productGrid}>
-                {displayedProducts.map((product, index) => {
-                  if (index === displayedProducts.length - 1) {
-                    return (
-                      <ProductCard
-                        ref={lastElementRef}
-                        key={`${product.id}-${index}`}
-                        product={product}
-                      />
-                    );
-                  }
-                  return <ProductCard key={`${product.id}-${index}`} product={product} />;
-                })}
+                {displayedProducts.map((product, index) => (
+                  <ProductCard key={`${product.id}-${index}`} product={product} />
+                ))}
               </div>
             ) : (
               <div className={styles.productList}>
-                {displayedProducts.map((product, index) => {
-                  if (index === displayedProducts.length - 1) {
-                    return (
-                      <ProductListItem
-                        ref={lastElementRef}
-                        key={`${product.id}-${index}`}
-                        product={product}
-                      />
-                    );
-                  }
-                  return <ProductListItem key={`${product.id}-${index}`} product={product} />;
-                })}
+                {displayedProducts.map((product, index) => (
+                  <ProductListItem key={`${product.id}-${index}`} product={product} />
+                ))}
               </div>
             )}
 
-            {/* Loading More Indicator */}
-            {isFetchingMore && (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(newPage) => {
+                  setPage(newPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
             )}
           </main>
         </div>

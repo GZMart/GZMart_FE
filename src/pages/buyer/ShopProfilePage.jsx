@@ -4,14 +4,14 @@ import { Container, Row, Col } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { ChevronLeft, ChevronRight, Ticket, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ticket, Bookmark } from 'lucide-react';
 import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import Pagination from '../../components/common/Pagination';
 import { productService, followService } from '../../services/api';
 import voucherService from '../../services/api/voucherService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ShopProfilePage.module.css';
 
 const normalizeProduct = (p) => {
@@ -42,6 +42,8 @@ const ShopProfilePage = () => {
   const productsSectionRef = useRef(null);
   const { isAuthenticated } = useSelector((state) => state.auth);
 
+  const [topCategories, setTopCategories] = useState([]);
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -51,18 +53,28 @@ const ShopProfilePage = () => {
 
   useEffect(() => {
     fetchShopData();
-  }, [id, pagination.page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, pagination.page, activeTab]);
+
+  useEffect(() => {
+    if (id) {
+      fetchTopCategories();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     if (isAuthenticated && id) {
       checkFollowStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthenticated]);
 
   useEffect(() => {
     if (id) {
       fetchShopVouchers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const checkFollowStatus = async () => {
@@ -100,15 +112,47 @@ const ShopProfilePage = () => {
     }
   };
 
+  const fetchTopCategories = async () => {
+    try {
+      const response = await productService.getProductsBySeller(id, { page: 1, limit: 500 });
+      const responseData = response.data?.data || response.data || response;
+      const allProducts = responseData.products || [];
+
+      const catCount = {};
+      allProducts.forEach((p) => {
+        const cat = p.categoryId;
+        if (cat && cat._id) {
+          if (!catCount[cat._id]) {
+            catCount[cat._id] = { _id: cat._id, name: cat.name, count: 0 };
+          }
+          catCount[cat._id].count++;
+        }
+      });
+
+      const sorted = Object.values(catCount)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+      setTopCategories(sorted);
+    } catch (err) {
+      console.error('Error fetching top categories:', err);
+    }
+  };
+
   const fetchShopData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await productService.getProductsBySeller(id, {
+      const params = {
         page: pagination.page,
         limit: pagination.limit,
-      });
+      };
+
+      if (activeTab !== 'HOME' && activeTab !== 'ALL') {
+        params.categoryId = activeTab;
+      }
+
+      const response = await productService.getProductsBySeller(id, params);
 
       const responseData = response.data?.data || response.data || response;
       if (responseData) {
@@ -379,14 +423,25 @@ const ShopProfilePage = () => {
               </button>
               <button
                 className={`${styles.tabItem} ${activeTab === 'ALL' ? styles.active : ''}`}
-                onClick={() => setActiveTab('ALL')}
+                onClick={() => {
+                    setActiveTab('ALL');
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
               >
                 {t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')}
               </button>
-              {/* Other pseudo-categories */}
-              <button className={styles.tabItem}>Áo Nỉ</button>
-              <button className={styles.tabItem}>Quần Đùi/Quần Short</button>
-              <button className={styles.tabItem}>Áo hoodies</button>
+              {topCategories.map((cat) => (
+                <button
+                  key={cat._id}
+                  className={`${styles.tabItem} ${activeTab === cat._id ? styles.active : ''}`}
+                  onClick={() => {
+                    setActiveTab(cat._id);
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
+                >
+                  {cat.name}
+                </button>
+              ))}
             </div>
           </Container>
         </div>
@@ -488,11 +543,13 @@ const ShopProfilePage = () => {
                   )}
                 </>
               ) : (
-                /* ALL PRODUCTS TAB */
+                /* ALL PRODUCTS / CATEGORY TAB */
                 <div className={styles.productsSection}>
                   <div className={styles.sectionHeader}>
                     <h3 className={styles.sectionTitle}>
-                      {t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')}
+                      {activeTab === 'ALL'
+                        ? t('product_details.tab_all_products', 'TẤT CẢ SẢN PHẨM')
+                        : topCategories.find((c) => c._id === activeTab)?.name || 'SẢN PHẨM'}
                     </h3>
                   </div>
                   <Row className="g-3">
