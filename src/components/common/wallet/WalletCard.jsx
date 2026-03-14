@@ -26,7 +26,7 @@ const WalletCard = ({ cardholderName, cardNumber, expiryDate, cardType = 'United
     <Card
       className="border-0 shadow-sm"
       style={{
-        background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%)',
+        background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
         borderRadius: '16px',
         minHeight: '200px',
         position: 'relative',

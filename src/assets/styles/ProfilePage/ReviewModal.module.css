@@ -147,12 +147,12 @@
 }
 
 .starBtn:hover {
-  color: #fbbf24;
+  color: var(--color-primary);
   transform: scale(1.15);
 }
 
 .starBtn.active {
-  color: #fbbf24;
+  color: var(--color-primary);
 }
 
 /* Form Input */
@@ -173,8 +173,8 @@
 
 .formInput:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(177, 60, 54, 0.1);
 }
 
 .formTextarea {
@@ -195,8 +195,8 @@
 
 .formTextarea:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(177, 60, 54, 0.1);
 }
 
 .charCount {
@@ -243,7 +243,7 @@
 }
 
 .modalSubmitBtn {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
   color: white;
 }
 

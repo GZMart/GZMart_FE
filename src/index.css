@@ -13,8 +13,8 @@
   -moz-osx-font-smoothing: grayscale;
 
   /* Theme Colors */
-  --color-primary: #ff6b35;
-  --color-secondary: #ffd23f;
+  --color-primary: #B13C36;
+  --color-secondary: #741E20;
   --color-dark: #1f2937;
   --color-light: #f9fafb;
   --color-white: #ffffff;
@@ -28,6 +28,10 @@
   --color-gray-700: #374151;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+  --color-danger: #dc2626;
 }
 
 * {
@@ -104,16 +108,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--color-gray-100);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--color-gray-300);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--color-gray-700);
 }
 
 /* Animation Keyframes */
@@ -155,21 +159,50 @@ body {
 }
 
 .mega-menu-scroll::-webkit-scrollbar-track {
-  background: #f8f9fa;
+  background: var(--color-light);
   border-radius: 3px;
 }
 
 .mega-menu-scroll::-webkit-scrollbar-thumb {
-  background: #dee2e6;
+  background: var(--color-border);
   border-radius: 3px;
 }
 
 .mega-menu-scroll::-webkit-scrollbar-thumb:hover {
-  background: #adb5bd;
+  background: var(--color-gray-300);
 }
 
 /* Hover effect for discount card button */
 .discount-btn-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(177, 60, 54, 0.35) !important;
+}
+
+/* Theme-aware Bootstrap overrides */
+.text-primary {
+  color: var(--color-primary) !important;
+}
+.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+.btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--color-secondary) !important;
+  border-color: var(--color-secondary) !important;
+  color: #ffffff !important;
+}
+.btn-secondary {
+  background-color: var(--color-secondary) !important;
+  border-color: var(--color-secondary) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure price/emphasis readable on dark backgrounds */
+.price-on-dark, .text-price {
+  color: var(--color-secondary) !important;
+  font-weight: 700;
 }

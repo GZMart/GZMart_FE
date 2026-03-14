@@ -320,7 +320,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #ff6b35;
+  background: var(--color-primary);
   color: white;
   display: flex;
   align-items: center;

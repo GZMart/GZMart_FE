@@ -97,9 +97,9 @@
 }
 
 .filterButton.active {
-  background-color: #ee4d2d;
+  background-color: var(--color-primary);
   color: #fff;
-  border-color: #ee4d2d;
+  border-color: var(--color-primary);
   font-weight: 600;
 }
 

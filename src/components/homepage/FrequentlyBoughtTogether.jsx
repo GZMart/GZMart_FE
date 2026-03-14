@@ -115,8 +115,8 @@ const FrequentlyBoughtTogether = () => {
             <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
             <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
               <Button
-                className="fw-bold px-4 border-0 text-dark"
-                style={{ backgroundColor: '#FFC107', borderRadius: '4px' }}
+                className="fw-bold px-4 border-0 text-white"
+                style={{ backgroundColor: 'var(--color-primary)', borderRadius: '4px' }}
               >
                 VIEW ALL
               </Button>
@@ -220,7 +220,7 @@ const FrequentlyBoughtTogether = () => {
           >
             <div className="d-flex text-warning">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={14} fill="#FFC107" strokeWidth={0} />
+                <Star key={i} size={14} fill="var(--color-primary)" strokeWidth={0} />
               ))}
             </div>
             <span className="text-secondary ms-2 small">({product.reviews} sold)</span>
@@ -253,12 +253,12 @@ const FrequentlyBoughtTogether = () => {
             <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
               <Heart size={20} />
             </Button>
-            <Button
-              variant="primary"
-              className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
-              style={{ backgroundColor: '#007bff' }}
-              disabled={product.stock === 0}
-            >
+              <Button
+                variant="primary"
+                className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
+                style={{ backgroundColor: 'var(--color-primary)' }}
+                disabled={product.stock === 0}
+              >
               <ShoppingCart size={18} /> {product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
             </Button>
             <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
@@ -342,10 +342,10 @@ const FrequentlyBoughtTogether = () => {
           <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
           <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
             <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+              whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
               whileTap={{ scale: 0.95 }}
-              className="d-flex align-items-center justify-content-center px-4 py-2 rounded fw-bold text-dark border-0"
-              style={{ backgroundColor: '#FFC107' }}
+              className="d-flex align-items-center justify-content-center px-4 py-2 rounded fw-bold text-white border-0"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               VIEW ALL
             </motion.button>

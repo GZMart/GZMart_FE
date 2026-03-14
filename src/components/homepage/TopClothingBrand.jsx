@@ -40,10 +40,10 @@ const COLOR_SCHEMES = [
     circleColor: 'rgba(211, 47, 47, 0.1)',
     lineColor: 'rgba(211, 47, 47, 0.2)',
   },
-  {
+    {
     bgColor: '#FFFFFF',
     textColor: '#E60033',
-    tagColor: '#F5F5F5',
+    tagColor: 'var(--color-light)',
     circleColor: 'rgba(230, 0, 51, 0.05)',
     lineColor: 'rgba(230, 0, 51, 0.1)',
   },
@@ -217,17 +217,17 @@ const TopClothingBrand = () => {
         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4">
           <div className="d-flex align-items-center gap-2 mb-3 mb-md-0">
             <h3 className="fw-bold text-dark m-0">TOP</h3>
-            <h3 className="fw-bold m-0" style={{ color: '#FFC107' }}>
+            <h3 className="fw-bold m-0" style={{ color: 'var(--color-primary)' }}>
               CLOTHING BRANDS
             </h3>
           </div>
           <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
             <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+              whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
               whileTap={{ scale: 0.95 }}
-              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
+              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white"
               style={{
-                backgroundColor: '#FCBD01',
+                backgroundColor: 'var(--color-primary)',
                 border: 'none',
               }}
             >
@@ -274,7 +274,7 @@ const TopClothingBrand = () => {
                   onClick={() => handleDotClick(i)}
                   animate={{
                     width: i === activeIndex ? 40 : 8,
-                    backgroundColor: i === activeIndex ? '#0099DD' : '#D9D9D9',
+                    backgroundColor: i === activeIndex ? 'var(--color-primary)' : '#D9D9D9',
                   }}
                   style={{
                     height: '8px',

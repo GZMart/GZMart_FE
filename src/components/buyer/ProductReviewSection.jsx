@@ -397,8 +397,8 @@ const ProductReviewSection = ({ product }) => {
                     title="Helpful"
                     style={{
                       backgroundColor: helpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: helpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
-                      color: helpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
+                      borderColor: helpfulReviews.has(review._id) ? 'var(--color-primary)' : '#e0e0e0',
+                      color: helpfulReviews.has(review._id) ? 'var(--color-primary)' : '#666',
                     }}
                   >
                     <i className="bi bi-hand-thumbs-up"></i>
@@ -410,8 +410,8 @@ const ProductReviewSection = ({ product }) => {
                     title="Not Helpful"
                     style={{
                       backgroundColor: unhelpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
-                      color: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
+                      borderColor: unhelpfulReviews.has(review._id) ? 'var(--color-primary)' : '#e0e0e0',
+                      color: unhelpfulReviews.has(review._id) ? 'var(--color-primary)' : '#666',
                     }}
                   >
                     <i className="bi bi-hand-thumbs-down"></i>
