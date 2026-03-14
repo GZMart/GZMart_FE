@@ -62,7 +62,7 @@ const ProductCard = ({ product }) => (
         <div
           className="position-relative w-100"
           style={{
-            backgroundColor: '#ECEDEF',
+            backgroundColor: 'var(--color-gray-100)',
             borderRadius: '16px',
             height: '240px',
             overflow: 'hidden',
@@ -72,7 +72,7 @@ const ProductCard = ({ product }) => (
             <span
               className="position-absolute fw-bold text-white px-3 py-1"
               style={{
-                backgroundColor: '#FFC107',
+                backgroundColor: 'var(--color-primary)',
                 top: '0',
                 left: '0',
                 borderRadius: '16px 0 16px 0',
@@ -103,7 +103,7 @@ const ProductCard = ({ product }) => (
       <div className="card-body d-flex flex-column pt-0 px-3 pb-3">
         <div className="mb-2">
           <div className="d-flex justify-content-between align-items-center mb-1">
-            <small className="fw-medium" style={{ color: '#007bff' }}>
+            <small className="fw-medium" style={{ color: 'var(--color-primary)' }}>
               Flash Deal Ends in {product.dealEndsIn} !
             </small>
           </div>
@@ -117,7 +117,7 @@ const ProductCard = ({ product }) => (
               role="progressbar"
               style={{
                 width: product.dealEndsIn.includes('1 Hour') ? '85%' : '40%',
-                backgroundColor: '#007bff',
+                backgroundColor: 'var(--color-primary)',
               }}
               aria-valuenow="50"
               aria-valuemin="0"
@@ -133,18 +133,18 @@ const ProductCard = ({ product }) => (
           {product.name}
         </h6>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="btn btn-dark w-100 fw-bold py-2 mt-auto d-flex align-items-center justify-content-center gap-2"
-          style={{
-            borderRadius: '4px',
-            fontSize: '0.85rem',
-          }}
-        >
-          <span className="text-white">BUY NOW - </span>
-          <span style={{ color: '#FFC107' }}>{product.price}</span>
-        </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="btn btn-dark w-100 fw-bold py-2 mt-auto d-flex align-items-center justify-content-center gap-2"
+              style={{
+                borderRadius: '4px',
+                fontSize: '0.85rem',
+              }}
+            >
+              <span className="text-white">BUY NOW - </span>
+              <span style={{ color: 'var(--color-danger)' }}>{product.price}</span>
+            </motion.button>
       </div>
     </motion.div>
   </Link>
@@ -316,9 +316,9 @@ const DealsOfTheDay = () => {
             <span className="fs-6 text-dark text-nowrap">Deals ends in</span>
 
             <div
-              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
+              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white bg-primary"
               style={{
-                backgroundColor: '#FCBD01',
+                backgroundColor: 'var(--color-primary)',
                 minWidth: '160px',
                 fontSize: '1rem',
               }}
@@ -332,11 +332,11 @@ const DealsOfTheDay = () => {
 
             <Link to={PUBLIC_ROUTES.DEALS} style={{ textDecoration: 'none' }}>
               <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
+                whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
                 whileTap={{ scale: 0.95 }}
-                className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-dark"
+                className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white btn-primary"
                 style={{
-                  backgroundColor: '#FCBD01',
+                  backgroundColor: 'var(--color-primary)',
                   border: 'none',
                 }}
               >

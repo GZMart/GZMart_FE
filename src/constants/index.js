@@ -178,8 +178,8 @@ export const CURRENCY_SYMBOL = '₫';
 
 // Theme Colors
 export const THEME_COLORS = {
-  PRIMARY: '#FF6B35',
-  SECONDARY: '#FFD23F',
+  PRIMARY: '#B13C36',
+  SECONDARY: '#741E20',
   DARK: '#1F2937',
   LIGHT: '#F9FAFB',
   WHITE: '#FFFFFF',

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 // --- 1. CONSTANTS & STYLES ---
 const COLORS = {
   bg: '#f8f9fa',
-  accent: '#f6c243',
+  accent: 'var(--color-primary)',
   textWhite: '#fff',
   textDark: '#333',
 };
@@ -206,7 +206,7 @@ const styles = {
     transition: 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
   },
   heroBannerActiveIndicator: {
-    background: COLORS.accent,
+    background: 'var(--color-primary)',
     width: '45px',
     borderRadius: '10px',
   },

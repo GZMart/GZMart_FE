@@ -43,7 +43,7 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
           </span>
         </div>
       </div>
-
+      
       <div className={styles.chartContainer}>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">

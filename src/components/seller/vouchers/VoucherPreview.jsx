@@ -176,19 +176,19 @@ const VoucherPreview = ({ voucherType, formData }) => (
           <div className={styles.previewBody}>
             {/* Mock Shop Header */}
             <div className="d-flex align-items-center mb-3 p-3 bg-white rounded shadow-sm">
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: '#ff6b35',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                }}
-              >
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: 'var(--color-primary)',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                    }}
+                  >
                 GZ
               </div>
               <div className="ms-2">

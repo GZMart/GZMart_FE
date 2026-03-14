@@ -19,7 +19,7 @@
 
 .notFound button {
   padding: 12px 30px;
-  background-color: #0066ff;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -89,7 +89,7 @@
 }
 
 .badge.primary {
-  background-color: #0066ff;
+  background-color: var(--color-primary);
 }
 
 .badge.info {
@@ -127,13 +127,13 @@
 }
 
 .thumbnail:hover {
-  border-color: #0066ff;
+  border-color: var(--color-primary);
   transform: scale(1.05);
 }
 
 .thumbnail.active {
-  border-color: #0066ff;
-  box-shadow: 0 0 8px rgba(0, 102, 255, 0.3);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(177, 60, 54, 0.25);
 }
 
 .thumbnail img {
@@ -510,7 +510,7 @@
 
 .shippingInfoItem i {
   font-size: 18px;
-  color: #0066ff;
+  color: var(--color-primary);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -578,13 +578,13 @@
 }
 
 .colorOption:hover {
-  border-color: #0066ff;
+  border-color: var(--color-primary);
   transform: scale(1.1);
 }
 
 .colorOption.active {
-  border-color: #0066ff;
-  box-shadow: 0 0 8px rgba(0, 102, 255, 0.3);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(177, 60, 54, 0.25);
 }
 
 .colorCircle {
@@ -627,7 +627,7 @@
   bottom: -2px;
   right: -2px;
   font-size: 16px;
-  color: #0066ff;
+  color: var(--color-primary);
   background: white;
   border-radius: 50%;
 }
@@ -646,7 +646,7 @@
 .dealAmount {
   font-size: 24px;
   font-weight: 700;
-  color: #0066ff;
+  color: var(--color-primary);
 }
 
 /* Size Section */
@@ -679,7 +679,7 @@
   padding: 4px 10px;
   background-color: transparent;
   border: none;
-  color: #0066ff;
+  color: var(--color-primary);
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
@@ -691,7 +691,7 @@
 }
 
 .sizeChartBtn:hover {
-  background-color: #f0f8ff;
+  background-color: rgba(177, 60, 54, 0.04);
   text-decoration: underline;
 }
 
@@ -718,13 +718,13 @@
 }
 
 .sizeButton:hover {
-  border-color: #0066ff;
-  color: #0066ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .sizeButton.active {
-  background-color: #0066ff;
-  border-color: #0066ff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
@@ -919,7 +919,7 @@
 }
 
 .sizeChartNote i {
-  color: #0066ff;
+  color: var(--color-primary);
 }
 
 /* Size Chart Table */
@@ -970,7 +970,7 @@
 .metaInfoItem i,
 .modelInfoItem i {
   font-size: 16px;
-  color: #0066ff;
+  color: var(--color-primary);
   margin-top: 2px;
   flex-shrink: 0;
 }
@@ -1060,7 +1060,7 @@
 
 .timerLabel {
   font-size: 14px;
-  color: #0066ff;
+  color: var(--color-primary);
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -1074,7 +1074,7 @@
 
 .timerFill {
   height: 100%;
-  background: linear-gradient(90deg, #0066ff 0%, #00bcd4 100%);
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   transition: width 0.3s ease;
   border-radius: 4px;
 }
@@ -1119,9 +1119,9 @@
 }
 
 .shareButton:hover {
-  border-color: #0066ff;
-  color: #0066ff;
-  background-color: #f0f8ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: rgba(177, 60, 54, 0.04);
   transform: translateY(-2px);
 }
 
@@ -1289,25 +1289,26 @@
 }
 
 .addBtn {
-  background-color: #0066ff;
-  color: white;
+  background-color: white;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
 }
 
 .addBtn:hover {
-  background-color: #0052cc;
+  background-color: rgba(177, 60, 54, 0.04);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(177, 60, 54, 0.08);
 }
 
 .buyBtn {
-  background-color: #00bcd4;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .buyBtn:hover {
-  background-color: #00acc1;
+  background-color: var(--color-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+  box-shadow: 0 4px 12px rgba(177, 60, 54, 0.12);
 }
 
 .wishlistBtn {
@@ -1366,7 +1367,7 @@
 }
 
 .iconBtn:hover {
-  color: #0066ff;
+  color: var(--color-primary);
 }
 
 .iconBtn i {
@@ -1408,8 +1409,8 @@
 }
 
 .shareIcon:hover {
-  background-color: #0066ff;
-  border-color: #0066ff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
   transform: translateY(-2px);
 }
@@ -1489,8 +1490,8 @@
 
 .tab.active {
   background-color: white;
-  color: #0066ff;
-  border-bottom-color: #0066ff;
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
 }
 
 .tabContent {
@@ -1582,7 +1583,7 @@
 }
 
 .shippingItem i {
-  color: #0066ff;
+  color: var(--color-primary);
   font-size: 24px;
   flex-shrink: 0;
 }
@@ -1701,13 +1702,13 @@
 }
 
 .tierOption:hover {
-  border-color: #0066ff;
-  color: #0066ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .tierOption.active {
-  background-color: #0066ff;
-  border-color: #0066ff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
@@ -1722,7 +1723,7 @@
   padding: 4px 10px;
   background-color: transparent;
   border: none;
-  color: #0066ff;
+  color: var(--color-primary);
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
@@ -1734,7 +1735,7 @@
 }
 
 .sizeChartBtn:hover {
-  background-color: #f0f8ff;
+  background-color: rgba(177, 60, 54, 0.04);
   text-decoration: underline;
 }
 
@@ -1764,7 +1765,7 @@
 
 .viewAllBtn {
   padding: 10px 25px;
-  background-color: #ffa500;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -1775,9 +1776,9 @@
 }
 
 .viewAllBtn:hover {
-  background-color: #ff9500;
+  background-color: var(--color-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(177, 60, 54, 0.3);
 }
 
 .productGrid {
