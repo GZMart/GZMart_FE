@@ -14,7 +14,7 @@ import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/Pro
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
-import * as favouriteService from '../../services/api/favouriteService';
+import * as wishlistService from '../../services/api/wishlistService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
 
@@ -104,8 +104,8 @@ const ProductDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [isFavourite, setIsFavourite] = useState(false);
-  const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [isWishlist, setIsWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const user = useSelector((state) => state.auth.user);
@@ -294,23 +294,24 @@ const ProductDetailsPage = () => {
     return () => clearInterval(interval);
   }, [flashSale]);
 
-  // Check if product is in favourites
+  // Check if product is in wishlists
   useEffect(() => {
-    const checkFavouriteStatus = async () => {
+    const checkWishlistStatus = async () => {
       if (user && product?._id) {
         try {
-          const response = await favouriteService.checkInFavourites(product._id);
-          const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
-          setIsFavourite(isInFav);
+          const variant = getSelectedWishlistVariant();
+          const response = await wishlistService.checkInWishlists(product._id, variant);
+          const isInFav = response.isInWishlists ?? response.data?.isInWishlists ?? false;
+          setIsWishlist(isInFav);
         } catch (error) {
-          console.error('Error checking favourite status:', error);
+          console.error('Error checking wishlist status:', error);
         }
       } else {
-        setIsFavourite(false);
+        setIsWishlist(false);
       }
     };
-    checkFavouriteStatus();
-  }, [user, product?._id]);
+    checkWishlistStatus();
+  }, [user, product?._id, activeModel?._id, selectedTierIndex]);
 
   // Check if an option should be disabled based on *other* current selections
   const isOptionDisabled = (tierLevel, optionIndex) => {
@@ -349,6 +350,47 @@ const ProductDetailsPage = () => {
     // Update Active Model
     const matchingModel = findModel(product, newIndex);
     setActiveModel(matchingModel); // Can be null if combination doesn't exist
+  };
+
+  const getSelectedWishlistVariant = () => {
+    if (!product) {
+      return {};
+    }
+
+    let color = 'Default';
+    let size = 'Default';
+
+    if (product.tier_variations?.length > 0) {
+      product.tier_variations.forEach((tier, idx) => {
+        const selectedIdx = selectedTierIndex[idx];
+        if (selectedIdx === null || selectedIdx === undefined) {
+          return;
+        }
+
+        const selectedOption = tier.options?.[selectedIdx];
+        const tierNameLower = String(tier.name || '').toLowerCase();
+
+        if (
+          tierNameLower.includes('color') ||
+          tierNameLower.includes('màu') ||
+          tierNameLower.includes('mau')
+        ) {
+          color = selectedOption || 'Default';
+        } else if (
+          tierNameLower.includes('size') ||
+          tierNameLower.includes('kích') ||
+          tierNameLower.includes('kich')
+        ) {
+          size = selectedOption || 'Default';
+        }
+      });
+    }
+
+    return {
+      modelId: activeModel?._id,
+      color,
+      size,
+    };
   };
 
   const handleQuantityChange = (delta) => {
@@ -460,7 +502,7 @@ const ProductDetailsPage = () => {
       return;
     }
     handleAddToCart();
-    navigate('/cart');
+    navigate('/buyer/cart');
   };
 
   const formatSavedCount = (count) => {
@@ -473,33 +515,34 @@ const ProductDetailsPage = () => {
     return count;
   };
 
-  const handleToggleFavourite = async () => {
+  const handleToggleWishlist = async () => {
     if (!user) {
       setShowLoginModal(true);
       return;
     }
 
     try {
-      setFavouriteLoading(true);
-      if (isFavourite) {
-        await favouriteService.removeFromFavourites(product._id);
-        setIsFavourite(false);
+      setWishlistLoading(true);
+      const variant = getSelectedWishlistVariant();
+      if (isWishlist) {
+        await wishlistService.removeFromWishlists(product._id, variant);
+        setIsWishlist(false);
         setProduct((prev) => ({
           ...prev,
           wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1),
         }));
         toast.success(t('product_details.toast_wishlist_remove'));
       } else {
-        await favouriteService.addToFavourites(product._id);
-        setIsFavourite(true);
+        await wishlistService.addToWishlists(product._id, variant);
+        setIsWishlist(true);
         setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
         toast.success(t('product_details.toast_wishlist_add'));
       }
     } catch (error) {
-      console.error('Error toggling favourite:', error);
+      console.error('Error toggling wishlist:', error);
       toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
     } finally {
-      setFavouriteLoading(false);
+      setWishlistLoading(false);
     }
   };
 
@@ -611,17 +654,17 @@ const ProductDetailsPage = () => {
                 <i className="bi bi-twitter-x"></i>
               </button>
             </div>
-            <div className={styles.favouriteSpacer}>
+            <div className={styles.wishlistSpacer}>
               <button
-                className={`${styles.shareButton} ${!isFavourite ? styles.unfavourite : styles.isFavourite}`}
-                onClick={handleToggleFavourite}
-                disabled={favouriteLoading}
-                title={isFavourite ? 'Remove from saved' : 'Save this product'}
+                className={`${styles.shareButton} ${!isWishlist ? styles.unwishlist : styles.isWishlist}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
+                title={isWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
               >
                 <i className={`bi bi-heart`}></i>
               </button>
               <span className={styles.saveLabel}>
-                {isFavourite
+                {isWishlist
                   ? `Saved (${formatSavedCount(product.wishlistCount)})`
                   : `Save (${formatSavedCount(product.wishlistCount)})`}
               </span>
@@ -828,19 +871,19 @@ const ProductDetailsPage = () => {
                 {t('product_details.btn_buy_now')}
               </button>
               <button
-                className={`${styles.favouriteBtn} ${isFavourite ? styles.isFavourite : ''}`}
-                onClick={handleToggleFavourite}
-                disabled={favouriteLoading}
+                className={`${styles.wishlistBtn} ${isWishlist ? styles.isWishlist : ''}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
                 title={
-                  isFavourite
+                  isWishlist
                     ? t('product_details.toast_wishlist_remove')
                     : t('product_details.toast_wishlist_add')
                 }
               >
-                <i className={`bi ${isFavourite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {favouriteLoading
+                <i className={`bi ${isWishlist ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                {wishlistLoading
                   ? t('product_details.loading')
-                  : isFavourite
+                  : isWishlist
                     ? t('product_details.toast_wishlist_remove')
                     : t('product_details.favorite')}
               </button>

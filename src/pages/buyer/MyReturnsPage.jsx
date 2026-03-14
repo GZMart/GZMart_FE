@@ -102,7 +102,7 @@ const MyReturnsPage = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Yêu Cầu Đổi Trả Của Tôi</h2>
-        <Button variant="outline-primary" onClick={() => navigate('/buyer/orders')}>
+        <Button variant="outline-primary" onClick={() => navigate('/buyer/profile?tab=orders')}>
           Quay lại Đơn hàng
         </Button>
       </div>

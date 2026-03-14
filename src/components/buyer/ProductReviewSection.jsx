@@ -41,9 +41,24 @@ const ProductReviewSection = ({ product }) => {
 
         console.log('Processed reviews:', reviewsData);
         setReviews(reviewsData);
+
+        // Hydrate button states from server-provided userReaction
+        const helpfulSet = new Set();
+        const unhelpfulSet = new Set();
+        reviewsData.forEach((review) => {
+          if (review.userReaction === 'helpful') {
+            helpfulSet.add(review._id);
+          } else if (review.userReaction === 'unhelpful') {
+            unhelpfulSet.add(review._id);
+          }
+        });
+        setHelpfulReviews(helpfulSet);
+        setUnhelpfulReviews(unhelpfulSet);
       } catch (error) {
         console.error('Error fetching reviews:', error);
         setReviews([]);
+        setHelpfulReviews(new Set());
+        setUnhelpfulReviews(new Set());
       } finally {
         setLoading(false);
       }
@@ -147,20 +162,42 @@ const ProductReviewSection = ({ product }) => {
 
   const handleMarkHelpful = async (reviewId) => {
     try {
-      if (helpfulReviews.has(reviewId)) {
-        setHelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
-      } else {
-        await reviewService.markHelpful(reviewId);
-        setHelpfulReviews((prev) => new Set(prev).add(reviewId));
-        setUnhelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
+      const response = await reviewService.markHelpful(reviewId);
+      const updatedReview = response?.data || response;
+
+      if (updatedReview?._id) {
+        setReviews((prev) =>
+          prev.map((r) =>
+            r._id === updatedReview._id
+              ? {
+                  ...r,
+                  helpful: updatedReview.helpful,
+                  unhelpful: updatedReview.unhelpful,
+                  userReaction: updatedReview.userReaction || 'none',
+                }
+              : r
+          )
+        );
+
+        if (updatedReview.userReaction === 'helpful') {
+          setHelpfulReviews((prev) => new Set(prev).add(reviewId));
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        } else {
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        }
       }
     } catch (error) {
       console.error('Error marking review as helpful:', error);
@@ -169,20 +206,42 @@ const ProductReviewSection = ({ product }) => {
 
   const handleMarkUnhelpful = async (reviewId) => {
     try {
-      if (unhelpfulReviews.has(reviewId)) {
-        setUnhelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
-      } else {
-        await reviewService.markUnhelpful(reviewId);
-        setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
-        setHelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
+      const response = await reviewService.markUnhelpful(reviewId);
+      const updatedReview = response?.data || response;
+
+      if (updatedReview?._id) {
+        setReviews((prev) =>
+          prev.map((r) =>
+            r._id === updatedReview._id
+              ? {
+                  ...r,
+                  helpful: updatedReview.helpful,
+                  unhelpful: updatedReview.unhelpful,
+                  userReaction: updatedReview.userReaction || 'none',
+                }
+              : r
+          )
+        );
+
+        if (updatedReview.userReaction === 'unhelpful') {
+          setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        } else {
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        }
       }
     } catch (error) {
       console.error('Error marking review as unhelpful:', error);

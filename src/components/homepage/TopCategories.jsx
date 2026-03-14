@@ -78,13 +78,13 @@ const TopCategories = () => {
       <div className="container">
         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-2 mb-3 mb-md-0">
-            <h3 className="fw-bold text-dark m-0">SHOP FROM</h3>
+            <h3 className="fw-bold text-dark m-0">TOP</h3>
             <h3 className="fw-bold m-0" style={{ color: '#FFC107' }}>
-              TOP CATEGORIES
+              CATEGORIES
             </h3>
           </div>
 
-          <Link to={PUBLIC_ROUTES.CATEGORIES} style={{ textDecoration: 'none' }}>
+          <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
             <motion.button
               whileHover={{ scale: 1.05, backgroundColor: '#e0a800' }}
               whileTap={{ scale: 0.95 }}
@@ -205,7 +205,7 @@ const TopCategories = () => {
 // Component CategoryCard để tránh code lặp
 const CategoryCard = ({ cat, index }) => (
   <Link
-    to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat._id || cat.id}`}
+    to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat.slug || cat._id || cat.id}`}
     style={{ textDecoration: 'none' }}
   >
     <motion.div

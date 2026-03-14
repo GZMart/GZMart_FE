@@ -8,53 +8,100 @@ import {
   LoadingOutlined,
 } from '@ant-design/icons';
 import { BUYER_ROUTES } from '@constants/routes';
-import * as favouriteService from '@services/api/favouriteService';
+import * as wishlistService from '@/services/api/wishlistService';
 import * as cartService from '@services/api/cartService';
+import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/buyer/WishlistPage.module.css';
 
 const WishlistPage = () => {
   const navigate = useNavigate();
   const { Title } = Typography;
-  const [favourites, setFavourites] = useState([]);
+  const [wishlists, setWishlists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
 
-  // Fetch favourites on component mount
+  // Fetch wishlists on component mount
   useEffect(() => {
-    fetchFavourites();
+    fetchWishlists();
   }, []);
 
-  const fetchFavourites = async () => {
+  const fetchWishlists = async () => {
     try {
       setLoading(true);
-      const response = await favouriteService.getFavourites();
-      console.log('Favourites response:', response);
+      const response = await wishlistService.getWishlists();
+      console.log('Wishlists response:', response);
 
-      // axiosClient đã unwrap response.data rồi, nên:
-      // - response.success = backend response.data.success
-      // - response.data = backend response.data.data
-      if (response.success) {
-        const products = response.data?.products || [];
-        console.log('Favourites products:', products);
-        setFavourites(products);
-      } else {
-        // Fallback: nếu response là data object trực tiếp
-        const products = response.products || [];
-        console.log('Favourites products (direct):', products);
-        setFavourites(products);
-      }
+      const products = response?.data?.products || [];
+      console.log('Wishlists products:', products);
+      setWishlists(products);
     } catch (error) {
-      console.error('Error fetching favourites:', error);
-      message.error(error.response?.data?.message || 'Failed to load favourites');
+      console.error('Error fetching wishlists:', error);
+      message.error(error.response?.data?.message || 'Failed to load wishlists');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddToCart = async (productId) => {
+  const getVariantForCart = (product) => {
+    const models = Array.isArray(product?.models) ? product.models : [];
+    const tiers = Array.isArray(product?.tiers) ? product.tiers : [];
+
+    if (models.length === 0) {
+      return null;
+    }
+
+    if (tiers.length === 0) {
+      return { color: 'Default', size: 'Default' };
+    }
+
+    const colorTierIndex = tiers.findIndex((tier) => {
+      const tierName = String(tier?.name || '').toLowerCase();
+      return tierName === 'color' || tierName === 'màu sắc';
+    });
+
+    const sizeTierIndex = tiers.findIndex((tier) => {
+      const tierName = String(tier?.name || '').toLowerCase();
+      return tierName === 'size' || tierName === 'kích thước';
+    });
+
+    const candidate =
+      models.find((m) => m?.isActive && Number(m?.stock || 0) > 0) ||
+      models.find((m) => Number(m?.stock || 0) > 0) ||
+      models.find((m) => m?.isActive) ||
+      models[0];
+
+    if (!candidate) {
+      return null;
+    }
+
+    const color =
+      colorTierIndex >= 0
+        ? tiers[colorTierIndex]?.options?.[candidate?.tierIndex?.[colorTierIndex]]
+        : 'Default';
+    const size =
+      sizeTierIndex >= 0
+        ? tiers[sizeTierIndex]?.options?.[candidate?.tierIndex?.[sizeTierIndex]]
+        : 'Default';
+
+    if (!color || !size) {
+      return null;
+    }
+
+    return { color, size };
+  };
+
+  const handleAddToCart = async (product) => {
     try {
-      setActionLoading(productId);
-      await cartService.addToCart(productId, 1);
+      setActionLoading(product._id);
+
+      const variant = getVariantForCart(product);
+      if (!variant) {
+        message.info('Please choose product variant before adding to cart');
+        navigate(`/product/${product._id}`);
+        return;
+      }
+
+      await cartService.addToCart(product._id, 1, variant.color, variant.size);
       message.success('Product added to cart successfully!');
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -64,18 +111,34 @@ const WishlistPage = () => {
     }
   };
 
-  const handleRemoveFromWishlist = async (productId) => {
+  const handleRemoveFromWishlist = async (item) => {
     try {
-      setActionLoading(productId);
-      const response = await favouriteService.removeFromFavourites(productId);
+      const actionKey = `${item._id}_${item.wishlistModelId || 'default'}`;
+      setActionLoading(actionKey);
+
+      const variant = {
+        modelId: item.wishlistModelId || undefined,
+        color: item.wishlistColor || undefined,
+        size: item.wishlistSize || undefined,
+      };
+
+      const response = await wishlistService.removeFromWishlists(item._id, variant);
       if (response.success) {
-        message.success('Removed from favourites');
+        message.success('Removed from wishlist');
         // Update local state
-        setFavourites((prev) => prev.filter((item) => item._id !== productId));
+        setWishlists((prev) =>
+          prev.filter(
+            (p) =>
+              !(
+                p._id === item._id &&
+                (p.wishlistModelId || 'default') === (item.wishlistModelId || 'default')
+              )
+          )
+        );
       }
     } catch (error) {
-      console.error('Error removing from favourites:', error);
-      message.error(error.response?.data?.message || 'Failed to remove from favourites');
+      console.error('Error removing from wishlist:', error);
+      message.error(error.response?.data?.message || 'Failed to remove from wishlist');
     } finally {
       setActionLoading(null);
     }
@@ -90,7 +153,19 @@ const WishlistPage = () => {
       width: '50%',
       render: (text, record) => (
         <div className={styles.productRow}>
-          <div className={styles.productImage}>
+          <div
+            className={styles.productImage}
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(`/product/${record._id}`)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate(`/product/${record._id}`);
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <img
               src={record.images?.[0] || record.image || 'https://via.placeholder.com/100'}
               alt={text}
@@ -102,6 +177,9 @@ const WishlistPage = () => {
           </div>
           <div className={styles.productInfo}>
             <h6 className={styles.productName}>{text}</h6>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+              Variant: {record.wishlistColor || 'Default'} / {record.wishlistSize || 'Default'}
+            </div>
           </div>
         </div>
       ),
@@ -113,10 +191,10 @@ const WishlistPage = () => {
       width: '15%',
       render: (price, record) => (
         <div className={styles.priceColumn}>
-          {record.originalPrice && record.originalPrice > price && (
-            <span className={styles.originalPrice}>${record.originalPrice.toFixed(2)}</span>
+          {record.originalPrice && Number(record.originalPrice) > Number(price || 0) && (
+            <span className={styles.originalPrice}>{formatCurrency(record.originalPrice)}</span>
           )}
-          <span className={styles.currentPrice}>${price?.toFixed(2) || '0.00'}</span>
+          <span className={styles.currentPrice}>{formatCurrency(price)}</span>
         </div>
       ),
     },
@@ -125,8 +203,8 @@ const WishlistPage = () => {
       dataIndex: 'status',
       key: 'status',
       width: '15%',
-      render: (status, record) => {
-        const inStock = status === 'active' && (record.stock > 0 || record.quantity > 0);
+      render: (_, record) => {
+        const inStock = Number(record.stock || 0) > 0;
         return (
           <Badge
             status={inStock ? 'success' : 'error'}
@@ -144,8 +222,9 @@ const WishlistPage = () => {
       key: 'actions',
       width: '20%',
       render: (_, record) => {
-        const inStock = record.status === 'active' && (record.stock > 0 || record.quantity > 0);
-        const isLoading = actionLoading === record._id;
+        const inStock = Number(record.stock || 0) > 0;
+        const actionKey = `${record._id}_${record.wishlistModelId || 'default'}`;
+        const isLoading = actionLoading === actionKey;
 
         return (
           <Space size="small">
@@ -153,7 +232,7 @@ const WishlistPage = () => {
               <Button
                 type="primary"
                 icon={isLoading ? <LoadingOutlined /> : <ShoppingCartOutlined />}
-                onClick={() => handleAddToCart(record._id)}
+                onClick={() => handleAddToCart(record)}
                 disabled={!inStock || isLoading}
                 loading={isLoading}
                 className={styles.addToCartBtn}
@@ -161,11 +240,11 @@ const WishlistPage = () => {
                 ADD TO CART
               </Button>
             </Tooltip>
-            <Tooltip title="Remove from Favourites">
+            <Tooltip title="Remove from Wishlist">
               <Button
                 danger
                 icon={<DeleteOutlined />}
-                onClick={() => handleRemoveFromWishlist(record._id)}
+                onClick={() => handleRemoveFromWishlist(record)}
                 disabled={isLoading}
                 className={styles.removeBtn}
               />
@@ -191,7 +270,7 @@ const WishlistPage = () => {
             <span className={styles.backText}>Back</span>
           </div>
           <Title level={1} className={styles.wishlistTitle}>
-            Favourites
+            Wishlist
           </Title>
         </div>
 
@@ -199,14 +278,17 @@ const WishlistPage = () => {
         {loading ? (
           <Card className={styles.wishlistCard}>
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <Spin size="large" tip="Loading favourites..." />
+              <Spin size="large" tip="Loading wishlist..." />
             </div>
           </Card>
-        ) : favourites.length > 0 ? (
+        ) : wishlists.length > 0 ? (
           <Card className={styles.wishlistCard}>
             <Table
               columns={columns}
-              dataSource={favourites.map((item) => ({ ...item, key: item._id }))}
+              dataSource={wishlists.map((item) => ({
+                ...item,
+                key: `${item._id}_${item.wishlistModelId || 'default'}`,
+              }))}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
@@ -220,10 +302,10 @@ const WishlistPage = () => {
         ) : (
           <Card className={styles.emptyCard}>
             <Empty
-              description="Your Favourites is Empty"
+              description="Your Wishlist is Empty"
               style={{ paddingTop: '40px', paddingBottom: '40px' }}
             >
-              <Button type="primary" size="large" onClick={() => navigate('/shop')}>
+              <Button type="primary" size="large" onClick={() => navigate('/products')}>
                 Continue Shopping
               </Button>
             </Empty>

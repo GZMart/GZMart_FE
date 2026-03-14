@@ -192,7 +192,7 @@ const CreateReturnRequestPage = () => {
         <Alert variant="danger">
           <Alert.Heading>Không thể tạo yêu cầu đổi trả</Alert.Heading>
           <p>{eligibility?.reason || 'Đơn hàng không đủ điều kiện để đổi trả'}</p>
-          <Button variant="outline-danger" onClick={() => navigate('/buyer/orders')}>
+          <Button variant="outline-danger" onClick={() => navigate('/buyer/profile?tab=orders')}>
             Quay lại danh sách đơn hàng
           </Button>
         </Alert>
@@ -384,7 +384,7 @@ const CreateReturnRequestPage = () => {
         <div className="d-flex gap-3">
           <Button
             variant="secondary"
-            onClick={() => navigate('/buyer/orders')}
+            onClick={() => navigate('/buyer/profile?tab=orders')}
             disabled={submitting}
           >
             Hủy

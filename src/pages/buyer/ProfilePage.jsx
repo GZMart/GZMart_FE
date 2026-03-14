@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Camera,
   X,
+  Check,
   MessageCircle,
   Store,
   Search,
@@ -107,6 +108,7 @@ const ProfilePage = () => {
 
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const fileInputRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -239,6 +241,19 @@ const ProfilePage = () => {
     }
   }, [activeTab, isAuthenticated, user]);
 
+  // Sync active tab with URL changes (browser navigation/direct links)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') || 'account';
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+
+    if (tabFromUrl !== 'orders' && selectedOrder) {
+      setSelectedOrder(null);
+      setSelectedOrderDetails(null);
+    }
+  }, [searchParams, activeTab, selectedOrder]);
+
   // Socket.io connection for real-time order updates
   useEffect(() => {
     if (!isAuthenticated || !user || orders.length === 0) {
@@ -322,9 +337,13 @@ const ProfilePage = () => {
   // Update URL when tab changes
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearchParams({ tab });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', tab);
+    nextParams.delete('orderId');
+    setSearchParams(nextParams);
     if (tab === 'orders') {
       setSelectedOrder(null);
+      setSelectedOrderDetails(null);
     }
   };
 
@@ -552,7 +571,16 @@ const ProfilePage = () => {
     }
   };
 
-  const handleOrderClick = async (orderId) => {
+  const handleOrderClick = async (orderId, options = {}) => {
+    const { syncUrl = true } = options;
+
+    if (syncUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('tab', 'orders');
+      nextParams.set('orderId', orderId);
+      setSearchParams(nextParams);
+    }
+
     setSelectedOrder({ id: orderId }); // Using object wrapper to match original prop structure if needed, or just ID
     setDetailsLoading(true);
     try {
@@ -562,10 +590,35 @@ const ProfilePage = () => {
       }
     } catch (error) {
       console.error('Failed to fetch order details:', error);
+      setSelectedOrder(null);
+      setSelectedOrderDetails(null);
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('tab', 'orders');
+      nextParams.delete('orderId');
+      setSearchParams(nextParams);
     } finally {
       setDetailsLoading(false);
     }
   };
+
+  // Open order details directly from URL: /buyer/profile?tab=orders&orderId=<id>
+  useEffect(() => {
+    if (!isAuthenticated || !user || activeTab !== 'orders') {
+      return;
+    }
+
+    const orderIdFromUrl = searchParams.get('orderId');
+    if (!orderIdFromUrl) {
+      return;
+    }
+
+    if (selectedOrder?.id === orderIdFromUrl || selectedOrderDetails?._id === orderIdFromUrl) {
+      return;
+    }
+
+    handleOrderClick(orderIdFromUrl, { syncUrl: false });
+  }, [activeTab, isAuthenticated, user, searchParams, selectedOrder, selectedOrderDetails]);
 
   const handleViewInvoice = async (e, orderId) => {
     // e.stopPropagation(); // Not needed if button is outside clickable row area or handled correctly
@@ -599,6 +652,36 @@ const ProfilePage = () => {
         setAvatarPreview(reader.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarFile || isSavingAvatar) return;
+    try {
+      setIsSavingAvatar(true);
+      const submitData = new FormData();
+      submitData.append('avatar', avatarFile);
+      const profileAction = await dispatch(updateUserProfile({ formData: submitData }));
+      if (updateUserProfile.fulfilled.match(profileAction)) {
+        setAvatarFile(null);
+        toast.success(t('profile_page.success_update'));
+      } else {
+        toast.error(profileAction.payload || t('profile_page.error_update'));
+      }
+    } catch (error) {
+      console.error('Update avatar error:', error);
+      toast.error(t('profile_page.error_general'));
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
+
+  const handleCancelAvatar = () => {
+    if (isSavingAvatar) return;
+    setAvatarFile(null);
+    setAvatarPreview(user?.avatar || user?.profileImage || null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -1229,6 +1312,14 @@ const ProfilePage = () => {
                       </div>
                       <div className={styles.orderCardActions}>
                         <button className={styles.orderCardActionSecondary}>Reorder</button>
+                        {order.status === 'completed' && (
+                          <button
+                            className={styles.orderCardActionSecondary}
+                            onClick={() => handleOpenReviewModal(order)}
+                          >
+                            Review
+                          </button>
+                        )}
                         <button className={styles.orderCardActionSecondary}>Contact Seller</button>
                       </div>
                     </div>
@@ -1274,7 +1365,14 @@ const ProfilePage = () => {
                 <div className={styles.orderDetailsHeader}>
                   <button
                     className={styles.orderDetailsBackBtn}
-                    onClick={() => setSelectedOrder(null)}
+                    onClick={() => {
+                      setSelectedOrder(null);
+                      setSelectedOrderDetails(null);
+                      const nextParams = new URLSearchParams(searchParams);
+                      nextParams.set('tab', 'orders');
+                      nextParams.delete('orderId');
+                      setSearchParams(nextParams);
+                    }}
                   >
                     <ArrowLeft size={18} strokeWidth={2} />
                     <span>BACK</span>
@@ -1425,6 +1523,14 @@ const ProfilePage = () => {
                   >
                     Reorder
                   </button>
+                  {selectedOrderDetails.status === 'completed' && (
+                    <button
+                      className={styles.orderDetailsActionSecondary}
+                      onClick={() => handleOpenReviewModal(selectedOrderDetails)}
+                    >
+                      Add Rating
+                    </button>
+                  )}
                   <button className={styles.orderDetailsActionSecondary}>Contact Seller</button>
                   {(selectedOrderDetails.status === 'delivered' ||
                     selectedOrderDetails.status === 'completed') && (
@@ -1455,7 +1561,45 @@ const ProfilePage = () => {
             <div className={styles.sidebarNav}>
               {/* Avatar and User Info */}
               <div className={styles.avatarHeader}>
-                <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
+                <div className={styles.avatarSection}>
+                  <div className={styles.avatarImageWrap}>
+                    <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
+                    <button
+                      className={styles.cameraButton}
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Change avatar"
+                    >
+                      <Camera size={12} strokeWidth={2} />
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageChange}
+                      style={{ display: 'none' }}
+                      accept="image/*"
+                    />
+                  </div>
+                  {avatarFile && (
+                    <div className={styles.avatarActionRow}>
+                      <button
+                        className={styles.saveAvatarBtn}
+                        onClick={handleSaveAvatar}
+                        disabled={isSavingAvatar}
+                      >
+                        <Check size={11} strokeWidth={3} />
+                        {isSavingAvatar ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        className={styles.cancelAvatarBtn}
+                        onClick={handleCancelAvatar}
+                        disabled={isSavingAvatar}
+                      >
+                        <X size={11} strokeWidth={3} />
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className={styles.userInfo}>
                   <h3 className={styles.userName}>{userDisplayName}</h3>
                   <button
@@ -1465,13 +1609,6 @@ const ProfilePage = () => {
                     <Edit2 size={14} strokeWidth={2} />
                     Edit Profile
                   </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                    accept="image/*"
-                  />
                 </div>
               </div>
 

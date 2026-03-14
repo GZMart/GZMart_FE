@@ -6,6 +6,7 @@ import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
 import Pagination from '@components/common/Pagination';
 import { productService } from '../../services/api';
+import { categoryService } from '../../services/api';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 
 const locations = [
@@ -26,15 +27,12 @@ const ProductsPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q');
+  const categoryParam = searchParams.get('category');
 
-  // ... breadcrumb logic (omitted for brevity in replacement if possible, but replace tool needs context)
-  // Re-inserting logic requires matching context.
-  // Easier to just insert key blocks separately or careful replacement.
+  // Category name state for display
+  const [categoryName, setCategoryName] = useState('');
 
-  // Let's target the top of the file for ratings constant first
-  // And then the state variables.
-
-  // Dynamic breadcrumb based on search query
+  // Dynamic breadcrumb based on search/category context
   const breadcrumbItems = useMemo(() => {
     const items = [{ label: 'Home', path: '/' }];
 
@@ -43,12 +41,21 @@ const ProductsPage = () => {
         { label: 'Products', path: '/products' },
         { label: `Search: "${searchQuery}"`, path: `/products?q=${searchQuery}`, isActive: true }
       );
+    } else if (categoryParam) {
+      items.push(
+        { label: 'Products', path: '/products' },
+        {
+          label: categoryName || categoryParam,
+          path: `/products?category=${categoryParam}`,
+          isActive: true,
+        }
+      );
     } else {
       items.push({ label: 'Products', path: '/products', isActive: true });
     }
 
     return items;
-  }, [searchQuery]);
+  }, [searchQuery, categoryParam, categoryName]);
 
   const [viewMode, setViewMode] = useState('grid');
   const [itemsToShow, setItemsToShow] = useState(12);
@@ -98,6 +105,7 @@ const ProductsPage = () => {
         selectedRatings.length > 0 ? Math.max(...selectedRatings.map((r) => r.value)) : undefined,
       inStock: selectedAvailability.includes('inStock') ? 'true' : undefined,
       location: selectedLocations.length > 0 ? selectedLocations.join(',') : undefined,
+      category: categoryParam || undefined,
       sortBy:
         sortBy === 'price-asc' || sortBy === 'price-desc'
           ? 'originalPrice' // Fixed: Map to backend field
@@ -113,6 +121,7 @@ const ProductsPage = () => {
     return filters;
   }, [
     searchParams,
+    categoryParam,
     selectedBrands,
     priceRange.min,
     priceRange.max,
@@ -281,6 +290,25 @@ const ProductsPage = () => {
     };
   }, []);
 
+  // Fetch category name when category slug param changes
+  useEffect(() => {
+    if (!categoryParam) {
+      setCategoryName('');
+      return;
+    }
+    const fetchCategoryName = async () => {
+      try {
+        const response = await categoryService.getAll();
+        const allCats = Array.isArray(response) ? response : response.data || [];
+        const match = allCats.find((c) => c.slug === categoryParam);
+        if (match) setCategoryName(match.name);
+      } catch (e) {
+        // silent — slug used as fallback display
+      }
+    };
+    fetchCategoryName();
+  }, [categoryParam]);
+
   // Only apply client-side filters that are NOT handled by API
   const filteredProducts = useMemo(() => {
     if (!products.length) {
@@ -388,10 +416,10 @@ const ProductsPage = () => {
     setPage(1);
   };
 
-  // Reset page when search query changes
+  // Reset page when search query or category changes
   useEffect(() => {
     setPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, categoryParam]);
 
   // Infinite Scroll Observer
   const observer = useRef();
@@ -655,7 +683,11 @@ const ProductsPage = () => {
               </button>
 
               <h1 className={styles.pageTitle}>
-                {searchQuery ? `Search Results for "${searchQuery}"` : 'All Products'}
+                {searchQuery
+                  ? `Search Results for "${searchQuery}"`
+                  : categoryName
+                    ? `${categoryName}`
+                    : 'All Products'}
               </h1>
 
               <div className={styles.productsControls}>

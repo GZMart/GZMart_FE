@@ -109,7 +109,7 @@ const OrdersPage = () => {
               type="primary"
               icon={<EnvironmentOutlined />}
               size="small"
-              onClick={() => navigate(`/buyer/orders/${record._id}`)}
+              onClick={() => navigate('/buyer/profile?tab=orders')}
             >
               Theo dõi đơn hàng
             </Button>
@@ -118,7 +118,7 @@ const OrdersPage = () => {
               type="default"
               icon={<EyeOutlined />}
               size="small"
-              onClick={() => navigate(`/buyer/orders/${record._id}`)}
+              onClick={() => navigate('/buyer/profile?tab=orders')}
             >
               Xem chi tiết
             </Button>

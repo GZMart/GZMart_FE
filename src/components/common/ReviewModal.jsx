@@ -12,7 +12,10 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [product, setProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState('');
   const [productLoading, setProductLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [reviewedProductsCount, setReviewedProductsCount] = useState(0);
 
   // Fetch product data when modal opens
   useEffect(() => {
@@ -34,6 +37,22 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       const orderData = response.data || response;
       const firstItem = orderData.items?.[0];
 
+      // Build variant label from order item selections (size/color/etc.)
+      const tierSelections = firstItem?.tierSelections;
+      if (tierSelections) {
+        const entries =
+          tierSelections instanceof Map
+            ? Array.from(tierSelections.entries())
+            : Object.entries(tierSelections || {});
+        const variantLabel = entries
+          .filter(([, value]) => value)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+        setSelectedVariant(variantLabel || '');
+      } else {
+        setSelectedVariant('');
+      }
+
       // Extract productId from first populated item
       let actualProductId;
       if (firstItem?.productId) {
@@ -43,6 +62,30 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
 
         // Now fetch the product
         await fetchProductById(actualProductId);
+      }
+
+      // Check existing review(s) for this order to support edit mode
+      try {
+        const existing = await reviewService.getOrderReviews(orderId);
+        const existingList = existing?.data || [];
+        setReviewedProductsCount(existingList.length);
+
+        if (existingList.length > 0) {
+          const latestReview = existingList[0];
+          setIsEditMode(true);
+          setRating(latestReview.rating || 0);
+          setTitle(latestReview.title || '');
+          setComment(latestReview.content || '');
+        } else {
+          setIsEditMode(false);
+          setRating(0);
+          setTitle('');
+          setComment('');
+        }
+      } catch (reviewErr) {
+        console.error('Error fetching order reviews:', reviewErr);
+        setIsEditMode(false);
+        setReviewedProductsCount(0);
       }
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -92,7 +135,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       setSubmitting(true);
 
       const reviewPayload = {
-        productId: product?._id,
+        // orderId-based flow: backend will apply this review to each product in order
         rating,
         title: title || `${rating} Star Review`,
         content: comment,
@@ -106,6 +149,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
           id: product?._id,
           name: product?.name,
         },
+        mode: isEditMode ? 'edit' : 'create',
         timestamp: new Date().toISOString(),
       });
 
@@ -113,11 +157,11 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       await reviewService.createReview(reviewPayload);
 
       console.log('✅ [ReviewModal] Review submitted successfully');
-      toast.success('Review submitted successfully!');
+      toast.success(isEditMode ? 'Review updated successfully!' : 'Review submitted successfully!');
 
       // Dispatch custom event to notify ProductReviewSection to refetch
       const event = new CustomEvent('reviewSubmitted', {
-        detail: { productId: product?._id },
+        detail: { productId: product?._id, orderId },
       });
       window.dispatchEvent(event);
       console.log('📣 Dispatched reviewSubmitted event for product:', product?._id);
@@ -135,6 +179,8 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       setRating(0);
       setTitle('');
       setComment('');
+      setIsEditMode(false);
+      setReviewedProductsCount(0);
       onClose();
     } catch (error) {
       console.error('❌ [ReviewModal] Error submitting review:', {
@@ -154,6 +200,9 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
     setTitle('');
     setComment('');
     setProduct(null);
+    setSelectedVariant('');
+    setIsEditMode(false);
+    setReviewedProductsCount(0);
     onClose();
   };
 
@@ -167,9 +216,15 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
   const productCategory = product?.category?.name || product?.category || 'Product';
 
   return (
-    <Modal show={isOpen} onHide={handleClose} centered contentClassName={styles.reviewModalContent}>
+    <Modal
+      show={isOpen}
+      onHide={handleClose}
+      dialogClassName={styles.drawerDialog}
+      contentClassName={styles.reviewModalContent}
+      backdropClassName={styles.drawerBackdrop}
+    >
       <div className={styles.modalHeader}>
-        <h4 className={styles.modalTitle}>Add Rating</h4>
+        <h4 className={styles.modalTitle}>{isEditMode ? 'Edit Rating' : 'Add Rating'}</h4>
         <button className={styles.modalCloseBtn} onClick={handleClose} disabled={submitting}>
           <svg
             width="24"
@@ -202,6 +257,14 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
               <p className={styles.orderNumber}>Order #{orderNumber}</p>
               <h5 className={styles.productName}>{product?.name || 'Product'}</h5>
               <p className={styles.productCategory}>{productCategory}</p>
+              {selectedVariant && (
+                <p className={styles.productCategory}>Variant: {selectedVariant}</p>
+              )}
+              {isEditMode && reviewedProductsCount > 0 && (
+                <p className={styles.productCategory}>
+                  Existing review found for {reviewedProductsCount} product(s) in this order
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -284,7 +347,11 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
           onClick={handleSubmit}
           disabled={submitting || isSubmitting || rating === 0}
         >
-          {submitting || isSubmitting ? 'Submitting...' : 'Submit Review'}
+          {submitting || isSubmitting
+            ? 'Submitting...'
+            : isEditMode
+              ? 'Update Review'
+              : 'Submit Review'}
         </button>
       </div>
     </Modal>

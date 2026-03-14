@@ -411,7 +411,7 @@ const DealDetailsPage = () => {
                 className={styles.buyNowBtn}
                 onClick={handleBuyNow}
               >
-                🔒 BUY NOW
+                BUY NOW
               </Button>
             </div>
 

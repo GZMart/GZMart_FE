@@ -10,11 +10,23 @@ export const getCart = async () => {
 
 /**
  * Add item to cart
- * @param {string} productId - Product ID to add
+ * @param {string|object} productIdOrPayload - Product ID or full payload
  * @param {number} quantity - Quantity to add
+ * @param {string} color - Variant color
+ * @param {string} size - Variant size
  */
-export const addToCart = async (productId, quantity = 1) => {
-  const response = await axiosClient.post('/api/cart', { productId, quantity });
+export const addToCart = async (productIdOrPayload, quantity = 1, color, size) => {
+  const payload =
+    typeof productIdOrPayload === 'object' && productIdOrPayload !== null
+      ? productIdOrPayload
+      : {
+          productId: productIdOrPayload,
+          quantity,
+          color,
+          size,
+        };
+
+  const response = await axiosClient.post('/api/cart', payload);
   return response.data;
 };
 
