@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { reviewService } from '../../services/api';
 import Pagination from '../common/Pagination';
 import styles from '../../assets/styles/ProductReviewSection.module.css';
@@ -21,14 +22,11 @@ const ProductReviewSection = ({ product }) => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        console.log('Fetching reviews for product:', product?._id);
         const reviewsResponse = await reviewService.getProductReviews(product._id, {
           page: 1,
           limit: 100,
           sortBy,
         });
-
-        console.log('Reviews API Response:', reviewsResponse);
 
         let reviewsData = [];
         if (Array.isArray(reviewsResponse)) {
@@ -39,7 +37,6 @@ const ProductReviewSection = ({ product }) => {
           reviewsData = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [];
         }
 
-        console.log('Processed reviews:', reviewsData);
         setReviews(reviewsData);
 
         // Hydrate button states from server-provided userReaction
@@ -55,7 +52,6 @@ const ProductReviewSection = ({ product }) => {
         setHelpfulReviews(helpfulSet);
         setUnhelpfulReviews(unhelpfulSet);
       } catch (error) {
-        console.error('Error fetching reviews:', error);
         setReviews([]);
         setHelpfulReviews(new Set());
         setUnhelpfulReviews(new Set());
@@ -73,14 +69,12 @@ const ProductReviewSection = ({ product }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && product?._id) {
-        console.log('🔄 Tab became visible, refetching reviews...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
 
     const handleFocus = () => {
       if (product?._id) {
-        console.log('🔄 Window focused, refetching reviews...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -88,7 +82,6 @@ const ProductReviewSection = ({ product }) => {
     // Listen for custom review submitted event
     const handleReviewSubmitted = (event) => {
       if (event.detail?.productId === product?._id) {
-        console.log('🔄 Review submitted for this product, refetching...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -200,7 +193,7 @@ const ProductReviewSection = ({ product }) => {
         }
       }
     } catch (error) {
-      console.error('Error marking review as helpful:', error);
+      // noop
     }
   };
 
@@ -244,7 +237,7 @@ const ProductReviewSection = ({ product }) => {
         }
       }
     } catch (error) {
-      console.error('Error marking review as unhelpful:', error);
+      // noop
     }
   };
 
@@ -442,3 +435,9 @@ const ProductReviewSection = ({ product }) => {
 };
 
 export default ProductReviewSection;
+
+ProductReviewSection.propTypes = {
+  product: PropTypes.shape({
+    _id: PropTypes.string,
+  }),
+};

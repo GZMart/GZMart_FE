@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Spinner, Button } from 'react-bootstrap';
+import { Spinner } from 'react-bootstrap';
 import {
   Bell,
   Coins,
@@ -14,8 +14,6 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  FileText,
   ArrowLeft,
   Camera,
   X,
@@ -26,15 +24,8 @@ import {
 } from 'lucide-react';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
-import {
-  selectUser,
-  selectIsAuthenticated,
-  logoutUser,
-  updateUserProfile,
-} from '@store/slices/authSlice';
+import { selectUser, selectIsAuthenticated, updateUserProfile } from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
-import { paymentService } from '@services/api/paymentService';
-import { reviewService } from '@services/api';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
@@ -66,7 +57,6 @@ const ProfilePage = () => {
   // State for tab switching - get from URL or default to 'account'
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'account');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [detailsTab, setDetailsTab] = useState('items');
   const [showMyAccountDropdown, setShowMyAccountDropdown] = useState(true); // For My Account dropdown
 
   // Order API State
@@ -76,7 +66,6 @@ const ProfilePage = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(null);
 
   // Order Filter & Search State
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -85,7 +74,7 @@ const ProfilePage = () => {
   // Review Modal State
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(null);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitting] = useState(false);
 
   // Coin State
   const [coinBalance, setCoinBalance] = useState(null);
@@ -114,7 +103,7 @@ const ProfilePage = () => {
 
   // Address State
   const [addresses, setAddresses] = useState([]);
-  const [addressLoading, setAddressLoading] = useState(false);
+  const [, setAddressLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
@@ -224,23 +213,6 @@ const ProfilePage = () => {
   }, [user]);
 
   // Fetch orders when Orders tab is active
-  useEffect(() => {
-    // Only fetch if user is authenticated
-    if (!isAuthenticated || !user) {
-      return;
-    }
-
-    if (activeTab === 'orders') {
-      fetchOrders(pagination.page);
-    }
-    if (activeTab === 'address') {
-      fetchAddresses();
-    }
-    if (activeTab === 'coin') {
-      fetchCoinData();
-    }
-  }, [activeTab, isAuthenticated, user]);
-
   // Sync active tab with URL changes (browser navigation/direct links)
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab') || 'account';
@@ -255,8 +227,11 @@ const ProfilePage = () => {
   }, [searchParams, activeTab, selectedOrder]);
 
   // Socket.io connection for real-time order updates
+  const socketOrders = useMemo(() => orders.map((o) => ({ _id: o._id })), [orders]);
+  const socketOrderIds = useMemo(() => orders.map((o) => o._id).join(','), [orders]);
+
   useEffect(() => {
-    if (!isAuthenticated || !user || orders.length === 0) {
+    if (!isAuthenticated || !user || socketOrders.length === 0) {
       return;
     }
 
@@ -278,7 +253,7 @@ const ProfilePage = () => {
     });
 
     // Listen for order status updates for all user's orders
-    orders.forEach((order) => {
+    socketOrders.forEach((order) => {
       const statusEventName = `order:status:${order._id}`;
       const arrivedEventName = `order:arrived:${order._id}`;
 
@@ -299,8 +274,7 @@ const ProfilePage = () => {
         });
 
         // Show toast notification
-        const orderNum =
-          orders.find((o) => o._id === data.orderId)?.orderNumber || data.orderId.slice(-6);
+        const orderNum = data.orderNumber || data.orderId.slice(-6);
         toast.info(`Order #${orderNum} status: ${data.status}`);
       });
 
@@ -320,8 +294,7 @@ const ProfilePage = () => {
         });
 
         // Show toast notification
-        const orderNum =
-          orders.find((o) => o._id === data.orderId)?.orderNumber || data.orderId.slice(-6);
+        const orderNum = data.orderNumber || data.orderId.slice(-6);
         toast.success(`Order #${orderNum} has been delivered! 🎉`);
       });
     });
@@ -332,7 +305,7 @@ const ProfilePage = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [isAuthenticated, user, orders.length]); // Only reconnect when orders count changes
+  }, [isAuthenticated, socketOrderIds, socketOrders, user]);
 
   // Update URL when tab changes
   const handleTabChange = (tab) => {
@@ -347,7 +320,7 @@ const ProfilePage = () => {
     }
   };
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = useCallback(async () => {
     setAddressLoading(true);
     try {
       const response = await addressService.getAddresses();
@@ -359,9 +332,9 @@ const ProfilePage = () => {
     } finally {
       setAddressLoading(false);
     }
-  };
+  }, [setAddressLoading]);
 
-  const fetchCoinData = async () => {
+  const fetchCoinData = useCallback(async () => {
     setCoinLoading(true);
     try {
       // Fetch balance
@@ -388,7 +361,7 @@ const ProfilePage = () => {
     } finally {
       setCoinLoading(false);
     }
-  };
+  }, [coinPagination.limit, coinPagination.page]);
 
   const resetAddressForm = () => {
     setAddressForm({
@@ -549,20 +522,48 @@ const ProfilePage = () => {
       .filter((part) => part && part.trim() !== '')
       .join(', ');
 
-  const fetchOrders = async (page) => {
-    setOrderLoading(true);
-    try {
-      const response = await orderService.getMyOrders(page, pagination.limit);
-      if (response.success) {
-        setOrders(response.data);
-        setPagination(response.pagination);
+  const fetchOrders = useCallback(
+    async (page) => {
+      setOrderLoading(true);
+      try {
+        const response = await orderService.getMyOrders(page, pagination.limit);
+        if (response.success) {
+          setOrders(response.data);
+          setPagination(response.pagination);
+        }
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+      } finally {
+        setOrderLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setOrderLoading(false);
+    },
+    [pagination.limit]
+  );
+
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    if (!isAuthenticated || !user) {
+      return;
     }
-  };
+
+    if (activeTab === 'orders') {
+      fetchOrders(pagination.page);
+    }
+    if (activeTab === 'address') {
+      fetchAddresses();
+    }
+    if (activeTab === 'coin') {
+      fetchCoinData();
+    }
+  }, [
+    activeTab,
+    fetchAddresses,
+    fetchCoinData,
+    fetchOrders,
+    isAuthenticated,
+    pagination.page,
+    user,
+  ]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
@@ -571,36 +572,39 @@ const ProfilePage = () => {
     }
   };
 
-  const handleOrderClick = async (orderId, options = {}) => {
-    const { syncUrl = true } = options;
+  const handleOrderClick = useCallback(
+    async (orderId, options = {}) => {
+      const { syncUrl = true } = options;
 
-    if (syncUrl) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.set('tab', 'orders');
-      nextParams.set('orderId', orderId);
-      setSearchParams(nextParams);
-    }
-
-    setSelectedOrder({ id: orderId }); // Using object wrapper to match original prop structure if needed, or just ID
-    setDetailsLoading(true);
-    try {
-      const response = await orderService.getOrderById(orderId);
-      if (response.success) {
-        setSelectedOrderDetails(response.data);
+      if (syncUrl) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('tab', 'orders');
+        nextParams.set('orderId', orderId);
+        setSearchParams(nextParams);
       }
-    } catch (error) {
-      console.error('Failed to fetch order details:', error);
-      setSelectedOrder(null);
-      setSelectedOrderDetails(null);
 
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.set('tab', 'orders');
-      nextParams.delete('orderId');
-      setSearchParams(nextParams);
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
+      setSelectedOrder({ id: orderId }); // Using object wrapper to match original prop structure if needed, or just ID
+      setDetailsLoading(true);
+      try {
+        const response = await orderService.getOrderById(orderId);
+        if (response.success) {
+          setSelectedOrderDetails(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch order details:', error);
+        setSelectedOrder(null);
+        setSelectedOrderDetails(null);
+
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('tab', 'orders');
+        nextParams.delete('orderId');
+        setSearchParams(nextParams);
+      } finally {
+        setDetailsLoading(false);
+      }
+    },
+    [searchParams, setSearchParams]
+  );
 
   // Open order details directly from URL: /buyer/profile?tab=orders&orderId=<id>
   useEffect(() => {
@@ -618,22 +622,15 @@ const ProfilePage = () => {
     }
 
     handleOrderClick(orderIdFromUrl, { syncUrl: false });
-  }, [activeTab, isAuthenticated, user, searchParams, selectedOrder, selectedOrderDetails]);
-
-  const handleViewInvoice = async (e, orderId) => {
-    // e.stopPropagation(); // Not needed if button is outside clickable row area or handled correctly
-    try {
-      const response = await orderService.getInvoice(orderId);
-      if (response.success) {
-        const newWindow = window.open('', '_blank');
-        newWindow.document.write(response.data);
-        newWindow.document.close();
-      }
-    } catch (error) {
-      console.error('Failed to get invoice:', error);
-      alert(t('profile_page.orders.error_invoice_alert'));
-    }
-  };
+  }, [
+    activeTab,
+    handleOrderClick,
+    isAuthenticated,
+    searchParams,
+    selectedOrder,
+    selectedOrderDetails,
+    user,
+  ]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -656,7 +653,9 @@ const ProfilePage = () => {
   };
 
   const handleSaveAvatar = async () => {
-    if (!avatarFile || isSavingAvatar) return;
+    if (!avatarFile || isSavingAvatar) {
+      return;
+    }
     try {
       setIsSavingAvatar(true);
       const submitData = new FormData();
@@ -677,7 +676,9 @@ const ProfilePage = () => {
   };
 
   const handleCancelAvatar = () => {
-    if (isSavingAvatar) return;
+    if (isSavingAvatar) {
+      return;
+    }
     setAvatarFile(null);
     setAvatarPreview(user?.avatar || user?.profileImage || null);
     if (fileInputRef.current) {
@@ -712,35 +713,13 @@ const ProfilePage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await dispatch(logoutUser()).unwrap();
-      navigate(PUBLIC_ROUTES.HOME);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handlePayNow = async (orderId) => {
-    setPaymentProcessing(orderId);
-    try {
-      const response = await paymentService.createPaymentLink(orderId);
-      if (response.success && response.data.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
-      }
-    } catch (err) {
-      alert(err.message || t('profile_page.orders.error_payment'));
-      setPaymentProcessing(null);
-    }
-  };
-
   const handleOpenReviewModal = (order) => {
     // Just pass orderId - ReviewModal will fetch order details to get product info
     setReviewingOrder(order);
     setShowReviewModal(true);
   };
 
-  const handleReviewSubmit = async (reviewData) => {
+  const handleReviewSubmit = async (_reviewData) => {
     // Note: This function is called from ReviewModal component
     // The ReviewModal component handles the actual API call using reviewService
     // This function just closes the modal after successful submission
@@ -792,7 +771,7 @@ const ProfilePage = () => {
       <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#6B7280' }}>
         <Bell size={64} color="#D1D5DB" strokeWidth={1.5} style={{ margin: '0 auto 1rem' }} />
         <h4 style={{ marginBottom: '0.5rem', color: '#374151' }}>No Notifications</h4>
-        <p>You don't have any notifications yet.</p>
+        <p>You don&apos;t have any notifications yet.</p>
       </div>
     </div>
   );
@@ -1986,12 +1965,12 @@ const ProfilePage = () => {
         show={showReturnModal}
         order={selectedOrderDetails}
         onHide={() => setShowReturnModal(false)}
-        onSuccess={(returnRequest) => {
+        onSuccess={(_returnRequest) => {
           toast.success('Return request submitted successfully!');
           setShowReturnModal(false);
           // Optionally refresh order details
           if (selectedOrderDetails?._id) {
-            fetchOrderDetails(selectedOrderDetails._id);
+            handleOrderClick(selectedOrderDetails._id, { syncUrl: false });
           }
         }}
       />

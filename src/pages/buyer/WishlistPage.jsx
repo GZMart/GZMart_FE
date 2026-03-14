@@ -7,7 +7,6 @@ import {
   LeftOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { BUYER_ROUTES } from '@constants/routes';
 import * as wishlistService from '@/services/api/wishlistService';
 import * as cartService from '@services/api/cartService';
 import { formatCurrency } from '@utils/formatters';
@@ -29,13 +28,10 @@ const WishlistPage = () => {
     try {
       setLoading(true);
       const response = await wishlistService.getWishlists();
-      console.log('Wishlists response:', response);
 
       const products = response?.data?.products || [];
-      console.log('Wishlists products:', products);
       setWishlists(products);
     } catch (error) {
-      console.error('Error fetching wishlists:', error);
       message.error(error.response?.data?.message || 'Failed to load wishlists');
     } finally {
       setLoading(false);
@@ -104,7 +100,6 @@ const WishlistPage = () => {
       await cartService.addToCart(product._id, 1, variant.color, variant.size);
       message.success('Product added to cart successfully!');
     } catch (error) {
-      console.error('Error adding to cart:', error);
       message.error(error.response?.data?.message || 'Failed to add to cart');
     } finally {
       setActionLoading(null);
@@ -137,7 +132,6 @@ const WishlistPage = () => {
         );
       }
     } catch (error) {
-      console.error('Error removing from wishlist:', error);
       message.error(error.response?.data?.message || 'Failed to remove from wishlist');
     } finally {
       setActionLoading(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +6,6 @@ import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from '@store/slices/authSlice';
 import socketService from '@services/socket/socketService';
 import { notificationAPI } from '@services/api';
-import { PUBLIC_ROUTES } from '@constants/routes';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
@@ -57,7 +56,9 @@ const NotificationBell = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      if (!notificationAPI || !notificationAPI.fetchUnreadCount) return;
+      if (!notificationAPI || !notificationAPI.fetchUnreadCount) {
+        return;
+      }
       const response = await notificationAPI.fetchUnreadCount();
       if (response?.success) {
         setUnreadCount(response.data.count);
@@ -68,7 +69,9 @@ const NotificationBell = () => {
   };
 
   const fetchNotifications = async () => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     setLoading(true);
     try {
       if (!notificationAPI || !notificationAPI.fetchNotifications) {
@@ -108,19 +111,6 @@ const NotificationBell = () => {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Failed to mark notification as read', error);
-    }
-  };
-
-  const handleMarkAllAsRead = async (e) => {
-    e.stopPropagation();
-    try {
-      if (notificationAPI && notificationAPI.markAllAsRead) {
-        await notificationAPI.markAllAsRead();
-      }
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Failed to mark all notifications as read', error);
     }
   };
 

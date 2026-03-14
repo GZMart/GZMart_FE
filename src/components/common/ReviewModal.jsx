@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { Modal } from 'react-bootstrap';
 import { reviewService, productService } from '../../services/api';
 import { orderService } from '../../services/api/orderService';
@@ -17,22 +18,31 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
   const [isEditMode, setIsEditMode] = useState(false);
   const [reviewedProductsCount, setReviewedProductsCount] = useState(0);
 
-  // Fetch product data when modal opens
-  useEffect(() => {
-    console.log('ReviewModal useEffect triggered:', { isOpen, orderId });
-    if (isOpen && orderId) {
-      // Fetch order details to get product info
-      console.log('Fetching order details for orderId:', orderId);
-      fetchOrderDetailsForProduct();
-    }
-  }, [isOpen, orderId]);
+  const setDefaultProductData = useCallback(() => {
+    setProduct({
+      _id: 'unknown',
+      name: 'Product (Demo)',
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200',
+      category: 'Product',
+    });
+  }, []);
 
-  const fetchOrderDetailsForProduct = async () => {
+  const fetchProductById = useCallback(
+    async (pId) => {
+      try {
+        const response = await productService.getById(pId);
+        setProduct(response.data || response);
+      } catch (error) {
+        setDefaultProductData();
+      }
+    },
+    [setDefaultProductData]
+  );
+
+  const fetchOrderDetailsForProduct = useCallback(async () => {
     try {
       setProductLoading(true);
-      console.log('Calling orderService to get order details:', orderId);
       const response = await orderService.getOrderById(orderId);
-      console.log('Order details response:', response);
 
       const orderData = response.data || response;
       const firstItem = orderData.items?.[0];
@@ -58,7 +68,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       if (firstItem?.productId) {
         actualProductId =
           typeof firstItem.productId === 'string' ? firstItem.productId : firstItem.productId._id;
-        console.log('Extracted productId from order:', actualProductId);
 
         // Now fetch the product
         await fetchProductById(actualProductId);
@@ -83,39 +92,22 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
           setComment('');
         }
       } catch (reviewErr) {
-        console.error('Error fetching order reviews:', reviewErr);
         setIsEditMode(false);
         setReviewedProductsCount(0);
       }
     } catch (error) {
-      console.error('Error fetching order details:', error);
-      useDefaultProduct();
+      setDefaultProductData();
     } finally {
       setProductLoading(false);
     }
-  };
+  }, [fetchProductById, orderId, setDefaultProductData]);
 
-  const fetchProductById = async (pId) => {
-    try {
-      const response = await productService.getById(pId);
-      console.log('Product API response:', response);
-      setProduct(response.data || response);
-    } catch (error) {
-      console.error('Error fetching product:', error);
-      useDefaultProduct();
+  // Fetch product data when modal opens
+  useEffect(() => {
+    if (isOpen && orderId) {
+      fetchOrderDetailsForProduct();
     }
-  };
-
-  const useDefaultProduct = () => {
-    const mockProduct = {
-      _id: 'unknown',
-      name: 'Product (Demo)',
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200',
-      category: 'Product',
-    };
-    console.log('Using mock product:', mockProduct);
-    setProduct(mockProduct);
-  };
+  }, [fetchOrderDetailsForProduct, isOpen, orderId]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -143,20 +135,8 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
         images: [],
       };
 
-      console.log('🔵 [ReviewModal] Submitting review:', {
-        payload: reviewPayload,
-        productInfo: {
-          id: product?._id,
-          name: product?.name,
-        },
-        mode: isEditMode ? 'edit' : 'create',
-        timestamp: new Date().toISOString(),
-      });
-
       // Create review using API
       await reviewService.createReview(reviewPayload);
-
-      console.log('✅ [ReviewModal] Review submitted successfully');
       toast.success(isEditMode ? 'Review updated successfully!' : 'Review submitted successfully!');
 
       // Dispatch custom event to notify ProductReviewSection to refetch
@@ -164,7 +144,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
         detail: { productId: product?._id, orderId },
       });
       window.dispatchEvent(event);
-      console.log('📣 Dispatched reviewSubmitted event for product:', product?._id);
 
       // Call parent callback
       if (onSubmit) {
@@ -183,12 +162,6 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
       setReviewedProductsCount(0);
       onClose();
     } catch (error) {
-      console.error('❌ [ReviewModal] Error submitting review:', {
-        error,
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
       toast.error(error.response?.data?.message || 'Failed to submit review');
     } finally {
       setSubmitting(false);
@@ -359,3 +332,19 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber, isSubmitting, ord
 };
 
 export default ReviewModal;
+
+ReviewModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
+  orderNumber: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  isSubmitting: PropTypes.bool,
+  orderId: PropTypes.string,
+};
+
+ReviewModal.defaultProps = {
+  onSubmit: undefined,
+  orderNumber: '',
+  isSubmitting: false,
+  orderId: undefined,
+};

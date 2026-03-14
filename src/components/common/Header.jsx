@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,7 +15,6 @@ import {
   ChevronDown,
   Globe,
   Heart,
-  AlignLeft,
   LogOut,
   UserCircle,
   LayoutDashboard,
@@ -1150,16 +1149,8 @@ const Header = () => {
   // Fetch cart data when user logs in (only when authentication state changes to true)
   const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
-    console.log(
-      '[CART-DEBUG] 🛒 Header useEffect - isAuthenticated:',
-      isAuthenticated,
-      'prevAuth:',
-      prevAuthRef.current
-    );
-
     // Only fetch cart when user transitions from not authenticated to authenticated
     if (isAuthenticated && !prevAuthRef.current) {
-      console.log('[CART-DEBUG] 📥 Fetching cart (auth state changed to true)');
       dispatch(fetchCart());
     }
     prevAuthRef.current = isAuthenticated;
@@ -1171,7 +1162,7 @@ const Header = () => {
       navigate(PUBLIC_ROUTES.HOME);
       setShowProfileDropdown(false);
     } catch (error) {
-      console.error('Logout error:', error);
+      // noop
     }
   };
 
@@ -1199,13 +1190,9 @@ const Header = () => {
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const response = await searchService.getAutocomplete(value.trim());
-        console.log('🔍 Autocomplete API Response:', response);
-        console.log('🔍 Response.data:', response.data);
-        console.log('🔍 Response.data.data:', response.data?.data);
 
         // Handle response - backend returns data directly or nested
         const suggestions = response.data?.data || response.data || {};
-        console.log('🔍 Parsed suggestions:', suggestions);
 
         setSearchSuggestions(suggestions);
 
@@ -1215,10 +1202,8 @@ const Header = () => {
           (suggestions.categories && suggestions.categories.length > 0) ||
           (suggestions.brands && suggestions.brands.length > 0);
 
-        console.log('🔍 Has results:', hasResults);
         setShowSearchDropdown(hasResults);
       } catch (error) {
-        console.error('❌ Error fetching search suggestions:', error);
         setSearchSuggestions({});
       } finally {
         setSearchLoading(false);
@@ -1261,13 +1246,6 @@ const Header = () => {
   // Handle search icon click
   const handleSearchIconClick = () => {
     handleSearchSubmit();
-  };
-
-  // Handle category hover
-  const handleCategoryHover = (category) => {
-    setHoveredCategory(category);
-    setActiveSubcategory(null);
-    setActiveBrand(null);
   };
 
   // Handle category click
@@ -1322,17 +1300,6 @@ const Header = () => {
 
   // Get current category data
   const currentCategoryData = hoveredCategory || activeCategory;
-  // Categories tailored for a Fashion/Clothing website
-  const categories = [
-    'new_arrivals',
-    'womens_fashion',
-    'mens_fashion',
-    'dresses_gowns',
-    'coord_sets',
-    'coats_blazers',
-    'bags_accessories',
-    'footwear',
-  ];
 
   return (
     <header>

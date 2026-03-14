@@ -4,7 +4,6 @@ import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
-import Pagination from '@components/common/Pagination';
 import { productService } from '../../services/api';
 import { categoryService } from '../../services/api';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
@@ -84,7 +83,6 @@ const ProductsPage = () => {
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
   // Infinite scroll
-  const loaderRef = useRef(null);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Memoize filters to prevent unnecessary API calls
@@ -301,7 +299,9 @@ const ProductsPage = () => {
         const response = await categoryService.getAll();
         const allCats = Array.isArray(response) ? response : response.data || [];
         const match = allCats.find((c) => c.slug === categoryParam);
-        if (match) setCategoryName(match.name);
+        if (match) {
+          setCategoryName(match.name);
+        }
       } catch (e) {
         // silent — slug used as fallback display
       }

@@ -12,7 +12,7 @@ import {
 import dealService from '@/services/api/dealService';
 import styles from '@assets/styles/buyer/DealDetailsPage.module.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -120,7 +120,6 @@ const DealDetailsPage = () => {
       alert('Please select all variant options before adding to cart.');
       return;
     }
-    console.log('🛒 Add to cart:', { dealId, quantity, selectedVariants });
     alert('Added to cart successfully!');
   };
 

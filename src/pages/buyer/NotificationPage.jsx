@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bell, ShoppingBag, Tag, Wallet, Smartphone, Zap, Megaphone } from 'lucide-react';
 import { notificationAPI } from '@services/api';
@@ -29,14 +29,12 @@ const NotificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [activeTab]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      if (!notificationAPI?.fetchNotifications) return;
+      if (!notificationAPI?.fetchNotifications) {
+        return;
+      }
 
       const params = { limit: 50 };
       if (activeTab !== 'all' && TYPE_MAP[activeTab]) {
@@ -59,11 +57,17 @@ const NotificationPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
-      if (notificationAPI?.markAsRead) await notificationAPI.markAsRead(id);
+      if (notificationAPI?.markAsRead) {
+        await notificationAPI.markAsRead(id);
+      }
       setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
     } catch (error) {
       console.error('Failed to mark notification as read', error);
@@ -72,7 +76,9 @@ const NotificationPage = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      if (notificationAPI?.markAllAsRead) await notificationAPI.markAllAsRead();
+      if (notificationAPI?.markAllAsRead) {
+        await notificationAPI.markAllAsRead();
+      }
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (error) {
       console.error('Failed to mark all notifications as read', error);
@@ -80,7 +86,9 @@ const NotificationPage = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    if (!notification.isRead) markAsRead(notification._id);
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
 
     const shopId = notification.relatedData?.shopId;
     const orderId = notification.relatedData?.orderId;

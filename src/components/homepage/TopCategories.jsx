@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { categoryService } from '../../services/api';
 import { PUBLIC_ROUTES } from '../../constants/routes';
 
@@ -246,5 +247,17 @@ const CategoryCard = ({ cat, index }) => (
     </motion.div>
   </Link>
 );
+
+CategoryCard.propTypes = {
+  cat: PropTypes.shape({
+    _id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    slug: PropTypes.string,
+    image: PropTypes.string,
+    imageUrl: PropTypes.string,
+    name: PropTypes.string,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+};
 
 export default TopCategories;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -48,11 +48,7 @@ const CreateReturnRequestPage = () => {
     { value: 'other', label: 'Lý do khác' },
   ];
 
-  useEffect(() => {
-    fetchOrderAndEligibility();
-  }, [orderId]);
-
-  const fetchOrderAndEligibility = async () => {
+  const fetchOrderAndEligibility = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -79,7 +75,11 @@ const CreateReturnRequestPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    fetchOrderAndEligibility();
+  }, [fetchOrderAndEligibility]);
 
   const handleItemSelect = (itemId, selected) => {
     setSelectedItems((prev) =>
@@ -290,7 +290,7 @@ const CreateReturnRequestPage = () => {
         <Card className="mb-4">
           <Card.Body>
             <h5 className="mb-3">Chọn Sản Phẩm Đổi Trả</h5>
-            {order?.items?.map((item, index) => {
+            {order?.items?.map((item) => {
               const selectedItem = selectedItems.find((si) => si.orderItemId === item._id);
               return (
                 <div key={item._id} className="border rounded p-3 mb-3">

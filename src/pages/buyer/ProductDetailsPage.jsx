@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -35,13 +35,6 @@ const getShippingMethods = (t) => [
     icon: 'bi-shop',
   },
 ];
-
-const isInStock = (product, activeModel) => {
-  if (activeModel && activeModel.stock !== undefined) {
-    return activeModel.stock > 0;
-  }
-  return product && product.stock > 0;
-};
 
 const getPriceRange = (product) => {
   if (!product || !product.models || product.models.length === 0) {
@@ -89,10 +82,8 @@ const ProductDetailsPage = () => {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]); // [tier0_index, tier1_index]
-  const [hoveredTierIndex, setHoveredTierIndex] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
-  const [showSizeChart, setShowSizeChart] = useState(false);
 
   const [product, setProduct] = useState(null);
   const [flashSale, setFlashSale] = useState(null);
@@ -137,13 +128,11 @@ const ProductDetailsPage = () => {
             });
 
             if (flashSale) {
-              console.log('✅ Flash sale found for product:', flashSale);
               return flashSale;
             }
 
             return null;
           } catch (err) {
-            console.error('Error fetching flash sales:', err);
             return null;
           }
         };
@@ -163,12 +152,9 @@ const ProductDetailsPage = () => {
         const productData = productResponse.data?.data || productResponse.data || productResponse;
 
         // Fetch flash sale data by matching product ID
-        console.log('🔍 Product ID:', productData?._id);
         const flashSaleData = await fetchFlashSale(productData?._id);
         if (flashSaleData) {
           setFlashSale(flashSaleData);
-        } else {
-          console.log('⚠️ No active flash sale found for this product');
         }
 
         if (!productData || !productData._id) {
@@ -181,9 +167,6 @@ const ProductDetailsPage = () => {
         const tiers = productData.tiers || [];
 
         // Find default active model (first one with stock, or just first one)
-        const defaultModel =
-          productData.models?.find((m) => m.stock > 0) || productData.models?.[0] || {};
-
         // Initial selection: if tiers exist, select 0,0... or null if user must select
         // Usually better to select the first valid option or nothing.
         // Let's default to [0, 0] if tiers exist so user sees a price immediately.
@@ -246,7 +229,6 @@ const ProductDetailsPage = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.error('Error fetching product:', err);
           setError(err.response?.data?.message || 'Failed to load product');
         }
       } finally {
@@ -295,64 +277,7 @@ const ProductDetailsPage = () => {
   }, [flashSale]);
 
   // Check if product is in wishlists
-  useEffect(() => {
-    const checkWishlistStatus = async () => {
-      if (user && product?._id) {
-        try {
-          const variant = getSelectedWishlistVariant();
-          const response = await wishlistService.checkInWishlists(product._id, variant);
-          const isInFav = response.isInWishlists ?? response.data?.isInWishlists ?? false;
-          setIsWishlist(isInFav);
-        } catch (error) {
-          console.error('Error checking wishlist status:', error);
-        }
-      } else {
-        setIsWishlist(false);
-      }
-    };
-    checkWishlistStatus();
-  }, [user, product?._id, activeModel?._id, selectedTierIndex]);
-
-  // Check if an option should be disabled based on *other* current selections
-  const isOptionDisabled = (tierLevel, optionIndex) => {
-    if (!product || !product.models) {
-      return false;
-    }
-
-    // Construct target criteria to check availability
-    const targetIndices = [...selectedTierIndex];
-    targetIndices[tierLevel] = optionIndex;
-
-    const matchingModel = findModel(product, targetIndices);
-
-    // Disable if no matching model or stock is 0
-    if (!matchingModel) {
-      return true;
-    }
-    return matchingModel.stock <= 0;
-  };
-
-  const handleTierChange = (tierLevel, optionIndex) => {
-    if (isOptionDisabled(tierLevel, optionIndex)) {
-      return;
-    }
-
-    const newIndex = [...selectedTierIndex];
-    newIndex[tierLevel] = optionIndex;
-    setSelectedTierIndex(newIndex);
-
-    // Update Image if this tier has images (color tier)
-    const tier = product.tier_variations?.[tierLevel];
-    if (tier?.images && tier.images.length > optionIndex) {
-      setSelectedImage(optionIndex);
-    }
-
-    // Update Active Model
-    const matchingModel = findModel(product, newIndex);
-    setActiveModel(matchingModel); // Can be null if combination doesn't exist
-  };
-
-  const getSelectedWishlistVariant = () => {
+  const getSelectedWishlistVariant = useCallback(() => {
     if (!product) {
       return {};
     }
@@ -391,6 +316,63 @@ const ProductDetailsPage = () => {
       color,
       size,
     };
+  }, [activeModel?._id, product, selectedTierIndex]);
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (user && product?._id) {
+        try {
+          const variant = getSelectedWishlistVariant();
+          const response = await wishlistService.checkInWishlists(product._id, variant);
+          const isInFav = response.isInWishlists ?? response.data?.isInWishlists ?? false;
+          setIsWishlist(isInFav);
+        } catch (error) {
+          setIsWishlist(false);
+        }
+      } else {
+        setIsWishlist(false);
+      }
+    };
+    checkWishlistStatus();
+  }, [getSelectedWishlistVariant, product?._id, user]);
+
+  // Check if an option should be disabled based on *other* current selections
+  const isOptionDisabled = (tierLevel, optionIndex) => {
+    if (!product || !product.models) {
+      return false;
+    }
+
+    // Construct target criteria to check availability
+    const targetIndices = [...selectedTierIndex];
+    targetIndices[tierLevel] = optionIndex;
+
+    const matchingModel = findModel(product, targetIndices);
+
+    // Disable if no matching model or stock is 0
+    if (!matchingModel) {
+      return true;
+    }
+    return matchingModel.stock <= 0;
+  };
+
+  const handleTierChange = (tierLevel, optionIndex) => {
+    if (isOptionDisabled(tierLevel, optionIndex)) {
+      return;
+    }
+
+    const newIndex = [...selectedTierIndex];
+    newIndex[tierLevel] = optionIndex;
+    setSelectedTierIndex(newIndex);
+
+    // Update Image if this tier has images (color tier)
+    const tier = product.tier_variations?.[tierLevel];
+    if (tier?.images && tier.images.length > optionIndex) {
+      setSelectedImage(optionIndex);
+    }
+
+    // Update Active Model
+    const matchingModel = findModel(product, newIndex);
+    setActiveModel(matchingModel); // Can be null if combination doesn't exist
   };
 
   const handleQuantityChange = (delta) => {
@@ -489,7 +471,6 @@ const ProductDetailsPage = () => {
 
       toast.success(t('product_details.toast_add_cart_success'));
     } catch (err) {
-      console.error('Add to cart error:', err);
       toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
     } finally {
       setAddingToCart(false);
@@ -539,7 +520,6 @@ const ProductDetailsPage = () => {
         toast.success(t('product_details.toast_wishlist_add'));
       }
     } catch (error) {
-      console.error('Error toggling wishlist:', error);
       toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
     } finally {
       setWishlistLoading(false);
@@ -690,11 +670,9 @@ const ProductDetailsPage = () => {
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.ratingDivider}>|</span>
             <span className={styles.reviewCount}>
-              // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
+              ({product.reviewCount || 0} {t('product_details.reviews')})
             </span>
-            //{' '}
             <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
-              // {t('product_details.stat_sold')} {product.sold || 0}
               {product.reviewCount
                 ? product.reviewCount >= 1000
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`

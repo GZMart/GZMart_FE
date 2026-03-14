@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
 import { toast } from 'react-toastify';
@@ -15,11 +15,7 @@ const MyReturnsPage = () => {
   const [returns, setReturns] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
 
-  useEffect(() => {
-    fetchReturns();
-  }, [activeTab]);
-
-  const fetchReturns = async () => {
+  const fetchReturns = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -36,7 +32,11 @@ const MyReturnsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchReturns();
+  }, [fetchReturns]);
 
   const getStatusBadge = (status) => {
     const statusMap = {
