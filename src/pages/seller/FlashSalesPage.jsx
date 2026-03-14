@@ -757,7 +757,8 @@ const FlashSalesPage = () => {
       }
 
       // Allow current time or future time (with 1 minute tolerance)
-      if (campaignInfo.startTime.isBefore(dayjs().subtract(1, 'minute'))) {
+      // Skip this check in edit mode — existing flash sales have a past start time by design
+      if (!selectedFlashSale && campaignInfo.startTime.isBefore(dayjs().subtract(1, 'minute'))) {
         message.error('Start time cannot be in the past');
         setLoading(false);
         return;

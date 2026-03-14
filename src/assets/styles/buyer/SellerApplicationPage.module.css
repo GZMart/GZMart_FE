@@ -3,7 +3,6 @@
 .splitLayout {
   display: flex;
   min-height: 100vh;
-  font-family: 'Montserrat', sans-serif;
   background-color: #f8fafc;
 }
 
@@ -75,14 +74,12 @@
 }
 
 .brandName {
-  font-family: 'Montserrat', sans-serif;
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .heroTitle {
-  font-family: 'Cormorant', serif;
   font-size: 56px;
   font-weight: 700;
   line-height: 1.1;
@@ -210,7 +207,6 @@
 }
 
 .sectionTitle {
-  font-family: 'Cormorant', serif;
   font-size: 36px;
   font-weight: 700;
   color: #0f172a;
