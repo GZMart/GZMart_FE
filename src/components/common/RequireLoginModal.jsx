@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styles from '../../assets/styles/buyer/RequireLoginModal.module.css';
 
 const RequireLoginModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   if (!isOpen) {
     return null;
@@ -11,18 +13,16 @@ const RequireLoginModal = ({ isOpen, onClose }) => {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h5 className={styles.modalTitle}>Login Required</h5>
-          <button type="button" className={styles.modalClose} onClick={onClose}>
-            ×
-          </button>
+        <div className={styles.iconContainer}>
+          <i className="bi bi-heart" style={{ fontSize: 28, color: '#f5a623' }}></i>
         </div>
         <div className={styles.modalBody}>
-          <p>Please log in to continue with this action.</p>
+          <h5 className={styles.modalTitle}>{t('require_login.title')}</h5>
+          <p className={styles.modalDesc}>{t('require_login.description')}</p>
         </div>
         <div className={styles.modalFooter}>
           <button type="button" className={styles.modalBtnSecondary} onClick={onClose}>
-            Cancel
+            {t('require_login.cancel')}
           </button>
           <button
             type="button"
@@ -32,7 +32,7 @@ const RequireLoginModal = ({ isOpen, onClose }) => {
               navigate('/login');
             }}
           >
-            Go to Login
+            {t('require_login.go_to_login')}
           </button>
         </div>
       </div>
