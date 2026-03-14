@@ -317,9 +317,16 @@
 }
 
 .avatarSection {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.avatarImageWrap {
   position: relative;
-  display: inline-block;
+  width: 100px;
+  height: 100px;
 }
 
 .avatar {
@@ -374,25 +381,91 @@
 
 .cameraButton {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
-  background: var(--color-primary);
-  color: white;
-  width: 36px;
-  height: 36px;
+  bottom: 2px;
+  right: 2px;
+  background: #ffffff;
+  color: #111827;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 3px solid white;
+  border: 1px solid #d1d5db;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  padding: 0;
 }
 
 .cameraButton:hover {
-  background: #dc2626;
+  background: #f3f4f6;
   transform: scale(1.1);
+}
+
+.avatarActionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.saveAvatarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.2rem 0.6rem;
+  min-width: 68px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: white;
+  background: #16a34a;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.saveAvatarBtn:hover {
+  background: #15803d;
+}
+
+.saveAvatarBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.cancelAvatarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.2rem 0.6rem;
+  min-width: 72px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.cancelAvatarBtn:hover {
+  background: #e5e7eb;
+}
+
+.cancelAvatarBtn:disabled {
+  color: #9ca3af;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
 }
 
 /* Navigation List */

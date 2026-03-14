@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { categoryService } from '../../services/api';
 import { PUBLIC_ROUTES } from '../../constants/routes';
 
@@ -78,13 +79,13 @@ const TopCategories = () => {
       <div className="container">
         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-2 mb-3 mb-md-0">
-            <h3 className="fw-bold text-dark m-0">SHOP FROM</h3>
-            <h3 className="fw-bold m-0" style={{ color: 'var(--color-primary)' }}>
-              TOP CATEGORIES
+            <h3 className="fw-bold text-dark m-0">TOP</h3>
+            <h3 className="fw-bold m-0" style={{ color: '#FFC107' }}>
+              CATEGORIES
             </h3>
           </div>
 
-          <Link to={PUBLIC_ROUTES.CATEGORIES} style={{ textDecoration: 'none' }}>
+          <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
             <motion.button
               whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
               whileTap={{ scale: 0.95 }}
@@ -205,7 +206,7 @@ const TopCategories = () => {
 // Component CategoryCard để tránh code lặp
 const CategoryCard = ({ cat, index }) => (
   <Link
-    to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat._id || cat.id}`}
+    to={`${PUBLIC_ROUTES.PRODUCTS}?category=${cat.slug || cat._id || cat.id}`}
     style={{ textDecoration: 'none' }}
   >
     <motion.div
@@ -246,5 +247,17 @@ const CategoryCard = ({ cat, index }) => (
     </motion.div>
   </Link>
 );
+
+CategoryCard.propTypes = {
+  cat: PropTypes.shape({
+    _id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    slug: PropTypes.string,
+    image: PropTypes.string,
+    imageUrl: PropTypes.string,
+    name: PropTypes.string,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+};
 
 export default TopCategories;

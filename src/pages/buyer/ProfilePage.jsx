@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Spinner, Button } from 'react-bootstrap';
+import { Spinner } from 'react-bootstrap';
 import {
   Bell,
   Coins,
@@ -14,26 +14,18 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  FileText,
   ArrowLeft,
   Camera,
   X,
+  Check,
   MessageCircle,
   Store,
   Search,
 } from 'lucide-react';
 // import { Container } from 'react-bootstrap'; // Unused in original but kept if needed
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
-import {
-  selectUser,
-  selectIsAuthenticated,
-  logoutUser,
-  updateUserProfile,
-} from '@store/slices/authSlice';
+import { selectUser, selectIsAuthenticated, updateUserProfile } from '@store/slices/authSlice';
 import { orderService } from '@services/api/orderService';
-import { paymentService } from '@services/api/paymentService';
-import { reviewService } from '@services/api';
 import { formatCurrency } from '@utils/formatters';
 import styles from '@assets/styles/ProfilePage/ProfilePage.module.css';
 import addressService from '@services/api/addressService';
@@ -65,7 +57,6 @@ const ProfilePage = () => {
   // State for tab switching - get from URL or default to 'account'
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'account');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [detailsTab, setDetailsTab] = useState('items');
   const [showMyAccountDropdown, setShowMyAccountDropdown] = useState(true); // For My Account dropdown
 
   // Order API State
@@ -75,7 +66,6 @@ const ProfilePage = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(null);
 
   // Order Filter & Search State
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -84,7 +74,7 @@ const ProfilePage = () => {
   // Review Modal State
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(null);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitting] = useState(false);
 
   // Coin State
   const [coinBalance, setCoinBalance] = useState(null);
@@ -107,12 +97,13 @@ const ProfilePage = () => {
 
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const fileInputRef = useRef(null);
   const socketRef = useRef(null);
 
   // Address State
   const [addresses, setAddresses] = useState([]);
-  const [addressLoading, setAddressLoading] = useState(false);
+  const [, setAddressLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
@@ -222,26 +213,25 @@ const ProfilePage = () => {
   }, [user]);
 
   // Fetch orders when Orders tab is active
+  // Sync active tab with URL changes (browser navigation/direct links)
   useEffect(() => {
-    // Only fetch if user is authenticated
-    if (!isAuthenticated || !user) {
-      return;
+    const tabFromUrl = searchParams.get('tab') || 'account';
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
     }
 
-    if (activeTab === 'orders') {
-      fetchOrders(pagination.page);
+    if (tabFromUrl !== 'orders' && selectedOrder) {
+      setSelectedOrder(null);
+      setSelectedOrderDetails(null);
     }
-    if (activeTab === 'address') {
-      fetchAddresses();
-    }
-    if (activeTab === 'coin') {
-      fetchCoinData();
-    }
-  }, [activeTab, isAuthenticated, user]);
+  }, [searchParams, activeTab, selectedOrder]);
 
   // Socket.io connection for real-time order updates
+  const socketOrders = useMemo(() => orders.map((o) => ({ _id: o._id })), [orders]);
+  const socketOrderIds = useMemo(() => orders.map((o) => o._id).join(','), [orders]);
+
   useEffect(() => {
-    if (!isAuthenticated || !user || orders.length === 0) {
+    if (!isAuthenticated || !user || socketOrders.length === 0) {
       return;
     }
 
@@ -263,7 +253,7 @@ const ProfilePage = () => {
     });
 
     // Listen for order status updates for all user's orders
-    orders.forEach((order) => {
+    socketOrders.forEach((order) => {
       const statusEventName = `order:status:${order._id}`;
       const arrivedEventName = `order:arrived:${order._id}`;
 
@@ -284,8 +274,7 @@ const ProfilePage = () => {
         });
 
         // Show toast notification
-        const orderNum =
-          orders.find((o) => o._id === data.orderId)?.orderNumber || data.orderId.slice(-6);
+        const orderNum = data.orderNumber || data.orderId.slice(-6);
         toast.info(`Order #${orderNum} status: ${data.status}`);
       });
 
@@ -305,8 +294,7 @@ const ProfilePage = () => {
         });
 
         // Show toast notification
-        const orderNum =
-          orders.find((o) => o._id === data.orderId)?.orderNumber || data.orderId.slice(-6);
+        const orderNum = data.orderNumber || data.orderId.slice(-6);
         toast.success(`Order #${orderNum} has been delivered! 🎉`);
       });
     });
@@ -317,18 +305,22 @@ const ProfilePage = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [isAuthenticated, user, orders.length]); // Only reconnect when orders count changes
+  }, [isAuthenticated, socketOrderIds, socketOrders, user]);
 
   // Update URL when tab changes
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearchParams({ tab });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', tab);
+    nextParams.delete('orderId');
+    setSearchParams(nextParams);
     if (tab === 'orders') {
       setSelectedOrder(null);
+      setSelectedOrderDetails(null);
     }
   };
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = useCallback(async () => {
     setAddressLoading(true);
     try {
       const response = await addressService.getAddresses();
@@ -340,9 +332,9 @@ const ProfilePage = () => {
     } finally {
       setAddressLoading(false);
     }
-  };
+  }, [setAddressLoading]);
 
-  const fetchCoinData = async () => {
+  const fetchCoinData = useCallback(async () => {
     setCoinLoading(true);
     try {
       // Fetch balance
@@ -369,7 +361,7 @@ const ProfilePage = () => {
     } finally {
       setCoinLoading(false);
     }
-  };
+  }, [coinPagination.limit, coinPagination.page]);
 
   const resetAddressForm = () => {
     setAddressForm({
@@ -530,20 +522,48 @@ const ProfilePage = () => {
       .filter((part) => part && part.trim() !== '')
       .join(', ');
 
-  const fetchOrders = async (page) => {
-    setOrderLoading(true);
-    try {
-      const response = await orderService.getMyOrders(page, pagination.limit);
-      if (response.success) {
-        setOrders(response.data);
-        setPagination(response.pagination);
+  const fetchOrders = useCallback(
+    async (page) => {
+      setOrderLoading(true);
+      try {
+        const response = await orderService.getMyOrders(page, pagination.limit);
+        if (response.success) {
+          setOrders(response.data);
+          setPagination(response.pagination);
+        }
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+      } finally {
+        setOrderLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setOrderLoading(false);
+    },
+    [pagination.limit]
+  );
+
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    if (!isAuthenticated || !user) {
+      return;
     }
-  };
+
+    if (activeTab === 'orders') {
+      fetchOrders(pagination.page);
+    }
+    if (activeTab === 'address') {
+      fetchAddresses();
+    }
+    if (activeTab === 'coin') {
+      fetchCoinData();
+    }
+  }, [
+    activeTab,
+    fetchAddresses,
+    fetchCoinData,
+    fetchOrders,
+    isAuthenticated,
+    pagination.page,
+    user,
+  ]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
@@ -552,35 +572,65 @@ const ProfilePage = () => {
     }
   };
 
-  const handleOrderClick = async (orderId) => {
-    setSelectedOrder({ id: orderId }); // Using object wrapper to match original prop structure if needed, or just ID
-    setDetailsLoading(true);
-    try {
-      const response = await orderService.getOrderById(orderId);
-      if (response.success) {
-        setSelectedOrderDetails(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch order details:', error);
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
+  const handleOrderClick = useCallback(
+    async (orderId, options = {}) => {
+      const { syncUrl = true } = options;
 
-  const handleViewInvoice = async (e, orderId) => {
-    // e.stopPropagation(); // Not needed if button is outside clickable row area or handled correctly
-    try {
-      const response = await orderService.getInvoice(orderId);
-      if (response.success) {
-        const newWindow = window.open('', '_blank');
-        newWindow.document.write(response.data);
-        newWindow.document.close();
+      if (syncUrl) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('tab', 'orders');
+        nextParams.set('orderId', orderId);
+        setSearchParams(nextParams);
       }
-    } catch (error) {
-      console.error('Failed to get invoice:', error);
-      alert(t('profile_page.orders.error_invoice_alert'));
+
+      setSelectedOrder({ id: orderId }); // Using object wrapper to match original prop structure if needed, or just ID
+      setDetailsLoading(true);
+      try {
+        const response = await orderService.getOrderById(orderId);
+        if (response.success) {
+          setSelectedOrderDetails(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch order details:', error);
+        setSelectedOrder(null);
+        setSelectedOrderDetails(null);
+
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('tab', 'orders');
+        nextParams.delete('orderId');
+        setSearchParams(nextParams);
+      } finally {
+        setDetailsLoading(false);
+      }
+    },
+    [searchParams, setSearchParams]
+  );
+
+  // Open order details directly from URL: /buyer/profile?tab=orders&orderId=<id>
+  useEffect(() => {
+    if (!isAuthenticated || !user || activeTab !== 'orders') {
+      return;
     }
-  };
+
+    const orderIdFromUrl = searchParams.get('orderId');
+    if (!orderIdFromUrl) {
+      return;
+    }
+
+    if (selectedOrder?.id === orderIdFromUrl || selectedOrderDetails?._id === orderIdFromUrl) {
+      return;
+    }
+
+    handleOrderClick(orderIdFromUrl, { syncUrl: false });
+  }, [
+    activeTab,
+    handleOrderClick,
+    isAuthenticated,
+    searchParams,
+    selectedOrder,
+    selectedOrderDetails,
+    user,
+  ]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -599,6 +649,40 @@ const ProfilePage = () => {
         setAvatarPreview(reader.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarFile || isSavingAvatar) {
+      return;
+    }
+    try {
+      setIsSavingAvatar(true);
+      const submitData = new FormData();
+      submitData.append('avatar', avatarFile);
+      const profileAction = await dispatch(updateUserProfile({ formData: submitData }));
+      if (updateUserProfile.fulfilled.match(profileAction)) {
+        setAvatarFile(null);
+        toast.success(t('profile_page.success_update'));
+      } else {
+        toast.error(profileAction.payload || t('profile_page.error_update'));
+      }
+    } catch (error) {
+      console.error('Update avatar error:', error);
+      toast.error(t('profile_page.error_general'));
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
+
+  const handleCancelAvatar = () => {
+    if (isSavingAvatar) {
+      return;
+    }
+    setAvatarFile(null);
+    setAvatarPreview(user?.avatar || user?.profileImage || null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -629,35 +713,13 @@ const ProfilePage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await dispatch(logoutUser()).unwrap();
-      navigate(PUBLIC_ROUTES.HOME);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handlePayNow = async (orderId) => {
-    setPaymentProcessing(orderId);
-    try {
-      const response = await paymentService.createPaymentLink(orderId);
-      if (response.success && response.data.checkoutUrl) {
-        window.location.href = response.data.checkoutUrl;
-      }
-    } catch (err) {
-      alert(err.message || t('profile_page.orders.error_payment'));
-      setPaymentProcessing(null);
-    }
-  };
-
   const handleOpenReviewModal = (order) => {
     // Just pass orderId - ReviewModal will fetch order details to get product info
     setReviewingOrder(order);
     setShowReviewModal(true);
   };
 
-  const handleReviewSubmit = async (reviewData) => {
+  const handleReviewSubmit = async (_reviewData) => {
     // Note: This function is called from ReviewModal component
     // The ReviewModal component handles the actual API call using reviewService
     // This function just closes the modal after successful submission
@@ -696,7 +758,7 @@ const ProfilePage = () => {
       <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#6B7280' }}>
         <Bell size={64} color="#D1D5DB" strokeWidth={1.5} style={{ margin: '0 auto 1rem' }} />
         <h4 style={{ marginBottom: '0.5rem', color: '#374151' }}>No Notifications</h4>
-        <p>You don't have any notifications yet.</p>
+        <p>You don&apos;t have any notifications yet.</p>
       </div>
     </div>
   );
@@ -1216,6 +1278,14 @@ const ProfilePage = () => {
                       </div>
                       <div className={styles.orderCardActions}>
                         <button className={styles.orderCardActionSecondary}>Reorder</button>
+                        {order.status === 'completed' && (
+                          <button
+                            className={styles.orderCardActionSecondary}
+                            onClick={() => handleOpenReviewModal(order)}
+                          >
+                            Review
+                          </button>
+                        )}
                         <button className={styles.orderCardActionSecondary}>Contact Seller</button>
                       </div>
                     </div>
@@ -1261,7 +1331,14 @@ const ProfilePage = () => {
                 <div className={styles.orderDetailsHeader}>
                   <button
                     className={styles.orderDetailsBackBtn}
-                    onClick={() => setSelectedOrder(null)}
+                    onClick={() => {
+                      setSelectedOrder(null);
+                      setSelectedOrderDetails(null);
+                      const nextParams = new URLSearchParams(searchParams);
+                      nextParams.set('tab', 'orders');
+                      nextParams.delete('orderId');
+                      setSearchParams(nextParams);
+                    }}
                   >
                     <ArrowLeft size={18} strokeWidth={2} />
                     <span>BACK</span>
@@ -1412,6 +1489,14 @@ const ProfilePage = () => {
                   >
                     Reorder
                   </button>
+                  {selectedOrderDetails.status === 'completed' && (
+                    <button
+                      className={styles.orderDetailsActionSecondary}
+                      onClick={() => handleOpenReviewModal(selectedOrderDetails)}
+                    >
+                      Add Rating
+                    </button>
+                  )}
                   <button className={styles.orderDetailsActionSecondary}>Contact Seller</button>
                   {(selectedOrderDetails.status === 'delivered' ||
                     selectedOrderDetails.status === 'completed') && (
@@ -1442,7 +1527,45 @@ const ProfilePage = () => {
             <div className={styles.sidebarNav}>
               {/* Avatar and User Info */}
               <div className={styles.avatarHeader}>
-                <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
+                <div className={styles.avatarSection}>
+                  <div className={styles.avatarImageWrap}>
+                    <img src={userAvatar} alt={userDisplayName} className={styles.avatar} />
+                    <button
+                      className={styles.cameraButton}
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Change avatar"
+                    >
+                      <Camera size={12} strokeWidth={2} />
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageChange}
+                      style={{ display: 'none' }}
+                      accept="image/*"
+                    />
+                  </div>
+                  {avatarFile && (
+                    <div className={styles.avatarActionRow}>
+                      <button
+                        className={styles.saveAvatarBtn}
+                        onClick={handleSaveAvatar}
+                        disabled={isSavingAvatar}
+                      >
+                        <Check size={11} strokeWidth={3} />
+                        {isSavingAvatar ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        className={styles.cancelAvatarBtn}
+                        onClick={handleCancelAvatar}
+                        disabled={isSavingAvatar}
+                      >
+                        <X size={11} strokeWidth={3} />
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className={styles.userInfo}>
                   <h3 className={styles.userName}>{userDisplayName}</h3>
                   <button
@@ -1452,13 +1575,6 @@ const ProfilePage = () => {
                     <Edit2 size={14} strokeWidth={2} />
                     Edit Profile
                   </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                    accept="image/*"
-                  />
                 </div>
               </div>
 
@@ -1829,6 +1945,21 @@ const ProfilePage = () => {
         orderNumber={reviewingOrder?.orderNumber}
         isSubmitting={reviewSubmitting}
         orderId={reviewingOrder?._id}
+      />
+
+      {/* Return/Refund Request Modal */}
+      <ReturnRequestModal
+        show={showReturnModal}
+        order={selectedOrderDetails}
+        onHide={() => setShowReturnModal(false)}
+        onSuccess={(_returnRequest) => {
+          toast.success('Return request submitted successfully!');
+          setShowReturnModal(false);
+          // Optionally refresh order details
+          if (selectedOrderDetails?._id) {
+            handleOrderClick(selectedOrderDetails._id, { syncUrl: false });
+          }
+        }}
       />
     </div>
   );

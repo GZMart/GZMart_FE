@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -14,7 +14,7 @@ import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/Pro
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
-import * as favouriteService from '../../services/api/favouriteService';
+import * as wishlistService from '../../services/api/wishlistService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
 
@@ -97,8 +97,8 @@ const ProductDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [isFavourite, setIsFavourite] = useState(false);
-  const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [isWishlist, setIsWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const user = useSelector((state) => state.auth.user);
@@ -167,7 +167,6 @@ const ProductDetailsPage = () => {
         // Map Backend 'tiers' to Frontend 'tier_variations'
         // Ensure tiers have 'name', 'options', 'images'
         const tiers = productData.tiers || [];
-
         // Initial selection: if tiers exist, select 0,0... or null if user must select
         // Usually better to select the first valid option or nothing.
         // Let's default to [0, 0] if tiers exist so user sees a price immediately.
@@ -230,7 +229,6 @@ const ProductDetailsPage = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.error('Error fetching product:', err);
           setError(err.response?.data?.message || 'Failed to load product');
         }
       } finally {
@@ -278,23 +276,65 @@ const ProductDetailsPage = () => {
     return () => clearInterval(interval);
   }, [flashSale]);
 
-  // Check if product is in favourites
+  // Check if product is in wishlists
+  const getSelectedWishlistVariant = useCallback(() => {
+    if (!product) {
+      return {};
+    }
+
+    let color = 'Default';
+    let size = 'Default';
+
+    if (product.tier_variations?.length > 0) {
+      product.tier_variations.forEach((tier, idx) => {
+        const selectedIdx = selectedTierIndex[idx];
+        if (selectedIdx === null || selectedIdx === undefined) {
+          return;
+        }
+
+        const selectedOption = tier.options?.[selectedIdx];
+        const tierNameLower = String(tier.name || '').toLowerCase();
+
+        if (
+          tierNameLower.includes('color') ||
+          tierNameLower.includes('màu') ||
+          tierNameLower.includes('mau')
+        ) {
+          color = selectedOption || 'Default';
+        } else if (
+          tierNameLower.includes('size') ||
+          tierNameLower.includes('kích') ||
+          tierNameLower.includes('kich')
+        ) {
+          size = selectedOption || 'Default';
+        }
+      });
+    }
+
+    return {
+      modelId: activeModel?._id,
+      color,
+      size,
+    };
+  }, [activeModel?._id, product, selectedTierIndex]);
+
   useEffect(() => {
-    const checkFavouriteStatus = async () => {
+    const checkWishlistStatus = async () => {
       if (user && product?._id) {
         try {
-          const response = await favouriteService.checkInFavourites(product._id);
-          const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
-          setIsFavourite(isInFav);
+          const variant = getSelectedWishlistVariant();
+          const response = await wishlistService.checkInWishlists(product._id, variant);
+          const isInFav = response.isInWishlists ?? response.data?.isInWishlists ?? false;
+          setIsWishlist(isInFav);
         } catch (error) {
-          console.error('Error checking favourite status:', error);
+          setIsWishlist(false);
         }
       } else {
-        setIsFavourite(false);
+        setIsWishlist(false);
       }
     };
-    checkFavouriteStatus();
-  }, [user, product?._id]);
+    checkWishlistStatus();
+  }, [getSelectedWishlistVariant, product?._id, user]);
 
   // Check if an option should be disabled based on *other* current selections
   const isOptionDisabled = (tierLevel, optionIndex) => {
@@ -431,7 +471,6 @@ const ProductDetailsPage = () => {
 
       toast.success(t('product_details.toast_add_cart_success'));
     } catch (err) {
-      console.error('Add to cart error:', err);
       toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
     } finally {
       setAddingToCart(false);
@@ -444,7 +483,7 @@ const ProductDetailsPage = () => {
       return;
     }
     handleAddToCart();
-    navigate('/cart');
+    navigate('/buyer/cart');
   };
 
   const formatSavedCount = (count) => {
@@ -457,33 +496,33 @@ const ProductDetailsPage = () => {
     return count;
   };
 
-  const handleToggleFavourite = async () => {
+  const handleToggleWishlist = async () => {
     if (!user) {
       setShowLoginModal(true);
       return;
     }
 
     try {
-      setFavouriteLoading(true);
-      if (isFavourite) {
-        await favouriteService.removeFromFavourites(product._id);
-        setIsFavourite(false);
+      setWishlistLoading(true);
+      const variant = getSelectedWishlistVariant();
+      if (isWishlist) {
+        await wishlistService.removeFromWishlists(product._id, variant);
+        setIsWishlist(false);
         setProduct((prev) => ({
           ...prev,
           wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1),
         }));
         toast.success(t('product_details.toast_wishlist_remove'));
       } else {
-        await favouriteService.addToFavourites(product._id);
-        setIsFavourite(true);
+        await wishlistService.addToWishlists(product._id, variant);
+        setIsWishlist(true);
         setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
         toast.success(t('product_details.toast_wishlist_add'));
       }
     } catch (error) {
-      console.error('Error toggling favourite:', error);
       toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
     } finally {
-      setFavouriteLoading(false);
+      setWishlistLoading(false);
     }
   };
 
@@ -595,17 +634,17 @@ const ProductDetailsPage = () => {
                 <i className="bi bi-twitter-x"></i>
               </button>
             </div>
-            <div className={styles.favouriteSpacer}>
+            <div className={styles.wishlistSpacer}>
               <button
-                className={`${styles.shareButton} ${!isFavourite ? styles.unfavourite : styles.isFavourite}`}
-                onClick={handleToggleFavourite}
-                disabled={favouriteLoading}
-                title={isFavourite ? 'Remove from saved' : 'Save this product'}
+                className={`${styles.shareButton} ${!isWishlist ? styles.unwishlist : styles.isWishlist}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
+                title={isWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
               >
                 <i className={`bi bi-heart`}></i>
               </button>
               <span className={styles.saveLabel}>
-                {isFavourite
+                {isWishlist
                   ? `Saved (${formatSavedCount(product.wishlistCount)})`
                   : `Save (${formatSavedCount(product.wishlistCount)})`}
               </span>
@@ -811,6 +850,23 @@ const ProductDetailsPage = () => {
               >
                 {t('product_details.btn_buy_now')}
               </button>
+              <button
+                className={`${styles.wishlistBtn} ${isWishlist ? styles.isWishlist : ''}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
+                title={
+                  isWishlist
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.toast_wishlist_add')
+                }
+              >
+                <i className={`bi ${isWishlist ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                {wishlistLoading
+                  ? t('product_details.loading')
+                  : isWishlist
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.favorite')}
+              </button>
             </div>
             {currentStock <= 0 && (
               <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
@@ -916,18 +972,18 @@ const ProductDetailsPage = () => {
                   className={styles.descriptionHtml}
                   dangerouslySetInnerHTML={{ __html: product.description }}
                 />
-              ) : (() => {
-                const paragraphs =
-                  product.descriptionText ||
-                  (product.description || '')
-                    .split(/\n+/)
-                    .filter(Boolean);
-                return paragraphs.length > 0 ? (
-                  paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
-                ) : (
-                  <p>{t('product_details.no_description')}</p>
-                );
-              })()}
+              ) : (
+                (() => {
+                  const paragraphs =
+                    product.descriptionText ||
+                    (product.description || '').split(/\n+/).filter(Boolean);
+                  return paragraphs.length > 0 ? (
+                    paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  ) : (
+                    <p>{t('product_details.no_description')}</p>
+                  );
+                })()
+              )}
 
               <div className={styles.features}>
                 <h4>{t('product_details.title_features')}</h4>

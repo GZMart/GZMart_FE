@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bell, ShoppingBag, Tag, Wallet, Smartphone, Zap, Megaphone } from 'lucide-react';
 import { notificationAPI } from '@services/api';
@@ -29,14 +29,12 @@ const NotificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [activeTab]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      if (!notificationAPI?.fetchNotifications) return;
+      if (!notificationAPI?.fetchNotifications) {
+        return;
+      }
 
       const params = { limit: 50 };
       if (activeTab !== 'all' && TYPE_MAP[activeTab]) {
@@ -49,7 +47,7 @@ const NotificationPage = () => {
         // Client-side filter as fallback
         if (activeTab !== 'all' && TYPE_MAP[activeTab]) {
           fetchedNotifs = fetchedNotifs.filter(
-            n => n.type === TYPE_MAP[activeTab] || (!n.type && TYPE_MAP[activeTab] === 'SYSTEM')
+            (n) => n.type === TYPE_MAP[activeTab] || (!n.type && TYPE_MAP[activeTab] === 'SYSTEM')
           );
         }
         setNotifications(fetchedNotifs);
@@ -59,12 +57,18 @@ const NotificationPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
-      if (notificationAPI?.markAsRead) await notificationAPI.markAsRead(id);
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      if (notificationAPI?.markAsRead) {
+        await notificationAPI.markAsRead(id);
+      }
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
     } catch (error) {
       console.error('Failed to mark notification as read', error);
     }
@@ -72,24 +76,29 @@ const NotificationPage = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      if (notificationAPI?.markAllAsRead) await notificationAPI.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      if (notificationAPI?.markAllAsRead) {
+        await notificationAPI.markAllAsRead();
+      }
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (error) {
       console.error('Failed to mark all notifications as read', error);
     }
   };
 
   const handleNotificationClick = (notification) => {
-    if (!notification.isRead) markAsRead(notification._id);
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
 
     const shopId = notification.relatedData?.shopId;
+    const orderId = notification.relatedData?.orderId;
 
     switch (notification.type) {
       case 'ORDER':
         navigate(
-          notification.relatedData?.orderId
-            ? `/buyer/orders/${notification.relatedData.orderId}`
-            : '/buyer/orders'
+          orderId
+            ? `/buyer/profile?tab=orders&orderId=${encodeURIComponent(orderId)}`
+            : '/buyer/profile?tab=orders'
         );
         break;
       case 'PROMOTION':
@@ -115,23 +124,35 @@ const NotificationPage = () => {
 
   const renderIcon = (type) => {
     switch (type) {
-      case 'ORDER': return <ShoppingBag size={24} className="text-white" />;
-      case 'PROMOTION': return <Tag size={24} className="text-white" />;
-      case 'VOUCHER': return <Tag size={24} className="text-white" />;
-      case 'FLASH_SALE': return <Zap size={24} className="text-white" />;
-      case 'ANNOUNCEMENT': return <Megaphone size={24} className="text-white" />;
-      default: return <Bell size={24} className="text-white" />;
+      case 'ORDER':
+        return <ShoppingBag size={24} className="text-white" />;
+      case 'PROMOTION':
+        return <Tag size={24} className="text-white" />;
+      case 'VOUCHER':
+        return <Tag size={24} className="text-white" />;
+      case 'FLASH_SALE':
+        return <Zap size={24} className="text-white" />;
+      case 'ANNOUNCEMENT':
+        return <Megaphone size={24} className="text-white" />;
+      default:
+        return <Bell size={24} className="text-white" />;
     }
   };
 
   const getIconBg = (type) => {
     switch (type) {
-      case 'ORDER': return 'bg-info';
-      case 'PROMOTION': return 'bg-primary';
-      case 'VOUCHER': return 'bg-success';
-      case 'FLASH_SALE': return 'bg-danger';
-      case 'ANNOUNCEMENT': return 'bg-secondary';
-      default: return 'bg-primary';
+      case 'ORDER':
+        return 'bg-info';
+      case 'PROMOTION':
+        return 'bg-primary';
+      case 'VOUCHER':
+        return 'bg-success';
+      case 'FLASH_SALE':
+        return 'bg-danger';
+      case 'ANNOUNCEMENT':
+        return 'bg-secondary';
+      default:
+        return 'bg-primary';
     }
   };
 
@@ -166,7 +187,6 @@ const NotificationPage = () => {
         {/* Main Content */}
         <div className="col-12 col-md-9 col-lg-10">
           <div className="bg-white rounded-2 shadow-sm border border-light overflow-hidden">
-
             {/* Header */}
             <div className="d-flex justify-content-end align-items-center p-3 border-bottom bg-light">
               <button
@@ -204,8 +224,8 @@ const NotificationPage = () => {
                       cursor: 'pointer',
                     }}
                     onClick={() => handleNotificationClick(notification)}
-                    onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(0.97)')}
-                    onMouseLeave={e => (e.currentTarget.style.filter = '')}
+                    onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(0.97)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.filter = '')}
                   >
                     {/* Icon / Image */}
                     <div className="flex-shrink-0" style={{ width: '72px', height: '72px' }}>
@@ -226,7 +246,10 @@ const NotificationPage = () => {
 
                     {/* Text content */}
                     <div className="flex-grow-1 ms-3" style={{ minWidth: 0 }}>
-                      <h6 className="mb-1" style={{ color: '#333', fontWeight: '500', fontSize: '1rem' }}>
+                      <h6
+                        className="mb-1"
+                        style={{ color: '#333', fontWeight: '500', fontSize: '1rem' }}
+                      >
                         {notification.title}
                       </h6>
                       <p
@@ -250,14 +273,16 @@ const NotificationPage = () => {
                     {/* Unread indicator dot */}
                     {!notification.isRead && (
                       <div className="flex-shrink-0 ms-3">
-                        <div className="rounded-circle bg-danger" style={{ width: '10px', height: '10px' }} />
+                        <div
+                          className="rounded-circle bg-danger"
+                          style={{ width: '10px', height: '10px' }}
+                        />
                       </div>
                     )}
                   </div>
                 ))
               )}
             </div>
-
           </div>
         </div>
       </div>

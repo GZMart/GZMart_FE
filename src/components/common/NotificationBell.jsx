@@ -121,13 +121,14 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
     }
 
     const shopId = notification.relatedData?.shopId;
+    const orderId = notification.relatedData?.orderId;
 
     switch (notification.type) {
       case 'ORDER':
         navigate(
-          notification.relatedData?.orderId
-            ? `/buyer/orders/${notification.relatedData.orderId}`
-            : '/buyer/orders'
+          orderId
+            ? `/buyer/profile?tab=orders&orderId=${encodeURIComponent(orderId)}`
+            : '/buyer/profile?tab=orders'
         );
         break;
       case 'PROMOTION':
@@ -146,149 +147,139 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-flex' }} ref={dropdownRef}>
-      <button
-        type="button"
-        className={triggerClassName}
+    <div className="position-relative d-inline-flex" ref={dropdownRef}>
+      <div
+        className={`d-flex align-items-center gap-1 cursor-pointer ${triggerClassName}`}
         onClick={handleToggleDropdown}
         aria-label={t('notifications.title')}
-        style={!triggerClassName ? {
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: '4px',
-          position: 'relative',
-        } : undefined}
+        style={
+          !triggerClassName
+            ? {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                position: 'relative',
+              }
+            : undefined
+        }
       >
-        <Bell size={16} />
-        {unreadCount > 0 && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '2px',
-              right: '2px',
-              minWidth: '16px',
-              height: '16px',
-              background: '#ef4444',
-              color: '#fff',
-              fontSize: '9px',
-              fontWeight: 700,
-              borderRadius: '999px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1.5px solid #fff',
-              padding: '0 3px',
-              lineHeight: 1,
-            }}
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
+        <div className="position-relative d-flex align-items-center justify-content-center">
+          <Bell size={14} />
+          {unreadCount > 0 && (
+            <span
+              className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style={{
+                fontSize: '0.45rem',
+                padding: '0.15rem 0.25rem',
+                transform: 'translate(-40%, -40%)',
+              }}
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </div>
+        <span>{t('notifications.title')}</span>
+      </div>
 
       {showDropdown && (
         <div
+          className="position-absolute bg-white border rounded shadow-lg text-start"
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
+            top: 'calc(100% + 10px)',
             right: 0,
             width: dropdownWidth,
             zIndex: 1050,
             cursor: 'default',
-            background: '#fff',
-            border: '1px solid #e8ecf0',
-            borderRadius: '10px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{
-            padding: '12px 16px 10px',
-            borderBottom: '1px solid #f1f3f5',
-            background: '#fdfdfd',
-          }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', letterSpacing: '0.01em' }}>
+          <div className="px-3 py-2 text-dark" style={{ backgroundColor: '#fdfdfd' }}>
+            <span className="fw-bold" style={{ fontSize: '1rem' }}>
               {t('notifications.recent')}
             </span>
           </div>
 
-          <div style={{ overflowY: 'auto', maxHeight: '420px' }}>
+          <div className="overflow-auto text-dark" style={{ maxHeight: '450px' }}>
             {loading && notifications.length === 0 ? (
-              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+              <div className="p-4 text-center text-muted" style={{ fontSize: '0.9rem' }}>
                 {t('notifications.loading')}
               </div>
             ) : notifications.length === 0 ? (
-              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+              <div className="p-4 text-center text-muted" style={{ fontSize: '0.9rem' }}>
                 {t('notifications.empty')}
               </div>
             ) : (
               notifications.map((notification) => (
                 <div
                   key={notification._id}
+                  className="d-flex align-items-start p-2 border-bottom position-relative"
                   style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderBottom: '1px solid #f1f3f5',
-                    backgroundColor: !notification.isRead ? '#fffbf0' : '#fff',
+                    backgroundColor: !notification.isRead ? '#fff0ec' : '#fff',
                     cursor: 'pointer',
-                    transition: 'background-color 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = !notification.isRead ? '#fff3cc' : '#f8fafc';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = !notification.isRead ? '#fffbf0' : '#fff';
+                    transition: 'background-color 0.2s',
                   }}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <div style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden' }}>
+                  <div className="flex-shrink-0" style={{ width: '50px', height: '50px' }}>
                     {notification.relatedData?.imageUrl ? (
                       <img
                         src={notification.relatedData.imageUrl}
                         alt="Related"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        className="w-100 h-100 object-fit-cover rounded"
                       />
                     ) : (
-                      <div style={{
-                        width: '100%', height: '100%', borderRadius: '8px',
-                        background: '#f1f5f9', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', color: '#94a3b8',
-                      }}>
-                        <Bell size={16} />
+                      <div className="w-100 h-100 rounded d-flex align-items-center justify-content-center bg-light text-secondary">
+                        <Bell size={20} />
                       </div>
                     )}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: '13px', color: '#1e293b', marginBottom: '3px', lineHeight: '1.4',
-                      display: '-webkit-box', WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                    }}>
+                  <div className="flex-grow-1 ms-2" style={{ minWidth: 0 }}>
+                    <div
+                      className="text-dark mb-1"
+                      style={{
+                        fontSize: '0.9rem',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
                       {notification.message}
                     </div>
-                    {notification.relatedData?.images && notification.relatedData.images.length > 0 && (
-                      <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', marginTop: '4px' }}>
-                        {notification.relatedData.images.slice(0, 3).map((img, idx) => (
-                          <img key={idx} src={img} alt="Promo" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '4px' }} />
-                        ))}
-                      </div>
-                    )}
-                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                    {notification.relatedData?.images &&
+                      notification.relatedData.images.length > 0 && (
+                        <div className="d-flex gap-1 mb-1 mt-1">
+                          {notification.relatedData.images.slice(0, 3).map((img, idx) => (
+                            <img
+                              key={idx}
+                              src={img}
+                              alt="Promo"
+                              style={{
+                                width: '60px',
+                                height: '60px',
+                                objectFit: 'cover',
+                                borderRadius: '4px',
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    <small className="text-secondary" style={{ fontSize: '0.75rem' }}>
                       {new Date(notification.createdAt).toLocaleString()}
-                    </span>
+                    </small>
                   </div>
 
                   {!notification.isRead && (
-                    <div style={{ display: 'flex', alignItems: 'center', paddingTop: '2px', flexShrink: 0 }}>
-                      <div style={{ width: '7px', height: '7px', background: '#1a56db', borderRadius: '50%' }} />
+                    <div className="ms-2 d-flex align-items-center">
+                      <div
+                        className="rounded-circle bg-primary"
+                        style={{ width: '8px', height: '8px' }}
+                      ></div>
                     </div>
                   )}
                 </div>
@@ -296,35 +287,22 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
             )}
           </div>
 
-          <button
-            type="button"
+          <div
+            className="border-top p-2 text-center bg-light"
             style={{
-              display: 'block',
-              width: '100%',
-              padding: '10px 16px',
-              borderTop: '1px solid #f1f3f5',
-              background: '#f8fafc',
-              border: 'none',
+              borderBottomLeftRadius: '0.25rem',
+              borderBottomRightRadius: '0.25rem',
               cursor: 'pointer',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              color: '#1a56db',
-              textAlign: 'center',
-              transition: 'background 0.12s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#eef2ff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#f8fafc';
             }}
             onClick={() => {
               setShowDropdown(false);
               navigate('/buyer/notifications');
             }}
           >
-            {t('notifications.view_all')}
-          </button>
+            <span className="text-primary fw-medium" style={{ fontSize: '0.85rem' }}>
+              {t('notifications.view_all')}
+            </span>
+          </div>
         </div>
       )}
     </div>

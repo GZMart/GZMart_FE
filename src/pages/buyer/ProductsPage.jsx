@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom'; // Thêm useNavigate
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import styles from '@assets/styles/ProductsPage.module.css';
 import Pagination from '@components/common/Pagination';
-import { productService } from '../../services/api';
+import { productService, categoryService } from '../../services/api';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 
 const locations = [
@@ -24,9 +24,14 @@ const ratings = [
 
 const ProductsPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate(); // Khởi tạo navigate
   const searchQuery = searchParams.get('q');
+  const categoryParam = searchParams.get('category');
 
-  // Dynamic breadcrumb based on search query
+  // Category name state for display
+  const [categoryName, setCategoryName] = useState('');
+
+  // Dynamic breadcrumb based on search/category context
   const breadcrumbItems = useMemo(() => {
     const items = [{ label: 'Home', path: '/' }];
 
@@ -35,15 +40,26 @@ const ProductsPage = () => {
         { label: 'Products', path: '/products' },
         { label: `Search: "${searchQuery}"`, path: `/products?q=${searchQuery}`, isActive: true }
       );
+    } else if (categoryParam) {
+      items.push(
+        { label: 'Products', path: '/products' },
+        {
+          label: categoryName || categoryParam,
+          path: `/products?category=${categoryParam}`,
+          isActive: true,
+        }
+      );
     } else {
       items.push({ label: 'Products', path: '/products', isActive: true });
     }
 
     return items;
-  }, [searchQuery]);
+  }, [searchQuery, categoryParam, categoryName]);
 
-  const viewMode = 'grid';
-  const itemsToShow = 24;
+  // SỬA LỖI: Chuyển viewMode và itemsToShow thành state
+  const [viewMode, setViewMode] = useState('grid');
+  const [itemsToShow, setItemsToShow] = useState(24);
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortBy, setSortBy] = useState('popular');
@@ -68,10 +84,8 @@ const ProductsPage = () => {
 
   // Temporary filter states (before Apply)
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
-
   // Memoize filters to prevent unnecessary API calls
   const apiFilters = useMemo(() => {
-    const searchQuery = searchParams.get('q');
     const filters = {
       page,
       limit: itemsToShow,
@@ -87,6 +101,7 @@ const ProductsPage = () => {
         selectedRatings.length > 0 ? Math.max(...selectedRatings.map((r) => r.value)) : undefined,
       inStock: selectedAvailability.includes('inStock') ? 'true' : undefined,
       location: selectedLocations.length > 0 ? selectedLocations.join(',') : undefined,
+      category: categoryParam || undefined,
       sortBy:
         sortBy === 'price'
           ? 'originalPrice'
@@ -101,7 +116,8 @@ const ProductsPage = () => {
     Object.keys(filters).forEach((key) => filters[key] === undefined && delete filters[key]);
     return filters;
   }, [
-    searchParams,
+    searchQuery,
+    categoryParam,
     selectedBrands,
     priceRange.min,
     priceRange.max,
@@ -128,13 +144,11 @@ const ProductsPage = () => {
           return;
         }
 
-        // Backend returns data directly, not nested in data.data
         const productsData = Array.isArray(response.data)
           ? response.data
           : response.data?.data || [];
-        // Transform backend data to component format
+
         const transformed = productsData.map((product) => {
-          // Get price from models array (first active model)
           const activeModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
 
           return {
@@ -159,10 +173,12 @@ const ProductsPage = () => {
         });
 
         setProducts(transformed);
-
         setTotalCount(response.count || response.pagination?.total || 0);
-        setTotalPages(response.pagination?.pages || Math.ceil((response.count || 0) / itemsToShow));
+        setTotalPages(
+          response.pagination?.pages || Math.ceil((response.count || 0) / apiFilters.limit)
+        );
         setLoading(false);
+
         // Fetch promotions for all visible products
         const productIds = transformed.map((p) => p.id).filter(Boolean);
         if (productIds.length > 0) {
@@ -214,7 +230,6 @@ const ProductsPage = () => {
       } catch (err) {
         if (isMounted) {
           console.error('❌ Error fetching products:', err);
-          console.error('Error details:', err.response?.data || err.message);
         }
       } finally {
         if (isMounted) {
@@ -227,20 +242,17 @@ const ProductsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [apiFilters, searchParams, selectedBrands, itemsToShow, page]);
+  }, [apiFilters]);
 
   // Fetch available brands for filter
   useEffect(() => {
     let isMounted = true;
-
     const fetchBrands = async () => {
       try {
         const response = await productService.getAvailableFilters();
-
         if (!isMounted) {
           return;
         }
-
         const brandsData = response.data?.data?.brands || [];
         setBrands(brandsData.map((b) => ({ id: b._id, name: b.name })));
       } catch (err) {
@@ -250,20 +262,38 @@ const ProductsPage = () => {
       }
     };
     fetchBrands();
-
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Only apply client-side filters that are NOT handled by API
+  // Fetch category name
+  useEffect(() => {
+    if (!categoryParam) {
+      setCategoryName('');
+      return;
+    }
+    const fetchCategoryName = async () => {
+      try {
+        const response = await categoryService.getAll();
+        const allCats = Array.isArray(response) ? response : response.data || [];
+        const match = allCats.find((c) => c.slug === categoryParam);
+        if (match) {
+          setCategoryName(match.name);
+        }
+      } catch (e) {
+        // silent fallback
+      }
+    };
+    fetchCategoryName();
+  }, [categoryParam]);
+
+  // Client-side filtering (Sizes)
   const filteredProducts = useMemo(() => {
     if (!products.length) {
       return [];
     }
-
     return products.filter((product) => {
-      // Size filter (not in API, needs client-side filtering)
       if (selectedSizes.length > 0) {
         if (product.tier_variations && product.tier_variations.length > 1) {
           const sizeTier = product.tier_variations[1];
@@ -278,42 +308,34 @@ const ProductsPage = () => {
             return false;
           }
         } else {
-          // No tier variations, skip this product
           return false;
         }
       }
-
       return true;
     });
   }, [products, selectedSizes]);
 
-  // Only re-sort if needed (API already sorts, but we may need to sort filtered results)
+  // Client-side sorting (if needed after client filter)
   const sortedProducts = useMemo(() => {
     if (!filteredProducts.length) {
       return [];
     }
-
-    // If no client-side filters applied, return as-is (API already sorted)
     if (selectedSizes.length === 0) {
       return filteredProducts;
     }
 
-    // If client-side filtered, need to re-sort
     const sorted = [...filteredProducts];
-
     if (sortBy === 'price') {
       return priceOrder === 'desc'
         ? sorted.sort((a, b) => b.price - a.price)
         : sorted.sort((a, b) => a.price - b.price);
     }
-
     return sorted;
   }, [filteredProducts, sortBy, priceOrder, selectedSizes]);
 
   const totalProducts = totalCount || filteredProducts.length;
-  const displayedProducts = sortedProducts; // Already paginated from API
+  const displayedProducts = sortedProducts;
 
-  // Skeleton Card Component
   const SkeletonCard = () => (
     <div className={styles.skeletonCard}>
       <div className={styles.skeletonImage}></div>
@@ -330,15 +352,13 @@ const ProductsPage = () => {
       location: setSelectedLocations,
       brand: setSelectedBrands,
       size: setSelectedSizes,
-      // priceRange handled separately via min/max state
       rating: setSelectedRatings,
       discount: setSelectedDiscounts,
       availability: setSelectedAvailability,
     };
-
     const setter = setters[filterType];
     setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
-    setPage(1); // Reset page when filter changes
+    setPage(1);
   };
 
   const toggleSection = (section) => {
@@ -360,10 +380,9 @@ const ProductsPage = () => {
     setPage(1);
   };
 
-  // Reset page when search query changes
   useEffect(() => {
     setPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, categoryParam]);
 
   return (
     <div className={styles.productsPage}>
@@ -519,7 +538,11 @@ const ProductsPage = () => {
             </div>
 
             {/* Clear All Button */}
-            {(selectedLocations.length > 0 || selectedBrands.length > 0 || selectedRatings.length > 0 || priceRange.min > 0 || priceRange.max < 10000000) && (
+            {(selectedLocations.length > 0 ||
+              selectedBrands.length > 0 ||
+              selectedRatings.length > 0 ||
+              priceRange.min > 0 ||
+              priceRange.max < 10000000) && (
               <div className={styles.clearAllSection}>
                 <button
                   className={styles.clearAllBtn}
@@ -538,21 +561,85 @@ const ProductsPage = () => {
 
           {/* Main Content */}
           <main className={styles.mainContent}>
+            {/* Header Controls */}
+            <div className={styles.productsHeader}>
+              <button className={styles.backButton} onClick={() => navigate(-1)}>
+                <i className="bi bi-arrow-left"></i>
+              </button>
+
+              <h1 className={styles.pageTitle}>
+                {searchQuery
+                  ? `Search Results for "${searchQuery}"`
+                  : categoryName
+                    ? `${categoryName}`
+                    : 'All Products'}
+              </h1>
+
+              <div className={styles.productsControls}>
+                <div className={styles.viewToggle}>
+                  <button
+                    className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
+                    onClick={() => setViewMode('grid')}
+                    aria-label="Grid view"
+                  >
+                    <i className="bi bi-grid-3x3-gap"></i>
+                  </button>
+                  <button
+                    className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
+                    onClick={() => setViewMode('list')}
+                    aria-label="List view"
+                  >
+                    <i className="bi bi-list-ul"></i>
+                  </button>
+                </div>
+
+                <div className={styles.infoText}>
+                  Showing {displayedProducts.length} of {totalProducts} items
+                </div>
+
+                <div className={styles.filterGroup}>
+                  <label className={styles.filterLabel}>To Show:</label>
+                  <select
+                    className={styles.filterSelect}
+                    value={itemsToShow}
+                    onChange={(e) => setItemsToShow(Number(e.target.value))}
+                  >
+                    <option value={9}>9</option>
+                    <option value={12}>12</option>
+                    <option value={24}>24</option>
+                    <option value={48}>48</option>
+                  </select>
+                </div>
+              </div>
+            </div>{' '}
+            {/* <-- Đã thêm thẻ đóng div ở đây để hoàn thành productsHeader */}
             {/* Result Info */}
             {!loading && (
               <div className={styles.resultInfo}>
                 <span className={styles.resultCount}>
-                  {searchQuery && <><i className="bi bi-search"></i> Kết quả cho <strong>&ldquo;{searchQuery}&rdquo;</strong> &middot; </>}
+                  {searchQuery && (
+                    <>
+                      <i className="bi bi-search"></i> Kết quả cho{' '}
+                      <strong>&ldquo;{searchQuery}&rdquo;</strong> &middot;{' '}
+                    </>
+                  )}
                   {totalProducts} sản phẩm
                 </span>
-                {(selectedLocations.length > 0 || selectedBrands.length > 0 || selectedRatings.length > 0 || priceRange.min > 0 || priceRange.max < 10000000) && (
+                {(selectedLocations.length > 0 ||
+                  selectedBrands.length > 0 ||
+                  selectedRatings.length > 0 ||
+                  priceRange.min > 0 ||
+                  priceRange.max < 10000000) && (
                   <div className={styles.activeFilters}>
                     {selectedLocations.map((locId) => {
                       const loc = locations.find((l) => l.id === locId);
                       return loc ? (
                         <span key={locId} className={styles.filterTag}>
                           {loc.name}
-                          <i className="bi bi-x" onClick={() => toggleFilter('location', locId)}></i>
+                          <i
+                            className="bi bi-x"
+                            onClick={() => toggleFilter('location', locId)}
+                          ></i>
                         </span>
                       ) : null;
                     })}
@@ -567,7 +654,8 @@ const ProductsPage = () => {
                     })}
                     {(priceRange.min > 0 || priceRange.max < 10000000) && (
                       <span className={styles.filterTag}>
-                        {priceRange.min > 0 ? `₫${priceRange.min.toLocaleString()}` : '₫0'} — {priceRange.max < 10000000 ? `₫${priceRange.max.toLocaleString()}` : '∞'}
+                        {priceRange.min > 0 ? `₫${priceRange.min.toLocaleString()}` : '₫0'} —{' '}
+                        {priceRange.max < 10000000 ? `₫${priceRange.max.toLocaleString()}` : '∞'}
                         <i className="bi bi-x" onClick={handleResetPriceFilter}></i>
                       </span>
                     )}
@@ -576,7 +664,10 @@ const ProductsPage = () => {
                       return r ? (
                         <span key={ratingId} className={styles.filterTag}>
                           {r.value}★ trở lên
-                          <i className="bi bi-x" onClick={() => toggleFilter('rating', ratingId)}></i>
+                          <i
+                            className="bi bi-x"
+                            onClick={() => toggleFilter('rating', ratingId)}
+                          ></i>
                         </span>
                       ) : null;
                     })}
@@ -584,7 +675,6 @@ const ProductsPage = () => {
                 )}
               </div>
             )}
-
             {/* Sort Bar */}
             <div className={styles.sortBar}>
               <div className={styles.sortBarLeft}>
@@ -625,7 +715,9 @@ const ProductsPage = () => {
                     setPage(1);
                   }}
                 >
-                  <option value="" disabled>Giá</option>
+                  <option value="" disabled>
+                    Giá
+                  </option>
                   <option value="asc">Giá: Thấp đến Cao</option>
                   <option value="desc">Giá: Cao đến Thấp</option>
                 </select>
@@ -650,7 +742,6 @@ const ProductsPage = () => {
                 </button>
               </div>
             </div>
-
             {/* Product Grid/List */}
             {loading ? (
               <div className={styles.productGrid}>
@@ -665,7 +756,11 @@ const ProductsPage = () => {
                 </div>
                 <h3>Không tìm thấy sản phẩm</h3>
                 <p>Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm</p>
-                {(selectedLocations.length > 0 || selectedBrands.length > 0 || selectedRatings.length > 0 || priceRange.min > 0 || priceRange.max < 10000000) && (
+                {(selectedLocations.length > 0 ||
+                  selectedBrands.length > 0 ||
+                  selectedRatings.length > 0 ||
+                  priceRange.min > 0 ||
+                  priceRange.max < 10000000) && (
                   <button
                     className={styles.emptyResetBtn}
                     onClick={() => {
@@ -692,7 +787,6 @@ const ProductsPage = () => {
                 ))}
               </div>
             )}
-
             {/* Pagination */}
             {totalPages > 1 && (
               <Pagination
