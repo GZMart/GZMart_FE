@@ -147,45 +147,105 @@ const ProductReviewSection = ({ product }) => {
 
   const handleMarkHelpful = async (reviewId) => {
     try {
-      if (helpfulReviews.has(reviewId)) {
+      // Find the actual review in the reviews array (not paginated)
+      const reviewIndex = reviews.findIndex((r) => r._id === reviewId);
+      if (reviewIndex === -1) return;
+
+      const review = reviews[reviewIndex];
+      const isCurrentlyHelpful = helpfulReviews.has(reviewId);
+      const wasUnhelpful = unhelpfulReviews.has(reviewId);
+
+      // Store original values for rollback
+      const originalHelpful = review.helpful;
+      const originalUnhelpful = review.unhelpful;
+
+      // Optimistic UI update
+      if (isCurrentlyHelpful) {
         setHelpfulReviews((prev) => {
           const newSet = new Set(prev);
           newSet.delete(reviewId);
           return newSet;
         });
+        review.helpful = Math.max(0, review.helpful - 1);
       } else {
-        await reviewService.markHelpful(reviewId);
         setHelpfulReviews((prev) => new Set(prev).add(reviewId));
-        setUnhelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
+        if (wasUnhelpful) {
+          setUnhelpfulReviews((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(reviewId);
+            return newSet;
+          });
+          review.unhelpful = Math.max(0, review.unhelpful - 1);
+        }
+        review.helpful = (review.helpful || 0) + 1;
+      }
+
+      setReviews([...reviews]);
+
+      // API call
+      const response = await reviewService.markHelpful(reviewId);
+      
+      if (response?.data) {
+        review.helpful = response.data.helpful;
+        review.unhelpful = response.data.unhelpful;
+        setReviews([...reviews]);
       }
     } catch (error) {
       console.error('Error marking review as helpful:', error);
+      // On error, just show error message, don't reload
+      alert('Failed to update review. Please try again.');
     }
   };
 
   const handleMarkUnhelpful = async (reviewId) => {
     try {
-      if (unhelpfulReviews.has(reviewId)) {
+      // Find the actual review in the reviews array (not paginated)
+      const reviewIndex = reviews.findIndex((r) => r._id === reviewId);
+      if (reviewIndex === -1) return;
+
+      const review = reviews[reviewIndex];
+      const isCurrentlyUnhelpful = unhelpfulReviews.has(reviewId);
+      const wasHelpful = helpfulReviews.has(reviewId);
+
+      // Store original values for rollback
+      const originalHelpful = review.helpful;
+      const originalUnhelpful = review.unhelpful;
+
+      // Optimistic UI update
+      if (isCurrentlyUnhelpful) {
         setUnhelpfulReviews((prev) => {
           const newSet = new Set(prev);
           newSet.delete(reviewId);
           return newSet;
         });
+        review.unhelpful = Math.max(0, review.unhelpful - 1);
       } else {
-        await reviewService.markUnhelpful(reviewId);
         setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
-        setHelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
+        if (wasHelpful) {
+          setHelpfulReviews((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(reviewId);
+            return newSet;
+          });
+          review.helpful = Math.max(0, review.helpful - 1);
+        }
+        review.unhelpful = (review.unhelpful || 0) + 1;
+      }
+
+      setReviews([...reviews]);
+
+      // API call
+      const response = await reviewService.markUnhelpful(reviewId);
+      
+      if (response?.data) {
+        review.helpful = response.data.helpful;
+        review.unhelpful = response.data.unhelpful;
+        setReviews([...reviews]);
       }
     } catch (error) {
       console.error('Error marking review as unhelpful:', error);
+      // On error, just show error message, don't reload
+      alert('Failed to update review. Please try again.');
     }
   };
 
