@@ -36,13 +36,6 @@ const getShippingMethods = (t) => [
   },
 ];
 
-const isInStock = (product, activeModel) => {
-  if (activeModel && activeModel.stock !== undefined) {
-    return activeModel.stock > 0;
-  }
-  return product && product.stock > 0;
-};
-
 const getPriceRange = (product) => {
   if (!product || !product.models || product.models.length === 0) {
     return { min: product?.price || 0, max: product?.price || 0 };
@@ -89,10 +82,8 @@ const ProductDetailsPage = () => {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]); // [tier0_index, tier1_index]
-  const [hoveredTierIndex, setHoveredTierIndex] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
-  const [showSizeChart, setShowSizeChart] = useState(false);
 
   const [product, setProduct] = useState(null);
   const [flashSale, setFlashSale] = useState(null);
@@ -137,13 +128,11 @@ const ProductDetailsPage = () => {
             });
 
             if (flashSale) {
-              console.log('✅ Flash sale found for product:', flashSale);
               return flashSale;
             }
 
             return null;
-          } catch (err) {
-            console.error('Error fetching flash sales:', err);
+          } catch {
             return null;
           }
         };
@@ -163,12 +152,9 @@ const ProductDetailsPage = () => {
         const productData = productResponse.data?.data || productResponse.data || productResponse;
 
         // Fetch flash sale data by matching product ID
-        console.log('🔍 Product ID:', productData?._id);
         const flashSaleData = await fetchFlashSale(productData?._id);
         if (flashSaleData) {
           setFlashSale(flashSaleData);
-        } else {
-          console.log('⚠️ No active flash sale found for this product');
         }
 
         if (!productData || !productData._id) {
@@ -179,10 +165,6 @@ const ProductDetailsPage = () => {
         // Map Backend 'tiers' to Frontend 'tier_variations'
         // Ensure tiers have 'name', 'options', 'images'
         const tiers = productData.tiers || [];
-
-        // Find default active model (first one with stock, or just first one)
-        const defaultModel =
-          productData.models?.find((m) => m.stock > 0) || productData.models?.[0] || {};
 
         // Initial selection: if tiers exist, select 0,0... or null if user must select
         // Usually better to select the first valid option or nothing.
@@ -647,11 +629,6 @@ const ProductDetailsPage = () => {
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.ratingDivider}>|</span>
             <span className={styles.reviewCount}>
-              // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
-            </span>
-            //{' '}
-            <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
-              // {t('product_details.stat_sold')} {product.sold || 0}
               {product.reviewCount
                 ? product.reviewCount >= 1000
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
@@ -944,9 +921,23 @@ const ProductDetailsPage = () => {
           {activeTab === 'description' && (
             <div className={styles.description}>
               <h3>{t('product_details.title_description')}</h3>
-              {product.descriptionText?.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              )) || <p>{t('product_details.no_description')}</p>}
+              {product.description && /<[a-z][\s\S]*>/i.test(product.description) ? (
+                <div
+                  className={styles.descriptionHtml}
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              ) : (() => {
+                const paragraphs =
+                  product.descriptionText ||
+                  (product.description || '')
+                    .split(/\n+/)
+                    .filter(Boolean);
+                return paragraphs.length > 0 ? (
+                  paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                ) : (
+                  <p>{t('product_details.no_description')}</p>
+                );
+              })()}
 
               <div className={styles.features}>
                 <h4>{t('product_details.title_features')}</h4>

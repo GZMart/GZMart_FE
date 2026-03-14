@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-
+import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Container, Row, Col, ListGroup, Form, Button, Image, InputGroup } from 'react-bootstrap';
 import socketService from '../../services/socketService';
@@ -12,6 +12,7 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 const ChatPage = () => {
   const { user } = useSelector((state) => state.auth);
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -49,6 +50,7 @@ const ChatPage = () => {
         socket.off('new_message_notification');
       };
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversations triggers on mount
   }, [user, activeConversation]);
 
   const fetchConversations = async () => {
@@ -56,7 +58,17 @@ const ChatPage = () => {
       const response = await axios.get(`${API_URL}/api/chat/conversations`, {
         headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
-      setConversations(response.data);
+      const convList = response.data;
+      setConversations(convList);
+
+      // Auto-select conversation if navigated from Orders page
+      const targetId = location.state?.conversationId;
+      if (targetId && !activeConversation) {
+        const target = convList.find((c) => c._id === targetId);
+        if (target) {
+          handleSelectConversation(target);
+        }
+      }
     } catch (error) {
       console.error('Error fetching conversations:', error);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Form, Row, Col } from 'react-bootstrap';
 import { productService } from '../../../services/api/productService';
@@ -6,6 +6,7 @@ import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
 import TiersEditor from './TiersEditor';
 import VariantsTable from './VariantsTable';
+import RichTextEditor from '../../common/RichTextEditor';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
 const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
@@ -168,6 +169,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       }
       generateModels();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- generateModels is stable, deps would cause loops
   }, [tiers, productType]);
 
   const generateModels = () => {
@@ -388,18 +390,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             }
           });
 
-          if (import.meta.env.DEV) {
-            console.log('📋 Edit mode — raw attributes from backend:', existingAttributes);
-            console.log('📋 Edit mode — merged attributeValues:', attrObj);
-          }
-
           setAttributeValues(attrObj);
         }
       } else {
         setAttributes([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching attributes:', error);
       setAttributes([]);
     }
   };
@@ -526,15 +522,13 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         (attr) => attr.value !== undefined && attr.value !== '' && attr.value !== null
       );
 
-      if (import.meta.env.DEV) {
-        console.log('📤 Submit — attributeValues state:', attributeValues);
-        console.log('📤 Submit — attributesArray to send:', attributesArray);
-      }
-
       // Prepare models based on product type
       // In edit mode, costPrice is NEVER sent — it is owned by InventoryItem
       // and synced back to Product.models via the Inventory adjust flow.
       let productModels;
+      // Normalize stock to avoid NaN/null — backend uses totalStock for status (active vs out_of_stock)
+      const safeStock = (val) => Math.max(0, parseInt(val, 10) || 0);
+
       if (productType === 'simple') {
         productModels = [
           {
@@ -544,7 +538,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             ...(!isEditMode && formData.costPrice
               ? { costPrice: parseFloat(formData.costPrice) }
               : {}),
-            stock: parseInt(formData.stock),
+            stock: safeStock(formData.stock),
             tierIndex: [],
           },
         ];
@@ -555,7 +549,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           price: parseFloat(model.price),
           // Only include costPrice on CREATE
           ...(!isEditMode && model.costPrice ? { costPrice: parseFloat(model.costPrice) } : {}),
-          stock: parseInt(model.stock),
+          stock: safeStock(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
           ...(!model.imageFile && model.image && { image: model.image }),
         }));
@@ -599,15 +593,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         }
 
         // Append models (without imageFile which is not serializable)
-        const modelsData = productModels.map((model) => {
-          const { imageFile, imagePreview, ...rest } = model;
-          return rest;
-        });
+        const modelsData = productModels.map((model) =>
+          Object.fromEntries(
+            Object.entries(model).filter(
+              ([k]) => k !== 'imageFile' && k !== 'imagePreview'
+            )
+          )
+        );
         formDataToSend.append('models', JSON.stringify(modelsData));
 
         // Append variant images with tierIndex mapping
         if (hasVariantImages) {
-          models.forEach((model, index) => {
+          models.forEach((model) => {
             if (model.imageFile) {
               // Use field name: variantImages[tierIndex]
               const tierIndexKey = model.tierIndex.join('-');
@@ -632,18 +629,6 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           });
         }
 
-        // Log FormData contents (for debugging)
-        if (import.meta.env.DEV) {
-          console.log('📤 Sending FormData with files:');
-          for (const [key, value] of formDataToSend.entries()) {
-            if (value instanceof File) {
-              console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
-            } else {
-              console.log(`  ${key}:`, value);
-            }
-          }
-        }
-
         response = isEditMode
           ? await productService.update(editingProduct._id, formDataToSend)
           : await productService.create(formDataToSend);
@@ -666,10 +651,6 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           models: productModels,
           // status: 'draft',
         };
-
-        if (import.meta.env.DEV) {
-          console.log('📤 Sending JSON (no files):', productData);
-        }
 
         response = isEditMode
           ? await productService.update(editingProduct._id, productData)
@@ -1276,15 +1257,14 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <label className={styles.formLabel}>Description</label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      name="description"
+                    <RichTextEditor
                       value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Describe your product..."
+                      onChange={(html) =>
+                        setFormData((prev) => ({ ...prev, description: html || '' }))
+                      }
+                      placeholder="Mô tả sản phẩm... Có thể thêm ảnh bằng nút 📷 trên thanh công cụ"
                       disabled={loading}
-                      className={styles.formControl}
+                      minHeight={200}
                     />
                   </Form.Group>
                 </Col>
