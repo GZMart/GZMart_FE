@@ -1511,6 +1511,24 @@
   margin-bottom: 15px;
 }
 
+/* Rich HTML description (Shopee-style with images) */
+.descriptionHtml {
+  color: #666;
+  line-height: 1.8;
+}
+
+.descriptionHtml img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+
+.descriptionHtml p {
+  margin-bottom: 15px;
+}
+
 .features {
   margin: 30px 0;
 }
