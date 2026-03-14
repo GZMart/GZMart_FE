@@ -93,6 +93,7 @@ const ProductDetailsPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [showNoSizeChart, setShowNoSizeChart] = useState(false);
 
   const [product, setProduct] = useState(null);
   const [flashSale, setFlashSale] = useState(null);
@@ -647,11 +648,9 @@ const ProductDetailsPage = () => {
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.ratingDivider}>|</span>
             <span className={styles.reviewCount}>
-              // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
+              ({product.reviewCount || 0} {t('product_details.reviews')})
             </span>
-            //{' '}
             <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
-              // {t('product_details.stat_sold')} {product.sold || 0}
               {product.reviewCount
                 ? product.reviewCount >= 1000
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
@@ -767,39 +766,41 @@ const ProductDetailsPage = () => {
           )}
 
           {/* 5. Variant Selection */}
-          {product.tier_variations?.map((tier, tierIdx) => (
-            <div key={tierIdx} className={styles.tierSection}>
-              <div className={styles.tierHeader}>
-                <span className={styles.tierLabel}>{tier.name}:</span>
+          {product.tier_variations?.map((tier, tierIdx) => {
+            const isSizeTier = /size|k.ch/i.test(tier.name);
+            return (
+              <div key={tierIdx} className={styles.tierSection}>
+                <div className={styles.tierHeader}>
+                  <span className={styles.tierLabel}>{tier.name}:</span>
+                </div>
+                <div className={styles.tierOptions}>
+                  {tier.options.map((option, optIdx) => {
+                    const isSelected = selectedTierIndex[tierIdx] === optIdx;
+                    const isDisabled = isOptionDisabled(tierIdx, optIdx);
+                    return (
+                      <button
+                        key={optIdx}
+                        className={`${styles.tierOption} ${isSelected ? styles.active : ''} ${isDisabled ? styles.disabled : ''}`}
+                        onClick={() => { if (!isDisabled) handleTierChange(tierIdx, optIdx); }}
+                        disabled={isDisabled}
+                        title={isDisabled ? t('product_details.stat_status_inactive') : option}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                {isSizeTier && (
+                  <button
+                    className={styles.sizeChartBtn}
+                    onClick={() => product.sizeChart ? setShowSizeChart(true) : setShowNoSizeChart(true)}
+                  >
+                    {t('product_details.btn_size_chart')} <i className="bi bi-chevron-right"></i>
+                  </button>
+                )}
               </div>
-              <div className={styles.tierOptions}>
-                {tier.options.map((option, optIdx) => {
-                  const isSelected = selectedTierIndex[tierIdx] === optIdx;
-                  const isDisabled = isOptionDisabled(tierIdx, optIdx);
-
-                  return (
-                    <button
-                      key={optIdx}
-                      className={`
-                        ${styles.tierOption} 
-                        ${isSelected ? styles.active : ''}
-                        ${isDisabled ? styles.disabled : ''}
-                      `}
-                      onClick={() => {
-                        if (!isDisabled) {
-                          handleTierChange(tierIdx, optIdx);
-                        }
-                      }}
-                      disabled={isDisabled}
-                      title={isDisabled ? t('product_details.stat_status_inactive') : option}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* 6. Quantity & Actions */}
           <div className={styles.actionsSection}>
@@ -1077,6 +1078,34 @@ const ProductDetailsPage = () => {
 
       {/* Login Required Modal */}
       <RequireLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
+      {/* Size chart preview — khi có ảnh */}
+      {product?.sizeChart && (
+        <Image style={{ display: 'none' }} src={product.sizeChart}
+          preview={{ visible: showSizeChart, src: product.sizeChart, onVisibleChange: v => setShowSizeChart(v) }}
+        />
+      )}
+
+      {/* Size chart modal — khi không có ảnh */}
+      {showNoSizeChart && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setShowNoSizeChart(false)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', textAlign: 'center', maxWidth: 360 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <i className="bi bi-rulers" style={{ fontSize: 40, color: '#ccc', display: 'block', marginBottom: 12 }}></i>
+            <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{t('product_details.size_chart_empty_title')}</p>
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>{t('product_details.size_chart_empty_desc')}</p>
+            <button
+              style={{ padding: '8px 24px', background: '#f5a623', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
+              onClick={() => setShowNoSizeChart(false)}
+            >{t('product_details.size_chart_close')}</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

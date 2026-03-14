@@ -1,4 +1,10 @@
 {
+  "require_login": {
+    "title": "Login Required",
+    "description": "Please login to continue with this action.",
+    "cancel": "Cancel",
+    "go_to_login": "Go to Login"
+  },
   "header": {
     "welcome_msg": "Direct Wholesale & Retail Guangzhou Fashion!",
     "deliver_to": "Deliver to",
@@ -231,10 +237,13 @@
   "change_password_page": {
     "title": "Change Password",
     "subtitle": "Enter your current password and a new strong password.",
+    "set_password_title": "Set Your Password",
+    "set_password_subtitle": "You haven't set a password yet. Set one now to login with email next time.",
     "current_password_placeholder": "Current Password",
     "new_password_placeholder": "New Password",
     "confirm_password_placeholder": "Confirm New Password",
     "submit_button": "Change Password",
+    "set_password_button": "Set Password",
     "submitting": "Submitting...",
     "success_message": "Password changed successfully",
     "validation": {
@@ -455,7 +464,10 @@
     "tab_details": "Details",
     "tab_shipping": "Shipping",
     "tab_warranty": "Warranty",
-    "btn_size_chart": "Size Guide",
+    "btn_size_chart": "Size Chart",
+    "size_chart_empty_title": "No Size Guide Available",
+    "size_chart_empty_desc": "This shop has not updated the size guide for this product.",
+    "size_chart_close": "Close",
     "tab_description_upper": "DESCRIPTION",
     "tab_additional_upper": "ADDITIONAL INFORMATION",
     "tab_review_upper": "REVIEW",
