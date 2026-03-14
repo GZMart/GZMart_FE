@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -70,6 +71,7 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+StatusBadge.propTypes = { status: PropTypes.string };
 
 const PaymentBadge = ({ status }) => {
   const config = PAYMENT_CONFIG[status] || { label: status, Icon: AlertCircle, cls: 'paymentPending' };
@@ -81,6 +83,7 @@ const PaymentBadge = ({ status }) => {
     </span>
   );
 };
+PaymentBadge.propTypes = { status: PropTypes.string };
 
 /* ─── Main Component ──────────────────────────────────────────── */
 const OrdersPage = () => {
@@ -115,9 +118,15 @@ const OrdersPage = () => {
       setError(null);
 
       const params = { page, limit: ITEMS_PER_PAGE, sortBy: filters.sortBy };
-      if (filters.status !== 'all')         params.status = filters.status;
-      if (filters.paymentMethod !== 'all')  params.paymentMethod = filters.paymentMethod;
-      if (filters.shippingMethod !== 'all') params.shippingMethod = filters.shippingMethod;
+      if (filters.status !== 'all') {
+        params.status = filters.status;
+      }
+      if (filters.paymentMethod !== 'all') {
+        params.paymentMethod = filters.paymentMethod;
+      }
+      if (filters.shippingMethod !== 'all') {
+        params.shippingMethod = filters.shippingMethod;
+      }
 
       const response = await orderSellerService.getAll(params);
 
@@ -165,7 +174,9 @@ const OrdersPage = () => {
   const handleMessageBuyer = async (e, order) => {
     e.stopPropagation();
     const buyerId = order._originalData?.userId?._id || order._originalData?.userId;
-    if (!buyerId) return;
+    if (!buyerId) {
+      return;
+    }
     setMessagingBuyer(order._id);
     try {
       const res = await chatService.findOrCreateConversation(buyerId);
@@ -179,11 +190,19 @@ const OrdersPage = () => {
   };
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
   };
 
-  const handleStatusModalClose   = () => { setShowStatusModal(false); setSelectedOrder(null); };
-  const handleStatusUpdateSuccess = () => { handleStatusModalClose(); fetchOrders(currentPage); };
+  const handleStatusModalClose = () => {
+    setShowStatusModal(false);
+    setSelectedOrder(null);
+  };
+  const handleStatusUpdateSuccess = () => {
+    handleStatusModalClose();
+    fetchOrders(currentPage);
+  };
 
   /* ─── Derived data ─────────────────────────────────────────── */
   const formattedOrders = orders.map((order) => ({
@@ -214,13 +233,19 @@ const OrdersPage = () => {
 
   /* ─── Pagination helper ────────────────────────────────────── */
   const getPaginationPages = () => {
-    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
     const pages = [1];
-    if (currentPage > 3) pages.push('...');
+    if (currentPage > 3) {
+      pages.push('...');
+    }
     for (let p = Math.max(2, currentPage - 1); p <= Math.min(totalPages - 1, currentPage + 1); p++) {
       pages.push(p);
     }
-    if (currentPage < totalPages - 2) pages.push('...');
+    if (currentPage < totalPages - 2) {
+      pages.push('...');
+    }
     pages.push(totalPages);
     return pages;
   };
@@ -355,7 +380,11 @@ const OrdersPage = () => {
               onClick={() => handleCardClick(order._id)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(order._id); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleCardClick(order._id);
+                }
+              }}
             >
               {/* Order Header */}
               <div className={styles.orderHeaderRow}>

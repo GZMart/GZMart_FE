@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import PropTypes from 'prop-types';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import axiosClient from '../../services/axiosClient';
@@ -32,7 +33,9 @@ const RichTextEditor = ({
 
     input.onchange = async () => {
       const file = input.files?.[0];
-      if (!file) return;
+      if (!file) {
+        return;
+      }
 
       if (!file.type.startsWith('image/')) {
         return; // Silently ignore non-images
@@ -47,7 +50,9 @@ const RichTextEditor = ({
       try {
         const res = await axiosClient.post('/api/upload/single', formData);
         const url = res?.data?.data?.url || res?.data?.url || res?.url;
-        if (!url) throw new Error('No URL returned');
+        if (!url) {
+          throw new Error('No URL returned');
+        }
 
         const quill = quillRef.current?.getEditor?.();
         if (quill) {
@@ -102,6 +107,14 @@ const RichTextEditor = ({
       />
     </div>
   );
+};
+
+RichTextEditor.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func,
+  placeholder: PropTypes.string,
+  disabled: PropTypes.bool,
+  minHeight: PropTypes.number,
 };
 
 export default RichTextEditor;

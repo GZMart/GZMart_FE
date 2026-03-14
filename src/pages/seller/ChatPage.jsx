@@ -50,6 +50,7 @@ const ChatPage = () => {
         socket.off('new_message_notification');
       };
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversations triggers on mount
   }, [user, activeConversation]);
 
   const fetchConversations = async () => {

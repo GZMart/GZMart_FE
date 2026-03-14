@@ -65,7 +65,9 @@ const OrderDetailsPage = () => {
   };
 
   const handleCancelOrder = async () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
     try {
       setActionLoading(true);
       const response = await orderSellerService.cancel(orderId, {
