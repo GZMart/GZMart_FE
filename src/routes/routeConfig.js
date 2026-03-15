@@ -22,11 +22,12 @@ const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'))
 const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPage'));
 
 // Buyer Pages
-const BuyerDashboard = lazy(() => import('@pages/buyer/BuyerDashboard'));
+// BuyerDashboard removed — buyer does not need a dashboard
 // const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage')); // Removed: Use ProfilePage tab=orders
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
+const BuyerReturnStatusPage = lazy(() => import('@pages/buyer/BuyerReturnStatusPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
 const TrackOrderDetailsPage = lazy(() => import('@pages/buyer/TrackOrderDetailsPage'));
@@ -176,7 +177,7 @@ export const routeConfig = [
     layout: 'none',
   },
   {
-    path: '/buyer/favourites',
+    path: '/buyer/wishlist',
     element: WishlistPage,
     public: false,
     layout: 'main',
@@ -207,13 +208,7 @@ export const routeConfig = [
   },
 
   // Buyer Routes
-  {
-    path: '/buyer/dashboard',
-    element: BuyerDashboard,
-    protected: true,
-    allowedRoles: [USER_ROLES.BUYER],
-    layout: 'main',
-  },
+  // /buyer/dashboard removed — buyer does not need a dashboard
   {
     path: '/buyer/cart',
     element: CartPage,
@@ -281,6 +276,13 @@ export const routeConfig = [
   {
     path: '/buyer/wallet',
     element: MyWalletPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/returns/:requestId',
+    element: BuyerReturnStatusPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',

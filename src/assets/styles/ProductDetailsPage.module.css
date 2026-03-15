@@ -1152,7 +1152,7 @@
   background-color: #f5f5f5;
 }
 
-.favouriteSpacer {
+.wishlistSpacer {
   margin-left: auto;
   display: flex;
   align-items: center;
@@ -1166,7 +1166,7 @@
   white-space: nowrap;
 }
 
-.shareButton.unfavourite {
+.shareButton.unwishlist {
   /* background-color: #ff4757; */
   border-color: #ff4757;
   color: #ff4757;
@@ -1176,14 +1176,14 @@
   padding: 0;
 }
 
-.shareButton.unfavourite:hover {
+.shareButton.unwishlist:hover {
   background-color: #ff2f43;
   color: white;
   border-color: #ff2f43;
   transform: translateY(-2px);
 }
 
-.shareButton.isFavourite {
+.shareButton.isWishlist {
   color: white;
   background-color: #ff2f43;
   border-color: #ff2f43;
@@ -1193,11 +1193,11 @@
   padding: 0;
 }
 
-.shareButton.isFavourite i {
+.shareButton.isWishlist i {
   font-size: 20px;
 }
 
-.shareButton.isFavourite:hover {
+.shareButton.isWishlist:hover {
   background-color: white;
   border-color: #ff2f43;
   color: #ff2f43;
@@ -1311,7 +1311,7 @@
   box-shadow: 0 4px 12px rgba(177, 60, 54, 0.12);
 }
 
-.favouriteBtn {
+.wishlistBtn {
   background-color: white;
   color: #ff4757;
   border: 2px solid #ff4757;
@@ -1322,27 +1322,27 @@
   font-size: 14px;
 }
 
-.favouriteBtn:hover {
+.wishlistBtn:hover {
   background-color: #fff5f6;
   border-color: #ff2f43;
   color: #ff2f43;
 }
 
-.favouriteBtn.isFavourite {
+.wishlistBtn.isWishlist {
   background-color: #ff4757;
   color: white;
 }
 
-.favouriteBtn.isFavourite:hover {
+.wishlistBtn.isWishlist:hover {
   background-color: #ff2f43;
 }
 
-.favouriteBtn:disabled {
+.wishlistBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.favouriteBtn i {
+.wishlistBtn i {
   font-size: 18px;
 }
 
@@ -1509,6 +1509,24 @@
 .description p {
   color: #666;
   line-height: 1.8;
+  margin-bottom: 15px;
+}
+
+/* Rich HTML description (Shopee-style with images) */
+.descriptionHtml {
+  color: #666;
+  line-height: 1.8;
+}
+
+.descriptionHtml img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+
+.descriptionHtml p {
   margin-bottom: 15px;
 }
 

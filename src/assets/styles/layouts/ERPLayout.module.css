@@ -55,7 +55,6 @@
 .brandLogo {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, #1a56db 0%, #0f3fa8 100%);
   border-radius: 9px;
   display: flex;
   align-items: center;
@@ -63,7 +62,6 @@
   flex-shrink: 0;
   color: #fff;
   font-size: 17px;
-  box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
 }
 
 .brandText {
@@ -253,6 +251,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 0 24px;
   flex-shrink: 0;
   position: sticky;
@@ -262,23 +261,38 @@
 .topbarLeft {
   display: flex;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .topbarRoute {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   font-size: 12px;
   color: #9ca3af;
   text-transform: capitalize;
   letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbarRight {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .topbarAction {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 /* ─── Icon Button ────────────────────────────────────────────────── */
@@ -334,6 +348,8 @@
   transition: all 0.15s;
   color: #6b7280;
   font-size: 12px;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .avatarBtn:hover {

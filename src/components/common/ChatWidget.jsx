@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Button, Badge, Form, InputGroup, Image } from 'react-bootstrap';
@@ -41,7 +42,7 @@ const ChatWidget = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Product Recommendation State
-  const [pendingProducts, setPendingProducts] = useState({}); // Dictionary: { conversationId: productInfo }
+  const [pendingProducts, setPendingProducts] = useState({}); // Dictionary: { conversationId: productInfo[] }
 
   // AI Chat State
   const [aiMessages, setAiMessages] = useState([]);
@@ -117,7 +118,48 @@ const ChatWidget = () => {
     }
 
     const handleOpenChatWithShop = async (event) => {
-      const { shopId, productInfo } = event.detail;
+      const {
+        shopId,
+        productInfo,
+        productInfos,
+        autoSendProductMessages = false,
+      } = event.detail || {};
+
+      if (!shopId || !user?._id) {
+        return;
+      }
+
+      const normalizedProductInfos = [
+        ...(Array.isArray(productInfos) ? productInfos : []),
+        ...(productInfo ? [productInfo] : []),
+      ].filter(Boolean);
+
+      const getParticipantId = (participant) => participant?._id || participant;
+
+      const sendProductMessages = (conversation, products = []) => {
+        if (!conversation?._id || products.length === 0) {
+          return;
+        }
+
+        const receiverId =
+          conversation.participants?.find((p) => String(getParticipantId(p)) !== String(user._id))
+            ?._id ||
+          conversation.participants?.find((p) => String(getParticipantId(p)) !== String(user._id));
+
+        if (!receiverId) {
+          return;
+        }
+
+        products.forEach((product) => {
+          socketService.sendMessage({
+            conversationId: conversation._id,
+            sender: user._id,
+            receiver: receiverId,
+            type: 'product',
+            productInfo: product,
+          });
+        });
+      };
 
       // Mở widget ngay lập tức
       setIsOpen(true);
@@ -145,11 +187,15 @@ const ChatWidget = () => {
         handleSelectChat(conversation._id, conversation);
 
         // Luôn hiện product recommendation banner khi vào từ trang chi tiết sản phẩm cho ĐÚNG conversation này
-        if (productInfo) {
-          setPendingProducts((prev) => ({
-            ...prev,
-            [conversation._id]: productInfo,
-          }));
+        if (normalizedProductInfos.length > 0) {
+          if (autoSendProductMessages) {
+            sendProductMessages(conversation, normalizedProductInfos);
+          } else {
+            setPendingProducts((prev) => ({
+              ...prev,
+              [conversation._id]: normalizedProductInfos,
+            }));
+          }
         }
       } catch (error) {
         console.error('Error opening chat with shop:', error);
@@ -164,7 +210,8 @@ const ChatWidget = () => {
     return () => {
       window.removeEventListener('openChatWithShop', handleOpenChatWithShop);
     };
-  }, [isOpen, isAuthenticated, user]); // Xóa activeChatId khỏi dependency để tránh re-bind liên tục
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isAuthenticated, user]);
 
   const fetchConversations = async () => {
     try {
@@ -275,16 +322,18 @@ const ChatWidget = () => {
       activeConversation.participants.find((p) => (p._id || p) !== user._id);
 
     // GỬI SẢN PHẨM TRƯỚC NẾU CÓ TRONG CONVERSATION NÀY
-    const currentPendingProduct = pendingProducts[activeConversation._id];
-    if (currentPendingProduct) {
-      const productMessage = {
-        conversationId: activeConversation._id,
-        sender: user._id,
-        receiver: receiverId,
-        type: 'product',
-        productInfo: currentPendingProduct,
-      };
-      socketService.sendMessage(productMessage);
+    const currentPendingProducts = pendingProducts[activeConversation._id] || [];
+    if (currentPendingProducts.length > 0) {
+      currentPendingProducts.forEach((product) => {
+        const productMessage = {
+          conversationId: activeConversation._id,
+          sender: user._id,
+          receiver: receiverId,
+          type: 'product',
+          productInfo: product,
+        };
+        socketService.sendMessage(productMessage);
+      });
 
       // Clear pending product cho conversation này
       setPendingProducts((prev) => {
@@ -357,7 +406,7 @@ const ChatWidget = () => {
           return updated;
         });
       },
-      (error) => {
+      (_error) => {
         setIsAiTyping(false);
         const errorMsg = {
           role: 'ai',
@@ -423,6 +472,17 @@ const ChatWidget = () => {
       </div>
     </div>
   );
+
+  ProductMessageCard.propTypes = {
+    productInfo: PropTypes.shape({
+      productId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      image: PropTypes.string,
+      name: PropTypes.string,
+      price: PropTypes.number,
+      originalPrice: PropTypes.number,
+    }).isRequired,
+    isClickable: PropTypes.bool,
+  };
 
   const filteredConversations = conversations.filter((c) => {
     const otherUser = c.participants.find((p) => p._id !== user._id);

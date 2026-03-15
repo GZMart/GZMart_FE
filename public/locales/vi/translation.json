@@ -1,4 +1,10 @@
 {
+  "require_login": {
+    "title": "Yêu cầu đăng nhập",
+    "description": "Vui lòng đăng nhập để tiếp tục.",
+    "cancel": "Hủy",
+    "go_to_login": "Đăng nhập"
+  },
   "header": {
     "welcome_msg": "Bán buôn & Bán lẻ Trực tiếp Thời trang Quảng Châu!",
     "deliver_to": "Giao đến",
@@ -231,10 +237,13 @@
   "change_password_page": {
     "title": "Đổi Mật Khẩu",
     "subtitle": "Nhập mật khẩu hiện tại và mật khẩu mới.",
+    "set_password_title": "Thiết lập mật khẩu",
+    "set_password_subtitle": "Bạn chưa thiết lập mật khẩu. Hãy đặt mật khẩu để có thể đăng nhập bằng email lần sau.",
     "current_password_placeholder": "Mật khẩu hiện tại",
     "new_password_placeholder": "Mật khẩu mới",
     "confirm_password_placeholder": "Xác nhận mật khẩu mới",
     "submit_button": "Đổi Mật Khẩu",
+    "set_password_button": "Thiết lập mật khẩu",
     "submitting": "Đang xử lý...",
     "success_message": "Đổi mật khẩu thành công",
     "validation": {
@@ -456,6 +465,9 @@
     "tab_shipping": "Giao Hàng",
     "tab_warranty": "Bảo Hành",
     "btn_size_chart": "Hướng dẫn chọn size",
+    "size_chart_empty_title": "Chưa có hướng dẫn kích cỡ",
+    "size_chart_empty_desc": "Shop này chưa cập nhật bảng quy đổi kích cỡ cho sản phẩm.",
+    "size_chart_close": "Đóng",
     "tab_description_upper": "MÔ TẢ",
     "tab_additional_upper": "THÔNG TIN BỔ SUNG",
     "tab_review_upper": "ĐÁNH GIÁ",

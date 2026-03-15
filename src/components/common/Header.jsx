@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -8,15 +8,13 @@ import { selectUser, selectIsAuthenticated, logoutUser } from '@store/slices/aut
 import { selectCartTotalItems, fetchCart } from '@store/slices/cartSlice';
 import { searchService } from '@services/api';
 import {
-  MapPin,
-  Truck,
   Tag,
   Search,
   User,
   ShoppingCart,
   ChevronDown,
+  Globe,
   Heart,
-  AlignLeft,
   LogOut,
   UserCircle,
   LayoutDashboard,
@@ -24,8 +22,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-import enFlag from '../../assets/svg/language/en.svg';
-import viFlag from '../../assets/svg/language/vi.svg';
 import NotificationBell from './NotificationBell';
 
 // Fashion categories data from Guangzhou market
@@ -1104,7 +1100,12 @@ const Header = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [searchSuggestions, setSearchSuggestions] = useState({
+    products: [],
+    categories: [],
+    brands: [],
+  });
+  const [recentSearches, setRecentSearches] = useState([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -1114,6 +1115,38 @@ const Header = () => {
   const languageDropdownRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const megaMenuRef = useRef(null);
+
+  const hasAutocompleteResults =
+    (searchSuggestions.products && searchSuggestions.products.length > 0) ||
+    (searchSuggestions.categories && searchSuggestions.categories.length > 0) ||
+    (searchSuggestions.brands && searchSuggestions.brands.length > 0);
+
+  const saveRecentSearch = (query) => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const normalized = trimmed.toLowerCase();
+    const next = [
+      trimmed,
+      ...recentSearches.filter((item) => item.toLowerCase() !== normalized),
+    ].slice(0, 6);
+    setRecentSearches(next);
+    localStorage.setItem('gzm_recent_searches', JSON.stringify(next));
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    localStorage.removeItem('gzm_recent_searches');
+  };
+
+  const handleRecentSearchClick = (query) => {
+    setSearchQuery(query);
+    saveRecentSearch(query);
+    navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(query)}`);
+    setShowSearchDropdown(false);
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1150,19 +1183,26 @@ const Header = () => {
     []
   );
 
+  useEffect(() => {
+    const raw = localStorage.getItem('gzm_recent_searches');
+    if (!raw) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentSearches(parsed.filter((q) => typeof q === 'string' && q.trim().length > 0));
+      }
+    } catch (error) {
+      localStorage.removeItem('gzm_recent_searches');
+    }
+  }, []);
+
   // Fetch cart data when user logs in (only when authentication state changes to true)
   const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
-    console.log(
-      '[CART-DEBUG] 🛒 Header useEffect - isAuthenticated:',
-      isAuthenticated,
-      'prevAuth:',
-      prevAuthRef.current
-    );
-
     // Only fetch cart when user transitions from not authenticated to authenticated
     if (isAuthenticated && !prevAuthRef.current) {
-      console.log('[CART-DEBUG] 📥 Fetching cart (auth state changed to true)');
       dispatch(fetchCart());
     }
     prevAuthRef.current = isAuthenticated;
@@ -1174,7 +1214,7 @@ const Header = () => {
       navigate(PUBLIC_ROUTES.HOME);
       setShowProfileDropdown(false);
     } catch (error) {
-      console.error('Logout error:', error);
+      // noop
     }
   };
 
@@ -1190,8 +1230,9 @@ const Header = () => {
 
     // Don't fetch suggestions for empty or very short queries
     if (value.trim().length < 2) {
-      setSearchSuggestions([]);
-      setShowSearchDropdown(false);
+      setSearchSuggestions({ products: [], categories: [], brands: [] });
+      setSearchLoading(false);
+      setShowSearchDropdown(recentSearches.length > 0 && value.trim().length === 0);
       return;
     }
 
@@ -1202,27 +1243,27 @@ const Header = () => {
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const response = await searchService.getAutocomplete(value.trim());
-        console.log('🔍 Autocomplete API Response:', response);
-        console.log('🔍 Response.data:', response.data);
-        console.log('🔍 Response.data.data:', response.data?.data);
 
         // Handle response - backend returns data directly or nested
         const suggestions = response.data?.data || response.data || {};
-        console.log('🔍 Parsed suggestions:', suggestions);
+        const normalizedSuggestions = {
+          products: Array.isArray(suggestions.products) ? suggestions.products : [],
+          categories: Array.isArray(suggestions.categories) ? suggestions.categories : [],
+          brands: Array.isArray(suggestions.brands) ? suggestions.brands : [],
+        };
 
-        setSearchSuggestions(suggestions);
+        setSearchSuggestions(normalizedSuggestions);
 
         // Show dropdown if we have any suggestions
         const hasResults =
-          (suggestions.products && suggestions.products.length > 0) ||
-          (suggestions.categories && suggestions.categories.length > 0) ||
-          (suggestions.brands && suggestions.brands.length > 0);
+          normalizedSuggestions.products.length > 0 ||
+          normalizedSuggestions.categories.length > 0 ||
+          normalizedSuggestions.brands.length > 0;
 
-        console.log('🔍 Has results:', hasResults);
         setShowSearchDropdown(hasResults);
       } catch (error) {
-        console.error('❌ Error fetching search suggestions:', error);
-        setSearchSuggestions({});
+        setSearchSuggestions({ products: [], categories: [], brands: [] });
+        setShowSearchDropdown(false);
       } finally {
         setSearchLoading(false);
       }
@@ -1238,6 +1279,7 @@ const Header = () => {
     const trimmedQuery = searchQuery.trim();
     // Navigate to products page (with or without search query)
     if (trimmedQuery) {
+      saveRecentSearch(trimmedQuery);
       navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
       // No query - show all products
@@ -1256,6 +1298,7 @@ const Header = () => {
       navigate(`${PUBLIC_ROUTES.CATEGORY_PRODUCTS.replace(':categoryId', suggestion._id)}`);
     } else if (suggestion.name) {
       setSearchQuery(suggestion.name);
+      saveRecentSearch(suggestion.name);
       navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(suggestion.name)}`);
     }
     setShowSearchDropdown(false);
@@ -1264,13 +1307,6 @@ const Header = () => {
   // Handle search icon click
   const handleSearchIconClick = () => {
     handleSearchSubmit();
-  };
-
-  // Handle category hover
-  const handleCategoryHover = (category) => {
-    setHoveredCategory(category);
-    setActiveSubcategory(null);
-    setActiveBrand(null);
   };
 
   // Handle category click
@@ -1325,17 +1361,6 @@ const Header = () => {
 
   // Get current category data
   const currentCategoryData = hoveredCategory || activeCategory;
-  // Categories tailored for a Fashion/Clothing website
-  const categories = [
-    'new_arrivals',
-    'womens_fashion',
-    'mens_fashion',
-    'dresses_gowns',
-    'coord_sets',
-    'coats_blazers',
-    'bags_accessories',
-    'footwear',
-  ];
 
   return (
     <header>
@@ -1345,14 +1370,232 @@ const Header = () => {
         className="text-light py-2 small d-none d-md-block"
       >
         <div className="container">
-          <div className="d-flex justify-content-center align-items-center text-nowrap">
-            {(!isAuthenticated || user?.role === USER_ROLES.BUYER) && (
-              <div>
-                Wanna become a seller?{' '}
-                <Link to={BUYER_ROUTES.SELLER_APPLICATION} className="text-decoration-none fw-bold ms-1" style={{ color: 'var(--color-danger)', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-secondary)'} onMouseLeave={(e) => e.target.style.color = 'var(--color-primary)'}>                  Sent application here
-                </Link>
+          <div className="d-flex justify-content-between align-items-center text-nowrap">
+            <div>
+              {(!isAuthenticated || user?.role === USER_ROLES.BUYER) && (
+                <>
+                  Wanna become a seller?
+                  <Link
+                    to={BUYER_ROUTES.SELLER_APPLICATION}
+                    className="text-warning text-decoration-none fw-bold ms-1"
+                    style={{ transition: 'color 0.2s' }}
+                    onMouseEnter={(e) => (e.target.style.color = '#ffc107')}
+                    onMouseLeave={(e) => (e.target.style.color = '')}
+                  >
+                    Sent application here
+                  </Link>
+                </>
+              )}
+            </div>
+            <div className="d-flex align-items-center justify-content-end gap-3">
+              <NotificationBell />
+              <span className="text-secondary">|</span>
+              <div className="position-relative" ref={languageDropdownRef}>
+                <button
+                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                  className="d-flex align-items-center gap-1 border-0 bg-transparent p-0 text-light"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Globe size={14} />
+                  <span>{i18n.language === 'vi' ? 'Tiếng Việt' : 'English'}</span>
+                  <ChevronDown
+                    size={13}
+                    style={{
+                      transform: showLanguageDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s',
+                    }}
+                  />
+                </button>
+
+                {showLanguageDropdown && (
+                  <div
+                    className="position-absolute bg-white border rounded shadow-lg"
+                    style={{
+                      top: '100%',
+                      right: 0,
+                      marginTop: '8px',
+                      minWidth: '180px',
+                      zIndex: 1000,
+                      padding: '6px 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
+                    <button
+                      className="border-0 bg-transparent w-100 px-3 py-2 text-dark"
+                      style={{
+                        display: 'block',
+                        transition: 'background-color 0.2s',
+                        textAlign: 'left',
+                        color: i18n.language === 'vi' ? '#EE4D2D' : '#212529',
+                        fontWeight: i18n.language === 'vi' ? '600' : '400',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onClick={() => {
+                        i18n.changeLanguage('vi');
+                        setShowLanguageDropdown(false);
+                      }}
+                    >
+                      Tiếng Việt
+                    </button>
+                    <button
+                      className="border-0 bg-transparent w-100 px-3 py-2 text-dark"
+                      style={{
+                        display: 'block',
+                        transition: 'background-color 0.2s',
+                        textAlign: 'left',
+                        color: i18n.language === 'en' ? '#EE4D2D' : '#212529',
+                        fontWeight: i18n.language === 'en' ? '600' : '400',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onClick={() => {
+                        i18n.changeLanguage('en');
+                        setShowLanguageDropdown(false);
+                      }}
+                    >
+                      English
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+
+              <span className="text-secondary">|</span>
+
+              {isAuthenticated && user ? (
+                <div className="position-relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="d-flex align-items-center gap-2 text-light border-0 bg-transparent p-0"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <img
+                      src={userAvatar}
+                      alt={userDisplayName}
+                      style={{
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid rgba(255,255,255,0.35)',
+                      }}
+                    />
+                    <span>{userDisplayName}</span>
+                    <ChevronDown
+                      size={13}
+                      style={{
+                        transform: showProfileDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s',
+                      }}
+                    />
+                  </button>
+
+                  {showProfileDropdown && (
+                    <div
+                      className="position-absolute bg-white border rounded shadow-lg"
+                      style={{
+                        top: '100%',
+                        right: 0,
+                        marginTop: '8px',
+                        minWidth: '200px',
+                        zIndex: 1000,
+                        padding: '8px 0',
+                      }}
+                    >
+                      <Link
+                        to={
+                          user?.role === USER_ROLES.ADMIN
+                            ? ADMIN_ROUTES.DASHBOARD
+                            : user?.role === USER_ROLES.SELLER
+                              ? SELLER_ROUTES.DASHBOARD
+                              : BUYER_ROUTES.DASHBOARD
+                        }
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <LayoutDashboard size={18} />
+                        <span>{t('header.dashboard')}</span>
+                      </Link>
+                      <div className="border-top my-1"></div>
+                      <Link
+                        to={
+                          user?.role === USER_ROLES.ADMIN
+                            ? ADMIN_ROUTES.PROFILE
+                            : user?.role === USER_ROLES.SELLER
+                              ? SELLER_ROUTES.PROFILE
+                              : BUYER_ROUTES.PROFILE
+                        }
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <UserCircle size={18} />
+                        <span>{t('header.profile')}</span>
+                      </Link>
+                      <div className="border-top my-1"></div>
+                      <Link
+                        to="/change-password"
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <span>{t('header.change_password')}</span>
+                      </Link>
+                      <div className="border-top my-1"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent w-100 px-3 py-2"
+                        style={{
+                          transition: 'background-color 0.2s',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+                      >
+                        <LogOut size={18} />
+                        <span>{t('header.logout')}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to={PUBLIC_ROUTES.LOGIN}
+                  className="d-flex align-items-center gap-2 text-decoration-none text-light"
+                >
+                  <User size={16} />
+                  <span>{t('header.login')}</span>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1396,8 +1639,8 @@ const Header = () => {
                 <ShoppingCart size={24} />
                 {cartTotalItems > 0 && (
                   <span
-                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                    style={{ fontSize: '0.6rem' }}
+                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                    style={{ fontSize: '0.6rem', backgroundColor: '#b13c36', color: '#fff' }}
                   >
                     {cartTotalItems}
                   </span>
@@ -1406,10 +1649,9 @@ const Header = () => {
             </div>
 
             {/* Search Bar */}
-            <div className="col-12 col-lg-4">
-              <div className="d-flex align-items-center gap-3">
-                <div className="d-none d-xl-block"></div>
-                <div className="position-relative flex-grow-1" ref={searchDropdownRef}>
+            <div className="col-12 col-lg-5">
+              <div className="d-flex align-items-center w-100">
+                <div className="position-relative flex-grow-1 w-100" ref={searchDropdownRef}>
                   <form onSubmit={handleSearchSubmit} className="input-group">
                     <span
                       className="input-group-text border-0 pe-0 rounded-start"
@@ -1437,11 +1679,13 @@ const Header = () => {
                       placeholder={t('header.search_placeholder')}
                       value={searchQuery}
                       onChange={handleSearchChange}
-                      onFocus={() =>
-                        searchQuery.trim().length >= 2 &&
-                        searchSuggestions.length > 0 &&
-                        setShowSearchDropdown(true)
-                      }
+                      onFocus={() => {
+                        if (searchQuery.trim().length >= 2) {
+                          setShowSearchDropdown(hasAutocompleteResults);
+                        } else if (recentSearches.length > 0) {
+                          setShowSearchDropdown(true);
+                        }
+                      }}
                     />
                   </form>
 
@@ -1458,6 +1702,40 @@ const Header = () => {
                         zIndex: 1000,
                       }}
                     >
+                      {/* Recent Searches */}
+                      {searchQuery.trim().length < 2 && recentSearches.length > 0 && (
+                        <div className="py-2">
+                          <div className="px-3 py-1 d-flex align-items-center justify-content-between">
+                            <span className="text-muted small fw-bold">Recent searches</span>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 small text-decoration-none"
+                              onClick={clearRecentSearches}
+                              style={{ color: '#B13C36' }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          {recentSearches.map((recentQuery) => (
+                            <div
+                              key={recentQuery}
+                              className="px-3 py-2 d-flex align-items-center gap-2"
+                              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = 'transparent')
+                              }
+                              onClick={() => handleRecentSearchClick(recentQuery)}
+                            >
+                              <Search size={14} className="text-secondary" />
+                              <span className="text-dark small">{recentQuery}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Products Section */}
                       {searchSuggestions.products && searchSuggestions.products.length > 0 && (
                         <div className="py-2">
@@ -1584,242 +1862,26 @@ const Header = () => {
             </div>
 
             {/* Desktop Actions */}
-            <div className="col-12 col-lg-5 d-none d-lg-flex justify-content-end align-items-center">
-              {/* Language Switcher */}
-              <div className="position-relative" ref={languageDropdownRef}>
-                <button
-                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                  className="d-flex align-items-center gap-2 border-0 bg-transparent p-0 text-dark"
-                  style={{ cursor: 'pointer' }}
-                >
-                  <img
-                    src={i18n.language === 'vi' ? viFlag : enFlag}
-                    alt={i18n.language}
-                    style={{
-                      width: '24px',
-                      height: '16px',
-                      objectFit: 'cover',
-                      borderRadius: '2px',
-                    }}
-                  />
-                  <ChevronDown
-                    size={14}
-                    style={{
-                      transform: showLanguageDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s',
-                    }}
-                  />
-                </button>
-
-                {showLanguageDropdown && (
-                  <div
-                    className="position-absolute bg-white border rounded shadow-lg"
-                    style={{
-                      top: '100%',
-                      right: 0,
-                      marginTop: '12px',
-                      minWidth: '160px',
-                      zIndex: 1000,
-                      padding: '8px 0',
-                    }}
-                  >
-                    <div className="px-3 py-2 text-muted small fw-bold border-bottom mb-1">
-                      {t('header.language')}
-                    </div>
-                    <button
-                      className="d-flex align-items-center gap-2 border-0 bg-transparent w-100 px-3 py-2 text-dark"
-                      style={{ transition: 'background-color 0.2s', textAlign: 'left' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      onClick={() => {
-                        i18n.changeLanguage('en');
-                        setShowLanguageDropdown(false);
-                      }}
-                    >
-                      <img src={enFlag} alt="English" style={{ width: '20px', height: '14px' }} />
-                      <span>English</span>
-                      {i18n.language === 'en' && <span className="ms-auto text-success">✓</span>}
-                    </button>
-                    <button
-                      className="d-flex align-items-center gap-2 border-0 bg-transparent w-100 px-3 py-2 text-dark"
-                      style={{ transition: 'background-color 0.2s', textAlign: 'left' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      onClick={() => {
-                        i18n.changeLanguage('vi');
-                        setShowLanguageDropdown(false);
-                      }}
-                    >
-                      <img
-                        src={viFlag}
-                        alt="Tiếng Việt"
-                        style={{ width: '20px', height: '14px' }}
-                      />
-                      <span>Tiếng Việt</span>
-                      {i18n.language === 'vi' && <span className="ms-auto text-success">✓</span>}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <span className="mx-3 text-secondary opacity-25">|</span>
-
+            <div className="col-12 col-lg-4 d-none d-lg-flex justify-content-end align-items-center">
               <Link
-                to={BUYER_ROUTES.FAVOURITES}
+                to={BUYER_ROUTES.WISHLIST}
                 className="d-flex align-items-center gap-2 text-decoration-none text-dark"
                 onClick={handleWishlistClick}
               >
                 <Heart size={24} /> <span>{t('header.wishlist')}</span>
               </Link>
               <span className="mx-3 text-secondary opacity-25">|</span>
-
-              {/* User Logic */}
-              {isAuthenticated && user ? (
-                <div className="position-relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent p-0"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src={userAvatar}
-                      alt={userDisplayName}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid #e0e0e0',
-                      }}
-                    />
-                    <span>{userDisplayName}</span>
-                    <ChevronDown
-                      size={16}
-                      style={{
-                        transform: showProfileDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                      }}
-                    />
-                  </button>
-
-                  {/* Profile Dropdown */}
-                  {showProfileDropdown && (
-                    <div
-                      className="position-absolute bg-white border rounded shadow-lg"
-                      style={{
-                        top: '100%',
-                        right: 0,
-                        marginTop: '8px',
-                        minWidth: '200px',
-                        zIndex: 1000,
-                        padding: '8px 0',
-                      }}
-                    >
-                      <Link
-                        to={
-                          user?.role === USER_ROLES.ADMIN
-                            ? ADMIN_ROUTES.DASHBOARD
-                            : user?.role === USER_ROLES.SELLER
-                              ? SELLER_ROUTES.DASHBOARD
-                              : BUYER_ROUTES.DASHBOARD
-                        }
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <LayoutDashboard size={18} />
-                        <span>{t('header.dashboard')}</span>
-                      </Link>
-                      <div className="border-top my-1"></div>
-                      <Link
-                        to={
-                          user?.role === USER_ROLES.ADMIN
-                            ? ADMIN_ROUTES.PROFILE
-                            : user?.role === USER_ROLES.SELLER
-                              ? SELLER_ROUTES.PROFILE
-                              : BUYER_ROUTES.PROFILE
-                        }
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <UserCircle size={18} />
-                        <span>{t('header.profile')}</span>
-                      </Link>
-                      <div className="border-top my-1"></div>
-                      <Link
-                        to="/change-password"
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                        <span>{t('header.change_password')}</span>
-                      </Link>
-                      <div className="border-top my-1"></div>
-                      <button
-                        onClick={handleLogout}
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent w-100 px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                      >
-                        <LogOut size={18} />
-                        <span>{t('header.logout')}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  to={PUBLIC_ROUTES.LOGIN}
-                  className="d-flex align-items-center gap-2 text-decoration-none text-dark"
-                >
-                  <User size={24} />
-                  <span>{t('header.login')}</span>
-                </Link>
-              )}
-
-              <span className="mx-3 text-secondary opacity-25">|</span>
               <Link
                 to={BUYER_ROUTES.CART}
                 className="d-flex align-items-center gap-2 text-decoration-none text-dark position-relative"
                 onClick={handleCartClick}
               >
-                <div className="position-relative">
+                <div id="header-cart-icon" className="position-relative">
                   <ShoppingCart size={24} />
                   {cartTotalItems > 0 && (
                     <span
-                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                      style={{ fontSize: '0.6rem' }}
+                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                      style={{ fontSize: '0.6rem', backgroundColor: '#b13c36', color: '#fff' }}
                     >
                       {cartTotalItems}
                     </span>
@@ -1846,8 +1908,9 @@ const Header = () => {
                 <div
                   key={category.id}
                   onClick={() => handleCategoryClick(category)}
-                  className={`d-flex align-items-center gap-2 px-3 py-1 rounded-pill cursor-pointer border flex-shrink-0 ${isActive ? 'bg-dark text-white border-dark' : 'text-dark border-0'
-                    }`}
+                  className={`d-flex align-items-center gap-2 px-3 py-1 rounded-pill cursor-pointer border flex-shrink-0 ${
+                    isActive ? 'bg-dark text-white border-dark' : 'text-dark border-0'
+                  }`}
                   style={{
                     fontSize: '14px',
                     backgroundColor: isActive ? '#212529' : '#F3F9FB',
@@ -1929,10 +1992,11 @@ const Header = () => {
                             setActiveSubcategory(subcategory);
                             setActiveBrand(null); // Reset brand when changing subcategory
                           }}
-                          className={`d-flex align-items-center justify-content-between px-2 py-2 rounded ${activeSubcategory?.id === subcategory.id
-                            ? 'bg-dark text-white'
-                            : 'text-dark'
-                            }`}
+                          className={`d-flex align-items-center justify-content-between px-2 py-2 rounded ${
+                            activeSubcategory?.id === subcategory.id
+                              ? 'bg-dark text-white'
+                              : 'text-dark'
+                          }`}
                           style={{
                             cursor: 'pointer',
                             transition: 'all 0.2s',
@@ -1979,8 +2043,9 @@ const Header = () => {
                           <div
                             key={index}
                             onClick={() => setActiveBrand(brand)}
-                            className={`px-2 py-2 rounded ${activeBrand === brand ? 'bg-primary text-white' : 'text-dark'
-                              }`}
+                            className={`px-2 py-2 rounded ${
+                              activeBrand === brand ? 'bg-primary text-white' : 'text-dark'
+                            }`}
                             style={{
                               cursor: 'pointer',
                               transition: 'all 0.2s',
@@ -2249,9 +2314,9 @@ const Header = () => {
               <p className="text-center text-muted mb-4">
                 {loginModalType === 'wishlist'
                   ? t('header.login_required_wishlist_msg') ||
-                  'Please login to access your wishlist and save your favorite items.'
+                    'Please login to access your wishlist and save your favorite items.'
                   : t('header.login_required_cart_msg') ||
-                  'Please login to access your cart and continue shopping.'}
+                    'Please login to access your cart and continue shopping.'}
               </p>
 
               {/* Buttons */}

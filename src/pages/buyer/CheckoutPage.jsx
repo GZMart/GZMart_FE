@@ -1,5 +1,5 @@
 import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from 'react-bootstrap';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
@@ -11,6 +11,12 @@ import voucherService from '@services/api/voucherService';
 import { formatCurrency } from '@utils/formatters';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { Modal } from 'react-bootstrap';
+
+const randomDeliveryWindow = (minDays, maxDays) => {
+  const start = Math.floor(Math.random() * (maxDays - minDays + 1)) + minDays;
+  const end = Math.min(maxDays, start + Math.floor(Math.random() * 2) + 1);
+  return `${start}-${end} days`;
+};
 
 /**
  * Checkout Page Component
@@ -51,9 +57,9 @@ const CheckoutPage = () => {
           const vouchers = response.data || [];
           setApplicableVouchers(vouchers);
 
-          // Auto-select the best shop voucher
+          // Auto-select the best shop voucher (only from saved vouchers)
           const eligibleShopVouchers = vouchers.filter(
-            (v) => v.eligible && (v.type === 'shop' || v.type === 'private')
+            (v) => v.eligible && v.isSaved && (v.type === 'shop' || v.type === 'private')
           );
           if (eligibleShopVouchers.length > 0) {
             const bestShopVoucher = eligibleShopVouchers.reduce((prev, current) =>
@@ -62,9 +68,9 @@ const CheckoutPage = () => {
             setSelectedShopVoucherId(bestShopVoucher._id);
           }
 
-          // Auto-select the best product voucher
+          // Auto-select the best product voucher (only from saved vouchers)
           const eligibleProductVouchers = vouchers.filter(
-            (v) => v.eligible && v.type === 'product'
+            (v) => v.eligible && v.isSaved && v.type === 'product'
           );
           if (eligibleProductVouchers.length > 0) {
             const bestProductVoucher = eligibleProductVouchers.reduce((prev, current) =>
@@ -284,7 +290,7 @@ const CheckoutPage = () => {
   };
 
   const [paymentMethod, setPaymentMethod] = useState('payos');
-  const [shippingCompany, setShippingCompany] = useState('ausff');
+  const [shippingCompany, setShippingCompany] = useState('ghn');
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [addresses, setAddresses] = useState([]);
@@ -373,33 +379,36 @@ const CheckoutPage = () => {
     },
   ];
 
-  // Shipping companies data
-  const shippingCompanies = [
-    {
-      id: 'ausff',
-      name: 'AUSFF',
-      logo: 'data:image/png;base64,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',
-      deliveryTime: '14-21 days',
-      shippingCost: 0,
-      insurance: false,
-    },
-    {
-      id: 'racecouriers',
-      name: 'RaceCouriers',
-      logo: 'https://www.racegroup.com.au/storage/2020/12/Race-Couriers.png',
-      deliveryTime: '14-21 days',
-      shippingCost: 10,
-      insurance: true,
-    },
-    {
-      id: 'transcocargo',
-      name: 'TranscoCargo',
-      logo: 'https://srl.ams3.cdn.digitaloceanspaces.com/logos/transco-cargo-campbellfield-campbellfield.png',
-      deliveryTime: '14-21 days',
-      shippingCost: 12,
-      insurance: true,
-    },
-  ];
+  // Shipping companies data (Vietnam)
+  const shippingCompanies = useMemo(
+    () => [
+      {
+        id: 'ghn',
+        name: 'Giao Hang Nhanh (GHN)',
+        logo: '/ghn.png',
+        deliveryTime: randomDeliveryWindow(1, 3),
+        shippingCost: 0,
+        insurance: true,
+      },
+      {
+        id: 'ghtk',
+        name: 'Giao Hang Tiet Kiem (GHTK)',
+        logo: '/ghtk.png',
+        deliveryTime: randomDeliveryWindow(2, 4),
+        shippingCost: 15000,
+        insurance: true,
+      },
+      {
+        id: 'viettel_post',
+        name: 'Viettel Post',
+        logo: '/viettelpost.png',
+        deliveryTime: randomDeliveryWindow(2, 5),
+        shippingCost: 22000,
+        insurance: false,
+      },
+    ],
+    []
+  );
 
   // Order summary state
   const [orderSummary, setOrderSummary] = useState({
@@ -432,9 +441,13 @@ const CheckoutPage = () => {
   useEffect(() => {
     const fetchPreview = async () => {
       const city = customerInfo.state;
+      const selectedShipping = shippingCompanies.find((c) => c.id === shippingCompany);
+      const previewShippingCost = selectedShipping ? selectedShipping.shippingCost : 0;
       try {
         const response = await orderService.previewOrder({
           city,
+          shippingCost: previewShippingCost,
+          giftBoxFee: includeGiftBox ? 11000 : 0,
           voucherIds: getSelectedVoucherIds(),
           cartItemIds: cartItems.map((item) => item._id || item.id),
         });
@@ -456,7 +469,15 @@ const CheckoutPage = () => {
     if (cartItems.length > 0) {
       fetchPreview();
     }
-  }, [customerInfo.state, cartItems, localSubtotal, getSelectedVoucherIds]);
+  }, [
+    customerInfo.state,
+    cartItems,
+    localSubtotal,
+    getSelectedVoucherIds,
+    shippingCompany,
+    includeGiftBox,
+    shippingCompanies,
+  ]);
 
   // Get selected shipping company cost
   const selectedShippingCompany = shippingCompanies.find((c) => c.id === shippingCompany);
@@ -464,7 +485,7 @@ const CheckoutPage = () => {
 
   // Values for display (use selected shipping cost instead of backend)
   const { subtotal, tax, discount } = orderSummary;
-  const giftBoxPrice = includeGiftBox ? 10.9 : 0;
+  const giftBoxPrice = includeGiftBox ? 11000 : 0;
   const finalTotal = subtotal + selectedShippingCost + tax - discount + giftBoxPrice;
 
   // Handle step navigation
@@ -488,6 +509,12 @@ const CheckoutPage = () => {
     // console.log('[CHECKOUT-DEBUG] 📝 handleSubmit called, currentStep:', currentStep);
 
     if (currentStep === 1) {
+      if (!customerInfo.address) {
+        alert('Please select a shipping address before proceeding.');
+        setAddressModalView('list');
+        setShowAddressModal(true);
+        return;
+      }
       handleNext();
     } else if (currentStep === 2) {
       handleNext();
@@ -498,6 +525,10 @@ const CheckoutPage = () => {
         shippingAddress: `${customerInfo.address}, ${customerInfo.state}, ${customerInfo.country}`,
         city: customerInfo.state,
         paymentMethod,
+        shippingMethod: selectedShippingCompany?.name || shippingCompany,
+        shippingCost: selectedShippingCost,
+        includeGiftBox,
+        giftBoxFee: giftBoxPrice,
         notes: '',
         voucherIds: getSelectedVoucherIds(),
         cartItemIds: cartItems.map((item) => item._id || item.id),
@@ -510,9 +541,12 @@ const CheckoutPage = () => {
 
         if (response.success) {
           const orderId = response.data._id;
+          const amountDue = response?.payment?.amountDue ?? response?.data?.totalPrice ?? 0;
+          const fullyPaidByCoin =
+            response?.payment?.fullyPaidByCoin === true || Number(amountDue) <= 0;
 
           // If PayOS payment method, create payment link and redirect
-          if (paymentMethod === 'payos') {
+          if (paymentMethod === 'payos' && !fullyPaidByCoin) {
             try {
               const paymentResponse = await paymentService.createPaymentLink(orderId);
               if (paymentResponse.success && paymentResponse.data.checkoutUrl) {
@@ -813,7 +847,7 @@ const CheckoutPage = () => {
           <h5 className="">Shipping company</h5>
           <div className="d-flex align-items-center justify-content-between">
             <span className="fw-semibold">
-              {shippingCompanies.find((s) => s.id === shippingCompany)?.name || 'RaceCouriers'}
+              {shippingCompanies.find((s) => s.id === shippingCompany)?.name || 'GHN'}
             </span>
             <img
               src={shippingCompanies.find((s) => s.id === shippingCompany)?.logo}
@@ -1143,14 +1177,14 @@ const CheckoutPage = () => {
               checked={includeGiftBox}
               onChange={(e) => setIncludeGiftBox(e.target.checked)}
             />
-            {includeGiftBox && <small className="text-muted ms-4">+{formatCurrency(10.9)}</small>}
+            {includeGiftBox && <small className="text-muted ms-4">+{formatCurrency(11000)}</small>}
           </div>
         )}
 
         {currentStep === 3 && includeGiftBox && (
           <div className="d-flex justify-content-between mb-2">
             <span className="text-muted">Pack in a Gift Box</span>
-            <span className="fw-semibold">+{formatCurrency(10.9)}</span>
+            <span className="fw-semibold">+{formatCurrency(11000)}</span>
           </div>
         )}
 
@@ -1167,7 +1201,9 @@ const CheckoutPage = () => {
           <Button
             className={`border-0 text-white ${currentStep === 1 ? 'w-100 fw-bold' : 'flex-fill fw-bold'}`}
             onClick={handleSubmit}
-            disabled={cartItems.length === 0 || isProcessing}
+            disabled={
+              cartItems.length === 0 || isProcessing || (currentStep === 1 && !customerInfo.address)
+            }
             style={{ backgroundColor: '#B13C36' }}
           >
             {isProcessing ? (

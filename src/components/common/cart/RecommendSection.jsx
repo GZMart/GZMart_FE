@@ -78,57 +78,65 @@ const RecommendSection = ({ limit = 4 }) => {
     }
 
     const fullProduct = product.rawProduct;
-    if (fullProduct) {
-      const models = fullProduct.models || [];
-      const activeModel = models.find((m) => m.isActive) || models[0] || {};
-
-      let colorValue = 'N/A';
-      let sizeValue = 'N/A';
-
-      if (fullProduct.tier_variations && fullProduct.tier_variations.length > 0) {
-        if (activeModel.tierIndex && activeModel.tierIndex.length > 0) {
-          colorValue = fullProduct.tier_variations[0]?.options?.[activeModel.tierIndex[0]] || 'N/A';
-          if (activeModel.tierIndex.length > 1) {
-            sizeValue =
-              fullProduct.tier_variations[1]?.options?.[activeModel.tierIndex[1]] || 'N/A';
-          }
-        }
-      }
-
-      const cartItem = {
-        id: product.id,
-        _id: product._id,
-        name: product.name,
-        description: product.description,
-        image: product.image,
-        price: product.price,
-        color: colorValue,
-        size: sizeValue,
-        variant:
-          (sizeValue !== 'N/A' ? `${sizeValue} - ${colorValue}` : colorValue).trim() || 'Default',
-        sku: product.id,
-        brand: product.brand,
-      };
-
-      const addItemAsync = async () => {
-        try {
-          await dispatch(
-            addToCart({
-              product: cartItem,
-              quantity: 1,
-              color: cartItem.color,
-              size: cartItem.size,
-            })
-          ).unwrap();
-          toast.success('Added to cart successfully!');
-        } catch (err) {
-          console.error('Add to cart error:', err);
-          toast.error(typeof err === 'string' ? err : 'Failed to add item to cart');
-        }
-      };
-
-      addItemAsync();
+    if (!fullProduct) {
+      return;
     }
+
+    const tiers = fullProduct.tier_variations || fullProduct.tiers || [];
+    const hasVariants = tiers.length > 0 && tiers.some((t) => t.options && t.options.length > 1);
+
+    if (hasVariants) {
+      navigate(`/product/${product._id}`);
+      return;
+    }
+
+    const models = fullProduct.models || [];
+    const activeModel = models.find((m) => m.isActive) || models[0] || {};
+
+    let colorValue = 'Default';
+    let sizeValue = 'Default';
+
+    if (tiers.length > 0 && activeModel.tierIndex && activeModel.tierIndex.length > 0) {
+      colorValue = tiers[0]?.options?.[activeModel.tierIndex[0]] || 'Default';
+      if (activeModel.tierIndex.length > 1) {
+        sizeValue = tiers[1]?.options?.[activeModel.tierIndex[1]] || 'Default';
+      }
+    }
+
+    const cartItem = {
+      id: product.id,
+      _id: product._id,
+      name: product.name,
+      description: product.description,
+      image: product.image,
+      price: product.price,
+      color: colorValue,
+      size: sizeValue,
+      variant:
+        (sizeValue !== 'Default' ? `${sizeValue} - ${colorValue}` : colorValue).trim() ||
+        'Default',
+      sku: product.id,
+      brand: product.brand,
+    };
+
+    const addItemAsync = async () => {
+      try {
+        await dispatch(
+          addToCart({
+            product: cartItem,
+            quantity: 1,
+            color: cartItem.color,
+            size: cartItem.size,
+          })
+        ).unwrap();
+        toast.success('Added to cart successfully!');
+      } catch (err) {
+        console.error('Add to cart error:', err);
+        toast.error(typeof err === 'string' ? err : 'Failed to add item to cart');
+      }
+    };
+
+    addItemAsync();
   };
 
   const handlePrev = () => {
@@ -189,7 +197,11 @@ const RecommendSection = ({ limit = 4 }) => {
           {visibleProducts.map((product) => (
             <Col key={product.id} xs={6} md={3} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
-                <div className="position-relative">
+                <div
+                  className="position-relative"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/product/${product._id}`)}
+                >
                   <Card.Img
                     variant="top"
                     src={product.image || '/placeholder-image.jpg'}
@@ -209,7 +221,11 @@ const RecommendSection = ({ limit = 4 }) => {
                   )}
                 </div>
                 <Card.Body className="d-flex flex-column">
-                  <Card.Title className="small fw-semibold mb-2" style={{ fontSize: '0.85rem' }}>
+                  <Card.Title
+                    className="small fw-semibold mb-2"
+                    style={{ fontSize: '0.85rem', cursor: 'pointer' }}
+                    onClick={() => navigate(`/product/${product._id}`)}
+                  >
                     {product.name || 'Product Name'}
                   </Card.Title>
                   <div className="mt-auto">

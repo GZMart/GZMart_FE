@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -31,7 +31,6 @@ const CreateReturnRequestPage = () => {
   const [eligibility, setEligibility] = useState(null);
 
   // Form state
-  const [type, setType] = useState('refund'); // 'refund' or 'exchange'
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
@@ -48,11 +47,7 @@ const CreateReturnRequestPage = () => {
     { value: 'other', label: 'Lý do khác' },
   ];
 
-  useEffect(() => {
-    fetchOrderAndEligibility();
-  }, [orderId]);
-
-  const fetchOrderAndEligibility = async () => {
+  const fetchOrderAndEligibility = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -79,7 +74,11 @@ const CreateReturnRequestPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    fetchOrderAndEligibility();
+  }, [fetchOrderAndEligibility]);
 
   const handleItemSelect = (itemId, selected) => {
     setSelectedItems((prev) =>
@@ -158,7 +157,6 @@ const CreateReturnRequestPage = () => {
 
       const requestData = {
         orderId,
-        type,
         reason,
         description: description.trim(),
         images,
@@ -192,7 +190,7 @@ const CreateReturnRequestPage = () => {
         <Alert variant="danger">
           <Alert.Heading>Không thể tạo yêu cầu đổi trả</Alert.Heading>
           <p>{eligibility?.reason || 'Đơn hàng không đủ điều kiện để đổi trả'}</p>
-          <Button variant="outline-danger" onClick={() => navigate('/buyer/orders')}>
+          <Button variant="outline-danger" onClick={() => navigate('/buyer/profile?tab=orders')}>
             Quay lại danh sách đơn hàng
           </Button>
         </Alert>
@@ -214,41 +212,9 @@ const CreateReturnRequestPage = () => {
       </Alert>
 
       <Form onSubmit={handleSubmit}>
-        {/* Type Selection */}
-        <Card className="mb-4">
-          <Card.Body>
-            <h5>Loại Yêu Cầu</h5>
-            <Form.Check
-              type="radio"
-              label={
-                <div>
-                  <strong>Hoàn tiền (Refund)</strong>
-                  <br />
-                  <small className="text-muted">Nhận lại tiền dưới dạng coin trong ví</small>
-                </div>
-              }
-              name="type"
-              value="refund"
-              checked={type === 'refund'}
-              onChange={(e) => setType(e.target.value)}
-              className="mb-3"
-            />
-            <Form.Check
-              type="radio"
-              label={
-                <div>
-                  <strong>Đổi hàng (Exchange)</strong>
-                  <br />
-                  <small className="text-muted">Đổi sang size/màu khác (cùng sản phẩm)</small>
-                </div>
-              }
-              name="type"
-              value="exchange"
-              checked={type === 'exchange'}
-              onChange={(e) => setType(e.target.value)}
-            />
-          </Card.Body>
-        </Card>
+        <Alert variant="info" className="mb-4">
+          Seller will review and decide Refund or Exchange based on current stock conditions.
+        </Alert>
 
         {/* Reason Selection */}
         <Card className="mb-4">
@@ -290,7 +256,7 @@ const CreateReturnRequestPage = () => {
         <Card className="mb-4">
           <Card.Body>
             <h5 className="mb-3">Chọn Sản Phẩm Đổi Trả</h5>
-            {order?.items?.map((item, index) => {
+            {order?.items?.map((item) => {
               const selectedItem = selectedItems.find((si) => si.orderItemId === item._id);
               return (
                 <div key={item._id} className="border rounded p-3 mb-3">
@@ -384,7 +350,7 @@ const CreateReturnRequestPage = () => {
         <div className="d-flex gap-3">
           <Button
             variant="secondary"
-            onClick={() => navigate('/buyer/orders')}
+            onClick={() => navigate('/buyer/profile?tab=orders')}
             disabled={submitting}
           >
             Hủy

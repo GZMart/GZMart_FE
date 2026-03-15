@@ -51,7 +51,6 @@ const ERPLayout = ({ children }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth?.user);
   const [collapsed, setCollapsed] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (to) => {
@@ -73,7 +72,11 @@ const ERPLayout = ({ children }) => {
         {/* Brand */}
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
-            <i className="bi bi-bag-heart-fill" />
+            <img
+              src="/logo.png"
+              alt="GZMart logo"
+              style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+            />
           </div>
           {!collapsed && (
             <div className={styles.brandText}>
@@ -151,18 +154,12 @@ const ERPLayout = ({ children }) => {
           <div className={styles.topbarRight}>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
-              <NotificationBell />
+              <NotificationBell triggerClassName={styles.iconBtn} dropdownWidth="380px" />
             </div>
 
             {/* Profile dropdown */}
             <div className={styles.topbarAction}>
-              <button
-                className={styles.avatarBtn}
-                onClick={() => {
-                  setProfileOpen((o) => !o);
-                  setNotifOpen(false);
-                }}
-              >
+              <button className={styles.avatarBtn} onClick={() => setProfileOpen((o) => !o)}>
                 <div className={styles.topAvatar}>{user?.name?.[0]?.toUpperCase() || 'S'}</div>
                 <i className="bi bi-chevron-down" style={{ fontSize: '11px', marginLeft: '4px' }} />
               </button>

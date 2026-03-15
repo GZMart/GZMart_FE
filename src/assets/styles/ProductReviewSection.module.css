@@ -287,6 +287,14 @@
   transform: scale(0.98);
 }
 
+.helpfulButton.active,
+.unhelpfulButton.active {
+  background-color: #fff0f0;
+  border-color: #741e20;
+  color: #b13c36;
+  font-weight: 600;
+}
+
 /* No Reviews Message */
 .noReviews {
   text-align: center;

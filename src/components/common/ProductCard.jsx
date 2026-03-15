@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -6,7 +5,7 @@ import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
 import { getProductImages } from '@utils/data/ProductsPage_MockData';
-import * as favouriteService from '@services/api/favouriteService';
+import * as wishlistService from '@/services/api/wishlistService';
 import styles from '@assets/styles/ProductCard.module.css';
 
 const ProductCard = React.forwardRef(({ product }, ref) => {
@@ -42,7 +41,7 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
     e.preventDefault();
 
     if (!user) {
-      toast.info('Please login to add favourites');
+      toast.info('Please login to add wishlists');
       navigate('/login');
       return;
     }
@@ -50,11 +49,11 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
     setFavLoading(true);
     try {
       if (isFav) {
-        await favouriteService.removeFromFavourites(product.id);
+        await wishlistService.removeFromWishlists(product.id);
         setIsFav(false);
         toast.success('Removed from wishlist');
       } else {
-        await favouriteService.addToFavourites(product.id);
+        await wishlistService.addToWishlists(product.id);
         setIsFav(true);
         toast.success('Added to wishlist');
       }

@@ -2,7 +2,61 @@ import { io } from 'socket.io-client';
 import { getAuthToken } from '@utils/storage';
 import { SOCKET_EVENTS } from '@constants';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const resolveSocketUrl = () => {
+  const stripApiSuffix = (value) => value.replace(/\/+$/, '').replace(/\/api(?:\/v\d+)?$/i, '');
+
+  const explicitSocketUrl = import.meta.env.VITE_SOCKET_URL;
+  if (explicitSocketUrl) {
+    return explicitSocketUrl.replace(/\/+$/, '');
+  }
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (apiBaseUrl) {
+    const trimmed = apiBaseUrl.trim();
+
+    if (/^https?:\/\//i.test(trimmed)) {
+      try {
+        const parsed = new URL(trimmed);
+        const pathname = stripApiSuffix(parsed.pathname || '');
+        return `${parsed.origin}${pathname}`.replace(/\/+$/, '');
+      } catch (_error) {
+        return stripApiSuffix(trimmed);
+      }
+    }
+
+    return stripApiSuffix(trimmed);
+  }
+
+  return 'http://localhost:3000';
+};
+
+const decodeJwtPayload = (token) => {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) {
+      return null;
+    }
+
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    return payload;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const getUserIdFromToken = (token) => {
+  const payload = decodeJwtPayload(token);
+  if (!payload) {
+    return null;
+  }
+
+  return payload._id || payload.id || payload.userId || payload.sub || null;
+};
 
 /**
  * Socket.io Client Service
@@ -12,19 +66,24 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.isConnected = false;
+    this.userId = null;
   }
 
   /**
    * Connect to socket server
    */
-  connect() {
+  connect(userId) {
+    const token = getAuthToken();
+    this.userId = userId || this.userId || getUserIdFromToken(token);
+
     if (this.socket?.connected) {
+      if (this.userId) {
+        this.emit('join_user_room', this.userId);
+      }
       return;
     }
 
-    const token = getAuthToken();
-
-    this.socket = io(SOCKET_URL, {
+    this.socket = io(resolveSocketUrl(), {
       auth: {
         token,
       },
@@ -43,12 +102,14 @@ class SocketService {
   setupEventListeners() {
     this.socket.on(SOCKET_EVENTS.CONNECT, () => {
       this.isConnected = true;
-      console.log('✅ Socket connected');
+
+      if (this.userId) {
+        this.emit('join_user_room', this.userId);
+      }
     });
 
     this.socket.on(SOCKET_EVENTS.DISCONNECT, () => {
       this.isConnected = false;
-      console.log('❌ Socket disconnected');
     });
 
     this.socket.on(SOCKET_EVENTS.ERROR, (error) => {
@@ -64,6 +125,17 @@ class SocketService {
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
+    }
+  }
+
+  /**
+   * Attach user room after login/profile load
+   * @param {string} userId
+   */
+  setUserId(userId) {
+    this.userId = userId || null;
+    if (this.userId && this.socket?.connected) {
+      this.emit('join_user_room', this.userId);
     }
   }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -10,11 +10,12 @@ import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import ProductReviewSection from '../../components/buyer/ProductReviewSection';
+import CartSuccessModal from '../../components/buyer/CartSuccessModal';
 import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
-import * as favouriteService from '../../services/api/favouriteService';
+import * as wishlistService from '../../services/api/wishlistService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ProductDetailsPage.module.css';
 
@@ -35,13 +36,6 @@ const getShippingMethods = (t) => [
     icon: 'bi-shop',
   },
 ];
-
-const isInStock = (product, activeModel) => {
-  if (activeModel && activeModel.stock !== undefined) {
-    return activeModel.stock > 0;
-  }
-  return product && product.stock > 0;
-};
 
 const getPriceRange = (product) => {
   if (!product || !product.models || product.models.length === 0) {
@@ -89,10 +83,10 @@ const ProductDetailsPage = () => {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]); // [tier0_index, tier1_index]
-  const [hoveredTierIndex, setHoveredTierIndex] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [showNoSizeChart, setShowNoSizeChart] = useState(false);
 
   const [product, setProduct] = useState(null);
   const [flashSale, setFlashSale] = useState(null);
@@ -104,9 +98,10 @@ const ProductDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [isFavourite, setIsFavourite] = useState(false);
-  const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [isWishlist, setIsWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCartModal, setShowCartModal] = useState(false);
 
   const user = useSelector((state) => state.auth.user);
 
@@ -137,13 +132,11 @@ const ProductDetailsPage = () => {
             });
 
             if (flashSale) {
-              console.log('✅ Flash sale found for product:', flashSale);
               return flashSale;
             }
 
             return null;
-          } catch (err) {
-            console.error('Error fetching flash sales:', err);
+          } catch {
             return null;
           }
         };
@@ -163,12 +156,9 @@ const ProductDetailsPage = () => {
         const productData = productResponse.data?.data || productResponse.data || productResponse;
 
         // Fetch flash sale data by matching product ID
-        console.log('🔍 Product ID:', productData?._id);
         const flashSaleData = await fetchFlashSale(productData?._id);
         if (flashSaleData) {
           setFlashSale(flashSaleData);
-        } else {
-          console.log('⚠️ No active flash sale found for this product');
         }
 
         if (!productData || !productData._id) {
@@ -179,11 +169,6 @@ const ProductDetailsPage = () => {
         // Map Backend 'tiers' to Frontend 'tier_variations'
         // Ensure tiers have 'name', 'options', 'images'
         const tiers = productData.tiers || [];
-
-        // Find default active model (first one with stock, or just first one)
-        const defaultModel =
-          productData.models?.find((m) => m.stock > 0) || productData.models?.[0] || {};
-
         // Initial selection: if tiers exist, select 0,0... or null if user must select
         // Usually better to select the first valid option or nothing.
         // Let's default to [0, 0] if tiers exist so user sees a price immediately.
@@ -246,7 +231,6 @@ const ProductDetailsPage = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.error('Error fetching product:', err);
           setError(err.response?.data?.message || 'Failed to load product');
         }
       } finally {
@@ -294,23 +278,65 @@ const ProductDetailsPage = () => {
     return () => clearInterval(interval);
   }, [flashSale]);
 
-  // Check if product is in favourites
+  // Check if product is in wishlists
+  const getSelectedWishlistVariant = useCallback(() => {
+    if (!product) {
+      return {};
+    }
+
+    let color = 'Default';
+    let size = 'Default';
+
+    if (product.tier_variations?.length > 0) {
+      product.tier_variations.forEach((tier, idx) => {
+        const selectedIdx = selectedTierIndex[idx];
+        if (selectedIdx === null || selectedIdx === undefined) {
+          return;
+        }
+
+        const selectedOption = tier.options?.[selectedIdx];
+        const tierNameLower = String(tier.name || '').toLowerCase();
+
+        if (
+          tierNameLower.includes('color') ||
+          tierNameLower.includes('màu') ||
+          tierNameLower.includes('mau')
+        ) {
+          color = selectedOption || 'Default';
+        } else if (
+          tierNameLower.includes('size') ||
+          tierNameLower.includes('kích') ||
+          tierNameLower.includes('kich')
+        ) {
+          size = selectedOption || 'Default';
+        }
+      });
+    }
+
+    return {
+      modelId: activeModel?._id,
+      color,
+      size,
+    };
+  }, [activeModel?._id, product, selectedTierIndex]);
+
   useEffect(() => {
-    const checkFavouriteStatus = async () => {
+    const checkWishlistStatus = async () => {
       if (user && product?._id) {
         try {
-          const response = await favouriteService.checkInFavourites(product._id);
-          const isInFav = response.isInFavourites ?? response.data?.isInFavourites ?? false;
-          setIsFavourite(isInFav);
+          const variant = getSelectedWishlistVariant();
+          const response = await wishlistService.checkInWishlists(product._id, variant);
+          const isInFav = response.isInWishlists ?? response.data?.isInWishlists ?? false;
+          setIsWishlist(isInFav);
         } catch (error) {
-          console.error('Error checking favourite status:', error);
+          setIsWishlist(false);
         }
       } else {
-        setIsFavourite(false);
+        setIsWishlist(false);
       }
     };
-    checkFavouriteStatus();
-  }, [user, product?._id]);
+    checkWishlistStatus();
+  }, [getSelectedWishlistVariant, product?._id, user]);
 
   // Check if an option should be disabled based on *other* current selections
   const isOptionDisabled = (tierLevel, optionIndex) => {
@@ -445,9 +471,8 @@ const ProductDetailsPage = () => {
         })
       ).unwrap();
 
-      toast.success(t('product_details.toast_add_cart_success'));
+      setShowCartModal(true);
     } catch (err) {
-      console.error('Add to cart error:', err);
       toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
     } finally {
       setAddingToCart(false);
@@ -460,7 +485,7 @@ const ProductDetailsPage = () => {
       return;
     }
     handleAddToCart();
-    navigate('/cart');
+    navigate('/buyer/cart');
   };
 
   const formatSavedCount = (count) => {
@@ -473,33 +498,33 @@ const ProductDetailsPage = () => {
     return count;
   };
 
-  const handleToggleFavourite = async () => {
+  const handleToggleWishlist = async () => {
     if (!user) {
       setShowLoginModal(true);
       return;
     }
 
     try {
-      setFavouriteLoading(true);
-      if (isFavourite) {
-        await favouriteService.removeFromFavourites(product._id);
-        setIsFavourite(false);
+      setWishlistLoading(true);
+      const variant = getSelectedWishlistVariant();
+      if (isWishlist) {
+        await wishlistService.removeFromWishlists(product._id, variant);
+        setIsWishlist(false);
         setProduct((prev) => ({
           ...prev,
           wishlistCount: Math.max(0, (prev.wishlistCount || 0) - 1),
         }));
         toast.success(t('product_details.toast_wishlist_remove'));
       } else {
-        await favouriteService.addToFavourites(product._id);
-        setIsFavourite(true);
+        await wishlistService.addToWishlists(product._id, variant);
+        setIsWishlist(true);
         setProduct((prev) => ({ ...prev, wishlistCount: (prev.wishlistCount || 0) + 1 }));
         toast.success(t('product_details.toast_wishlist_add'));
       }
     } catch (error) {
-      console.error('Error toggling favourite:', error);
       toast.error(error.response?.data?.message || t('product_details.toast_wishlist_failed'));
     } finally {
-      setFavouriteLoading(false);
+      setWishlistLoading(false);
     }
   };
 
@@ -611,17 +636,17 @@ const ProductDetailsPage = () => {
                 <i className="bi bi-twitter-x"></i>
               </button>
             </div>
-            <div className={styles.favouriteSpacer}>
+            <div className={styles.wishlistSpacer}>
               <button
-                className={`${styles.shareButton} ${!isFavourite ? styles.unfavourite : styles.isFavourite}`}
-                onClick={handleToggleFavourite}
-                disabled={favouriteLoading}
-                title={isFavourite ? 'Remove from saved' : 'Save this product'}
+                className={`${styles.shareButton} ${!isWishlist ? styles.unwishlist : styles.isWishlist}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
+                title={isWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
               >
                 <i className={`bi bi-heart`}></i>
               </button>
               <span className={styles.saveLabel}>
-                {isFavourite
+                {isWishlist
                   ? `Saved (${formatSavedCount(product.wishlistCount)})`
                   : `Save (${formatSavedCount(product.wishlistCount)})`}
               </span>
@@ -647,11 +672,9 @@ const ProductDetailsPage = () => {
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.ratingDivider}>|</span>
             <span className={styles.reviewCount}>
-              // ({product.reviewCount || 0} {t('product_details.reviews')}) //{' '}
+              ({product.reviewCount || 0} {t('product_details.reviews')})
             </span>
-            //{' '}
             <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
-              // {t('product_details.stat_sold')} {product.sold || 0}
               {product.reviewCount
                 ? product.reviewCount >= 1000
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
@@ -767,39 +790,47 @@ const ProductDetailsPage = () => {
           )}
 
           {/* 5. Variant Selection */}
-          {product.tier_variations?.map((tier, tierIdx) => (
-            <div key={tierIdx} className={styles.tierSection}>
-              <div className={styles.tierHeader}>
-                <span className={styles.tierLabel}>{tier.name}:</span>
+          {product.tier_variations?.map((tier, tierIdx) => {
+            const isSizeTier = /size|k.ch/i.test(tier.name);
+            return (
+              <div key={tierIdx} className={styles.tierSection}>
+                <div className={styles.tierHeader}>
+                  <span className={styles.tierLabel}>{tier.name}:</span>
+                </div>
+                <div className={styles.tierOptions}>
+                  {tier.options.map((option, optIdx) => {
+                    const isSelected = selectedTierIndex[tierIdx] === optIdx;
+                    const isDisabled = isOptionDisabled(tierIdx, optIdx);
+                    return (
+                      <button
+                        key={optIdx}
+                        className={`${styles.tierOption} ${isSelected ? styles.active : ''} ${isDisabled ? styles.disabled : ''}`}
+                        onClick={() => {
+                          if (!isDisabled) {
+handleTierChange(tierIdx, optIdx);
+}
+                        }}
+                        disabled={isDisabled}
+                        title={isDisabled ? t('product_details.stat_status_inactive') : option}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                {isSizeTier && (
+                  <button
+                    className={styles.sizeChartBtn}
+                    onClick={() =>
+                      product.sizeChart ? setShowSizeChart(true) : setShowNoSizeChart(true)
+                    }
+                  >
+                    {t('product_details.btn_size_chart')} <i className="bi bi-chevron-right"></i>
+                  </button>
+                )}
               </div>
-              <div className={styles.tierOptions}>
-                {tier.options.map((option, optIdx) => {
-                  const isSelected = selectedTierIndex[tierIdx] === optIdx;
-                  const isDisabled = isOptionDisabled(tierIdx, optIdx);
-
-                  return (
-                    <button
-                      key={optIdx}
-                      className={`
-                        ${styles.tierOption} 
-                        ${isSelected ? styles.active : ''}
-                        ${isDisabled ? styles.disabled : ''}
-                      `}
-                      onClick={() => {
-                        if (!isDisabled) {
-                          handleTierChange(tierIdx, optIdx);
-                        }
-                      }}
-                      disabled={isDisabled}
-                      title={isDisabled ? t('product_details.stat_status_inactive') : option}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* 6. Quantity & Actions */}
           <div className={styles.actionsSection}>
@@ -826,6 +857,23 @@ const ProductDetailsPage = () => {
                 disabled={addingToCart || currentStock <= 0}
               >
                 {t('product_details.btn_buy_now')}
+              </button>
+              <button
+                className={`${styles.wishlistBtn} ${isWishlist ? styles.isWishlist : ''}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
+                title={
+                  isWishlist
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.toast_wishlist_add')
+                }
+              >
+                <i className={`bi ${isWishlist ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                {wishlistLoading
+                  ? t('product_details.loading')
+                  : isWishlist
+                    ? t('product_details.toast_wishlist_remove')
+                    : t('product_details.favorite')}
               </button>
             </div>
             {currentStock <= 0 && (
@@ -927,9 +975,23 @@ const ProductDetailsPage = () => {
           {activeTab === 'description' && (
             <div className={styles.description}>
               <h3>{t('product_details.title_description')}</h3>
-              {product.descriptionText?.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              )) || <p>{t('product_details.no_description')}</p>}
+              {product.description && /<[a-z][\s\S]*>/i.test(product.description) ? (
+                <div
+                  className={styles.descriptionHtml}
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+              ) : (
+                (() => {
+                  const paragraphs =
+                    product.descriptionText ||
+                    (product.description || '').split(/\n+/).filter(Boolean);
+                  return paragraphs.length > 0 ? (
+                    paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                  ) : (
+                    <p>{t('product_details.no_description')}</p>
+                  );
+                })()
+              )}
 
               <div className={styles.features}>
                 <h4>{t('product_details.title_features')}</h4>
@@ -1028,9 +1090,7 @@ const ProductDetailsPage = () => {
             </div>
           )}
 
-          {activeTab === 'review' && (
-            <ProductReviewSection product={product} />
-          )}
+          {activeTab === 'review' && <ProductReviewSection product={product} />}
         </div>
       </div>
 
@@ -1062,6 +1122,79 @@ const ProductDetailsPage = () => {
 
       {/* Login Required Modal */}
       <RequireLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+
+      {/* Add to Cart Success Modal */}
+      <CartSuccessModal
+        show={showCartModal}
+        onClose={() => setShowCartModal(false)}
+        productImage={productImages[selectedImage]}
+        productName={product?.name}
+      />
+
+      {/* Size chart preview — khi có ảnh */}
+      {product?.sizeChart && (
+        <Image
+          style={{ display: 'none' }}
+          src={product.sizeChart}
+          preview={{
+            visible: showSizeChart,
+            src: product.sizeChart,
+            onVisibleChange: (v) => setShowSizeChart(v),
+          }}
+        />
+      )}
+
+      {/* Size chart modal — khi không có ảnh */}
+      {showNoSizeChart && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowNoSizeChart(false)}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 8,
+              padding: '32px 40px',
+              textAlign: 'center',
+              maxWidth: 360,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <i
+              className="bi bi-rulers"
+              style={{ fontSize: 40, color: '#ccc', display: 'block', marginBottom: 12 }}
+            ></i>
+            <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
+              {t('product_details.size_chart_empty_title')}
+            </p>
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+              {t('product_details.size_chart_empty_desc')}
+            </p>
+            <button
+              style={{
+                padding: '8px 24px',
+                background: '#f5a623',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+              onClick={() => setShowNoSizeChart(false)}
+            >
+              {t('product_details.size_chart_close')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

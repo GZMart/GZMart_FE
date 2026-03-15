@@ -24,6 +24,10 @@
   flex: 1;
 }
 
+.route-point-end {
+  justify-content: flex-end;
+}
+
 .route-icon {
   font-size: 32px;
   min-width: 40px;
@@ -32,6 +36,10 @@
 
 .route-details {
   flex: 1;
+}
+
+.route-details-end {
+  text-align: right;
 }
 
 .route-details strong {
@@ -80,6 +88,14 @@
 
   .route-point {
     width: 100%;
+  }
+
+  .route-point-end {
+    justify-content: flex-start;
+  }
+
+  .route-details-end {
+    text-align: left;
   }
 }
 

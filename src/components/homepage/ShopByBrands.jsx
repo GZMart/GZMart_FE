@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { PUBLIC_ROUTES } from '../../constants/routes';
@@ -41,6 +40,15 @@ const ShopByBrands = () => {
     },
   };
 
+  const titleParts = (() => {
+    const words = 'SHOP BY BRANDS'.split(/\s+/);
+    const splitAt = Math.ceil(words.length / 2);
+    return {
+      first: words.slice(0, splitAt).join(' '),
+      second: words.slice(splitAt).join(' '),
+    };
+  })();
+
   return (
     <div className="container py-5">
       {/* Tiêu đề section */}
@@ -49,24 +57,24 @@ const ShopByBrands = () => {
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="fw-bold text-dark mb-3 mb-md-0"
+          className="fw-bold mb-3 mb-md-0"
         >
-          SHOP BY BRANDS
+          <span className="text-dark">{titleParts.first}</span>{' '}
+          <span style={{ color: 'var(--color-primary)' }}>{titleParts.second}</span>
         </motion.h3>
 
         <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
-              whileTap={{ scale: 0.95 }}
-              className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white btn-primary"
-              style={{
-                backgroundColor: 'var(--color-primary)',
-                border: 'none',
-
-              }}
-            >
-              VIEW ALL
-            </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
+            whileTap={{ scale: 0.95 }}
+            className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white btn-primary"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              border: 'none',
+            }}
+          >
+            VIEW ALL
+          </motion.button>
         </Link>
       </div>
 
@@ -74,7 +82,7 @@ const ShopByBrands = () => {
 
       {/* Lưới thương hiệu */}
       <div className="row g-3">
-        {BRANDS.map((brand, index) => (
+        {BRANDS.map((brand) => (
           <div key={brand.id} className="col-6 col-md-4 col-lg-2">
             <motion.div
               initial="rest"

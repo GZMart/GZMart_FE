@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { reviewService } from '../../services/api';
 import Pagination from '../common/Pagination';
 import styles from '../../assets/styles/ProductReviewSection.module.css';
@@ -21,14 +22,11 @@ const ProductReviewSection = ({ product }) => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        console.log('Fetching reviews for product:', product?._id);
         const reviewsResponse = await reviewService.getProductReviews(product._id, {
           page: 1,
           limit: 100,
           sortBy,
         });
-
-        console.log('Reviews API Response:', reviewsResponse);
 
         let reviewsData = [];
         if (Array.isArray(reviewsResponse)) {
@@ -39,11 +37,24 @@ const ProductReviewSection = ({ product }) => {
           reviewsData = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [];
         }
 
-        console.log('Processed reviews:', reviewsData);
         setReviews(reviewsData);
+
+        // Hydrate button states from server-provided userReaction
+        const helpfulSet = new Set();
+        const unhelpfulSet = new Set();
+        reviewsData.forEach((review) => {
+          if (review.userReaction === 'helpful') {
+            helpfulSet.add(review._id);
+          } else if (review.userReaction === 'unhelpful') {
+            unhelpfulSet.add(review._id);
+          }
+        });
+        setHelpfulReviews(helpfulSet);
+        setUnhelpfulReviews(unhelpfulSet);
       } catch (error) {
-        console.error('Error fetching reviews:', error);
         setReviews([]);
+        setHelpfulReviews(new Set());
+        setUnhelpfulReviews(new Set());
       } finally {
         setLoading(false);
       }
@@ -58,14 +69,12 @@ const ProductReviewSection = ({ product }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && product?._id) {
-        console.log('🔄 Tab became visible, refetching reviews...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
 
     const handleFocus = () => {
       if (product?._id) {
-        console.log('🔄 Window focused, refetching reviews...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -73,7 +82,6 @@ const ProductReviewSection = ({ product }) => {
     // Listen for custom review submitted event
     const handleReviewSubmitted = (event) => {
       if (event.detail?.productId === product?._id) {
-        console.log('🔄 Review submitted for this product, refetching...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -146,106 +154,76 @@ const ProductReviewSection = ({ product }) => {
   };
 
   const handleMarkHelpful = async (reviewId) => {
+    const wasHelpful = helpfulReviews.has(reviewId);
     try {
-      // Find the actual review in the reviews array (not paginated)
-      const reviewIndex = reviews.findIndex((r) => r._id === reviewId);
-      if (reviewIndex === -1) return;
-
-      const review = reviews[reviewIndex];
-      const isCurrentlyHelpful = helpfulReviews.has(reviewId);
-      const wasUnhelpful = unhelpfulReviews.has(reviewId);
-
-      // Store original values for rollback
-      const originalHelpful = review.helpful;
-      const originalUnhelpful = review.unhelpful;
-
-      // Optimistic UI update
-      if (isCurrentlyHelpful) {
-        setHelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
-        review.helpful = Math.max(0, review.helpful - 1);
-      } else {
-        setHelpfulReviews((prev) => new Set(prev).add(reviewId));
-        if (wasUnhelpful) {
-          setUnhelpfulReviews((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(reviewId);
-            return newSet;
-          });
-          review.unhelpful = Math.max(0, review.unhelpful - 1);
-        }
-        review.helpful = (review.helpful || 0) + 1;
-      }
-
-      setReviews([...reviews]);
-
-      // API call
       const response = await reviewService.markHelpful(reviewId);
-      
-      if (response?.data) {
-        review.helpful = response.data.helpful;
-        review.unhelpful = response.data.unhelpful;
-        setReviews([...reviews]);
+      const updatedReview = response?.data || response;
+
+      if (updatedReview?._id) {
+        setReviews((prev) =>
+          prev.map((r) =>
+            r._id === updatedReview._id
+              ? { ...r, helpful: updatedReview.helpful, unhelpful: updatedReview.unhelpful }
+              : r
+          )
+        );
+
+        if (wasHelpful) {
+          // Toggle off
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        } else {
+          // Toggle on, remove from unhelpful
+          setHelpfulReviews((prev) => new Set(prev).add(reviewId));
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        }
       }
     } catch (error) {
-      console.error('Error marking review as helpful:', error);
-      // On error, just show error message, don't reload
-      alert('Failed to update review. Please try again.');
+      // noop
     }
   };
 
   const handleMarkUnhelpful = async (reviewId) => {
+    const wasUnhelpful = unhelpfulReviews.has(reviewId);
     try {
-      // Find the actual review in the reviews array (not paginated)
-      const reviewIndex = reviews.findIndex((r) => r._id === reviewId);
-      if (reviewIndex === -1) return;
-
-      const review = reviews[reviewIndex];
-      const isCurrentlyUnhelpful = unhelpfulReviews.has(reviewId);
-      const wasHelpful = helpfulReviews.has(reviewId);
-
-      // Store original values for rollback
-      const originalHelpful = review.helpful;
-      const originalUnhelpful = review.unhelpful;
-
-      // Optimistic UI update
-      if (isCurrentlyUnhelpful) {
-        setUnhelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
-        review.unhelpful = Math.max(0, review.unhelpful - 1);
-      } else {
-        setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
-        if (wasHelpful) {
-          setHelpfulReviews((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(reviewId);
-            return newSet;
-          });
-          review.helpful = Math.max(0, review.helpful - 1);
-        }
-        review.unhelpful = (review.unhelpful || 0) + 1;
-      }
-
-      setReviews([...reviews]);
-
-      // API call
       const response = await reviewService.markUnhelpful(reviewId);
-      
-      if (response?.data) {
-        review.helpful = response.data.helpful;
-        review.unhelpful = response.data.unhelpful;
-        setReviews([...reviews]);
+      const updatedReview = response?.data || response;
+
+      if (updatedReview?._id) {
+        setReviews((prev) =>
+          prev.map((r) =>
+            r._id === updatedReview._id
+              ? { ...r, helpful: updatedReview.helpful, unhelpful: updatedReview.unhelpful }
+              : r
+          )
+        );
+
+        if (wasUnhelpful) {
+          // Toggle off
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        } else {
+          // Toggle on, remove from helpful
+          setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        }
       }
     } catch (error) {
-      console.error('Error marking review as unhelpful:', error);
-      // On error, just show error message, don't reload
-      alert('Failed to update review. Please try again.');
+      // noop
     }
   };
 
@@ -392,29 +370,23 @@ const ProductReviewSection = ({ product }) => {
                 {/* Helpful Actions */}
                 <div className={styles.reviewActions}>
                   <button
-                    className={styles.helpfulButton}
+                    className={`${styles.helpfulButton} ${helpfulReviews.has(review._id) ? styles.active : ''}`}
                     onClick={() => handleMarkHelpful(review._id)}
                     title="Helpful"
-                    style={{
-                      backgroundColor: helpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: helpfulReviews.has(review._id) ? 'var(--color-primary)' : '#e0e0e0',
-                      color: helpfulReviews.has(review._id) ? 'var(--color-primary)' : '#666',
-                    }}
                   >
-                    <i className="bi bi-hand-thumbs-up"></i>
+                    <i
+                      className={`bi ${helpfulReviews.has(review._id) ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`}
+                    ></i>
                     {review.helpful || 0}
                   </button>
                   <button
-                    className={styles.unhelpfulButton}
+                    className={`${styles.unhelpfulButton} ${unhelpfulReviews.has(review._id) ? styles.active : ''}`}
                     onClick={() => handleMarkUnhelpful(review._id)}
                     title="Not Helpful"
-                    style={{
-                      backgroundColor: unhelpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: unhelpfulReviews.has(review._id) ? 'var(--color-primary)' : '#e0e0e0',
-                      color: unhelpfulReviews.has(review._id) ? 'var(--color-primary)' : '#666',
-                    }}
                   >
-                    <i className="bi bi-hand-thumbs-down"></i>
+                    <i
+                      className={`bi ${unhelpfulReviews.has(review._id) ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`}
+                    ></i>
                     {review.unhelpful || 0}
                   </button>
                 </div>
@@ -443,3 +415,9 @@ const ProductReviewSection = ({ product }) => {
 };
 
 export default ProductReviewSection;
+
+ProductReviewSection.propTypes = {
+  product: PropTypes.shape({
+    _id: PropTypes.string,
+  }),
+};

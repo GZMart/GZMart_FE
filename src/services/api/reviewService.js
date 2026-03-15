@@ -1,39 +1,27 @@
 import axiosClient from '../axiosClient';
 
 /**
- * Create a new review for a product
+ * Create/update review(s)
  * @param {Object} reviewData - Review data
- * @param {string} reviewData.productId - Product ID
+ * @param {string} [reviewData.productId] - Product ID (optional when orderId is provided)
  * @param {number} reviewData.rating - Rating (1-5)
  * @param {string} reviewData.title - Review title (optional)
  * @param {string} reviewData.content - Review content (required, min 10 chars)
  * @param {Array} reviewData.images - Array of image URLs (max 5)
- * @param {string} reviewData.orderId - Order ID for verified purchase (optional)
+ * @param {string} [reviewData.orderId] - Order ID; when provided backend applies to products in order
  */
 const createReview = async (reviewData) => {
-  console.log('🔵 [ADD RATING API] Request:', {
-    endpoint: 'POST /api/reviews',
-    data: reviewData,
-    timestamp: new Date().toISOString(),
-  });
+  const response = await axiosClient.post('/api/reviews', reviewData);
+  return response.data;
+};
 
-  try {
-    const response = await axiosClient.post('/api/reviews', reviewData);
-    console.log('✅ [ADD RATING API] Response:', {
-      status: response.status,
-      data: response.data,
-      timestamp: new Date().toISOString(),
-    });
-    return response.data;
-  } catch (error) {
-    console.error('❌ [ADD RATING API] Error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      timestamp: new Date().toISOString(),
-    });
-    throw error;
-  }
+/**
+ * Get current user's reviews for a specific order
+ * @param {string} orderId - Order ID
+ */
+const getOrderReviews = async (orderId) => {
+  const response = await axiosClient.get(`/api/reviews/order/${orderId}`);
+  return response.data;
 };
 
 /**
@@ -148,6 +136,7 @@ const getReviewStats = async (productId) => {
 
 const reviewService = {
   createReview,
+  getOrderReviews,
   getProductReviews,
   getUserReviews,
   getReviewById,
