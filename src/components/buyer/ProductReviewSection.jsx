@@ -154,6 +154,7 @@ const ProductReviewSection = ({ product }) => {
   };
 
   const handleMarkHelpful = async (reviewId) => {
+    const wasHelpful = helpfulReviews.has(reviewId);
     try {
       const response = await reviewService.markHelpful(reviewId);
       const updatedReview = response?.data || response;
@@ -162,29 +163,21 @@ const ProductReviewSection = ({ product }) => {
         setReviews((prev) =>
           prev.map((r) =>
             r._id === updatedReview._id
-              ? {
-                  ...r,
-                  helpful: updatedReview.helpful,
-                  unhelpful: updatedReview.unhelpful,
-                  userReaction: updatedReview.userReaction || 'none',
-                }
+              ? { ...r, helpful: updatedReview.helpful, unhelpful: updatedReview.unhelpful }
               : r
           )
         );
 
-        if (updatedReview.userReaction === 'helpful') {
-          setHelpfulReviews((prev) => new Set(prev).add(reviewId));
-          setUnhelpfulReviews((prev) => {
-            const next = new Set(prev);
-            next.delete(reviewId);
-            return next;
-          });
-        } else {
+        if (wasHelpful) {
+          // Toggle off
           setHelpfulReviews((prev) => {
             const next = new Set(prev);
             next.delete(reviewId);
             return next;
           });
+        } else {
+          // Toggle on, remove from unhelpful
+          setHelpfulReviews((prev) => new Set(prev).add(reviewId));
           setUnhelpfulReviews((prev) => {
             const next = new Set(prev);
             next.delete(reviewId);
@@ -198,6 +191,7 @@ const ProductReviewSection = ({ product }) => {
   };
 
   const handleMarkUnhelpful = async (reviewId) => {
+    const wasUnhelpful = unhelpfulReviews.has(reviewId);
     try {
       const response = await reviewService.markUnhelpful(reviewId);
       const updatedReview = response?.data || response;
@@ -206,29 +200,21 @@ const ProductReviewSection = ({ product }) => {
         setReviews((prev) =>
           prev.map((r) =>
             r._id === updatedReview._id
-              ? {
-                  ...r,
-                  helpful: updatedReview.helpful,
-                  unhelpful: updatedReview.unhelpful,
-                  userReaction: updatedReview.userReaction || 'none',
-                }
+              ? { ...r, helpful: updatedReview.helpful, unhelpful: updatedReview.unhelpful }
               : r
           )
         );
 
-        if (updatedReview.userReaction === 'unhelpful') {
-          setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
-          setHelpfulReviews((prev) => {
-            const next = new Set(prev);
-            next.delete(reviewId);
-            return next;
-          });
-        } else {
+        if (wasUnhelpful) {
+          // Toggle off
           setUnhelpfulReviews((prev) => {
             const next = new Set(prev);
             next.delete(reviewId);
             return next;
           });
+        } else {
+          // Toggle on, remove from helpful
+          setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
           setHelpfulReviews((prev) => {
             const next = new Set(prev);
             next.delete(reviewId);
@@ -384,29 +370,23 @@ const ProductReviewSection = ({ product }) => {
                 {/* Helpful Actions */}
                 <div className={styles.reviewActions}>
                   <button
-                    className={styles.helpfulButton}
+                    className={`${styles.helpfulButton} ${helpfulReviews.has(review._id) ? styles.active : ''}`}
                     onClick={() => handleMarkHelpful(review._id)}
                     title="Helpful"
-                    style={{
-                      backgroundColor: helpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: helpfulReviews.has(review._id) ? 'var(--color-primary)' : '#e0e0e0',
-                      color: helpfulReviews.has(review._id) ? 'var(--color-primary)' : '#666',
-                    }}
                   >
-                    <i className="bi bi-hand-thumbs-up"></i>
+                    <i
+                      className={`bi ${helpfulReviews.has(review._id) ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`}
+                    ></i>
                     {review.helpful || 0}
                   </button>
                   <button
-                    className={styles.unhelpfulButton}
+                    className={`${styles.unhelpfulButton} ${unhelpfulReviews.has(review._id) ? styles.active : ''}`}
                     onClick={() => handleMarkUnhelpful(review._id)}
                     title="Not Helpful"
-                    style={{
-                      backgroundColor: unhelpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: unhelpfulReviews.has(review._id) ? 'var(--color-primary)' : '#e0e0e0',
-                      color: unhelpfulReviews.has(review._id) ? 'var(--color-primary)' : '#666',
-                    }}
                   >
-                    <i className="bi bi-hand-thumbs-down"></i>
+                    <i
+                      className={`bi ${unhelpfulReviews.has(review._id) ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`}
+                    ></i>
                     {review.unhelpful || 0}
                   </button>
                 </div>

@@ -33,11 +33,14 @@ import coinService from '@services/coin.service';
 import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
 import ReturnRequestModal from '@components/buyer/ReturnRequestModal';
 import locationService from '@services/api/locationService';
-import { Modal, Form } from 'react-bootstrap';
+import { Offcanvas, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next'; // Added import
 import ReviewModal from '@components/common/ReviewModal';
-import { io } from 'socket.io-client';
+import socketService from '@services/socket/socketService';
+import { SOCKET_EVENTS } from '@constants';
+import { addToCart as addToCartApi } from '@services/api/cartService';
+import rmaService from '@services/api/rmaService';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -65,6 +68,7 @@ const ProfilePage = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [activeReturnRequest, setActiveReturnRequest] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
   // Order Filter & Search State
@@ -75,6 +79,7 @@ const ProfilePage = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewingOrder, setReviewingOrder] = useState(null);
   const [reviewSubmitting] = useState(false);
+  const [reorderLoadingId, setReorderLoadingId] = useState(null);
 
   // Coin State
   const [coinBalance, setCoinBalance] = useState(null);
@@ -99,7 +104,6 @@ const ProfilePage = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const fileInputRef = useRef(null);
-  const socketRef = useRef(null);
 
   // Address State
   const [addresses, setAddresses] = useState([]);
@@ -227,58 +231,80 @@ const ProfilePage = () => {
   }, [searchParams, activeTab, selectedOrder]);
 
   // Socket.io connection for real-time order updates
-  const socketOrders = useMemo(() => orders.map((o) => ({ _id: o._id })), [orders]);
-  const socketOrderIds = useMemo(() => orders.map((o) => o._id).join(','), [orders]);
+  const trackedOrderIds = useMemo(() => {
+    const ids = new Set(orders.map((order) => order?._id).filter(Boolean));
+
+    if (selectedOrder?.id) {
+      ids.add(selectedOrder.id);
+    }
+
+    if (selectedOrderDetails?._id) {
+      ids.add(selectedOrderDetails._id);
+    }
+
+    const queryOrderId = searchParams.get('orderId');
+    if (queryOrderId) {
+      ids.add(queryOrderId);
+    }
+
+    return Array.from(ids);
+  }, [orders, searchParams, selectedOrder, selectedOrderDetails]);
+
+  const trackedOrderIdsKey = useMemo(
+    () => trackedOrderIds.slice().sort().join(','),
+    [trackedOrderIds]
+  );
 
   useEffect(() => {
-    if (!isAuthenticated || !user || socketOrders.length === 0) {
+    if (!isAuthenticated || !user || activeTab !== 'orders' || trackedOrderIds.length === 0) {
       return;
     }
 
-    // Connect to socket
-    const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000', {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-    });
+    socketService.connect(user?._id);
+    socketService.setUserId(user?._id);
 
-    socketRef.current = socket;
+    const cleanupListeners = [];
 
-    socket.on('connect', () => {
-      // Socket connected
-    });
+    const applyOrderStatusUpdate = (data) => {
+      if (!data?.orderId || !data?.status) {
+        return;
+      }
 
-    socket.on('disconnect', () => {
-      // Socket disconnected
-    });
+      if (!trackedOrderIds.includes(data.orderId)) {
+        return;
+      }
 
-    // Listen for order status updates for all user's orders
-    socketOrders.forEach((order) => {
-      const statusEventName = `order:status:${order._id}`;
-      const arrivedEventName = `order:arrived:${order._id}`;
+      setOrders((prevOrders) =>
+        prevOrders.map((o) => (o._id === data.orderId ? { ...o, status: data.status, ...data } : o))
+      );
 
-      socket.on(statusEventName, (data) => {
-        // Update order in the list
-        setOrders((prevOrders) =>
-          prevOrders.map((o) =>
-            o._id === data.orderId ? { ...o, status: data.status, ...data } : o
-          )
-        );
-
-        // If this is the selected order, update its details too
-        setSelectedOrderDetails((prev) => {
-          if (prev?._id === data.orderId) {
-            return { ...prev, status: data.status, ...data };
-          }
-          return prev;
-        });
-
-        // Show toast notification
-        const orderNum = data.orderNumber || data.orderId.slice(-6);
-        toast.info(`Order #${orderNum} status: ${data.status}`);
+      setSelectedOrderDetails((prev) => {
+        if (prev?._id === data.orderId) {
+          return { ...prev, status: data.status, ...data };
+        }
+        return prev;
       });
 
-      socket.on(arrivedEventName, (data) => {
+      const orderNum = data.orderNumber || data.orderId.slice(-6);
+      toast.info(`Order #${orderNum} status: ${data.status}`);
+    };
+
+    socketService.on(SOCKET_EVENTS.ORDER_STATUS_UPDATED, applyOrderStatusUpdate);
+    cleanupListeners.push(() =>
+      socketService.off(SOCKET_EVENTS.ORDER_STATUS_UPDATED, applyOrderStatusUpdate)
+    );
+
+    trackedOrderIds.forEach((trackedOrderId) => {
+      const orderStatusEventName = `order:status:${trackedOrderId}`;
+      socketService.on(orderStatusEventName, applyOrderStatusUpdate);
+      cleanupListeners.push(() => socketService.off(orderStatusEventName, applyOrderStatusUpdate));
+    });
+
+    // Listen for order arrived events of all tracked orders
+    trackedOrderIds.forEach((trackedOrderId) => {
+      const arrivedEventName = `order:arrived:${trackedOrderId}`;
+
+      const handleArrivedUpdate = (data) => {
         // Update order status to delivered
         setOrders((prevOrders) =>
           prevOrders.map((o) =>
@@ -296,16 +322,18 @@ const ProfilePage = () => {
         // Show toast notification
         const orderNum = data.orderNumber || data.orderId.slice(-6);
         toast.success(`Order #${orderNum} has been delivered! 🎉`);
-      });
+      };
+
+      socketService.on(arrivedEventName, handleArrivedUpdate);
+
+      cleanupListeners.push(() => socketService.off(arrivedEventName, handleArrivedUpdate));
     });
 
     // Cleanup
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
+      cleanupListeners.forEach((cleanup) => cleanup());
     };
-  }, [isAuthenticated, socketOrderIds, socketOrders, user]);
+  }, [activeTab, isAuthenticated, trackedOrderIds, trackedOrderIdsKey, user]);
 
   // Update URL when tab changes
   const handleTabChange = (tab) => {
@@ -606,6 +634,24 @@ const ProfilePage = () => {
     [searchParams, setSearchParams]
   );
 
+  useEffect(() => {
+    const fetchActiveReturnRequest = async () => {
+      if (!selectedOrderDetails?._id) {
+        setActiveReturnRequest(null);
+        return;
+      }
+
+      try {
+        const response = await rmaService.getOrderReturnRequest(selectedOrderDetails._id);
+        setActiveReturnRequest(response.data || null);
+      } catch (_error) {
+        setActiveReturnRequest(null);
+      }
+    };
+
+    fetchActiveReturnRequest();
+  }, [selectedOrderDetails?._id]);
+
   // Open order details directly from URL: /buyer/profile?tab=orders&orderId=<id>
   useEffect(() => {
     if (!isAuthenticated || !user || activeTab !== 'orders') {
@@ -734,6 +780,159 @@ const ProfilePage = () => {
     } catch (error) {
       console.error('Error after review submission:', error);
     }
+  };
+
+  const getVariantFromTierSelections = (tierSelections = {}, fallbackItem = {}) => {
+    const entries = Object.entries(tierSelections || {});
+
+    const findValueByKeywords = (keywords) => {
+      const matched = entries.find(([key]) => {
+        const normalized = String(key).toLowerCase();
+        return keywords.some((keyword) => normalized.includes(keyword));
+      });
+
+      return matched?.[1] || null;
+    };
+
+    const color =
+      findValueByKeywords(['color', 'mau', 'màu']) ||
+      fallbackItem.color ||
+      fallbackItem.variantColor;
+    const size =
+      findValueByKeywords(['size', 'kich', 'kích']) ||
+      fallbackItem.size ||
+      fallbackItem.variantSize;
+
+    return { color, size };
+  };
+
+  const getSellerIdFromOrderItem = (item) => {
+    const seller = item?.productId?.sellerId;
+    return seller?._id || seller || null;
+  };
+
+  const buildChatProductInfoFromOrderItem = (item) => {
+    const product = item?.productId;
+    const productId = product?._id || product;
+
+    if (!productId) {
+      return null;
+    }
+
+    const variantText = item?.tierSelections
+      ? Object.values(item.tierSelections).filter(Boolean).join(', ')
+      : '';
+
+    return {
+      productId,
+      name: product?.name || 'Purchased Product',
+      image: product?.images?.[0] || 'https://via.placeholder.com/80',
+      price: Number(item?.price || 0),
+      originalPrice: Number(item?.originalPrice || item?.price || 0),
+      variant: variantText || undefined,
+    };
+  };
+
+  const handleContactSeller = useCallback(
+    (orderData, preferredSellerId = null) => {
+      const sourceOrder = orderData || selectedOrderDetails;
+      const orderItems = sourceOrder?.items || [];
+
+      if (orderItems.length === 0) {
+        toast.error('No purchased product found to share in chat.');
+        return;
+      }
+
+      const fallbackSellerId = getSellerIdFromOrderItem(orderItems[0]);
+      const sellerId = preferredSellerId || fallbackSellerId;
+
+      if (!sellerId) {
+        toast.error('Unable to determine seller for this order.');
+        return;
+      }
+
+      const sellerItems = orderItems.filter(
+        (item) => String(getSellerIdFromOrderItem(item) || '') === String(sellerId)
+      );
+
+      const productInfos = (sellerItems.length > 0 ? sellerItems : orderItems)
+        .map(buildChatProductInfoFromOrderItem)
+        .filter(Boolean);
+
+      if (productInfos.length === 0) {
+        toast.error('No valid product can be attached to chat.');
+        return;
+      }
+
+      const openChatEvent = new CustomEvent('openChatWithShop', {
+        detail: {
+          shopId: sellerId,
+          productInfos,
+          autoSendProductMessages: true,
+          orderId: sourceOrder?._id,
+        },
+      });
+
+      window.dispatchEvent(openChatEvent);
+    },
+    [selectedOrderDetails]
+  );
+
+  const handleReorder = async (orderData) => {
+    const sourceOrder = orderData || selectedOrderDetails;
+    const orderItems = sourceOrder?.items || [];
+
+    if (!sourceOrder?._id || orderItems.length === 0) {
+      toast.error('This order has no items to reorder');
+      return;
+    }
+
+    setReorderLoadingId(sourceOrder._id);
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const item of orderItems) {
+      const productId = item?.productId?._id || item?.productId;
+      const quantity = Number(item?.quantity || 1);
+      const { color, size } = getVariantFromTierSelections(item?.tierSelections, item);
+
+      if (!productId || !quantity) {
+        failedCount += 1;
+        continue;
+      }
+
+      try {
+        await addToCartApi({ productId, quantity, color, size });
+        successCount += 1;
+      } catch (error) {
+        failedCount += 1;
+        console.error('Reorder item failed:', {
+          productId,
+          quantity,
+          color,
+          size,
+          error,
+        });
+      }
+    }
+
+    setReorderLoadingId(null);
+
+    if (successCount === 0) {
+      toast.error('Unable to reorder. Some products/variants may no longer be available.');
+      return;
+    }
+
+    if (failedCount > 0) {
+      toast.warning(
+        `Added ${successCount} item(s) to cart. ${failedCount} item(s) could not be reordered.`
+      );
+    } else {
+      toast.success('Reorder successful. Items have been added to your cart.');
+    }
+
+    navigate(BUYER_ROUTES.CART);
   };
 
   // Get user display info
@@ -1212,7 +1411,16 @@ const ProfilePage = () => {
                         <span className={styles.shopName}>
                           {order.items?.[0]?.productId?.sellerId?.fullName || 'GZMart Shop'}
                         </span>
-                        <button className={styles.shopChatBtn}>
+                        <button
+                          className={styles.shopChatBtn}
+                          onClick={() =>
+                            handleContactSeller(
+                              order,
+                              order.items?.[0]?.productId?.sellerId?._id ||
+                                order.items?.[0]?.productId?.sellerId
+                            )
+                          }
+                        >
                           <MessageCircle size={16} strokeWidth={2} />
                           Chat
                         </button>
@@ -1277,7 +1485,13 @@ const ProfilePage = () => {
                         </span>
                       </div>
                       <div className={styles.orderCardActions}>
-                        <button className={styles.orderCardActionSecondary}>Reorder</button>
+                        <button
+                          className={styles.orderCardActionSecondary}
+                          onClick={() => handleReorder(order)}
+                          disabled={reorderLoadingId === order._id}
+                        >
+                          {reorderLoadingId === order._id ? 'Reordering...' : 'Reorder'}
+                        </button>
                         {order.status === 'completed' && (
                           <button
                             className={styles.orderCardActionSecondary}
@@ -1286,7 +1500,18 @@ const ProfilePage = () => {
                             Review
                           </button>
                         )}
-                        <button className={styles.orderCardActionSecondary}>Contact Seller</button>
+                        <button
+                          className={styles.orderCardActionSecondary}
+                          onClick={() =>
+                            handleContactSeller(
+                              order,
+                              order.items?.[0]?.productId?.sellerId?._id ||
+                                order.items?.[0]?.productId?.sellerId
+                            )
+                          }
+                        >
+                          Contact Seller
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1397,7 +1622,16 @@ const ProfilePage = () => {
                         {selectedOrderDetails.items?.[0]?.productId?.sellerId?.fullName ||
                           'GZMart Shop'}
                       </span>
-                      <button className={styles.orderDetailsShopBtn}>
+                      <button
+                        className={styles.orderDetailsShopBtn}
+                        onClick={() =>
+                          handleContactSeller(
+                            selectedOrderDetails,
+                            selectedOrderDetails.items?.[0]?.productId?.sellerId?._id ||
+                              selectedOrderDetails.items?.[0]?.productId?.sellerId
+                          )
+                        }
+                      >
                         <MessageCircle size={16} strokeWidth={2} />
                         Chat
                       </button>
@@ -1485,9 +1719,10 @@ const ProfilePage = () => {
                 <div className={styles.orderDetailsActions}>
                   <button
                     className={styles.orderDetailsActionPrimary}
-                    onClick={() => handleOpenReviewModal(selectedOrderDetails)}
+                    onClick={() => handleReorder(selectedOrderDetails)}
+                    disabled={reorderLoadingId === selectedOrderDetails._id}
                   >
-                    Reorder
+                    {reorderLoadingId === selectedOrderDetails._id ? 'Reordering...' : 'Reorder'}
                   </button>
                   {selectedOrderDetails.status === 'completed' && (
                     <button
@@ -1497,14 +1732,34 @@ const ProfilePage = () => {
                       Add Rating
                     </button>
                   )}
-                  <button className={styles.orderDetailsActionSecondary}>Contact Seller</button>
+                  <button
+                    className={styles.orderDetailsActionSecondary}
+                    onClick={() =>
+                      handleContactSeller(
+                        selectedOrderDetails,
+                        selectedOrderDetails.items?.[0]?.productId?.sellerId?._id ||
+                          selectedOrderDetails.items?.[0]?.productId?.sellerId
+                      )
+                    }
+                  >
+                    Contact Seller
+                  </button>
                   {(selectedOrderDetails.status === 'delivered' ||
-                    selectedOrderDetails.status === 'completed') && (
+                    selectedOrderDetails.status === 'completed' ||
+                    activeReturnRequest?._id) && (
                     <button
                       className={styles.orderDetailsActionSecondary}
-                      onClick={() => setShowReturnModal(true)}
+                      onClick={() => {
+                        if (activeReturnRequest?._id) {
+                          navigate(`/buyer/returns/${activeReturnRequest._id}`);
+                          return;
+                        }
+                        setShowReturnModal(true);
+                      }}
                     >
-                      Request Return/Refund
+                      {activeReturnRequest?._id
+                        ? 'View Refund/Return Status'
+                        : 'Request Return/Refund'}
                     </button>
                   )}
                 </div>
@@ -1665,13 +1920,13 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-      <Modal
+      <Offcanvas
         show={showAddressModal}
         onHide={() => setShowAddressModal(false)}
-        centered
-        contentClassName={styles.premiumModalContent}
+        placement="end"
+        className={styles.addressDrawer}
       >
-        <div className={styles.modalHeader}>
+        <div className={styles.drawerHeader}>
           <h4 className={styles.modalTitle}>
             {editingAddress
               ? t('profile_page.address.modal.title_edit')
@@ -1682,7 +1937,7 @@ const ProfilePage = () => {
           </button>
         </div>
 
-        <div className={styles.modalBody}>
+        <Offcanvas.Body className={styles.drawerBody}>
           <Form>
             <div className={styles.modalFormGroup}>
               <label className={styles.modalLabel}>
@@ -1922,9 +2177,9 @@ const ProfilePage = () => {
               </label>
             </div>
           </Form>
-        </div>
+        </Offcanvas.Body>
 
-        <div className={styles.modalFooter}>
+        <div className={styles.drawerFooter}>
           <button className={styles.modalCancelBtn} onClick={() => setShowAddressModal(false)}>
             {t('profile_page.address.modal.cancel')}
           </button>
@@ -1934,7 +2189,7 @@ const ProfilePage = () => {
               : t('profile_page.address.modal.save')}
           </button>
         </div>
-      </Modal>
+      </Offcanvas>
       <ReviewModal
         isOpen={showReviewModal}
         onClose={() => {
@@ -1954,6 +2209,7 @@ const ProfilePage = () => {
         onHide={() => setShowReturnModal(false)}
         onSuccess={(_returnRequest) => {
           toast.success('Return request submitted successfully!');
+          setActiveReturnRequest(_returnRequest || null);
           setShowReturnModal(false);
           // Optionally refresh order details
           if (selectedOrderDetails?._id) {

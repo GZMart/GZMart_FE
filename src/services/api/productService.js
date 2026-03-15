@@ -89,6 +89,16 @@ export const productService = {
     await axiosClient.get(`${BASE_URL}/trending`, { params: { limit } }),
 
   /**
+   * Get today's recommendations
+   * @param {number} limit - Number of products to fetch
+   * @returns {Promise} Recommended products for today
+   */
+  getTodayRecommendations: async (limit = 10) =>
+    await axiosClient.get(`${BASE_URL}/today-recommendations`, {
+      params: { limit },
+    }),
+
+  /**
    * Get new arrival products
    * @param {number} limit - Number of products to fetch
    * @returns {Promise} New arrival products
