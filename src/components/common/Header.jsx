@@ -1349,7 +1349,7 @@ const Header = () => {
             {(!isAuthenticated || user?.role === USER_ROLES.BUYER) && (
               <div>
                 Wanna become a seller?{' '}
-                <Link to={BUYER_ROUTES.SELLER_APPLICATION} className="text-decoration-none fw-bold ms-1" style={{ color: 'var(--color-primary)', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-secondary)'} onMouseLeave={(e) => e.target.style.color = 'var(--color-primary)'}>                  Sent application here
+                <Link to={BUYER_ROUTES.SELLER_APPLICATION} className="text-decoration-none fw-bold ms-1" style={{ color: 'var(--color-danger)', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-secondary)'} onMouseLeave={(e) => e.target.style.color = 'var(--color-primary)'}>                  Sent application here
                 </Link>
               </div>
             )}
