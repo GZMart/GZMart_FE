@@ -78,6 +78,7 @@ const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Temporary filter states (before Apply)
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
@@ -170,6 +171,7 @@ const ProductsPage = () => {
         });
 
         setProducts(transformed);
+        setTotalCount(response.count || response.pagination?.total || 0);
         setTotalPages(
           response.pagination?.pages || Math.ceil((response.count || 0) / apiFilters.limit)
         );
@@ -329,6 +331,7 @@ const ProductsPage = () => {
     return sorted;
   }, [filteredProducts, sortBy, priceOrder, selectedSizes]);
 
+  const totalProducts = totalCount || filteredProducts.length;
   const displayedProducts = sortedProducts;
 
   const SkeletonCard = () => (
@@ -556,6 +559,77 @@ const ProductsPage = () => {
 
           {/* Main Content */}
           <main className={styles.mainContent}>
+            {/* Result Info */}
+            {!loading && (
+              <div className={styles.resultInfo}>
+                <span className={styles.resultCount}>
+                  {searchQuery && (
+                    <>
+                      <i className="bi bi-search"></i> Kết quả cho{' '}
+                      <strong>&ldquo;{searchQuery}&rdquo;</strong> &middot;{' '}
+                    </>
+                  )}
+                  {totalProducts} sản phẩm
+                </span>
+                {(selectedLocations.length > 0 ||
+                  selectedBrands.length > 0 ||
+                  selectedRatings.length > 0 ||
+                  priceRange.min > 0 ||
+                  priceRange.max < 10000000) && (
+                  <div className={styles.activeFilters}>
+                    {selectedLocations.map((locId) => {
+                      const loc = locations.find((l) => l.id === locId);
+                      return loc ? (
+                        <span key={locId} className={styles.filterTag}>
+                          {loc.name}
+                          <i
+                            className="bi bi-x"
+                            onClick={() => toggleFilter('location', locId)}
+                          ></i>
+                        </span>
+                      ) : null;
+                    })}
+                    {selectedBrands.map((brandId) => {
+                      const brand = brands.find((b) => b.id === brandId);
+                      return brand ? (
+                        <span key={brandId} className={styles.filterTag}>
+                          {brand.name}
+                          <i
+                            className="bi bi-x"
+                            onClick={() => toggleFilter('brand', brandId)}
+                          ></i>
+                        </span>
+                      ) : null;
+                    })}
+                    {(priceRange.min > 0 || priceRange.max < 10000000) && (
+                      <span className={styles.filterTag}>
+                        {priceRange.min > 0
+                          ? `₫${priceRange.min.toLocaleString()}`
+                          : '₫0'}{' '}
+                        —{' '}
+                        {priceRange.max < 10000000
+                          ? `₫${priceRange.max.toLocaleString()}`
+                          : '∞'}
+                        <i className="bi bi-x" onClick={handleResetPriceFilter}></i>
+                      </span>
+                    )}
+                    {selectedRatings.map((ratingId) => {
+                      const r = ratings.find((rt) => rt.id === ratingId);
+                      return r ? (
+                        <span key={ratingId} className={styles.filterTag}>
+                          {r.value}★ trở lên
+                          <i
+                            className="bi bi-x"
+                            onClick={() => toggleFilter('rating', ratingId)}
+                          ></i>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Sort Bar */}
             <div className={styles.sortBar}>
               <div className={styles.sortBarLeft}>
