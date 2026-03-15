@@ -27,6 +27,7 @@ const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPag
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
+const BuyerReturnStatusPage = lazy(() => import('@pages/buyer/BuyerReturnStatusPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
 const TrackOrderDetailsPage = lazy(() => import('@pages/buyer/TrackOrderDetailsPage'));
@@ -275,6 +276,13 @@ export const routeConfig = [
   {
     path: '/buyer/wallet',
     element: MyWalletPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/returns/:requestId',
+    element: BuyerReturnStatusPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',

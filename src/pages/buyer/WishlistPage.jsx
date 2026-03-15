@@ -171,7 +171,7 @@ const WishlistPage = () => {
           </div>
           <div className={styles.productInfo}>
             <h6 className={styles.productName}>{text}</h6>
-            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
               Variant: {record.wishlistColor || 'Default'} / {record.wishlistSize || 'Default'}
             </div>
           </div>
@@ -236,7 +236,6 @@ const WishlistPage = () => {
             </Tooltip>
             <Tooltip title="Remove from Wishlist">
               <Button
-                danger
                 icon={<DeleteOutlined />}
                 onClick={() => handleRemoveFromWishlist(record)}
                 disabled={isLoading}
@@ -261,11 +260,10 @@ const WishlistPage = () => {
               onClick={() => navigate(-1)}
               className={styles.backButton}
             />
-            <span className={styles.backText}>Back</span>
+            <Title level={1} className={styles.wishlistTitle}>
+              Wishlist
+            </Title>
           </div>
-          <Title level={1} className={styles.wishlistTitle}>
-            Wishlist
-          </Title>
         </div>
 
         {/* Loading State */}

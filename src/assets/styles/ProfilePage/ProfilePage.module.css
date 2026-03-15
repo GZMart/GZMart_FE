@@ -1501,6 +1501,41 @@
   overflow: hidden;
 }
 
+.addressDrawer {
+  width: min(560px, 95vw) !important;
+}
+
+.addressDrawer :global(.offcanvas-header),
+.addressDrawer :global(.offcanvas-body) {
+  padding: 0;
+}
+
+.addressDrawer :global(.offcanvas-body) {
+  overflow-y: auto;
+}
+
+.drawerHeader {
+  background: white;
+  padding: 2rem 2rem 1rem 2rem;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawerBody {
+  padding: 1rem 2rem 1rem 2rem !important;
+}
+
+.drawerFooter {
+  padding: 1rem 2rem 2rem 2rem;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  background: white;
+}
+
 .modalHeader {
   background: white;
   padding: 2rem 2rem 1rem 2rem;

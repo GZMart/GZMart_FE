@@ -1100,7 +1100,12 @@ const Header = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [searchSuggestions, setSearchSuggestions] = useState({
+    products: [],
+    categories: [],
+    brands: [],
+  });
+  const [recentSearches, setRecentSearches] = useState([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -1110,6 +1115,38 @@ const Header = () => {
   const languageDropdownRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const megaMenuRef = useRef(null);
+
+  const hasAutocompleteResults =
+    (searchSuggestions.products && searchSuggestions.products.length > 0) ||
+    (searchSuggestions.categories && searchSuggestions.categories.length > 0) ||
+    (searchSuggestions.brands && searchSuggestions.brands.length > 0);
+
+  const saveRecentSearch = (query) => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const normalized = trimmed.toLowerCase();
+    const next = [
+      trimmed,
+      ...recentSearches.filter((item) => item.toLowerCase() !== normalized),
+    ].slice(0, 6);
+    setRecentSearches(next);
+    localStorage.setItem('gzm_recent_searches', JSON.stringify(next));
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    localStorage.removeItem('gzm_recent_searches');
+  };
+
+  const handleRecentSearchClick = (query) => {
+    setSearchQuery(query);
+    saveRecentSearch(query);
+    navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(query)}`);
+    setShowSearchDropdown(false);
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1146,6 +1183,21 @@ const Header = () => {
     []
   );
 
+  useEffect(() => {
+    const raw = localStorage.getItem('gzm_recent_searches');
+    if (!raw) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentSearches(parsed.filter((q) => typeof q === 'string' && q.trim().length > 0));
+      }
+    } catch (error) {
+      localStorage.removeItem('gzm_recent_searches');
+    }
+  }, []);
+
   // Fetch cart data when user logs in (only when authentication state changes to true)
   const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
@@ -1178,8 +1230,9 @@ const Header = () => {
 
     // Don't fetch suggestions for empty or very short queries
     if (value.trim().length < 2) {
-      setSearchSuggestions([]);
-      setShowSearchDropdown(false);
+      setSearchSuggestions({ products: [], categories: [], brands: [] });
+      setSearchLoading(false);
+      setShowSearchDropdown(recentSearches.length > 0 && value.trim().length === 0);
       return;
     }
 
@@ -1193,18 +1246,24 @@ const Header = () => {
 
         // Handle response - backend returns data directly or nested
         const suggestions = response.data?.data || response.data || {};
+        const normalizedSuggestions = {
+          products: Array.isArray(suggestions.products) ? suggestions.products : [],
+          categories: Array.isArray(suggestions.categories) ? suggestions.categories : [],
+          brands: Array.isArray(suggestions.brands) ? suggestions.brands : [],
+        };
 
-        setSearchSuggestions(suggestions);
+        setSearchSuggestions(normalizedSuggestions);
 
         // Show dropdown if we have any suggestions
         const hasResults =
-          (suggestions.products && suggestions.products.length > 0) ||
-          (suggestions.categories && suggestions.categories.length > 0) ||
-          (suggestions.brands && suggestions.brands.length > 0);
+          normalizedSuggestions.products.length > 0 ||
+          normalizedSuggestions.categories.length > 0 ||
+          normalizedSuggestions.brands.length > 0;
 
         setShowSearchDropdown(hasResults);
       } catch (error) {
-        setSearchSuggestions({});
+        setSearchSuggestions({ products: [], categories: [], brands: [] });
+        setShowSearchDropdown(false);
       } finally {
         setSearchLoading(false);
       }
@@ -1220,6 +1279,7 @@ const Header = () => {
     const trimmedQuery = searchQuery.trim();
     // Navigate to products page (with or without search query)
     if (trimmedQuery) {
+      saveRecentSearch(trimmedQuery);
       navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
       // No query - show all products
@@ -1238,6 +1298,7 @@ const Header = () => {
       navigate(`${PUBLIC_ROUTES.CATEGORY_PRODUCTS.replace(':categoryId', suggestion._id)}`);
     } else if (suggestion.name) {
       setSearchQuery(suggestion.name);
+      saveRecentSearch(suggestion.name);
       navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(suggestion.name)}`);
     }
     setShowSearchDropdown(false);
@@ -1578,8 +1639,8 @@ const Header = () => {
                 <ShoppingCart size={24} />
                 {cartTotalItems > 0 && (
                   <span
-                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                    style={{ fontSize: '0.6rem' }}
+                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                    style={{ fontSize: '0.6rem', backgroundColor: '#b13c36', color: '#fff' }}
                   >
                     {cartTotalItems}
                   </span>
@@ -1618,11 +1679,13 @@ const Header = () => {
                       placeholder={t('header.search_placeholder')}
                       value={searchQuery}
                       onChange={handleSearchChange}
-                      onFocus={() =>
-                        searchQuery.trim().length >= 2 &&
-                        searchSuggestions.length > 0 &&
-                        setShowSearchDropdown(true)
-                      }
+                      onFocus={() => {
+                        if (searchQuery.trim().length >= 2) {
+                          setShowSearchDropdown(hasAutocompleteResults);
+                        } else if (recentSearches.length > 0) {
+                          setShowSearchDropdown(true);
+                        }
+                      }}
                     />
                   </form>
 
@@ -1639,6 +1702,40 @@ const Header = () => {
                         zIndex: 1000,
                       }}
                     >
+                      {/* Recent Searches */}
+                      {searchQuery.trim().length < 2 && recentSearches.length > 0 && (
+                        <div className="py-2">
+                          <div className="px-3 py-1 d-flex align-items-center justify-content-between">
+                            <span className="text-muted small fw-bold">Recent searches</span>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 small text-decoration-none"
+                              onClick={clearRecentSearches}
+                              style={{ color: '#B13C36' }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                          {recentSearches.map((recentQuery) => (
+                            <div
+                              key={recentQuery}
+                              className="px-3 py-2 d-flex align-items-center gap-2"
+                              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor = 'transparent')
+                              }
+                              onClick={() => handleRecentSearchClick(recentQuery)}
+                            >
+                              <Search size={14} className="text-secondary" />
+                              <span className="text-dark small">{recentQuery}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Products Section */}
                       {searchSuggestions.products && searchSuggestions.products.length > 0 && (
                         <div className="py-2">
@@ -1779,12 +1876,12 @@ const Header = () => {
                 className="d-flex align-items-center gap-2 text-decoration-none text-dark position-relative"
                 onClick={handleCartClick}
               >
-                <div className="position-relative">
+                <div id="header-cart-icon" className="position-relative">
                   <ShoppingCart size={24} />
                   {cartTotalItems > 0 && (
                     <span
-                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                      style={{ fontSize: '0.6rem' }}
+                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                      style={{ fontSize: '0.6rem', backgroundColor: '#b13c36', color: '#fff' }}
                     >
                       {cartTotalItems}
                     </span>

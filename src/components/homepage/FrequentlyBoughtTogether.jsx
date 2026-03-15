@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { Container, Row, Col, Button, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { Star, Heart, Eye, ShoppingCart } from 'lucide-react';
@@ -56,16 +57,57 @@ const getProductPrice = (product) => {
   };
 };
 
-const FrequentlyBoughtTogether = () => {
+const badgeShape = PropTypes.shape({
+  text: PropTypes.string,
+  bg: PropTypes.string,
+  color: PropTypes.string,
+});
+
+const frequentlyBoughtProductShape = PropTypes.shape({
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  title: PropTypes.string.isRequired,
+  image: PropTypes.string,
+  description: PropTypes.string,
+  reviews: PropTypes.number,
+  price: PropTypes.number,
+  originalPrice: PropTypes.number,
+  stock: PropTypes.number,
+  badges: PropTypes.arrayOf(badgeShape),
+});
+
+const FrequentlyBoughtTogether = ({ title = 'FREQUENTLY BOUGHT TOGETHER' }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const renderDualToneTitle = () => {
+    const words = (title || '').trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) {
+      return <h3 className="fw-bold text-dark m-0">{title}</h3>;
+    }
+
+    const splitAt = Math.ceil(words.length / 2);
+    const first = words.slice(0, splitAt).join(' ');
+    const second = words.slice(splitAt).join(' ');
+
+    return (
+      <h3 className="fw-bold m-0">
+        <span className="text-dark">{first}</span>
+        {second ? <span style={{ color: 'var(--color-primary)' }}> {second}</span> : null}
+      </h3>
+    );
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Use trending products instead of getAll for better relevance
-        const response = await productService.getTrendingProducts(9);
+        let response;
+        try {
+          response = await productService.getTodayRecommendations(9);
+        } catch (todayError) {
+          // Backward-compatible fallback for environments without new endpoint
+          response = await productService.getTrendingProducts(9);
+        }
         const apiData = Array.isArray(response) ? response : response.data || [];
         setProducts(apiData);
       } catch (err) {
@@ -95,7 +137,7 @@ const FrequentlyBoughtTogether = () => {
       <section className="py-5">
         <Container>
           <div className="d-flex align-items-center justify-content-between mb-3">
-            <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
+            {renderDualToneTitle()}
           </div>
           <hr className="my-4 text-secondary opacity-25" />
           <div className="text-center py-5">
@@ -112,7 +154,7 @@ const FrequentlyBoughtTogether = () => {
       <section className="py-5">
         <Container>
           <div className="d-flex align-items-center justify-content-between mb-3">
-            <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
+            {renderDualToneTitle()}
             <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
               <Button
                 className="fw-bold px-4 border-0 text-white"
@@ -253,12 +295,12 @@ const FrequentlyBoughtTogether = () => {
             <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
               <Heart size={20} />
             </Button>
-              <Button
-                variant="primary"
-                className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-                disabled={product.stock === 0}
-              >
+            <Button
+              variant="primary"
+              className="flex-grow-1 fw-bold text-white border-0 rounded-1 d-flex align-items-center justify-content-center gap-2"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+              disabled={product.stock === 0}
+            >
               <ShoppingCart size={18} /> {product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
             </Button>
             <Button variant="outline-secondary" className="rounded-1 p-2 border-light-subtle">
@@ -269,6 +311,10 @@ const FrequentlyBoughtTogether = () => {
       </motion.div>
     </Link>
   );
+
+  MainProductItem.propTypes = {
+    product: frequentlyBoughtProductShape.isRequired,
+  };
 
   const SmallProductItem = ({ product }) => (
     <Link
@@ -335,11 +381,15 @@ const FrequentlyBoughtTogether = () => {
     </Link>
   );
 
+  SmallProductItem.propTypes = {
+    product: frequentlyBoughtProductShape.isRequired,
+  };
+
   return (
     <section className="py-5">
       <Container>
         <div className="d-flex align-items-center justify-content-between mb-3">
-          <h3 className="fw-bold text-dark m-0">FREQUENTLY BOUGHT TOGETHER</h3>
+          {renderDualToneTitle()}
           <Link to={PUBLIC_ROUTES.PRODUCTS} style={{ textDecoration: 'none' }}>
             <motion.button
               whileHover={{ scale: 1.05, backgroundColor: 'var(--color-secondary)' }}
@@ -390,6 +440,10 @@ const FrequentlyBoughtTogether = () => {
       </Container>
     </section>
   );
+};
+
+FrequentlyBoughtTogether.propTypes = {
+  title: PropTypes.string,
 };
 
 export default FrequentlyBoughtTogether;

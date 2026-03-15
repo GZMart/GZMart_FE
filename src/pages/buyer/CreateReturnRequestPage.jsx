@@ -31,7 +31,6 @@ const CreateReturnRequestPage = () => {
   const [eligibility, setEligibility] = useState(null);
 
   // Form state
-  const [type, setType] = useState('refund'); // 'refund' or 'exchange'
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
@@ -158,7 +157,6 @@ const CreateReturnRequestPage = () => {
 
       const requestData = {
         orderId,
-        type,
         reason,
         description: description.trim(),
         images,
@@ -214,41 +212,9 @@ const CreateReturnRequestPage = () => {
       </Alert>
 
       <Form onSubmit={handleSubmit}>
-        {/* Type Selection */}
-        <Card className="mb-4">
-          <Card.Body>
-            <h5>Loại Yêu Cầu</h5>
-            <Form.Check
-              type="radio"
-              label={
-                <div>
-                  <strong>Hoàn tiền (Refund)</strong>
-                  <br />
-                  <small className="text-muted">Nhận lại tiền dưới dạng coin trong ví</small>
-                </div>
-              }
-              name="type"
-              value="refund"
-              checked={type === 'refund'}
-              onChange={(e) => setType(e.target.value)}
-              className="mb-3"
-            />
-            <Form.Check
-              type="radio"
-              label={
-                <div>
-                  <strong>Đổi hàng (Exchange)</strong>
-                  <br />
-                  <small className="text-muted">Đổi sang size/màu khác (cùng sản phẩm)</small>
-                </div>
-              }
-              name="type"
-              value="exchange"
-              checked={type === 'exchange'}
-              onChange={(e) => setType(e.target.value)}
-            />
-          </Card.Body>
-        </Card>
+        <Alert variant="info" className="mb-4">
+          Seller will review and decide Refund or Exchange based on current stock conditions.
+        </Alert>
 
         {/* Reason Selection */}
         <Card className="mb-4">

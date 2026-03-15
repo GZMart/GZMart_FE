@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -15,10 +15,15 @@ import OrderStatusTimeline from '../../components/seller/orders/OrderStatusTimel
 import { orderSellerService } from '../../services/api/orderSellerService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/OrderDetailsPage.module.css';
+import { toast } from 'react-toastify';
+import socketService from '../../services/socket/socketService';
+import { SOCKET_EVENTS } from '../../constants';
+import { useSelector } from 'react-redux';
 
 const OrderDetailsPage = () => {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
 
   const [order, setOrder] = useState(null);
   const [history, setHistory] = useState([]);
@@ -27,7 +32,7 @@ const OrderDetailsPage = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchOrderDetails = async () => {
+  const fetchOrderDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -52,12 +57,119 @@ const OrderDetailsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     fetchOrderDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId]);
+  }, [fetchOrderDetails]);
+
+  useEffect(() => {
+    if (!orderId) {
+      return;
+    }
+
+    socketService.connect(user?._id);
+    socketService.setUserId(user?._id);
+
+    const appendStatusHistory = (status, timestamp, notes) => {
+      setHistory((prevHistory) => {
+        const changedAt = timestamp || new Date().toISOString();
+        const isDuplicate = prevHistory.some(
+          (entry) =>
+            entry.status === status &&
+            new Date(entry.changedAt).getTime() === new Date(changedAt).getTime()
+        );
+
+        if (isDuplicate) {
+          return prevHistory;
+        }
+
+        return [
+          ...prevHistory,
+          {
+            status,
+            changedAt,
+            notes,
+            changedBy: { name: 'System' },
+            changedByRole: 'system',
+          },
+        ];
+      });
+    };
+
+    const statusEventName = `order:status:${orderId}`;
+    const arrivedEventName = `order:arrived:${orderId}`;
+
+    const handleRoomOrderStatus = (data) => {
+      if (!data?.orderId || data.orderId !== orderId) {
+        return;
+      }
+
+      handleStatusUpdate(data);
+    };
+
+    const handleStatusUpdate = (data) => {
+      setOrder((prevOrder) => {
+        if (!prevOrder || prevOrder._id !== data.orderId) {
+          return prevOrder;
+        }
+
+        return {
+          ...prevOrder,
+          status: data.status,
+          deliveredAt: data.deliveredAt || prevOrder.deliveredAt,
+          completedAt: data.completedAt || prevOrder.completedAt,
+        };
+      });
+
+      appendStatusHistory(
+        data.status,
+        data.updatedAt,
+        data.notes || `Order status updated to ${data.status}`
+      );
+
+      const orderNum = data.orderNumber || data.orderId?.slice(-6);
+      if (orderNum && data.status) {
+        toast.info(`Order #${orderNum} status: ${data.status}`);
+      }
+
+      // Keep all computed fields and timeline fully in sync with server source of truth.
+      fetchOrderDetails();
+    };
+
+    const handleArrivedUpdate = (data) => {
+      setOrder((prevOrder) => {
+        if (!prevOrder || prevOrder._id !== data.orderId) {
+          return prevOrder;
+        }
+
+        return {
+          ...prevOrder,
+          status: 'delivered',
+          deliveredAt: data.arrivedAt || new Date().toISOString(),
+        };
+      });
+
+      appendStatusHistory('delivered', data.arrivedAt, 'Order has arrived at customer address');
+
+      const orderNum = data.orderNumber || data.orderId?.slice(-6);
+      if (orderNum) {
+        toast.success(`Order #${orderNum} has been delivered`);
+      }
+
+      fetchOrderDetails();
+    };
+
+    socketService.on(SOCKET_EVENTS.ORDER_STATUS_UPDATED, handleRoomOrderStatus);
+    socketService.on(statusEventName, handleStatusUpdate);
+    socketService.on(arrivedEventName, handleArrivedUpdate);
+
+    return () => {
+      socketService.off(SOCKET_EVENTS.ORDER_STATUS_UPDATED, handleRoomOrderStatus);
+      socketService.off(statusEventName, handleStatusUpdate);
+      socketService.off(arrivedEventName, handleArrivedUpdate);
+    };
+  }, [fetchOrderDetails, orderId, user?._id]);
 
   const handleStatusUpdateSuccess = () => {
     setShowStatusModal(false);
@@ -198,6 +310,10 @@ const OrderDetailsPage = () => {
   const OrderStatusIcon = orderStatus.icon || Clock;
   const paymentStatus = getPaymentStatusBadgeInfo(order.paymentStatus);
   const PaymentStatusIcon = paymentStatus.icon || Clock;
+  const shippingMethodLabel =
+    order.shippingMethod ||
+    order.ghnOrderInfo?.service_type ||
+    (order.shippingCost > 0 ? 'Standard Delivery' : 'Free Delivery');
 
   const isTerminal = order.status === 'completed' || order.status === 'cancelled';
 
@@ -287,7 +403,7 @@ const OrderDetailsPage = () => {
               <div className={styles.infoGroup}>
                 <span className={styles.infoLabel}>Shipping Method</span>
                 <span className={styles.infoValue}>
-                  {order.shippingMethod?.toUpperCase() || 'N/A'}
+                  {String(shippingMethodLabel).toUpperCase()}
                 </span>
               </div>
             </div>

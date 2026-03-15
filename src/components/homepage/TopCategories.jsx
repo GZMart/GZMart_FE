@@ -80,7 +80,7 @@ const TopCategories = () => {
         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between">
           <div className="d-flex align-items-center gap-2 mb-3 mb-md-0">
             <h3 className="fw-bold text-dark m-0">TOP</h3>
-            <h3 className="fw-bold m-0" style={{ color: '#FFC107' }}>
+            <h3 className="fw-bold m-0" style={{ color: 'var(--color-primary)' }}>
               CATEGORIES
             </h3>
           </div>
@@ -111,39 +111,39 @@ const TopCategories = () => {
             {/* Navigation Arrows - Hiển thị khi có > 16 categories */}
             {totalPages > 1 && (
               <>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={handlePrevPage}
-                      className="position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center rounded-circle bg-white shadow"
-                      style={{
-                        left: '-20px',
-                        width: '50px',
-                        height: '50px',
-                        border: '2px solid var(--color-border)',
-                        zIndex: 10,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <ChevronLeft size={28} color="var(--color-primary)" />
-                    </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handlePrevPage}
+                  className="position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center rounded-circle bg-white shadow"
+                  style={{
+                    left: '-20px',
+                    width: '50px',
+                    height: '50px',
+                    border: '2px solid var(--color-border)',
+                    zIndex: 10,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ChevronLeft size={28} color="var(--color-primary)" />
+                </motion.button>
 
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={handleNextPage}
-                      className="position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center rounded-circle bg-white shadow"
-                      style={{
-                        right: '-20px',
-                        width: '50px',
-                        height: '50px',
-                        border: '2px solid var(--color-border)',
-                        zIndex: 10,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <ChevronRight size={28} color="var(--color-primary)" />
-                    </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleNextPage}
+                  className="position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center rounded-circle bg-white shadow"
+                  style={{
+                    right: '-20px',
+                    width: '50px',
+                    height: '50px',
+                    border: '2px solid var(--color-border)',
+                    zIndex: 10,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ChevronRight size={28} color="var(--color-primary)" />
+                </motion.button>
               </>
             )}
 
@@ -178,21 +178,21 @@ const TopCategories = () => {
             {totalPages > 1 && (
               <div className="d-flex justify-content-center align-items-center gap-2 mt-4">
                 {Array.from({ length: totalPages }).map((_, index) => (
-                      <motion.button
-                        key={index}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setCurrentPage(index)}
-                        className="rounded-circle"
-                        style={{
-                          width: currentPage === index ? '12px' : '8px',
-                          height: currentPage === index ? '12px' : '8px',
-                          backgroundColor: currentPage === index ? 'var(--color-primary)' : '#dee2e6',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                        }}
-                      />
+                  <motion.button
+                    key={index}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setCurrentPage(index)}
+                    className="rounded-circle"
+                    style={{
+                      width: currentPage === index ? '12px' : '8px',
+                      height: currentPage === index ? '12px' : '8px',
+                      backgroundColor: currentPage === index ? 'var(--color-primary)' : '#dee2e6',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  />
                 ))}
               </div>
             )}

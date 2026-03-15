@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import '../../assets/styles/DeliveryTrackingMap.module.css';
+import styles from '../../assets/styles/DeliveryTrackingMap.module.css';
 
 // Fix Leaflet default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -102,9 +102,9 @@ const AnimatedTruck = ({ route, duration, onComplete }) => {
   return (
     <Marker position={position} icon={truckIcon}>
       <Popup>
-        <strong>Đang giao hàng</strong>
+        <strong>In Transit</strong>
         <br />
-        Tiến độ: {Math.round(progress * 100)}%
+        Progress: {Math.round(progress * 100)}%
       </Popup>
     </Marker>
   );
@@ -114,6 +114,26 @@ AnimatedTruck.propTypes = {
   route: PropTypes.array.isRequired,
   duration: PropTypes.number.isRequired,
   onComplete: PropTypes.func,
+};
+
+const MapAutoResize = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const resize = () => {
+      map.invalidateSize();
+    };
+
+    const timeout = setTimeout(resize, 120);
+    window.addEventListener('resize', resize);
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('resize', resize);
+    };
+  }, [map]);
+
+  return null;
 };
 
 const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliveryComplete }) => {
@@ -172,10 +192,10 @@ const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliv
   };
 
   return (
-    <div className="delivery-tracking-map-container">
+    <div className={styles['delivery-tracking-map-container']}>
       {loadingRoute && (
         <div style={{ textAlign: 'center', padding: '20px', color: '#1890ff' }}>
-          Đang tính toán tuyến đường... 🗺️
+          Calculating route... 🗺️
         </div>
       )}
 
@@ -185,6 +205,7 @@ const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliv
         scrollWheelZoom={true}
         style={{ height: '400px', width: '100%', borderRadius: '8px' }}
       >
+        <MapAutoResize />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -193,7 +214,7 @@ const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliv
         {/* Seller marker */}
         <Marker position={sellerPosition} icon={storeIcon}>
           <Popup>
-            <strong>Người bán</strong>
+            <strong>Seller</strong>
             <br />
             {sellerCoords.address}
           </Popup>
@@ -202,7 +223,7 @@ const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliv
         {/* Buyer marker */}
         <Marker position={buyerPosition} icon={homeIcon}>
           <Popup>
-            <strong>Địa chỉ giao hàng</strong>
+            <strong>Destination</strong>
             <br />
             {buyerCoords.address}
           </Popup>
@@ -223,22 +244,22 @@ const DeliveryTrackingMap = ({ sellerCoords, buyerCoords, duration = 60, onDeliv
         )}
       </MapContainer>
 
-      <div className="delivery-info">
-        <div className="delivery-route">
-          <div className="route-point">
-            <div className="route-details">
+      <div className={styles['delivery-info']}>
+        <div className={styles['delivery-route']}>
+          <div className={styles['route-point']}>
+            <div className={styles['route-details']}>
               <strong>Place of Departure</strong>
               <p>{sellerCoords.address}</p>
             </div>
           </div>
-          <div className="route-point">
-            <div className="route-details">
+          <div className={`${styles['route-point']} ${styles['route-point-end']}`}>
+            <div className={`${styles['route-details']} ${styles['route-details-end']}`}>
               <strong>Place of Delivery</strong>
               <p>{buyerCoords.address}</p>
             </div>
           </div>
         </div>
-        <div className="estimated-time">
+        <div className={styles['estimated-time']}>
           <strong>Estimated Time:</strong> ~{duration} seconds (Demo)
           <br />
         </div>

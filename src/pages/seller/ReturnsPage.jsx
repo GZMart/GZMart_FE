@@ -1,33 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dropdown, Spinner } from 'react-bootstrap';
 import { message } from 'antd';
 import ListingsPagination from '../../components/seller/listings/ListingsPagination';
 import ReturnDetailsModal from '../../components/seller/returns/ReturnDetailsModal';
 import rmaService from '@services/api/rmaService';
+import socketService from '@services/socket/socketService';
+import { useSelector } from 'react-redux';
 import styles from '../../assets/styles/seller/ListingsPage.module.css';
 
 /* ── Config ──────────────────────────────────────────────────────── */
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
-  { value: 'pending_review', label: 'Pending' },
+  { value: 'pending', label: 'Pending' },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
-  { value: 'refunded', label: 'Refunded' },
-  { value: 'replaced', label: 'Replaced' },
+  { value: 'items_returned', label: 'Items Returned' },
+  { value: 'processing', label: 'Processing' },
+  { value: 'completed', label: 'Completed' },
 ];
 
 const BADGE_MAP = {
-  pending_review: { label: 'Pending Review', cls: styles.badgePending },
+  pending: { label: 'Pending Review', cls: styles.badgePending },
   approved: { label: 'Approved', cls: styles.badgeApproved },
   rejected: { label: 'Rejected', cls: styles.badgeRejected },
-  refunded: { label: 'Refunded', cls: styles.badgeRefunded },
-  replaced: { label: 'Replaced', cls: styles.badgeReplaced },
+  items_returned: { label: 'Items Returned', cls: styles.badgeApproved },
+  processing: { label: 'Processing', cls: styles.badgeApproved },
+  completed: { label: 'Completed', cls: styles.badgeRefunded },
 };
 
 const ITEMS_PER_PAGE = 8;
 
 /* ─────────────────────────────────────────────────────────────────── */
 const ReturnsPage = () => {
+  const user = useSelector((state) => state.auth?.user);
   const [statusTab, setStatusTab] = useState('all');
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,33 +42,40 @@ const ReturnsPage = () => {
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Fetch return requests from API
-  useEffect(() => {
-    fetchReturnRequests();
-  }, []);
+  const mapRequestToRow = (req) => ({
+    id: req.requestNumber || req._id,
+    orderId: req.orderId?.orderNumber || 'N/A',
+    customer: req.userId?.fullName || req.userId?.email || 'Unknown',
+    image: req.images?.[0] || null,
+    product: req.items?.[0]?.productId?.name || 'Product',
+    category: req.items?.[0]?.productId?.categoryId?.name || 'General',
+    price:
+      req?.refund?.amount ||
+      req?.totalRefundAmount ||
+      (req?.items || []).reduce(
+        (sum, item) => sum + Number(item?.price || 0) * Number(item?.quantity || 0),
+        0
+      ),
+    status: req.status,
+    reason: req.reason?.replace(/_/g, ' ') || 'N/A',
+    exchangeEligibility: req.exchangeEligibility || { canExchange: false, checks: [] },
+    resolution: req.type,
+    date: new Date(req.createdAt).toLocaleDateString('vi-VN'),
+    rawDate: req.createdAt,
+    _original: req,
+  });
 
-  const fetchReturnRequests = async () => {
+  const fetchReturnRequests = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
       const response = await rmaService.getSellerReturnRequests();
 
       if (response.success && response.data) {
-        // Transform API data to match component format
-        const transformedData = response.data.map((req) => ({
-          id: req.requestNumber || req._id,
-          orderId: req.orderId?.orderNumber || 'N/A',
-          customer: req.userId?.fullName || req.userId?.email || 'Unknown',
-          image: req.images?.[0] || null,
-          product: req.items?.[0]?.productId?.name || 'Product',
-          category: req.items?.[0]?.productId?.categoryId?.name || 'General',
-          price: req.totalRefundAmount || 0,
-          status: req.status,
-          reason: req.reason?.replace(/_/g, ' ') || 'N/A',
-          date: new Date(req.createdAt).toLocaleDateString('vi-VN'),
-          rawDate: req.createdAt,
-          _original: req, // Keep original data for actions
-        }));
+        const transformedData = response.data.map(mapRequestToRow);
 
         setReturns(transformedData);
       } else {
@@ -75,9 +87,32 @@ const ReturnsPage = () => {
       message.error('Failed to load return requests');
       setReturns([]);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchReturnRequests();
+  }, [fetchReturnRequests]);
+
+  // Realtime refresh for status updates
+  useEffect(() => {
+    socketService.connect(user?._id);
+    socketService.setUserId(user?._id);
+
+    const handleRmaUpdated = () => {
+      fetchReturnRequests({ silent: true });
+    };
+
+    socketService.on('rma:request-updated', handleRmaUpdated);
+
+    return () => {
+      socketService.off('rma:request-updated', handleRmaUpdated);
+    };
+  }, [fetchReturnRequests, user?._id]);
 
   const filtered = returns
     .filter((r) => statusTab === 'all' || r.status === statusTab)
@@ -110,9 +145,16 @@ const ReturnsPage = () => {
     setSelectedReturn(null);
   };
 
-  const handleModalSuccess = () => {
-    // Refresh the list after successful action
+  const handleModalSuccess = (updatedRequest, options = {}) => {
+    const { keepOpen = false } = options;
+
     fetchReturnRequests();
+
+    if (keepOpen && updatedRequest) {
+      setSelectedReturn(mapRequestToRow(updatedRequest));
+      return;
+    }
+
     handleCloseModal();
   };
 
@@ -156,7 +198,7 @@ const ReturnsPage = () => {
             { label: 'Total', val: returns.length },
             {
               label: 'Pending',
-              val: returns.filter((r) => r.status === 'pending_review').length,
+              val: returns.filter((r) => r.status === 'pending').length,
               cls: styles.statInactive,
             },
             {
@@ -166,7 +208,7 @@ const ReturnsPage = () => {
             },
             {
               label: 'Refunded',
-              val: returns.filter((r) => r.status === 'refunded').length,
+              val: returns.filter((r) => r.status === 'completed').length,
               cls: styles.statDraft,
             },
           ].map(({ label, val, cls }) => (
@@ -337,15 +379,8 @@ const ReturnsPage = () => {
                                 <i className="bi bi-eye me-2" />
                                 View Details
                               </Dropdown.Item>
-                              {ret.status === 'pending_review' && (
+                              {ret.status === 'pending' && (
                                 <>
-                                  <Dropdown.Item
-                                    className="text-success"
-                                    onClick={() => handleQuickAction(ret, 'approve')}
-                                  >
-                                    <i className="bi bi-check-circle me-2" />
-                                    Approve
-                                  </Dropdown.Item>
                                   <Dropdown.Item
                                     className="text-danger"
                                     onClick={() => handleQuickAction(ret, 'reject')}

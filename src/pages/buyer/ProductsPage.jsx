@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom'; // Thêm useNavigate
+import { useSearchParams } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
@@ -24,7 +24,6 @@ const ratings = [
 
 const ProductsPage = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate(); // Khởi tạo navigate
   const searchQuery = searchParams.get('q');
   const categoryParam = searchParams.get('category');
 
@@ -56,9 +55,8 @@ const ProductsPage = () => {
     return items;
   }, [searchQuery, categoryParam, categoryName]);
 
-  // SỬA LỖI: Chuyển viewMode và itemsToShow thành state
-  const [viewMode, setViewMode] = useState('grid');
-  const [itemsToShow, setItemsToShow] = useState(24);
+  const [viewMode] = useState('grid');
+  const [itemsToShow] = useState(24);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -80,7 +78,6 @@ const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Temporary filter states (before Apply)
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
@@ -173,7 +170,6 @@ const ProductsPage = () => {
         });
 
         setProducts(transformed);
-        setTotalCount(response.count || response.pagination?.total || 0);
         setTotalPages(
           response.pagination?.pages || Math.ceil((response.count || 0) / apiFilters.limit)
         );
@@ -333,7 +329,6 @@ const ProductsPage = () => {
     return sorted;
   }, [filteredProducts, sortBy, priceOrder, selectedSizes]);
 
-  const totalProducts = totalCount || filteredProducts.length;
   const displayedProducts = sortedProducts;
 
   const SkeletonCard = () => (
@@ -561,120 +556,6 @@ const ProductsPage = () => {
 
           {/* Main Content */}
           <main className={styles.mainContent}>
-            {/* Header Controls */}
-            <div className={styles.productsHeader}>
-              <button className={styles.backButton} onClick={() => navigate(-1)}>
-                <i className="bi bi-arrow-left"></i>
-              </button>
-
-              <h1 className={styles.pageTitle}>
-                {searchQuery
-                  ? `Search Results for "${searchQuery}"`
-                  : categoryName
-                    ? `${categoryName}`
-                    : 'All Products'}
-              </h1>
-
-              <div className={styles.productsControls}>
-                <div className={styles.viewToggle}>
-                  <button
-                    className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
-                    onClick={() => setViewMode('grid')}
-                    aria-label="Grid view"
-                  >
-                    <i className="bi bi-grid-3x3-gap"></i>
-                  </button>
-                  <button
-                    className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
-                    onClick={() => setViewMode('list')}
-                    aria-label="List view"
-                  >
-                    <i className="bi bi-list-ul"></i>
-                  </button>
-                </div>
-
-                <div className={styles.infoText}>
-                  Showing {displayedProducts.length} of {totalProducts} items
-                </div>
-
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>To Show:</label>
-                  <select
-                    className={styles.filterSelect}
-                    value={itemsToShow}
-                    onChange={(e) => setItemsToShow(Number(e.target.value))}
-                  >
-                    <option value={9}>9</option>
-                    <option value={12}>12</option>
-                    <option value={24}>24</option>
-                    <option value={48}>48</option>
-                  </select>
-                </div>
-              </div>
-            </div>{' '}
-            {/* <-- Đã thêm thẻ đóng div ở đây để hoàn thành productsHeader */}
-            {/* Result Info */}
-            {!loading && (
-              <div className={styles.resultInfo}>
-                <span className={styles.resultCount}>
-                  {searchQuery && (
-                    <>
-                      <i className="bi bi-search"></i> Kết quả cho{' '}
-                      <strong>&ldquo;{searchQuery}&rdquo;</strong> &middot;{' '}
-                    </>
-                  )}
-                  {totalProducts} sản phẩm
-                </span>
-                {(selectedLocations.length > 0 ||
-                  selectedBrands.length > 0 ||
-                  selectedRatings.length > 0 ||
-                  priceRange.min > 0 ||
-                  priceRange.max < 10000000) && (
-                  <div className={styles.activeFilters}>
-                    {selectedLocations.map((locId) => {
-                      const loc = locations.find((l) => l.id === locId);
-                      return loc ? (
-                        <span key={locId} className={styles.filterTag}>
-                          {loc.name}
-                          <i
-                            className="bi bi-x"
-                            onClick={() => toggleFilter('location', locId)}
-                          ></i>
-                        </span>
-                      ) : null;
-                    })}
-                    {selectedBrands.map((brandId) => {
-                      const brand = brands.find((b) => b.id === brandId);
-                      return brand ? (
-                        <span key={brandId} className={styles.filterTag}>
-                          {brand.name}
-                          <i className="bi bi-x" onClick={() => toggleFilter('brand', brandId)}></i>
-                        </span>
-                      ) : null;
-                    })}
-                    {(priceRange.min > 0 || priceRange.max < 10000000) && (
-                      <span className={styles.filterTag}>
-                        {priceRange.min > 0 ? `₫${priceRange.min.toLocaleString()}` : '₫0'} —{' '}
-                        {priceRange.max < 10000000 ? `₫${priceRange.max.toLocaleString()}` : '∞'}
-                        <i className="bi bi-x" onClick={handleResetPriceFilter}></i>
-                      </span>
-                    )}
-                    {selectedRatings.map((ratingId) => {
-                      const r = ratings.find((rt) => rt.id === ratingId);
-                      return r ? (
-                        <span key={ratingId} className={styles.filterTag}>
-                          {r.value}★ trở lên
-                          <i
-                            className="bi bi-x"
-                            onClick={() => toggleFilter('rating', ratingId)}
-                          ></i>
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
             {/* Sort Bar */}
             <div className={styles.sortBar}>
               <div className={styles.sortBarLeft}>

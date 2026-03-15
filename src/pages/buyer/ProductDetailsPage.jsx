@@ -10,6 +10,7 @@ import ProductCard from '../../components/common/ProductCard';
 import ShopInfoCard from '../../components/common/ShopInfoCard';
 import RequireLoginModal from '../../components/common/RequireLoginModal';
 import ProductReviewSection from '../../components/buyer/ProductReviewSection';
+import CartSuccessModal from '../../components/buyer/CartSuccessModal';
 import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
 import { productService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
@@ -100,6 +101,7 @@ const ProductDetailsPage = () => {
   const [isWishlist, setIsWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCartModal, setShowCartModal] = useState(false);
 
   const user = useSelector((state) => state.auth.user);
 
@@ -469,7 +471,7 @@ const ProductDetailsPage = () => {
         })
       ).unwrap();
 
-      toast.success(t('product_details.toast_add_cart_success'));
+      setShowCartModal(true);
     } catch (err) {
       toast.error(typeof err === 'string' ? err : t('product_details.toast_add_cart_failed'));
     } finally {
@@ -803,7 +805,11 @@ const ProductDetailsPage = () => {
                       <button
                         key={optIdx}
                         className={`${styles.tierOption} ${isSelected ? styles.active : ''} ${isDisabled ? styles.disabled : ''}`}
-                        onClick={() => { if (!isDisabled) handleTierChange(tierIdx, optIdx); }}
+                        onClick={() => {
+                          if (!isDisabled) {
+handleTierChange(tierIdx, optIdx);
+}
+                        }}
                         disabled={isDisabled}
                         title={isDisabled ? t('product_details.stat_status_inactive') : option}
                       >
@@ -815,7 +821,9 @@ const ProductDetailsPage = () => {
                 {isSizeTier && (
                   <button
                     className={styles.sizeChartBtn}
-                    onClick={() => product.sizeChart ? setShowSizeChart(true) : setShowNoSizeChart(true)}
+                    onClick={() =>
+                      product.sizeChart ? setShowSizeChart(true) : setShowNoSizeChart(true)
+                    }
                   >
                     {t('product_details.btn_size_chart')} <i className="bi bi-chevron-right"></i>
                   </button>
@@ -1082,9 +1090,7 @@ const ProductDetailsPage = () => {
             </div>
           )}
 
-          {activeTab === 'review' && (
-            <ProductReviewSection product={product} />
-          )}
+          {activeTab === 'review' && <ProductReviewSection product={product} />}
         </div>
       </div>
 
@@ -1117,30 +1123,75 @@ const ProductDetailsPage = () => {
       {/* Login Required Modal */}
       <RequireLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
 
+      {/* Add to Cart Success Modal */}
+      <CartSuccessModal
+        show={showCartModal}
+        onClose={() => setShowCartModal(false)}
+        productImage={productImages[selectedImage]}
+        productName={product?.name}
+      />
+
       {/* Size chart preview — khi có ảnh */}
       {product?.sizeChart && (
-        <Image style={{ display: 'none' }} src={product.sizeChart}
-          preview={{ visible: showSizeChart, src: product.sizeChart, onVisibleChange: v => setShowSizeChart(v) }}
+        <Image
+          style={{ display: 'none' }}
+          src={product.sizeChart}
+          preview={{
+            visible: showSizeChart,
+            src: product.sizeChart,
+            onVisibleChange: (v) => setShowSizeChart(v),
+          }}
         />
       )}
 
       {/* Size chart modal — khi không có ảnh */}
       {showNoSizeChart && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           onClick={() => setShowNoSizeChart(false)}
         >
           <div
-            style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', textAlign: 'center', maxWidth: 360 }}
-            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: 8,
+              padding: '32px 40px',
+              textAlign: 'center',
+              maxWidth: 360,
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <i className="bi bi-rulers" style={{ fontSize: 40, color: '#ccc', display: 'block', marginBottom: 12 }}></i>
-            <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{t('product_details.size_chart_empty_title')}</p>
-            <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>{t('product_details.size_chart_empty_desc')}</p>
+            <i
+              className="bi bi-rulers"
+              style={{ fontSize: 40, color: '#ccc', display: 'block', marginBottom: 12 }}
+            ></i>
+            <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
+              {t('product_details.size_chart_empty_title')}
+            </p>
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+              {t('product_details.size_chart_empty_desc')}
+            </p>
             <button
-              style={{ padding: '8px 24px', background: '#f5a623', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}
+              style={{
+                padding: '8px 24px',
+                background: '#f5a623',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
               onClick={() => setShowNoSizeChart(false)}
-            >{t('product_details.size_chart_close')}</button>
+            >
+              {t('product_details.size_chart_close')}
+            </button>
           </div>
         </div>
       )}

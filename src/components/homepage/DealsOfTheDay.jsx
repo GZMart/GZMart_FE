@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { dealService, flashsaleService } from '../../services/api';
@@ -47,6 +48,16 @@ const formatCountdown = (endDate) => {
 
   return { days, hours, minutes, seconds, expired: false };
 };
+
+const dealsProductShape = PropTypes.shape({
+  productId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  isNew: PropTypes.bool,
+  image: PropTypes.string,
+  name: PropTypes.string,
+  dealEndsIn: PropTypes.string,
+  price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+});
 
 const ProductCard = ({ product }) => (
   <Link
@@ -133,22 +144,26 @@ const ProductCard = ({ product }) => (
           {product.name}
         </h6>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="btn btn-dark w-100 fw-bold py-2 mt-auto d-flex align-items-center justify-content-center gap-2"
-              style={{
-                borderRadius: '4px',
-                fontSize: '0.85rem',
-              }}
-            >
-              <span className="text-white">BUY NOW - </span>
-              <span style={{ color: 'var(--color-danger)' }}>{product.price}</span>
-            </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="btn btn-dark w-100 fw-bold py-2 mt-auto d-flex align-items-center justify-content-center gap-2"
+          style={{
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+          }}
+        >
+          <span className="text-white">BUY NOW - </span>
+          <span style={{ color: 'var(--color-danger)' }}>{product.price}</span>
+        </motion.button>
       </div>
     </motion.div>
   </Link>
 );
+
+ProductCard.propTypes = {
+  product: dealsProductShape.isRequired,
+};
 
 const DealsOfTheDay = () => {
   const [deals, setDeals] = useState([]);
@@ -306,11 +321,23 @@ const DealsOfTheDay = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
   };
 
+  const titleParts = (() => {
+    const words = "TODAY'S DEALS OF THE DAY".split(/\s+/);
+    const splitAt = Math.ceil(words.length / 2);
+    return {
+      first: words.slice(0, splitAt).join(' '),
+      second: words.slice(splitAt).join(' '),
+    };
+  })();
+
   return (
     <section className="py-5">
       <div className="container">
         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4">
-          <h3 className="fw-bold text-dark mb-3 mb-md-0">TODAY'S DEALS OF THE DAY</h3>
+          <h3 className="fw-bold mb-3 mb-md-0">
+            <span className="text-dark">{titleParts.first}</span>{' '}
+            <span style={{ color: 'var(--color-primary)' }}>{titleParts.second}</span>
+          </h3>
 
           <div className="d-flex align-items-center gap-3">
             <span className="fs-6 text-dark text-nowrap">Deals ends in</span>

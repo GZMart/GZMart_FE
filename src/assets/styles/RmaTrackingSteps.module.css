@@ -1,0 +1,60 @@
+.rmaTrackingCard {
+  padding: 14px;
+  border: 1px solid #e8ecf0;
+  border-radius: 10px;
+  background: #f8fafc;
+  margin-bottom: 12px;
+}
+
+.rmaTrackingCard :global(.ant-steps) {
+  margin: 2px 0;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-icon) {
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-title) {
+  font-size: 12px !important;
+  line-height: 20px !important;
+  font-weight: 600;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-description) {
+  font-size: 11px !important;
+  color: #64748b !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-tail) {
+  top: 14px !important;
+  padding: 0 8px !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-tail::after) {
+  height: 2px !important;
+  background: #dbe3ee !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon) {
+  color: #fff !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-process .ant-steps-item-icon) {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-process .ant-steps-item-icon > .ant-steps-icon) {
+  color: #fff !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-wait .ant-steps-item-icon) {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.rmaTrackingCard :global(.ant-steps-item-wait .ant-steps-item-icon > .ant-steps-icon) {
+  color: #94a3b8 !important;
+}
