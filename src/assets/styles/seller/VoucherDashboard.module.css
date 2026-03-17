@@ -1,10 +1,10 @@
 /* VoucherDashboard.module.css */
 
-/* Variables */
+/* Variables — use ERP seller primary (--sp-primary) */
 :root {
-  --primary-blue: #1890ff; /* Ant Design Blue */
-  --primary-blue-hover: #40a9ff;
-  --bg-blue-light: #e6f7ff;
+  --primary-blue: var(--sp-primary, #1a56db);
+  --primary-blue-hover: var(--sp-primary-dark, #0f3fa8);
+  --bg-blue-light: var(--sp-blue-bg, #dbeafe);
   --text-dark: #1f2937;
   --text-muted: #6b7280;
 }
@@ -46,7 +46,7 @@
 }
 
 .bannerBackground {
-  background: linear-gradient(100deg, #e6f7ff 0%, #ffffff 60%);
+  background: linear-gradient(100deg, var(--sp-blue-bg, #dbeafe) 0%, #ffffff 60%);
   position: relative;
 }
 
@@ -56,7 +56,7 @@
   left: 0;
   width: 4px;
   height: 100%;
-  background-color: #1890ff;
+  background-color: var(--sp-primary);
 }
 
 .bannerIconCircle {
@@ -68,20 +68,20 @@
 
 .bannerIcon {
   font-size: 2.5rem;
-  color: #1890ff;
+  color: var(--sp-primary);
 }
 
 .btnPrimary {
-  background-color: #1890ff;
-  border-color: #1890ff;
+  background-color: var(--sp-primary);
+  border-color: var(--sp-primary);
   color: white;
   font-weight: 500;
   padding: 8px 20px;
 }
 
 .btnPrimary:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
+  background-color: var(--sp-primary-dark);
+  border-color: var(--sp-primary-dark);
   color: white;
 }
 
@@ -89,7 +89,7 @@
 .sectionTitle {
   font-weight: 700;
   padding-left: 12px;
-  border-left: 4px solid #1890ff; /* Blue accent */
+  border-left: 4px solid var(--sp-primary);
   margin-bottom: 16px;
   font-size: 18px;
 }
@@ -105,20 +105,20 @@
 }
 
 .voucherCard:hover {
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(26, 86, 219, 0.15);
   transform: translateY(-4px);
-  border-left: 4px solid #1890ff;
+  border-left: 4px solid var(--sp-primary);
 }
 
 .iconCircle {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: #e6f7ff;
+  background-color: var(--sp-blue-bg, #dbeafe);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1890ff;
+  color: var(--sp-primary);
   margin-bottom: 16px;
 }
 
@@ -159,9 +159,9 @@
 }
 
 .tabLinkActive {
-  background-color: #1890ff !important;
+  background-color: var(--sp-primary) !important;
   color: white !important;
-  border-color: #1890ff !important;
+  border-color: var(--sp-primary) !important;
 }
 
 /* Table */
@@ -195,7 +195,7 @@
 }
 
 .discountText {
-  color: #1890ff;
+  color: var(--sp-primary);
   font-weight: 600;
   font-size: 16px;
 }
@@ -228,7 +228,7 @@
 
 .actionBtn:hover {
   background-color: #f5f5f5;
-  color: #1890ff; /* Blue on hover */
+  color: var(--sp-primary);
 }
 
 .actionBtnDelete:hover {
@@ -242,7 +242,7 @@
 }
 
 .textPrimary {
-  color: #1890ff !important;
+  color: var(--sp-primary) !important;
 }
 
 .textSecondary {

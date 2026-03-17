@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import {
   fetchPurchaseOrders,
-  completePurchaseOrder,
   cancelPurchaseOrder,
   fetchSuppliers,
 } from '../../store/slices/erpSlice';
@@ -22,12 +21,12 @@ import {
   XCircle,
   AlertTriangle,
   MoreHorizontal,
-  Loader2,
   Search,
   FilterX,
 } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EditPODrawer from '../../components/erp/EditPODrawer';
+import ReceivePOModal from '../../components/erp/ReceivePOModal';
 import styles from '@assets/styles/erp/PurchaseOrdersPage.module.css';
 
 // ── Kebab Dropdown ────────────────────────────────────────────────────────────
@@ -103,7 +102,7 @@ const PurchaseOrdersPage = () => {
   const [cancelModal, setCancelModal] = useState({ show: false, id: null });
   const [cancelReason, setCancelReason] = useState('');
   const [editingPoId, setEditingPoId] = useState(null);
-  const [receivingId, setReceivingId] = useState(null);
+  const [receiveModalPoId, setReceiveModalPoId] = useState(null);
 
   const COL_TO_SORT = {
     orderNumber: 'orderNumber',
@@ -186,23 +185,8 @@ const PurchaseOrdersPage = () => {
     };
   }, [purchaseOrdersPagination]);
 
-  // Pending → Completed (updates inventory)
-  const handleReceive = async (id) => {
-    if (
-      !window.confirm('Confirm goods received? This will update inventory and cannot be undone.')
-    ) {
-      return;
-    }
-    setReceivingId(id);
-    try {
-      await dispatch(completePurchaseOrder(id)).unwrap();
-      dispatch(fetchPurchaseOrders(apiFilters));
-    } catch (err) {
-      alert(`Cannot confirm receipt: ${err.error || err.message || err}`);
-    } finally {
-      setReceivingId(null);
-    }
-  };
+  // Open Receive modal (Stage 2 — enter costs when goods arrive)
+  const handleOpenReceive = (id) => setReceiveModalPoId(id);
 
   const handleCancelSubmit = async () => {
     if (!cancelReason.trim()) {
@@ -222,11 +206,15 @@ const PurchaseOrdersPage = () => {
   const getStatusBadge = (status) => {
     const map = {
       Draft: { label: 'Draft', cls: styles.badgeDraft, dot: '#94a3b8' },
+      PENDING_APPROVAL: { label: 'Pending Approval', cls: styles.badgePending, dot: '#6366f1' },
+      ORDERED: { label: 'Ordered', cls: styles.badgePending, dot: '#d97706' },
+      ARRIVED_VN: { label: 'Arrived VN', cls: styles.badgePending, dot: '#0ea5e9' },
       Pending: { label: 'Ordering', cls: styles.badgePending, dot: '#d97706' },
       Completed: { label: 'Received', cls: styles.badgeCompleted, dot: '#10b981' },
+      COMPLETED: { label: 'Received', cls: styles.badgeCompleted, dot: '#10b981' },
       Cancelled: { label: 'Cancelled', cls: styles.badgeCancelled, dot: '#ef4444' },
     };
-    const cfg = map[status] || map.Draft;
+    const cfg = map[status] || map.PENDING_APPROVAL;
     return (
       <span className={`${styles.badge} ${cfg.cls}`}>
         <span
@@ -254,9 +242,11 @@ const PurchaseOrdersPage = () => {
         })
       : '—';
 
+  const RECEIVABLE_STATUSES = ['ORDERED', 'ARRIVED_VN'];
+
   // Build action set per PO status
   const renderActions = (po) => {
-    const isReceiving = receivingId === po._id;
+    const canReceive = RECEIVABLE_STATUSES.includes(po.status);
 
     return (
       <div className={styles.rowActions}>
@@ -269,8 +259,8 @@ const PurchaseOrdersPage = () => {
           <Eye size={14} /> View
         </Link>
 
-        {/* ── Draft: Edit only (Cancel lives inside the drawer) ── */}
-        {po.status === 'Draft' && (
+        {/* ── Draft: Full edit | ORDERED/ARRIVED_VN: Limited edit (Notes, Expected Date only) ── */}
+        {['Draft', 'ORDERED', 'ARRIVED_VN'].includes(po.status) && (
           <button
             className={`${styles.actionBtn} ${styles.btnIconOnly}`}
             onClick={() => setEditingPoId(po._id)}
@@ -281,21 +271,16 @@ const PurchaseOrdersPage = () => {
           </button>
         )}
 
-        {/* ── Pending: Receive + kebab(Cancel) ── */}
-        {po.status === 'Pending' && (
+        {/* ── Receivable: Receive goods (opens cost input modal) + kebab(Cancel) ── */}
+        {canReceive && (
           <>
             <button
               className={`${styles.actionBtn} ${styles.btnPrimaryAction} ${styles.btnGreen}`}
-              onClick={() => handleReceive(po._id)}
-              disabled={isReceiving}
-              title="Confirm goods received"
+              onClick={() => handleOpenReceive(po._id)}
+              title="Receive goods — enter costs"
             >
-              {isReceiving ? (
-                <Loader2 size={13} className={styles.spinIcon} />
-              ) : (
-                <Check size={13} />
-              )}
-              {isReceiving ? 'Confirming…' : 'Receive'}
+              <Check size={13} />
+              Receive Goods
             </button>
 
             <KebabMenu
@@ -395,6 +380,9 @@ const PurchaseOrdersPage = () => {
         >
           <option value="">All Statuses</option>
           <option value="Draft">Draft</option>
+          <option value="PENDING_APPROVAL">Pending Approval</option>
+          <option value="ORDERED">Ordered</option>
+          <option value="ARRIVED_VN">Arrived VN</option>
           <option value="Pending">Ordering</option>
           <option value="Completed">Received</option>
           <option value="Cancelled">Cancelled</option>
@@ -617,6 +605,14 @@ const PurchaseOrdersPage = () => {
           onCancelled={() => dispatch(fetchPurchaseOrders(apiFilters))}
         />
       )}
+
+      {/* Receive PO Modal (Stage 2 — enter costs when goods arrive) */}
+      <ReceivePOModal
+        isOpen={!!receiveModalPoId}
+        onClose={() => setReceiveModalPoId(null)}
+        poId={receiveModalPoId}
+        onSuccess={() => dispatch(fetchPurchaseOrders(apiFilters))}
+      />
     </div>
   );
 };

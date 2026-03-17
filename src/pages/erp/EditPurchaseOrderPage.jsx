@@ -19,6 +19,20 @@ const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) ||
 const fmtVnd = (n) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+/** Label with tooltip (?) — hover to see fee explanation */
+const LabelWithTooltip = ({ children, tooltip }) => (
+  <span className={styles.labelWithTooltip}>
+    {children}
+    <span className={styles.tooltipIcon} title={tooltip}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </span>
+  </span>
+);
+
 const genSKU = (productName = '', variantLabel = '') => {
   const slug = (str) =>
     str
@@ -38,10 +52,6 @@ const makeVariant = (label, productName) => ({
   sku: genSKU(productName, label),
   quantity: 1,
   unitPriceCny: 0,
-  weightKg: 0,
-  dimLength: 0,
-  dimWidth: 0,
-  dimHeight: 0,
 });
 
 /* ── Cartesian product of arrays ── */
@@ -225,7 +235,6 @@ const WarnIcon = () => (
    ProductGroup — identical Tier-select UX as CreatePurchaseOrderPage
    ──────────────────────────────────────────────────────────────────── */
 const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
-  const [showDim, setShowDim] = useState(false);
   const { productName, tiers = [], variants } = group;
 
   const updateProductName = (name) => {
@@ -251,18 +260,6 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
   /* ──── Variant helpers ──── */
   const updateVariant = (vi, field, value) => {
     const newVariants = variants.map((v, i) => (i === vi ? { ...v, [field]: value } : v));
-    onUpdate({ ...group, variants: newVariants });
-  };
-
-  const autoFillWeight = (vi) => {
-    const src = variants[vi];
-    const newVariants = variants.map((v) => ({
-      ...v,
-      weightKg: src.weightKg,
-      dimLength: src.dimLength,
-      dimWidth: src.dimWidth,
-      dimHeight: src.dimHeight,
-    }));
     onUpdate({ ...group, variants: newVariants });
   };
 
@@ -329,12 +326,6 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
             : `${variants.length} variants auto-generated from classification`}
         </p>
 
-        <label className={styles.dimToggle}>
-          <input type="checkbox" checked={showDim} onChange={(e) => setShowDim(e.target.checked)} />
-          &nbsp;📐 Enter box dimensions for volumetric weight (L×W×H/6000)
-          <span className={styles.dimToggleHint}>&nbsp;— leave blank if using actual weight</span>
-        </label>
-
         <div className={styles.tableContainer}>
           <table className={styles.variantTable}>
             <thead>
@@ -346,9 +337,6 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                 <th>Qty</th>
                 <th>Unit Price (¥)</th>
                 <th>Amount</th>
-                <th>KG/unit</th>
-                {showDim && <th>L×W×H (cm)</th>}
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -387,62 +375,6 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                   <td className={styles.calcCell}>
                     {fmt(Number(v.unitPriceCny) * exchangeRate * Number(v.quantity))} ₫
                   </td>
-                  <td>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className={styles.numInput}
-                      style={{ width: 65 }}
-                      value={v.weightKg}
-                      onChange={(e) => updateVariant(vi, 'weightKg', e.target.value)}
-                    />
-                  </td>
-                  {showDim && (
-                    <td>
-                      <div className={styles.dimRow}>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          className={styles.dimInput}
-                          value={v.dimLength}
-                          onChange={(e) => updateVariant(vi, 'dimLength', e.target.value)}
-                          placeholder="L"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          className={styles.dimInput}
-                          value={v.dimWidth}
-                          onChange={(e) => updateVariant(vi, 'dimWidth', e.target.value)}
-                          placeholder="W"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          className={styles.dimInput}
-                          value={v.dimHeight}
-                          onChange={(e) => updateVariant(vi, 'dimHeight', e.target.value)}
-                          placeholder="H"
-                        />
-                      </div>
-                    </td>
-                  )}
-                  <td>
-                    {vi === 0 && variants.length > 1 && (
-                      <button
-                        type="button"
-                        className={styles.btnCopyDim}
-                        onClick={() => autoFillWeight(vi)}
-                        title="Copy kg/dim to all variants"
-                      >
-                        ↓ Copy
-                      </button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -456,9 +388,10 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
 /* ────────────────────────────────────────────────────────────────────
    Cost Summary
    ──────────────────────────────────────────────────────────────────── */
-function computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost) {
+function computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost, totalWeightKg = 0) {
   const rate = parseFloat(importConfig.exchangeRate) || 3500;
   const buyingRate = (parseFloat(importConfig.buyingServiceFeeRate) || 0) / 100;
+  const shippingRateKg = parseFloat(importConfig.shippingRatePerKg) || 0;
 
   const totalValueVnd = groups
     .flatMap((g) => g.variants)
@@ -468,6 +401,7 @@ function computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost) 
   const cnShipVnd = (parseFloat(fixedCosts.cnDomesticShippingCny) || 0) * rate;
   const packVnd = parseFloat(fixedCosts.packagingCostVnd) || 0;
   const vnShipVnd = parseFloat(fixedCosts.vnDomesticShippingVnd) || 0;
+  const intlShipVnd = (Number(totalWeightKg) || 0) * shippingRateKg;
   const tax = parseFloat(taxAmount) || 0;
   const other = parseFloat(otherCost) || 0;
 
@@ -477,9 +411,11 @@ function computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost) 
     cnShipVnd,
     packVnd,
     vnShipVnd,
+    intlShipVnd,
     tax,
     other,
-    finalAmount: totalValueVnd + buyingFeeVnd + cnShipVnd + packVnd + vnShipVnd + tax + other,
+    totalWeightKg: Number(totalWeightKg) || 0,
+    finalAmount: totalValueVnd + buyingFeeVnd + cnShipVnd + packVnd + vnShipVnd + intlShipVnd + tax + other,
   };
 }
 
@@ -517,6 +453,7 @@ const EditPurchaseOrderPage = () => {
   });
 
   const [groups, setGroups] = useState([EMPTY_GROUP()]);
+  const [totalWeightKg, setTotalWeightKg] = useState(0);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -545,6 +482,7 @@ const EditPurchaseOrderPage = () => {
     setNotes(po.notes || '');
     setTaxAmount(po.taxAmount || 0);
     setOtherCost(po.otherCost || 0);
+    setTotalWeightKg(po.totalWeightKg || 0);
 
     if (po.expectedDeliveryDate) {
       setExpectedDeliveryDate(new Date(po.expectedDeliveryDate).toISOString().split('T')[0]);
@@ -585,10 +523,6 @@ const EditPurchaseOrderPage = () => {
           sku: item.sku || '',
           quantity: item.quantity || 1,
           unitPriceCny: item.unitPriceCny || 0,
-          weightKg: item.weightKg || 0,
-          dimLength: item.dimLength || 0,
-          dimWidth: item.dimWidth || 0,
-          dimHeight: item.dimHeight || 0,
           _productId: item.productId || null,
           _modelId: item.modelId || null,
         });
@@ -607,7 +541,7 @@ const EditPurchaseOrderPage = () => {
   );
 
   const rate = parseFloat(importConfig.exchangeRate) || 3500;
-  const summary = computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost);
+  const summary = computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost, totalWeightKg);
 
   /* ── Validate ── */
   const validate = () => {
@@ -653,10 +587,10 @@ const EditPurchaseOrderPage = () => {
           unitPriceCny: parseFloat(v.unitPriceCny) || 0,
           unitPrice: priceVnd,
           totalPrice: priceVnd * (parseInt(v.quantity) || 1),
-          weightKg: parseFloat(v.weightKg) || 0,
-          dimLength: parseFloat(v.dimLength) || 0,
-          dimWidth: parseFloat(v.dimWidth) || 0,
-          dimHeight: parseFloat(v.dimHeight) || 0,
+          weightKg: 0,
+          dimLength: 0,
+          dimWidth: 0,
+          dimHeight: 0,
           ...(v._productId ? { productId: v._productId } : {}),
           ...(v._modelId ? { modelId: v._modelId } : {}),
         };
@@ -669,6 +603,7 @@ const EditPurchaseOrderPage = () => {
       notes,
       taxAmount: parseFloat(taxAmount) || 0,
       otherCost: parseFloat(otherCost) || 0,
+      totalWeightKg: parseFloat(totalWeightKg || 0),
       importConfig: {
         exchangeRate: parseFloat(importConfig.exchangeRate) || 3500,
         buyingServiceFeeRate: (parseFloat(importConfig.buyingServiceFeeRate) || 0) / 100,
@@ -755,7 +690,7 @@ const EditPurchaseOrderPage = () => {
         </div>
       )}
 
-      {/* ── Thông tin cơ bản ── */}
+      {/* Basic information */}
       <div className={styles.section}>
         <h2>Basic Information</h2>
         <div className={styles.formGrid}>
@@ -822,13 +757,17 @@ const EditPurchaseOrderPage = () => {
         </div>
       </div>
 
-      {/* ── Cấu hình nhập hàng ── */}
+      {/* Import configuration */}
       <div className={styles.configSection}>
         <h2>⚙️ Guangzhou Import Configuration</h2>
         <h3>Exchange Rate & Fees</h3>
         <div className={styles.formGrid3}>
           <div className={styles.formGroup}>
-            <label>Exchange Rate ¥ CNY → VND</label>
+            <label>
+              <LabelWithTooltip tooltip="Exchange rate 1 ¥ (CNY) to VND. Used to calculate import product prices in VND.">
+                Exchange Rate ¥ CNY → VND
+              </LabelWithTooltip>
+            </label>
             <input
               type="number"
               min="1"
@@ -855,7 +794,11 @@ const EditPurchaseOrderPage = () => {
             )}
           </div>
           <div className={styles.formGroup}>
-            <label>Buying Service Fee (%)</label>
+            <label>
+              <LabelWithTooltip tooltip="Buying service / agent fee (%). Calculated on total goods value (VND). E.g. 5% = enter 5.">
+                Buying Service Fee (%)
+              </LabelWithTooltip>
+            </label>
             <input
               type="number"
               min="0"
@@ -869,7 +812,11 @@ const EditPurchaseOrderPage = () => {
             />
           </div>
           <div className={styles.formGroup}>
-            <label>Intl Shipping (VND/kg)</label>
+            <label>
+              <LabelWithTooltip tooltip="International shipping (CN → VN) per kg. Total shipping = Total weight × this rate.">
+                Intl Shipping (VND/kg)
+              </LabelWithTooltip>
+            </label>
             <input
               type="number"
               min="0"
@@ -880,12 +827,31 @@ const EditPurchaseOrderPage = () => {
               placeholder="0"
             />
           </div>
+          <div className={styles.formGroup}>
+            <label>
+              <LabelWithTooltip tooltip="Total weight of shipment after packaging. Used to calculate international shipping cost.">
+                Total weight after packaging (kg)
+              </LabelWithTooltip>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={totalWeightKg || ''}
+              onChange={(e) => setTotalWeightKg(e.target.value)}
+              placeholder="0"
+            />
+          </div>
         </div>
 
         <h3 style={{ marginTop: '1rem' }}>Fixed Costs</h3>
         <div className={styles.formGrid3}>
           <div className={styles.formGroup}>
-            <label>CN Domestic Ship (¥ CNY)</label>
+            <label>
+              <LabelWithTooltip tooltip="CN domestic shipping (from CN warehouse to consolidation point). Unit: ¥ CNY.">
+                CN Domestic Ship (¥ CNY)
+              </LabelWithTooltip>
+            </label>
             <input
               type="number"
               min="0"
@@ -897,7 +863,11 @@ const EditPurchaseOrderPage = () => {
             />
           </div>
           <div className={styles.formGroup}>
-            <label>Packaging / Insurance (VND)</label>
+            <label>
+              <LabelWithTooltip tooltip="Wooden crate, insurance, packaging costs. Unit: VND.">
+                Packaging / Insurance (VND)
+              </LabelWithTooltip>
+            </label>
             <input
               type="number"
               min="0"
@@ -907,7 +877,11 @@ const EditPurchaseOrderPage = () => {
             />
           </div>
           <div className={styles.formGroup}>
-            <label>VN Domestic Ship (VND)</label>
+            <label>
+              <LabelWithTooltip tooltip="VN domestic shipping (from VN warehouse to delivery point). Unit: VND.">
+                VN Domestic Ship (VND)
+              </LabelWithTooltip>
+            </label>
             <input
               type="number"
               min="0"
@@ -921,7 +895,7 @@ const EditPurchaseOrderPage = () => {
         </div>
       </div>
 
-      {/* ── Danh sách sản phẩm ── */}
+      {/* Products list */}
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2 style={{ marginBottom: 0 }}>
@@ -965,7 +939,7 @@ const EditPurchaseOrderPage = () => {
         ))}
       </div>
 
-      {/* ── Dự toán chi phí ── */}
+      {/* Cost estimate */}
       <div className={styles.section}>
         <h2>Cost Estimate</h2>
         <div className={styles.summary}>
@@ -989,6 +963,12 @@ const EditPurchaseOrderPage = () => {
             <div className={styles.summaryRow}>
               <span>Packaging / Insurance</span>
               <span>{fmtVnd(summary.packVnd)}</span>
+            </div>
+          )}
+          {summary.intlShipVnd > 0 && (
+            <div className={styles.summaryRow}>
+              <span>Intl Shipping ({summary.totalWeightKg} kg)</span>
+              <span>{fmtVnd(summary.intlShipVnd)}</span>
             </div>
           )}
           {summary.vnShipVnd > 0 && (

@@ -53,6 +53,18 @@ export const completePurchaseOrder = createAsyncThunk(
   }
 );
 
+export const receivePurchaseOrder = createAsyncThunk(
+  'erp/receivePurchaseOrder',
+  async ({ id, arrivalCostsPayload }, { rejectWithValue }) => {
+    try {
+      const response = await erpService.receivePurchaseOrder(id, arrivalCostsPayload);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const cancelPurchaseOrder = createAsyncThunk(
   'erp/cancelPurchaseOrder',
   async ({ id, cancelReason }, { rejectWithValue }) => {

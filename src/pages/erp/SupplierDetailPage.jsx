@@ -34,7 +34,36 @@ import {
   ChevronLeft,
   ChevronRight,
   InboxIcon,
+  MessageCircle,
+  Link as LinkIcon,
+  Truck,
+  Tag,
+  DollarSign,
+  Plus,
 } from 'lucide-react';
+
+const InfoItem = ({ icon: Icon, label, value, isLink }) => (
+  <div className={styles.infoItem}>
+    <div className={styles.infoIconWrap}>
+      <Icon size={15} strokeWidth={2} />
+    </div>
+    <div className={styles.infoContent}>
+      <span className={styles.infoLabel}>{label}</span>
+      {isLink && value ? (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.link}
+        >
+          {value}
+        </a>
+      ) : (
+        <span className={styles.infoValue}>{value || '—'}</span>
+      )}
+    </div>
+  </div>
+);
 
 const SupplierDetailPage = () => {
   const { id } = useParams();
@@ -118,11 +147,15 @@ const SupplierDetailPage = () => {
   const getPOStatusConfig = (status) => {
     const map = {
       Draft: { label: 'Draft', className: styles.badgeDraft },
-      Pending: { label: 'Pending', className: styles.badgePending },
-      Completed: { label: 'Completed', className: styles.badgeCompleted },
+      PENDING_APPROVAL: { label: 'Pending Approval', className: styles.badgePending },
+      ORDERED: { label: 'Ordered', className: styles.badgePending },
+      ARRIVED_VN: { label: 'Arrived VN', className: styles.badgePending },
+      Pending: { label: 'Ordering', className: styles.badgePending },
+      Completed: { label: 'Received', className: styles.badgeCompleted },
+      COMPLETED: { label: 'Received', className: styles.badgeCompleted },
       Cancelled: { label: 'Cancelled', className: styles.badgeCancelled },
     };
-    return map[status] || map.Draft;
+    return map[status] || map.PENDING_APPROVAL;
   };
 
   const getScoreConfig = (score) => {
@@ -138,18 +171,9 @@ const SupplierDetailPage = () => {
     return { label: 'Needs Improvement', Icon: XCircle, className: styles.scorePoor };
   };
 
-  const infoFields = supplier
-    ? [
-        { icon: User, label: 'Contact Person', value: supplier.contactPerson },
-        { icon: Phone, label: 'Phone', value: supplier.phone },
-        { icon: Mail, label: 'Email', value: supplier.email },
-        { icon: MapPin, label: 'Address', value: supplier.address },
-        { icon: FileText, label: 'Tax Code', value: supplier.taxCode },
-        { icon: Clock, label: 'Payment Terms', value: supplier.paymentTerms },
-        { icon: Building2, label: 'Bank Name', value: supplier.bankName },
-        { icon: CreditCard, label: 'Account Number', value: supplier.bankAccount },
-      ]
-    : [];
+  const contact = supplier?.contact || {};
+  const addressInfo = supplier?.addressInfo || {};
+  const billingInfo = supplier?.billingInfo || {};
 
   if (loading || !supplier) {
     return <LoadingSpinner />;
@@ -228,21 +252,63 @@ const SupplierDetailPage = () => {
 
       {/* ── Main content ─────────────────────────────────────── */}
       <div className={styles.mainGrid}>
-        {/* Left: Supplier Info */}
+        {/* Left: Supplier Info — structured per SUPPLIER_REFACTOR schema */}
         <div className={styles.infoCard}>
-          <h2 className={styles.sectionTitle}>Supplier Information</h2>
+          {/* Contact & Platform */}
+          <h2 className={styles.sectionTitle}>Contact & Platform</h2>
           <div className={styles.infoGrid}>
-            {infoFields.map(({ icon: Icon, label, value }) => (
-              <div key={label} className={styles.infoItem}>
-                <div className={styles.infoIconWrap}>
-                  <Icon size={15} strokeWidth={2} />
-                </div>
-                <div className={styles.infoContent}>
-                  <span className={styles.infoLabel}>{label}</span>
-                  <span className={styles.infoValue}>{value || '—'}</span>
-                </div>
-              </div>
-            ))}
+            <InfoItem icon={User} label="Contact Person" value={contact.contactPerson || supplier?.contactPerson} />
+            <InfoItem icon={Phone} label="Phone" value={contact.phone || supplier?.phone} />
+            <InfoItem icon={Mail} label="Email" value={contact.email || supplier?.email} />
+            <InfoItem icon={MessageCircle} label="WeChat ID" value={contact.wechatId} />
+            <InfoItem icon={MessageCircle} label="Aliwangwang ID" value={contact.aliwangwangId} />
+            <InfoItem
+              icon={LinkIcon}
+              label="Platform URL"
+              value={addressInfo.platformUrl}
+              isLink={!!addressInfo.platformUrl}
+            />
+          </div>
+
+          {/* Address & Platform */}
+          <h2 className={styles.sectionTitle}>Address & Platform</h2>
+          <div className={styles.infoGrid}>
+            <InfoItem
+              icon={MapPin}
+              label="Address"
+              value={addressInfo.address || supplier?.address}
+            />
+            <InfoItem icon={Truck} label="Return Address" value={addressInfo.returnAddress} />
+          </div>
+
+          {/* Billing & Payment */}
+          <h2 className={styles.sectionTitle}>Billing & Payment</h2>
+          <div className={styles.infoGrid}>
+            <InfoItem icon={FileText} label="Tax Code" value={billingInfo.taxCode || supplier?.taxCode} />
+            <InfoItem icon={Building2} label="Bank Name" value={billingInfo.bankName || supplier?.bankName} />
+            <InfoItem icon={User} label="Account Name" value={billingInfo.accountName} />
+            <InfoItem
+              icon={CreditCard}
+              label="Account Number"
+              value={billingInfo.accountNumber || supplier?.bankAccount}
+            />
+            <InfoItem icon={DollarSign} label="Default Currency" value={billingInfo.defaultCurrency} />
+            <InfoItem icon={Clock} label="Payment Terms" value={billingInfo.paymentTerms || supplier?.paymentTerms} />
+          </div>
+
+          {/* Logistics */}
+          <h2 className={styles.sectionTitle}>Logistics</h2>
+          <div className={styles.infoGrid}>
+            <InfoItem
+              icon={Clock}
+              label="Lead Time"
+              value={supplier?.leadTimeDays > 0 ? `${supplier.leadTimeDays} days` : null}
+            />
+            <InfoItem
+              icon={Tag}
+              label="Categories"
+              value={supplier?.category?.length ? supplier.category.join(', ') : null}
+            />
           </div>
 
           {supplier.notes && (
@@ -302,6 +368,50 @@ const SupplierDetailPage = () => {
             <span>50</span>
             <span>100</span>
           </div>
+
+          {/* Score interpretation guide */}
+          <div className={styles.scoreGuide}>
+            <div className={styles.scoreGuideItem}>
+              <span className={styles.scoreGuideDot} style={{ background: '#10b981' }} />
+              <span>80–100: Excellent</span>
+            </div>
+            <div className={styles.scoreGuideItem}>
+              <span className={styles.scoreGuideDot} style={{ background: '#3b82f6' }} />
+              <span>60–79: Good</span>
+            </div>
+            <div className={styles.scoreGuideItem}>
+              <span className={styles.scoreGuideDot} style={{ background: '#f59e0b' }} />
+              <span>40–59: Average</span>
+            </div>
+            <div className={styles.scoreGuideItem}>
+              <span className={styles.scoreGuideDot} style={{ background: '#ef4444' }} />
+              <span>0–39: Needs improvement</span>
+            </div>
+          </div>
+
+          {/* Quick action */}
+          <button
+            type="button"
+            className={styles.btnCreatePO}
+            onClick={() => navigate(`/seller/erp/purchase-orders/create?supplierId=${id}`)}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            Create Purchase Order
+          </button>
+
+          {/* Compact stats when analytics exist */}
+          {analytics && (
+            <div className={styles.scoreCardStats}>
+              <div className={styles.scoreCardStat}>
+                <ShoppingCart size={14} color="#64748b" />
+                <span>{analytics.totalPurchaseOrders} orders</span>
+              </div>
+              <div className={styles.scoreCardStat}>
+                <Wallet size={14} color="#64748b" />
+                <span>{formatCurrency(analytics.totalSpent)}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -345,7 +455,10 @@ const SupplierDetailPage = () => {
             >
               <option value="">All Statuses</option>
               <option value="Draft">Draft</option>
-              <option value="Pending">Pending</option>
+              <option value="PENDING_APPROVAL">Pending Approval</option>
+              <option value="ORDERED">Ordered</option>
+              <option value="ARRIVED_VN">Arrived VN</option>
+              <option value="COMPLETED">Received</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
             </select>
