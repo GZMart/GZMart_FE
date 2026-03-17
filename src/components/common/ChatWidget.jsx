@@ -48,6 +48,7 @@ const ChatWidget = () => {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiInput, setAiInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
+  const [aiThinkingText, setAiThinkingText] = useState(null);
   const aiMessagesEndRef = useRef(null);
 
   // Search State
@@ -357,12 +358,25 @@ const ChatWidget = () => {
   };
 
   // --- AI Chat Logic ---
+  const CLEAR_CHAT_PATTERNS = [
+    'làm mới', 'lam moi', 'clear', 'reset', 'xóa chat', 'xoa chat',
+    'bắt đầu lại', 'bat dau lai', 'new chat', 'chat mới', 'refresh',
+    'xóa hội thoại', 'xoa hoi thoai',
+  ];
+
   const handleSendAiMessage = async (e, forcedContent = null) => {
     if (e) {
       e.preventDefault();
     }
     const contentToSend = forcedContent || aiInput;
     if (!contentToSend.trim()) {
+      return;
+    }
+
+    const lower = contentToSend.trim().toLowerCase();
+    if (CLEAR_CHAT_PATTERNS.some((p) => lower === p || lower === `${p} chat`)) {
+      setAiInput('');
+      handleClearAiChat();
       return;
     }
 
@@ -389,6 +403,7 @@ const ChatWidget = () => {
     await aiChatService.sendMessage(
       userMsg.content,
       (chunk) => {
+        setAiThinkingText(null);
         setAiMessages((prev) =>
           prev.map((msg) =>
             msg.id === tempAiMsgId ? { ...msg, content: msg.content + chunk } : msg
@@ -396,11 +411,20 @@ const ChatWidget = () => {
         );
         scrollToBottomAi();
       },
-      (finalContent) => {
+      (finalContent, finalData) => {
         setIsAiTyping(false);
+        setAiThinkingText(null);
+        const productMap = {};
+        if (finalData?.products?.length > 0) {
+          finalData.products.forEach((p) => {
+            productMap[p._id] = p;
+          });
+        }
         setAiMessages((prev) => {
           const updated = prev.map((msg) =>
-            msg.id === tempAiMsgId ? { ...msg, content: finalContent, isStreaming: false } : msg
+            msg.id === tempAiMsgId
+              ? { ...msg, content: finalContent, isStreaming: false, products: productMap }
+              : msg
           );
           aiChatService.saveMessages(updated);
           return updated;
@@ -408,6 +432,7 @@ const ChatWidget = () => {
       },
       (_error) => {
         setIsAiTyping(false);
+        setAiThinkingText(null);
         const errorMsg = {
           role: 'ai',
           content: 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.',
@@ -419,8 +444,115 @@ const ChatWidget = () => {
           aiChatService.saveMessages(updated);
           return updated;
         });
+      },
+      newMessages,
+      (thinkingMsg) => {
+        setAiThinkingText(thinkingMsg);
+        scrollToBottomAi();
       }
     );
+  };
+
+  const handleClearAiChat = () => {
+    aiChatService.clearMessages();
+    const welcomeMsg = {
+      role: 'ai',
+      content: 'Chào bạn! Tôi là trợ lý AI của GZMart. Tôi có thể giúp gì cho bạn hôm nay?',
+      timestamp: new Date().toISOString(),
+    };
+    setAiMessages([welcomeMsg]);
+    aiChatService.saveMessages([welcomeMsg]);
+  };
+
+  const cleanProductText = (text) => text
+    .replace(/\[\[product:[^\]]*\]?\]?/gi, '')
+    .split('\n')
+    .filter((line) => {
+      const l = line.trim().toLowerCase().replace(/\*/g, '');
+      if (!l) { return true; }
+      if (/^-?\s*(giá|price)\s*:/i.test(l)) { return false; }
+      if (/^-?\s*(đánh giá|rating)\s*:/i.test(l)) { return false; }
+      if (/^-?\s*(đã bán|lượt bán|sold)\s*:/i.test(l)) { return false; }
+      if (/^-?\s*(danh mục|category)\s*:/i.test(l)) { return false; }
+      if (/^-?\s*(thương hiệu|brand)\s*:/i.test(l)) { return false; }
+      if (/^-?\s*(đánh giá)\s*:?\s*⭐/i.test(l)) { return false; }
+      if (/^\d+[.,]\d+\s*(đ|₫|vnd)/i.test(l)) { return false; }
+      if (/^⭐\s*\d/i.test(l)) { return false; }
+      return true;
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\*\*/g, '')
+    .trim();
+
+  const renderAiContent = (msg) => {
+    const { content, isStreaming, products } = msg;
+    if (!content) { return null; }
+
+    if (isStreaming) {
+      const cleanText = content.replace(/\[\[product:[a-f0-9]{24}\]\]/gi, '');
+      return <div style={{ whiteSpace: 'pre-wrap' }}>{cleanText}</div>;
+    }
+
+    const productMap = products || {};
+    const parts = content.split(/(\[\[product:[a-f0-9]{24}\]\])/gi);
+
+    const rendered = parts.map((part, i) => {
+      const match = part.match(/\[\[product:([a-f0-9]{24})\]\]/i);
+      if (match) {
+        const product = productMap[match[1]];
+        if (!product) { return null; }
+        return (
+          <div
+            key={i}
+            className={styles['ai-product-card']}
+            onClick={() => navigate(`/product/${product._id}`)}
+            role="button"
+            title="Xem chi tiết sản phẩm"
+          >
+            {product.dealLabel && (
+              <div className={styles['ai-product-deal-badge']}>
+                {product.dealLabel}
+              </div>
+            )}
+            <img
+              src={product.image || 'https://via.placeholder.com/80'}
+              alt={product.name}
+              className={styles['ai-product-image']}
+            />
+            <div className={styles['ai-product-info']}>
+              <div className={styles['ai-product-name']}>{product.name}</div>
+              <div className={styles['ai-product-price']}>
+                {product.price?.toLocaleString('vi-VN')}₫
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <span className={styles['ai-product-price-original']}>
+                    {product.originalPrice.toLocaleString('vi-VN')}₫
+                  </span>
+                )}
+                {product.maxPrice && (
+                  <span className={styles['ai-product-price-max']}>
+                    {' '}– {product.maxPrice.toLocaleString('vi-VN')}₫
+                  </span>
+                )}
+              </div>
+              <div className={styles['ai-product-meta']}>
+                <span>⭐ {product.rating}/5</span>
+                <span>|</span>
+                <span>Đã bán {product.sold}</span>
+              </div>
+            </div>
+            <div className={styles['ai-product-arrow']}>
+              <i className="bi bi-chevron-right"></i>
+            </div>
+          </div>
+        );
+      }
+      const cleaned = cleanProductText(part);
+      if (!cleaned) { return null; }
+      return <span key={i}>{cleaned}</span>;
+    });
+
+    return <div style={{ whiteSpace: 'pre-wrap' }}>{rendered}</div>;
   };
 
   const scrollToBottom = () =>
@@ -701,6 +833,19 @@ const ChatWidget = () => {
                 >
                   {activeChatId === 'ai' ? (
                     <>
+                      {aiMessages.length > 1 && (
+                        <div className="d-flex justify-content-end mb-2 px-2">
+                          <button
+                            className="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center gap-1"
+                            style={{ fontSize: '0.75rem', padding: '2px 10px' }}
+                            onClick={handleClearAiChat}
+                            title="Làm mới cuộc trò chuyện"
+                          >
+                            <i className="bi bi-arrow-counterclockwise"></i>
+                            Làm mới
+                          </button>
+                        </div>
+                      )}
                       {aiMessages.length <= 1 && (
                         <div className="mb-4">
                           <div className="d-flex align-items-center mb-3 text-primary">
@@ -724,7 +869,9 @@ const ChatWidget = () => {
                         </div>
                       )}
 
-                      {aiMessages.map((msg, idx) => (
+                      {aiMessages
+                        .filter((msg) => !(msg.isStreaming && !msg.content))
+                        .map((msg, idx) => (
                         <div
                           key={idx}
                           className={`d-flex mb-3 ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
@@ -742,17 +889,35 @@ const ChatWidget = () => {
                           <div
                             className={`${styles['message-bubble']} ${msg.role === 'user' ? styles['message-user'] : styles['message-other']}`}
                           >
-                            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                            {msg.role === 'ai'
+                              ? renderAiContent(msg)
+                              : <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                            }
                           </div>
                         </div>
                       ))}
-                      {isAiTyping && !aiMessages.some((m) => m.isStreaming) && (
+                      {isAiTyping && !aiMessages.some((m) => m.isStreaming && m.content) && (
                         <div className="d-flex mb-3 justify-content-start">
-                          <div className={styles['typing-indicator']}>
-                            <span className={styles['typing-dot']}></span>
-                            <span className={styles['typing-dot']}></span>
-                            <span className={styles['typing-dot']}></span>
+                          <div className="me-2 d-flex align-items-end">
+                            <div
+                              className="rounded-circle bg-white text-primary shadow-sm d-flex align-items-center justify-content-center"
+                              style={{ width: 28, height: 28 }}
+                            >
+                              <i className="bi bi-robot" style={{ fontSize: '0.9rem' }}></i>
+                            </div>
                           </div>
+                          {aiThinkingText ? (
+                            <div className={styles['thinking-indicator']}>
+                              <div className={styles['thinking-spinner']}></div>
+                              <span>{aiThinkingText}</span>
+                            </div>
+                          ) : (
+                            <div className={styles['typing-indicator']}>
+                              <span className={styles['typing-dot']}></span>
+                              <span className={styles['typing-dot']}></span>
+                              <span className={styles['typing-dot']}></span>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div ref={aiMessagesEndRef} />
