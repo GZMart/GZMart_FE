@@ -206,16 +206,20 @@ const SuppliersPage = () => {
     let list = suppliers;
     if (search.trim()) {
       const q = search.toLowerCase();
+      const contactPerson = (s) => s.contact?.contactPerson || s.contactPerson;
+      const phone = (s) => s.contact?.phone || s.phone;
+      const email = (s) => s.contact?.email || s.email;
       list = list.filter(
         (s) =>
           s.name?.toLowerCase().includes(q) ||
-          s.contactPerson?.toLowerCase().includes(q) ||
-          s.phone?.includes(q) ||
-          s.email?.toLowerCase().includes(q)
+          contactPerson(s)?.toLowerCase().includes(q) ||
+          phone(s)?.includes(q) ||
+          email(s)?.toLowerCase().includes(q)
       );
     }
     return sortRows(list, sortKey, sortDir, {
       status: (r) => (r.status === 'Active' ? 0 : 1),
+      contactPerson: (r) => r.contact?.contactPerson || r.contactPerson || '',
     });
   }, [suppliers, search, sortKey, sortDir]);
 
@@ -430,8 +434,10 @@ const SuppliersPage = () => {
                         >
                           {supplier.name}
                         </Link>
-                        {supplier.address && (
-                          <div className={styles.supplierMeta}>{supplier.address}</div>
+                        {(supplier.addressInfo?.address || supplier.address) && (
+                          <div className={styles.supplierMeta}>
+                            {supplier.addressInfo?.address || supplier.address}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -440,12 +446,18 @@ const SuppliersPage = () => {
                   {/* Contact */}
                   <td>
                     <div className={styles.contactCell}>
-                      <span className={styles.contactName}>{supplier.contactPerson || '—'}</span>
-                      {supplier.phone && (
-                        <span className={styles.contactSub}>{supplier.phone}</span>
+                      <span className={styles.contactName}>
+                        {supplier.contact?.contactPerson || supplier.contactPerson || '—'}
+                      </span>
+                      {(supplier.contact?.phone || supplier.phone) && (
+                        <span className={styles.contactSub}>
+                          {supplier.contact?.phone || supplier.phone}
+                        </span>
                       )}
-                      {supplier.email && (
-                        <span className={styles.contactSub}>{supplier.email}</span>
+                      {(supplier.contact?.email || supplier.email) && (
+                        <span className={styles.contactSub}>
+                          {supplier.contact?.email || supplier.email}
+                        </span>
                       )}
                     </div>
                   </td>

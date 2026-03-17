@@ -154,7 +154,7 @@ const ERPDashboard = () => {
         purchaseOrdersPagination?.statusCounts?.total ??
         purchaseOrdersPagination?.total ??
         purchaseOrders.length,
-      detail: `${statusCounts.pending} đang đặt hàng`,
+      detail: `${statusCounts.pending} ordering`,
       accentColor: '#1a56db',
       bgColor: '#eff6ff',
     },

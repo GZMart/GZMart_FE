@@ -52,9 +52,18 @@ export const updatePurchaseOrder = async (id, updateData) =>
   axiosClient.put(`${PO_BASE}/${id}`, updateData);
 
 /**
- * Complete purchase order (nhập kho)
+ * Complete purchase order (receive) — LEGACY
  */
 export const completePurchaseOrder = async (id) => axiosClient.post(`${PO_BASE}/${id}/complete`);
+
+/**
+ * Receive purchase order (Stage 2) — enter costs when goods arrive, calculate landed cost
+ * @param {string} id - PO ID
+ * @param {Object} arrivalCostsPayload - totalWeightKg, intlShippingRateVndPerKg, cnDomesticShippingCny,
+ *   packagingCostVnd, vnDomesticShippingVnd, importTaxVnd, otherCostsVnd
+ */
+export const receivePurchaseOrder = async (id, arrivalCostsPayload) =>
+  axiosClient.post(`${PO_BASE}/${id}/receive`, arrivalCostsPayload);
 
 /**
  * Cancel purchase order
@@ -154,6 +163,7 @@ export default {
   getPurchaseOrderById,
   updatePurchaseOrder,
   completePurchaseOrder,
+  receivePurchaseOrder,
   cancelPurchaseOrder,
   // Suppliers
   createSupplier,

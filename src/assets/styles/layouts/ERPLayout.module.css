@@ -451,3 +451,16 @@
   /* No padding here — individual pages set their own padding */
   overflow: visible;
 }
+
+/* ─── Seller Portal: Override btn-primary to use ERP color ────────── */
+.shell :global(.btn-primary) {
+  background-color: var(--sp-primary) !important;
+  border-color: var(--sp-primary) !important;
+  color: #ffffff !important;
+}
+.shell :global(.btn-primary:hover),
+.shell :global(.btn-primary:focus) {
+  background-color: var(--sp-primary-dark) !important;
+  border-color: var(--sp-primary-dark) !important;
+  color: #ffffff !important;
+}

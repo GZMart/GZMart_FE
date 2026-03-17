@@ -205,8 +205,13 @@
   font-size: 0.9375rem;
   font-weight: 700;
   color: #0f172a;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  margin-top: 1.25rem;
   letter-spacing: -0.01em;
+}
+
+.infoCard .sectionTitle:first-of-type {
+  margin-top: 0;
 }
 
 /* ─── Info Grid ──────────────────────────────────────────────── */
@@ -275,6 +280,41 @@
   font-size: 0.875rem;
   line-height: 1.65;
   margin-top: 0.375rem;
+}
+
+/* Compact Info Grid (for nested data) */
+.infoGridCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.625rem;
+}
+
+.infoItemCompact {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.infoIcon {
+  flex-shrink: 0;
+  color: #1a56db;
+  margin-top: 0.125rem;
+}
+
+.link {
+  color: #1a56db;
+  text-decoration: none;
+  word-break: break-all;
+  transition: opacity 0.15s ease;
+}
+
+.link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 /* ─── Score Card ─────────────────────────────────────────────── */
@@ -377,6 +417,78 @@
   color: #9ca3af;
 }
 
+/* Score interpretation guide */
+.scoreGuide {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scoreGuideItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.scoreGuideDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Create PO button */
+.btnCreatePO {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.625rem 1rem;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btnCreatePO:hover {
+  background: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
+}
+
+/* Compact stats in score card */
+.scoreCardStats {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scoreCardStat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.scoreCardStat span {
+  font-weight: 500;
+  color: #1e293b;
+}
+
 /* ─── Stats Grid ─────────────────────────────────────────────── */
 .statsGrid {
   display: grid;
@@ -394,15 +506,13 @@
   align-items: center;
   gap: 0.875rem;
   border-left: 3px solid var(--accent, #1a56db);
-  transition:
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
   cursor: default;
 }
 
 .statCard:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  border-color: #e2e8f0;
 }
 
 .statIconWrap {

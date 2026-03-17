@@ -34,6 +34,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [videos, setVideos] = useState([]);
   const [videoPreviews, setVideoPreviews] = useState([]);
+  const [shippingPerVariant, setShippingPerVariant] = useState(false);
+  const [productWeight, setProductWeight] = useState(0);
+  const [productWeightUnit, setProductWeightUnit] = useState('gr');
+  const [productDim, setProductDim] = useState({ length: 0, width: 0, height: 0 });
+  const [preOrderEnabled, setPreOrderEnabled] = useState(false);
+  const [preOrderDays, setPreOrderDays] = useState(2);
 
   const isEditMode = !!editingProduct;
   // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
@@ -134,6 +140,24 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       if (categoryId) {
         fetchAttributes(categoryId, rawAttributes);
       }
+
+      // Pre-fill shipping & pre-order
+      setPreOrderEnabled((editingProduct.preOrderDays || 0) > 0);
+      setPreOrderDays(editingProduct.preOrderDays || 2);
+      const w = editingProduct.weight ?? 0;
+      const wu = editingProduct.weightUnit || 'gr';
+      setProductWeight(wu === 'kg' ? w * 1000 : w);
+      setProductWeightUnit('gr');
+      setProductDim({
+        length: editingProduct.dimLength || 0,
+        width: editingProduct.dimWidth || 0,
+        height: editingProduct.dimHeight || 0,
+      });
+      // If any model has per-variant weight/dim, show per-variant
+      const hasModelShipping = (editingProduct.models || []).some(
+        (m) => (m.weight && m.weight > 0) || (m.dimLength || m.dimWidth || m.dimHeight)
+      );
+      setShippingPerVariant(!!hasModelShipping);
     } else if (!show) {
       // Reset form when modal closes
       setFormData({
@@ -157,6 +181,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       setVideoPreviews([]);
       setAttributeValues({});
       setErrors({});
+      setShippingPerVariant(false);
+      setProductWeight(0);
+      setProductWeightUnit('gr');
+      setProductDim({ length: 0, width: 0, height: 0 });
+      setPreOrderEnabled(false);
+      setPreOrderDays(2);
     }
   }, [editingProduct, show]);
 
@@ -534,12 +564,16 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           {
             ...(formData.sku.trim() && { sku: formData.sku.trim().toUpperCase() }),
             price: parseFloat(formData.originalPrice),
-            // Only include costPrice on CREATE — Inventory manages it on edit
             ...(!isEditMode && formData.costPrice
               ? { costPrice: parseFloat(formData.costPrice) }
               : {}),
             stock: safeStock(formData.stock),
             tierIndex: [],
+            weight: productWeight || 0,
+            weightUnit: 'gr',
+            dimLength: productDim.length || 0,
+            dimWidth: productDim.width || 0,
+            dimHeight: productDim.height || 0,
           },
         ];
       } else {
@@ -547,11 +581,25 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           ...(model._id && { _id: model._id }),
           tierIndex: model.tierIndex,
           price: parseFloat(model.price),
-          // Only include costPrice on CREATE
           ...(!isEditMode && model.costPrice ? { costPrice: parseFloat(model.costPrice) } : {}),
           stock: safeStock(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
           ...(!model.imageFile && model.image && { image: model.image }),
+          ...(shippingPerVariant
+            ? {
+                weight: model.weight ?? 0,
+                weightUnit: 'gr',
+                dimLength: model.dimLength ?? 0,
+                dimWidth: model.dimWidth ?? 0,
+                dimHeight: model.dimHeight ?? 0,
+              }
+            : {
+                weight: productWeight || 0,
+                weightUnit: 'gr',
+                dimLength: productDim.length || 0,
+                dimWidth: productDim.width || 0,
+                dimHeight: productDim.height || 0,
+              }),
         }));
       }
 
@@ -581,6 +629,15 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         // Append attributes
         if (attributesArray.length > 0) {
           formDataToSend.append('attributes', JSON.stringify(attributesArray));
+        }
+
+        formDataToSend.append('preOrderDays', preOrderEnabled ? preOrderDays : 0);
+        if (!shippingPerVariant) {
+          formDataToSend.append('weight', productWeight || 0);
+          formDataToSend.append('weightUnit', 'gr');
+          formDataToSend.append('dimLength', productDim.length || 0);
+          formDataToSend.append('dimWidth', productDim.width || 0);
+          formDataToSend.append('dimHeight', productDim.height || 0);
         }
 
         // Append tiers (for variant products)
@@ -641,6 +698,14 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           originalPrice: parseFloat(formData.originalPrice),
           tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()) : [],
           attributes: attributesArray,
+          preOrderDays: preOrderEnabled ? preOrderDays : 0,
+          ...(!shippingPerVariant && {
+            weight: productWeight || 0,
+            weightUnit: 'gr',
+            dimLength: productDim.length || 0,
+            dimWidth: productDim.width || 0,
+            dimHeight: productDim.height || 0,
+          }),
           tiers:
             productType === 'variant'
               ? tiers.map((tier) => ({
@@ -732,6 +797,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       setAttributeValues({});
       setProductType('simple');
       setTiers([]);
+      setShippingPerVariant(false);
+      setProductWeight(0);
+      setProductWeightUnit('gr');
+      setProductDim({ length: 0, width: 0, height: 0 });
+      setPreOrderEnabled(false);
+      setPreOrderDays(2);
       // Clean up variant image previews before clearing models
       models.forEach((model) => {
         if (model.imagePreview) {
@@ -1270,6 +1341,148 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                 </Col>
               </Row>
 
+              {/* ── Vận chuyển (Shipping) ── */}
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>4</span>Vận chuyển
+              </div>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="switch"
+                      id="shippingPerVariant"
+                      label="Thiết lập cân nặng &amp; kích thước cho từng phân loại"
+                      checked={shippingPerVariant}
+                      onChange={(e) => setShippingPerVariant(e.target.checked)}
+                      disabled={loading || productType !== 'variant'}
+                      className={styles.shippingToggle}
+                    />
+                    {productType !== 'variant' && (
+                      <p className={styles.textMuted}>Chỉ áp dụng cho sản phẩm có phân loại (biến thể)</p>
+                    )}
+                  </Form.Group>
+                </Col>
+                {!shippingPerVariant && (
+                  <>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <label className={styles.formLabel}>Cân nặng (Sau khi đóng gói)</label>
+                        <div className={styles.weightUnitRow}>
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step={productWeightUnit === 'gr' ? 1 : 0.01}
+                            value={productWeightUnit === 'gr' ? productWeight || '' : (productWeight / 1000) || ''}
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value) || 0;
+                              setProductWeight(productWeightUnit === 'gr' ? v : Math.round(v * 1000));
+                            }}
+                            disabled={loading}
+                            className={styles.formControl}
+                          />
+                          <Form.Select
+                            value={productWeightUnit}
+                            onChange={(e) => setProductWeightUnit(e.target.value)}
+                            disabled={loading}
+                            className={styles.unitSelect}
+                          >
+                            <option value="gr">gr</option>
+                            <option value="kg">kg</option>
+                          </Form.Select>
+                        </div>
+                      </Form.Group>
+                    </Col>
+                    <Col md={8}>
+                      <Form.Group className="mb-3">
+                        <label className={styles.formLabel}>Kích thước đóng gói (R × D × C cm)</label>
+                        <div className={styles.dimRow}>
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="R"
+                            value={productDim.length || ''}
+                            onChange={(e) => setProductDim((d) => ({ ...d, length: parseFloat(e.target.value) || 0 }))}
+                            disabled={loading}
+                            className={styles.dimInput}
+                          />
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="D"
+                            value={productDim.width || ''}
+                            onChange={(e) => setProductDim((d) => ({ ...d, width: parseFloat(e.target.value) || 0 }))}
+                            disabled={loading}
+                            className={styles.dimInput}
+                          />
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="C"
+                            value={productDim.height || ''}
+                            onChange={(e) => setProductDim((d) => ({ ...d, height: parseFloat(e.target.value) || 0 }))}
+                            disabled={loading}
+                            className={styles.dimInput}
+                          />
+                        </div>
+                        <p className={styles.dimWarning}>
+                          Phí vận chuyển thực tế sẽ thay đổi nếu bạn nhập sai kích thước
+                        </p>
+                      </Form.Group>
+                    </Col>
+                  </>
+                )}
+              </Row>
+
+              {/* ── Hàng Đặt Trước (Pre-order) ── */}
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>5</span>Hàng Đặt Trước
+              </div>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <div className={styles.radioGroup}>
+                      <Form.Check
+                        type="radio"
+                        id="preOrderNo"
+                        name="preOrder"
+                        label="Không"
+                        checked={!preOrderEnabled}
+                        onChange={() => setPreOrderEnabled(false)}
+                        disabled={loading}
+                      />
+                      <Form.Check
+                        type="radio"
+                        id="preOrderYes"
+                        name="preOrder"
+                        label="Đồng ý"
+                        checked={preOrderEnabled}
+                        onChange={() => setPreOrderEnabled(true)}
+                        disabled={loading}
+                      />
+                    </div>
+                    {preOrderEnabled && (
+                      <div className={styles.preOrderDaysRow}>
+                        <Form.Control
+                          type="number"
+                          min="1"
+                          value={preOrderDays}
+                          onChange={(e) => setPreOrderDays(Math.max(1, parseInt(e.target.value, 10) || 2))}
+                          disabled={loading}
+                          className={styles.formControl}
+                          style={{ width: 80 }}
+                        />
+                        <span className={styles.preOrderText}>
+                          Tôi sẽ gửi hàng trong {preOrderDays} ngày (không bao gồm ngày nghỉ lễ, Tết và những ngày đơn vị vận chuyển không làm việc)
+                        </span>
+                      </div>
+                    )}
+                  </Form.Group>
+                </Col>
+              </Row>
+
               {/* ── Attributes (if any) ── */}
               {attributes.length > 0 && (
                 <>
@@ -1313,6 +1526,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                         tiers={tiers}
                         disabled={loading}
                         isEditMode={isEditMode}
+                        showShippingColumns={shippingPerVariant}
                       />
                       {missingVariantImages > 0 && (
                         <div className={`${styles.alert} ${styles.alertWarning}`}>

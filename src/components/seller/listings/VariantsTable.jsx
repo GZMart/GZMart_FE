@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styles from '../../../assets/styles/seller/VariantsTable.module.css';
 
-const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }) => {
+const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, showShippingColumns = false }) => {
   const [bulkEdit, setBulkEdit] = useState({ price: '', costPrice: '', stock: '' });
   const [selectedRows, setSelectedRows] = useState(new Set());
 
@@ -232,6 +232,12 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
                   )}
                 </th>
                 <th className={styles.colSku}>SKU</th>
+                {showShippingColumns && (
+                  <>
+                    <th>Weight (gr)</th>
+                    <th>R×D×C (cm)</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -404,6 +410,53 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
                       style={{ fontFamily: 'monospace', fontSize: 11 }}
                     />
                   </td>
+                  {showShippingColumns && (
+                    <>
+                      <td>
+                        <input
+                          type="number"
+                          className={styles.compactInput}
+                          value={model.weight ?? ''}
+                          onChange={(e) => handleModelChange(index, 'weight', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          min="0"
+                          disabled={disabled}
+                          style={{ width: 70 }}
+                        />
+                      </td>
+                      <td>
+                        <div className={styles.dimRow}>
+                          <input
+                            type="number"
+                            className={styles.dimInput}
+                            value={model.dimLength ?? ''}
+                            onChange={(e) => handleModelChange(index, 'dimLength', parseFloat(e.target.value) || 0)}
+                            placeholder="R"
+                            min="0"
+                            disabled={disabled}
+                          />
+                          <input
+                            type="number"
+                            className={styles.dimInput}
+                            value={model.dimWidth ?? ''}
+                            onChange={(e) => handleModelChange(index, 'dimWidth', parseFloat(e.target.value) || 0)}
+                            placeholder="D"
+                            min="0"
+                            disabled={disabled}
+                          />
+                          <input
+                            type="number"
+                            className={styles.dimInput}
+                            value={model.dimHeight ?? ''}
+                            onChange={(e) => handleModelChange(index, 'dimHeight', parseFloat(e.target.value) || 0)}
+                            placeholder="C"
+                            min="0"
+                            disabled={disabled}
+                          />
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
