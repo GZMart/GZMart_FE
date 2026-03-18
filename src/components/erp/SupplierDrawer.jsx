@@ -35,22 +35,88 @@ const IconSave = () => (
   </svg>
 );
 
+// ── Initial form state with nested object structure ────────────────────────
 const EMPTY_FORM = {
+  // General Information
   name: '',
-  contactPerson: '',
-  phone: '',
-  email: '',
-  address: '',
-  taxCode: '',
-  bankAccount: '',
-  bankName: '',
-  paymentTerms: '',
+  category: [],
+  status: 'Active',
+  reliabilityScore: 50,
+
+  // Contact Information
+  contact: {
+    contactPerson: '',
+    phone: '',
+    email: '',
+    wechatId: '',
+    aliwangwangId: '',
+  },
+
+  // Address & Platform Information
+  addressInfo: {
+    address: '',
+    returnAddress: '',
+    platformUrl: '',
+  },
+
+  // Billing & Payment Information
+  billingInfo: {
+    taxCode: '',
+    bankName: '',
+    accountName: '',
+    accountNumber: '',
+    defaultCurrency: 'CNY',
+    paymentTerms: '',
+  },
+
+  // Logistics
+  leadTimeDays: 0,
+
+  // Additional Information
   notes: '',
 };
 
 /**
- * Reusable Supplier create/edit drawer.
- * Used by both SuppliersPage and SupplierDetailPage.
+ * Map old flat structure to new nested structure (for backward compatibility)
+ */
+const mapLegacyToNested = (supplier) => {
+  return {
+    name: supplier.name || '',
+    category: supplier.category || [],
+    status: supplier.status || 'Active',
+    reliabilityScore: supplier.reliabilityScore ?? 50,
+
+    contact: {
+      contactPerson: supplier.contact?.contactPerson || supplier.contactPerson || '',
+      phone: supplier.contact?.phone || supplier.phone || '',
+      email: supplier.contact?.email || supplier.email || '',
+      wechatId: supplier.contact?.wechatId || '',
+      aliwangwangId: supplier.contact?.aliwangwangId || '',
+    },
+
+    addressInfo: {
+      address: supplier.addressInfo?.address || supplier.address || '',
+      returnAddress: supplier.addressInfo?.returnAddress || '',
+      platformUrl: supplier.addressInfo?.platformUrl || '',
+    },
+
+    billingInfo: {
+      taxCode: supplier.billingInfo?.taxCode || supplier.taxCode || '',
+      bankName: supplier.billingInfo?.bankName || supplier.bankName || '',
+      accountName: supplier.billingInfo?.accountName || '',
+      accountNumber: supplier.billingInfo?.accountNumber || supplier.bankAccount || '',
+      defaultCurrency: supplier.billingInfo?.defaultCurrency || 'CNY',
+      paymentTerms: supplier.billingInfo?.paymentTerms || supplier.paymentTerms || '',
+    },
+
+    leadTimeDays: supplier.leadTimeDays ?? 0,
+    notes: supplier.notes || '',
+  };
+};
+
+/**
+ * Reusable Supplier create/edit drawer with nested object structure.
+ * Supports cross-border e-commerce suppliers (Taobao/1688).
  *
  * Props:
  *   supplier  — supplier object when editing, null/undefined when creating
@@ -58,22 +124,7 @@ const EMPTY_FORM = {
  *   onSave    — async (formData) => void
  */
 const SupplierDrawer = ({ supplier, onClose, onSave }) => {
-  const [form, setForm] = useState(
-    supplier
-      ? {
-          name: supplier.name || '',
-          contactPerson: supplier.contactPerson || '',
-          phone: supplier.phone || '',
-          email: supplier.email || '',
-          address: supplier.address || '',
-          taxCode: supplier.taxCode || '',
-          bankAccount: supplier.bankAccount || '',
-          bankName: supplier.bankName || '',
-          paymentTerms: supplier.paymentTerms || '',
-          notes: supplier.notes || '',
-        }
-      : { ...EMPTY_FORM }
-  );
+  const [form, setForm] = useState(supplier ? mapLegacyToNested(supplier) : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -90,16 +141,66 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
     };
   }, [onClose]);
 
+  /**
+   * Handle form changes supporting nested object paths.
+   * Examples:
+   *   - name: "John" → form.name = "John"
+   *   - contact.wechatId: "john123" → form.contact.wechatId = "john123"
+   */
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    const inputValue = type === 'checkbox' ? checked : value;
+
+    setForm((prev) => {
+      if (name.includes('.')) {
+        // Nested field: "contact.wechatId"
+        const [parentKey, childKey] = name.split('.');
+        return {
+          ...prev,
+          [parentKey]: {
+            ...prev[parentKey],
+            [childKey]: inputValue,
+          },
+        };
+      } else {
+        // Root level field: "name"
+        return {
+          ...prev,
+          [name]: inputValue,
+        };
+      }
+    });
+  };
+
+  /**
+   * Handle category changes (array field)
+   */
+  const handleCategoryChange = (e) => {
+    const value = e.target.value.trim();
+    if (value) {
+      setForm((prev) => ({
+        ...prev,
+        category: [...prev.category, value],
+      }));
+      e.target.value = '';
+    }
+  };
+
+  const removeCategory = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      category: prev.category.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    await onSave(form);
-    setSaving(false);
+    try {
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const isEdit = !!supplier;
@@ -127,12 +228,13 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
         </div>
 
         {/* Body */}
-        <form id="supplier-form" onSubmit={handleSubmit}>
-          <div className={styles.drawerBody}>
-            {/* Basic Info */}
+        <div className={styles.drawerBody}>
+          <form id="supplier-form" onSubmit={handleSubmit}>
+            {/* ─── Section 1: General Information ─────────────────────────────── */}
             <div className={styles.section}>
-              <h3>Basic Information</h3>
+              <h3>General Information</h3>
               <div className={styles.formGrid}>
+                {/* Supplier Name */}
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                   <label>
                     Supplier Name <span className={styles.required}>*</span>
@@ -146,111 +248,299 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
                     placeholder="Ex: ABC Co., Ltd."
                   />
                 </div>
+
+                {/* Status */}
+                <div className={styles.formGroup}>
+                  <label>Status</label>
+                  <select name="status" value={form.status} onChange={handleChange}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+
+                {/* Reliability Score */}
+                <div className={styles.formGroup}>
+                  <label>Reliability Score (0-100)</label>
+                  <input
+                    type="number"
+                    name="reliabilityScore"
+                    value={form.reliabilityScore}
+                    onChange={handleChange}
+                    min="0"
+                    max="100"
+                    placeholder="50"
+                  />
+                </div>
+
+                {/* Categories */}
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>Categories</label>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Add category (press Enter)"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCategoryChange(e);
+                        }
+                      }}
+                    />
+                    {form.category.length > 0 && (
+                      <div
+                        style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}
+                      >
+                        {form.category.map((cat, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              backgroundColor: '#e6f2ff',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                            }}
+                          >
+                            {cat}
+                            <button
+                              type="button"
+                              onClick={() => removeCategory(idx)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 0,
+                                color: '#999',
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── Section 2: Contact & Platform ────────────────────────────── */}
+            <div className={styles.section}>
+              <h3>Contact & Platform Information</h3>
+              <div className={styles.formGrid}>
+                {/* Contact Person */}
                 <div className={styles.formGroup}>
                   <label>Contact Person</label>
                   <input
                     type="text"
-                    name="contactPerson"
-                    value={form.contactPerson}
+                    name="contact.contactPerson"
+                    value={form.contact.contactPerson}
                     onChange={handleChange}
                     placeholder="Full name"
                   />
                 </div>
+
+                {/* Phone */}
                 <div className={styles.formGroup}>
                   <label>Phone</label>
                   <input
                     type="tel"
-                    name="phone"
-                    value={form.phone}
+                    name="contact.phone"
+                    value={form.contact.phone}
                     onChange={handleChange}
-                    placeholder="+84..."
+                    placeholder="+86 or +84..."
                   />
                 </div>
+
+                {/* Email */}
                 <div className={styles.formGroup}>
                   <label>Email</label>
                   <input
                     type="email"
-                    name="email"
-                    value={form.email}
+                    name="contact.email"
+                    value={form.contact.email}
                     onChange={handleChange}
                     placeholder="example@domain.com"
                   />
                 </div>
+
+                {/* WeChat ID */}
+                <div className={styles.formGroup}>
+                  <label>WeChat ID</label>
+                  <input
+                    type="text"
+                    name="contact.wechatId"
+                    value={form.contact.wechatId}
+                    onChange={handleChange}
+                    placeholder="WeChat username"
+                  />
+                </div>
+
+                {/* Aliwangwang ID */}
+                <div className={styles.formGroup}>
+                  <label>Aliwangwang ID</label>
+                  <input
+                    type="text"
+                    name="contact.aliwangwangId"
+                    value={form.contact.aliwangwangId}
+                    onChange={handleChange}
+                    placeholder="Aliwangwang ID"
+                  />
+                </div>
+
+                {/* Platform/Shop URL */}
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>Platform/Shop URL</label>
+                  <input
+                    type="url"
+                    name="addressInfo.platformUrl"
+                    value={form.addressInfo.platformUrl}
+                    onChange={handleChange}
+                    placeholder="https://shop.taobao.com/shop/... or https://1688.com/..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ─── Section 3: Logistics ───────────────────────────────────── */}
+            <div className={styles.section}>
+              <h3>Logistics & Shipping</h3>
+              <div className={styles.formGrid}>
+                {/* Address */}
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>Supplier Address</label>
+                  <input
+                    type="text"
+                    name="addressInfo.address"
+                    value={form.addressInfo.address}
+                    onChange={handleChange}
+                    placeholder="Street, District, City, China"
+                  />
+                </div>
+
+                {/* Return Address */}
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>Return Address (if different)</label>
+                  <input
+                    type="text"
+                    name="addressInfo.returnAddress"
+                    value={form.addressInfo.returnAddress}
+                    onChange={handleChange}
+                    placeholder="Return address (leave empty if same as supplier address)"
+                  />
+                </div>
+
+                {/* Lead Time */}
+                <div className={styles.formGroup}>
+                  <label>Lead Time (Days)</label>
+                  <input
+                    type="number"
+                    name="leadTimeDays"
+                    value={form.leadTimeDays}
+                    onChange={handleChange}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ─── Section 4: Banking & Payment ──────────────────────────── */}
+            <div className={styles.section}>
+              <h3>Banking & Payment Information</h3>
+              <div className={styles.formGrid}>
+                {/* Tax Code */}
                 <div className={styles.formGroup}>
                   <label>Tax Code</label>
                   <input
                     type="text"
-                    name="taxCode"
-                    value={form.taxCode}
+                    name="billingInfo.taxCode"
+                    value={form.billingInfo.taxCode}
                     onChange={handleChange}
                     placeholder="0123456789"
                   />
                 </div>
-                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                  <label>Address</label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    placeholder="Street, District, City"
-                  />
-                </div>
-              </div>
-            </div>
 
-            {/* Banking */}
-            <div className={styles.section}>
-              <h3>Banking &amp; Payment Info</h3>
-              <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label>Account Number</label>
-                  <input
-                    type="text"
-                    name="bankAccount"
-                    value={form.bankAccount}
-                    onChange={handleChange}
-                    placeholder="0123 4567 8901 2345"
-                  />
-                </div>
+                {/* Bank Name */}
                 <div className={styles.formGroup}>
                   <label>Bank Name</label>
                   <input
                     type="text"
-                    name="bankName"
-                    value={form.bankName}
+                    name="billingInfo.bankName"
+                    value={form.billingInfo.bankName}
                     onChange={handleChange}
-                    placeholder="Ex: Vietcombank, BIDV..."
+                    placeholder="Ex: ICBC, ABC..."
                   />
                 </div>
+
+                {/* Account Name */}
+                <div className={styles.formGroup}>
+                  <label>Account Name</label>
+                  <input
+                    type="text"
+                    name="billingInfo.accountName"
+                    value={form.billingInfo.accountName}
+                    onChange={handleChange}
+                    placeholder="Account holder name"
+                  />
+                </div>
+
+                {/* Account Number */}
+                <div className={styles.formGroup}>
+                  <label>Account Number</label>
+                  <input
+                    type="text"
+                    name="billingInfo.accountNumber"
+                    value={form.billingInfo.accountNumber}
+                    onChange={handleChange}
+                    placeholder="0123 4567 8901 2345"
+                  />
+                </div>
+
+                {/* Default Currency */}
+                <div className={styles.formGroup}>
+                  <label>Default Currency</label>
+                  <select
+                    name="billingInfo.defaultCurrency"
+                    value={form.billingInfo.defaultCurrency}
+                    onChange={handleChange}
+                  >
+                    <option value="CNY">CNY (Chinese Yuan)</option>
+                    <option value="VND">VND (Vietnamese Dong)</option>
+                  </select>
+                </div>
+
+                {/* Payment Terms */}
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                   <label>Payment Terms</label>
                   <input
                     type="text"
-                    name="paymentTerms"
-                    value={form.paymentTerms}
+                    name="billingInfo.paymentTerms"
+                    value={form.billingInfo.paymentTerms}
                     onChange={handleChange}
-                    placeholder="Ex: Net 30 days, 50% upfront..."
+                    placeholder="Ex: Net 30 days, 50% upfront, T/T..."
                   />
                 </div>
               </div>
             </div>
 
-            {/* Notes */}
+            {/* ─── Section 5: Additional Notes ────────────────────────────── */}
             <div className={styles.section}>
-              <h3>Notes</h3>
+              <h3>Additional Notes</h3>
               <div className={styles.formGroup}>
                 <textarea
                   name="notes"
                   value={form.notes}
                   onChange={handleChange}
-                  rows={3}
-                  placeholder="Additional info, special instructions..."
+                  rows={4}
+                  placeholder="Special instructions, agreements, quality issues, or any other important notes..."
                 />
               </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
 
         {/* Footer */}
         <div className={styles.drawerFooter}>

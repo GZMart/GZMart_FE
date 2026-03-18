@@ -43,6 +43,7 @@
   margin: 0 auto;
   min-height: 100vh;
   background: var(--po-bg);
+  color-scheme: light; /* Force light inputs so numbers stay visible */
 }
 
 /* ── Page Header ───────────────────────────────────────────────── */
@@ -266,6 +267,34 @@
   margin-left: auto;
   text-transform: none;
   letter-spacing: 0;
+}
+
+.configHint {
+  font-size: 0.8rem;
+  color: var(--po-text-muted);
+  margin: -0.5rem 0 1rem;
+  font-style: italic;
+}
+
+/* ── Label with tooltip (?) icon ───────────────────────────────── */
+.labelWithTooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.tooltipIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--po-text-muted);
+  cursor: help;
+  transition: color var(--po-transition);
+}
+.tooltipIcon:hover {
+  color: var(--po-indigo);
+}
+.tooltipIcon svg {
+  flex-shrink: 0;
 }
 
 /* ── Form Elements ─────────────────────────────────────────────── */
@@ -585,11 +614,77 @@
   margin-top: 0.75rem;
 }
 
+.variantHintRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .variantHint {
   font-size: 0.78rem;
   color: var(--po-text-muted);
-  margin-bottom: 0.5rem;
+  margin: 0;
   font-style: italic;
+}
+
+.bulkEditBar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.bulkLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--po-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bulkInput {
+  width: 72px;
+  padding: 0.35rem 0.5rem;
+  border: 1.5px solid var(--po-border);
+  border-radius: var(--po-radius-sm);
+  font-size: 0.8rem;
+  color: var(--po-text);
+  background: var(--po-surface-2);
+}
+.bulkInput:-webkit-autofill,
+.bulkInput:-webkit-autofill:hover,
+.bulkInput:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--po-text);
+  box-shadow: 0 0 0 1000px var(--po-surface-2) inset;
+}
+
+.bulkInput::placeholder {
+  color: var(--po-text-muted);
+}
+
+.bulkInput:focus {
+  outline: none;
+  border-color: var(--po-indigo);
+  box-shadow: 0 0 0 2px var(--po-indigo-ring);
+}
+
+.bulkBtn {
+  padding: 0.35rem 0.65rem;
+  background: var(--po-indigo-light);
+  color: var(--po-indigo-dark);
+  border: 1px solid #c7d2fe;
+  border-radius: var(--po-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--po-transition);
+}
+
+.bulkBtn:hover {
+  background: #e0e7ff;
 }
 
 /* ── Dim Toggle ────────────────────────────────────────────────── */
@@ -684,6 +779,16 @@
     border-color var(--po-transition),
     box-shadow var(--po-transition);
 }
+.numInput::-webkit-input-placeholder,
+.numInput::placeholder {
+  color: var(--po-text-muted);
+}
+.numInput:-webkit-autofill,
+.numInput:-webkit-autofill:hover,
+.numInput:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--po-text);
+  box-shadow: 0 0 0 1000px var(--po-surface) inset;
+}
 .numInput:focus {
   outline: none;
   border-color: var(--po-indigo);
@@ -724,6 +829,24 @@
   outline: none;
   border-color: var(--po-indigo);
   box-shadow: 0 0 0 2px var(--po-indigo-ring);
+}
+.dimWarning {
+  font-size: 0.72rem;
+  color: var(--po-amber);
+  margin: 0.25rem 0 0.5rem;
+}
+.weightUnitRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.unitSelect {
+  padding: 0.25rem 0.35rem;
+  border: 1.5px solid var(--po-border);
+  border-radius: var(--po-radius-sm);
+  font-size: 0.75rem;
+  background: var(--po-surface);
+  cursor: pointer;
 }
 
 .calcCell {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   fetchSuppliers,
   createPurchaseOrder,
@@ -16,6 +17,20 @@ import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../constants/tierT
 // ─────────────────────────────────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
 const fmtCny = (n) => `¥${(Number(n) || 0).toFixed(2)}`;
+
+/** Label with tooltip icon — hover to see fee explanation */
+const LabelWithTooltip = ({ children, tooltip }) => (
+  <span className={styles.labelWithTooltip}>
+    {children}
+    <span className={styles.tooltipIcon} title={tooltip}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </span>
+  </span>
+);
 
 /** Auto-generate SKU from product name + variant label */
 const genSKU = (productName, variantLabel) => {
@@ -62,81 +77,31 @@ const makeVariant = (label, productName) => ({
   sku: genSKU(productName, label),
   quantity: 1,
   unitPriceCny: 0,
-  weightKg: 0,
-  dimLength: 0,
-  dimWidth: 0,
-  dimHeight: 0,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LANDED COST ENGINE (mirrors backend computeLandedCost)
+// STAGE 1 COST BASIS (Goods Value + Buying Fee only)
+// Landed cost is calculated in Stage 2 when goods arrive
 // ─────────────────────────────────────────────────────────────────────────────
-function computeLandedCost(
-  flatItems,
-  importConfig = {},
-  fixedCosts = {},
-  taxAmount = 0,
-  otherCost = 0
-) {
+function computeStage1CostBasis(flatItems, importConfig = {}) {
   const rate = importConfig.exchangeRate || 3500;
   const buyingFeeRate = importConfig.buyingServiceFeeRate || 0;
-  const shippingRateKg = importConfig.shippingRatePerKg || 0;
-  const useVolumetric = importConfig.useVolumetricShipping !== false;
 
-  const enriched = flatItems.map((item) => {
+  const totalValueCny = flatItems.reduce((s, item) => {
     const qty = Number(item.quantity) || 0;
     const priceCny = Number(item.unitPriceCny) || 0;
-    const priceVnd = priceCny * rate;
-    const valueCnyLine = priceCny * qty;
-    const valueVndLine = priceVnd * qty;
-    const volKg = ((item.dimLength || 0) * (item.dimWidth || 0) * (item.dimHeight || 0)) / 6000;
-    const actual = Number(item.weightKg) || 0;
-    const chargePerUnit = useVolumetric ? Math.max(actual, volKg) : actual;
-    return {
-      ...item,
-      priceCny,
-      priceVnd,
-      valueCnyLine,
-      valueVndLine,
-      chargeableWeightKg: chargePerUnit * qty,
-      qty,
-    };
-  });
+    return s + priceCny * qty;
+  }, 0);
 
-  const totalValueCny = enriched.reduce((s, i) => s + i.valueCnyLine, 0);
-  const totalValueVnd = enriched.reduce((s, i) => s + i.valueVndLine, 0);
-  const totalChargeableKg = enriched.reduce((s, i) => s + i.chargeableWeightKg, 0);
-
+  const totalValueVnd = totalValueCny * rate;
   const buyingFeeVnd = totalValueVnd * buyingFeeRate;
-  const cnDomesticVnd = (fixedCosts.cnDomesticShippingCny || 0) * rate;
-  const packagingVnd = fixedCosts.packagingCostVnd || 0;
-  const vnDomesticVnd = fixedCosts.vnDomesticShippingVnd || 0;
-  const valueCostPool = buyingFeeVnd + cnDomesticVnd + packagingVnd + taxAmount + otherCost * 0.5;
-  const intlShippingVnd = totalChargeableKg * shippingRateKg;
-  const weightCostPool = intlShippingVnd + vnDomesticVnd + otherCost * 0.5;
-
-  const itemsWithLC = enriched.map((item) => {
-    const valueRatio = totalValueCny > 0 ? item.valueCnyLine / totalValueCny : 0;
-    const weightRatio = totalChargeableKg > 0 ? item.chargeableWeightKg / totalChargeableKg : 0;
-    const totalAlloc = valueCostPool * valueRatio + weightCostPool * weightRatio;
-    const landedCostUnit =
-      item.qty > 0 ? (item.valueVndLine + totalAlloc) / item.qty : item.priceVnd;
-    return { ...item, landedCostUnit: Math.round(landedCostUnit) };
-  });
+  const costBasisVnd = totalValueVnd + buyingFeeVnd;
 
   return {
-    itemsWithLC,
-    summary: {
-      totalValueCny: Math.round(totalValueCny * 100) / 100,
-      totalValueVnd: Math.round(totalValueVnd),
-      totalChargeableKg: Math.round(totalChargeableKg * 1000) / 1000,
-      intlShippingVnd: Math.round(intlShippingVnd),
-      buyingFeeVnd: Math.round(buyingFeeVnd),
-      cnDomesticVnd: Math.round(cnDomesticVnd),
-      packagingVnd: Math.round(packagingVnd),
-      vnDomesticVnd: Math.round(vnDomesticVnd),
-      finalAmount: Math.round(totalValueVnd + valueCostPool + weightCostPool),
-    },
+    totalValueCny: Math.round(totalValueCny * 100) / 100,
+    totalValueVnd: Math.round(totalValueVnd),
+    buyingFeeVnd: Math.round(buyingFeeVnd),
+    costBasisVnd: Math.round(costBasisVnd),
   };
 }
 
@@ -308,10 +273,6 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose }) => {
         sku: model.sku,
         quantity: 1,
         unitPriceCny: 0,
-        weightKg: model.weight || 0,
-        dimLength: 0,
-        dimWidth: 0,
-        dimHeight: 0,
         _productId: selected._id,
         _modelId: model._id,
       })),
@@ -728,8 +689,9 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
   const dispatch = useDispatch();
   const { myProducts, myProductsLoading } = useSelector((state) => state.erp);
   const { productName, tiers, variants } = group;
-  const [showDim, setShowDim] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [bulkQty, setBulkQty] = useState('');
+  const [bulkPrice, setBulkPrice] = useState('');
 
   const openPicker = useCallback(() => {
     dispatch(fetchMyProducts({ limit: 200, status: 'active' }));
@@ -777,16 +739,10 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
     onUpdate({ ...group, variants: newVariants });
   };
 
-  const autoFillWeight = (vi) => {
-    // Copy weight/dim from first variant to all
-    const src = variants[vi];
-    const newVariants = variants.map((v) => ({
-      ...v,
-      weightKg: src.weightKg,
-      dimLength: src.dimLength,
-      dimWidth: src.dimWidth,
-      dimHeight: src.dimHeight,
-    }));
+  const bulkUpdateVariants = (field, value) => {
+    if (value === '' || value == null) return;
+    const parsed = field === 'quantity' ? Math.max(1, parseInt(value, 10) || 1) : parseFloat(value) || 0;
+    const newVariants = variants.map((v) => ({ ...v, [field]: parsed }));
     onUpdate({ ...group, variants: newVariants });
   };
 
@@ -820,7 +776,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
         </div>
       </div>
 
-      {/* Tên sản phẩm */}
+      {/* Product name */}
       <div className={styles.formGroup} style={{ marginBottom: 16 }}>
         <label>
           Product Name <span className={styles.required}>*</span>
@@ -868,18 +824,57 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
 
       {/* Variants Table */}
       <div className={styles.variantsSection}>
-        <p className={styles.variantHint}>
-          {tiers.length === 0
-            ? 'Product has no classification — enter information below'
-            : `${variants.length} variants auto-generated from classification`}
-        </p>
-
-        {/* Toggle dim columns */}
-        <label className={styles.dimToggle}>
-          <input type="checkbox" checked={showDim} onChange={(e) => setShowDim(e.target.checked)} />
-          &nbsp;📐 Enter box dimensions for volumetric weight (L×W×H/6000)
-          <span className={styles.dimToggleHint}>&nbsp;— leave blank if using actual weight</span>
-        </label>
+        <div className={styles.variantHintRow}>
+          <p className={styles.variantHint}>
+            {tiers.length === 0
+              ? 'Product has no classification — enter information below'
+              : `${variants.length} variants auto-generated from classification`}
+          </p>
+          {variants.length >= 1 && (
+            <div className={styles.bulkEditBar}>
+              <span className={styles.bulkLabel}>Bulk:</span>
+              <input
+                type="number"
+                min="1"
+                placeholder="Qty"
+                className={styles.bulkInput}
+                value={bulkQty}
+                onChange={(e) => setBulkQty(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (bulkUpdateVariants('quantity', bulkQty), setBulkQty(''))}
+              />
+              <button
+                type="button"
+                className={styles.bulkBtn}
+                onClick={() => {
+                  bulkUpdateVariants('quantity', bulkQty);
+                  setBulkQty('');
+                }}
+              >
+                Apply Qty
+              </button>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="¥ Price"
+                className={styles.bulkInput}
+                value={bulkPrice}
+                onChange={(e) => setBulkPrice(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (bulkUpdateVariants('unitPriceCny', bulkPrice), setBulkPrice(''))}
+              />
+              <button
+                type="button"
+                className={styles.bulkBtn}
+                onClick={() => {
+                  bulkUpdateVariants('unitPriceCny', bulkPrice);
+                  setBulkPrice('');
+                }}
+              >
+                Apply Price
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className={styles.tableContainer}>
           <table className={styles.variantTable}>
@@ -892,9 +887,6 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                 <th>Qty</th>
                 <th>Unit Price (¥)</th>
                 <th>Amount</th>
-                <th>KG/unit</th>
-                {showDim && <th>L×W×H (cm)</th>}
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -933,62 +925,6 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                   <td className={styles.calcCell}>
                     {fmt(Number(v.unitPriceCny) * exchangeRate * Number(v.quantity))} ₫
                   </td>
-                  <td>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className={styles.numInput}
-                      style={{ width: 65 }}
-                      value={v.weightKg}
-                      onChange={(e) => updateVariant(vi, 'weightKg', e.target.value)}
-                    />
-                  </td>
-                  {showDim && (
-                    <td>
-                      <div className={styles.dimRow}>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          className={styles.dimInput}
-                          value={v.dimLength}
-                          onChange={(e) => updateVariant(vi, 'dimLength', e.target.value)}
-                          placeholder="D"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          className={styles.dimInput}
-                          value={v.dimWidth}
-                          onChange={(e) => updateVariant(vi, 'dimWidth', e.target.value)}
-                          placeholder="R"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          className={styles.dimInput}
-                          value={v.dimHeight}
-                          onChange={(e) => updateVariant(vi, 'dimHeight', e.target.value)}
-                          placeholder="C"
-                        />
-                      </div>
-                    </td>
-                  )}
-                  <td>
-                    {vi === 0 && variants.length > 1 && (
-                      <button
-                        type="button"
-                        className={styles.btnCopyDim}
-                        onClick={() => autoFillWeight(vi)}
-                        title="Copy kg/dim to all variants"
-                      >
-                        ↓ Copy
-                      </button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1023,25 +959,25 @@ const CreatePurchaseOrderPage = () => {
     exchangeRate: liveRate,
   } = useSelector((state) => state.erp);
 
+  const [searchParams] = useSearchParams();
+  const supplierIdFromUrl = searchParams.get('supplierId') || '';
+
   const [formData, setFormData] = useState({
-    supplierId: '',
+    supplierId: supplierIdFromUrl,
     expectedDeliveryDate: '',
-    taxAmount: 0,
-    otherCost: 0,
     notes: '',
   });
+
+  // Pre-fill supplier when navigating from supplier detail page
+  useEffect(() => {
+    if (supplierIdFromUrl) {
+      setFormData((p) => ({ ...p, supplierId: supplierIdFromUrl }));
+    }
+  }, [supplierIdFromUrl]);
 
   const DEFAULT_IMPORT_CONFIG = {
     exchangeRate: 3500,
     buyingServiceFeeRate: 0.05,
-    shippingRatePerKg: 80000,
-    useVolumetricShipping: true,
-  };
-
-  const DEFAULT_FIXED_COSTS = {
-    cnDomesticShippingCny: 0,
-    packagingCostVnd: 0,
-    vnDomesticShippingVnd: 0,
   };
 
   const [importConfig, setImportConfig] = useState(() => {
@@ -1050,15 +986,6 @@ const CreatePurchaseOrderPage = () => {
       return saved ? { ...DEFAULT_IMPORT_CONFIG, ...saved } : DEFAULT_IMPORT_CONFIG;
     } catch {
       return DEFAULT_IMPORT_CONFIG;
-    }
-  });
-
-  const [fixedCosts, setFixedCosts] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('gz_fixed_costs'));
-      return saved ? { ...DEFAULT_FIXED_COSTS, ...saved } : DEFAULT_FIXED_COSTS;
-    } catch {
-      return DEFAULT_FIXED_COSTS;
     }
   });
 
@@ -1091,38 +1018,16 @@ const CreatePurchaseOrderPage = () => {
     } catch {}
   }, [importConfig]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('gz_fixed_costs', JSON.stringify(fixedCosts));
-    } catch {}
-  }, [fixedCosts]);
-
-  // Flatten all variants for LC computation
+  // Flatten all variants for Stage 1 cost basis
   const flatItems = useMemo(
     () => groups.flatMap((g) => g.variants.map((v) => ({ ...v, _groupId: g._id }))),
     [groups]
   );
 
-  const lcResult = useMemo(
-    () =>
-      computeLandedCost(
-        flatItems,
-        importConfig,
-        fixedCosts,
-        Number(formData.taxAmount) || 0,
-        Number(formData.otherCost) || 0
-      ),
-    [flatItems, importConfig, fixedCosts, formData.taxAmount, formData.otherCost]
+  const costBasis = useMemo(
+    () => computeStage1CostBasis(flatItems, importConfig),
+    [flatItems, importConfig]
   );
-
-  // Build LC map by (groupId + variantLabel)
-  const lcMap = useMemo(() => {
-    const map = {};
-    lcResult.itemsWithLC.forEach((lc) => {
-      map[`${lc._groupId}||${lc._variantLabel}`] = lc;
-    });
-    return map;
-  }, [lcResult]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -1138,11 +1043,6 @@ const CreatePurchaseOrderPage = () => {
       ...p,
       [name]: type === 'checkbox' ? checked : parseFloat(value) || 0,
     }));
-  };
-
-  const handleFixedCostChange = (e) => {
-    const { name, value } = e.target;
-    setFixedCosts((p) => ({ ...p, [name]: parseFloat(value) || 0 }));
   };
 
   /** Merge all groups that share the same productName into one group */
@@ -1220,16 +1120,8 @@ const CreatePurchaseOrderPage = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) {
-      alert('Please review the information');
-      return;
-    }
-
+  const buildOrderData = (status) => {
     const rate = parseFloat(importConfig.exchangeRate) || 3500;
-
-    // Build flat items array for the PO
     const items = groups.flatMap((g) =>
       g.variants.map((v) => ({
         ...(v._productId ? { productId: v._productId, modelId: v._modelId } : {}),
@@ -1240,46 +1132,72 @@ const CreatePurchaseOrderPage = () => {
         unitPriceCny: parseFloat(v.unitPriceCny),
         unitPrice: parseFloat(v.unitPriceCny) * rate,
         totalPrice: parseFloat(v.unitPriceCny) * rate * (parseInt(v.quantity) || 1),
-        weightKg: parseFloat(v.weightKg || 0),
-        dimLength: parseFloat(v.dimLength || 0),
-        dimWidth: parseFloat(v.dimWidth || 0),
-        dimHeight: parseFloat(v.dimHeight || 0),
+        weightKg: 0,
+        dimLength: 0,
+        dimWidth: 0,
+        dimHeight: 0,
       }))
     );
+    return {
+      supplierId: formData.supplierId,
+      expectedDeliveryDate: formData.expectedDeliveryDate,
+      notes: formData.notes || '',
+      status,
+      importConfig: {
+        exchangeRate: rate,
+        buyingServiceFeeRate: parseFloat(importConfig.buyingServiceFeeRate),
+        shippingRatePerKg: 0,
+        useVolumetricShipping: true,
+      },
+      totalWeightKg: 0,
+      fixedCosts: {
+        cnDomesticShippingCny: 0,
+        packagingCostVnd: 0,
+        vnDomesticShippingVnd: 0,
+      },
+      items,
+    };
+  };
 
+  const handleSaveAsDraft = async (e) => {
+    e.preventDefault();
+    if (!validate()) {
+      toast.error('Please check the form and fix errors');
+      return;
+    }
     try {
-      const orderData = {
-        ...formData,
-        taxAmount: parseFloat(formData.taxAmount || 0),
-        otherCost: parseFloat(formData.otherCost || 0),
-        importConfig: {
-          ...importConfig,
-          buyingServiceFeeRate: parseFloat(importConfig.buyingServiceFeeRate),
-          shippingRatePerKg: parseFloat(importConfig.shippingRatePerKg),
-          exchangeRate: rate,
-        },
-        fixedCosts: {
-          cnDomesticShippingCny: parseFloat(fixedCosts.cnDomesticShippingCny || 0),
-          packagingCostVnd: parseFloat(fixedCosts.packagingCostVnd || 0),
-          vnDomesticShippingVnd: parseFloat(fixedCosts.vnDomesticShippingVnd || 0),
-        },
-        items,
-      };
-
-      await dispatch(createPurchaseOrder(orderData)).unwrap();
-      alert('Purchase order created successfully!');
+      await dispatch(createPurchaseOrder(buildOrderData('Draft'))).unwrap();
+      toast.success('Saved as draft. Status: Pending submit. You can edit and Submit Order later.', {
+        autoClose: 4000,
+      });
       navigate('/seller/erp/purchase-orders');
     } catch (err) {
       console.error('Failed:', err);
-      alert(`Error: ${err.error || JSON.stringify(err)}`);
+      toast.error(err?.error || err?.message || 'Failed to save draft');
+    }
+  };
+
+  const handleCreateAndSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) {
+      toast.error('Please check the form and fix errors');
+      return;
+    }
+    try {
+      await dispatch(createPurchaseOrder(buildOrderData('ORDERED'))).unwrap();
+      toast.success('Order created and submitted. Status: Ordered.', {
+        autoClose: 4000,
+      });
+      navigate('/seller/erp/purchase-orders');
+    } catch (err) {
+      console.error('Failed:', err);
+      toast.error(err?.error || err?.message || 'Failed to create purchase order');
     }
   };
 
   if (loading && !suppliers.length) {
     return <LoadingSpinner />;
   }
-
-  const { summary } = lcResult;
 
   return (
     <div className={styles.container}>
@@ -1296,7 +1214,7 @@ const CreatePurchaseOrderPage = () => {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleCreateAndSubmit}>
         {/* ─── Section 1: Order Info ─────────────────────────── */}
         <div className={styles.section}>
           <h2>Order Information</h2>
@@ -1348,15 +1266,22 @@ const CreatePurchaseOrderPage = () => {
           </div>
         </div>
 
-        {/* ─── Section 2: Guangzhou Config ───────────────────── */}
+        {/* ─── Section 2: Import Config (Stage 1 — Goods Value & Buying Fee) ───────────────────────────────── */}
         <div className={styles.configSection}>
           <h2>
-            Guangzhou Import Configuration
+            Import Configuration
             <span className={styles.savedBadge}>✓ Auto-saved</span>
           </h2>
-          <div className={styles.formGrid4}>
+          <p className={styles.configHint}>
+            Shipping and fixed costs are entered when goods arrive (Stage 2).
+          </p>
+          <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label>Exchange Rate (VND / ¥)</label>
+              <label>
+                <LabelWithTooltip tooltip="Exchange rate 1 ¥ (CNY) to VND. Used to convert goods value to VND.">
+                  Exchange Rate (VND / ¥)
+                </LabelWithTooltip>
+              </label>
               <input
                 type="number"
                 name="exchangeRate"
@@ -1385,7 +1310,11 @@ const CreatePurchaseOrderPage = () => {
               )}
             </div>
             <div className={styles.formGroup}>
-              <label>Buying Service Fee (%)</label>
+              <label>
+                <LabelWithTooltip tooltip="Buying service fee (%). Applied to total goods value in VND. E.g. 5% = 0.05.">
+                  Buying Service Fee (%)
+                </LabelWithTooltip>
+              </label>
               <input
                 type="number"
                 value={(importConfig.buyingServiceFeeRate * 100).toFixed(1)}
@@ -1398,109 +1327,6 @@ const CreatePurchaseOrderPage = () => {
                 min="0"
                 max="30"
                 step="0.5"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Intl Shipping (VND / kg)</label>
-              <input
-                type="number"
-                name="shippingRatePerKg"
-                value={importConfig.shippingRatePerKg}
-                onChange={handleConfigChange}
-                min="0"
-                step="1000"
-              />
-            </div>
-            <div
-              className={styles.formGroup}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                paddingTop: 22,
-              }}
-            >
-              <input
-                type="checkbox"
-                id="useVol"
-                name="useVolumetricShipping"
-                style={{ width: 15, height: 15, accentColor: '#6366f1', cursor: 'pointer' }}
-                checked={importConfig.useVolumetricShipping}
-                onChange={handleConfigChange}
-              />
-              <label
-                htmlFor="useVol"
-                style={{
-                  marginBottom: 0,
-                  textTransform: 'none',
-                  fontSize: '0.82rem',
-                  letterSpacing: 0,
-                  fontWeight: 500,
-                  color: '#475569',
-                  cursor: 'pointer',
-                }}
-              >
-                Volumetric weight (L×W×H/6000)
-              </label>
-            </div>
-          </div>
-
-          <h3>Fixed Costs</h3>
-          <div className={styles.formGrid4}>
-            <div className={styles.formGroup}>
-              <label>CN Domestic Ship (¥)</label>
-              <input
-                type="number"
-                name="cnDomesticShippingCny"
-                value={fixedCosts.cnDomesticShippingCny}
-                onChange={handleFixedCostChange}
-                min="0"
-                step="1"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Packaging / Insurance (VND)</label>
-              <input
-                type="number"
-                name="packagingCostVnd"
-                value={fixedCosts.packagingCostVnd}
-                onChange={handleFixedCostChange}
-                min="0"
-                step="10000"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>VN Domestic Ship (VND)</label>
-              <input
-                type="number"
-                name="vnDomesticShippingVnd"
-                value={fixedCosts.vnDomesticShippingVnd}
-                onChange={handleFixedCostChange}
-                min="0"
-                step="10000"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Import Tax / VAT (VND)</label>
-              <input
-                type="number"
-                name="taxAmount"
-                value={formData.taxAmount}
-                onChange={handleFormChange}
-                min="0"
-                step="10000"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Other Costs (VND)</label>
-              <input
-                type="number"
-                name="otherCost"
-                value={formData.otherCost}
-                onChange={handleFormChange}
-                min="0"
-                step="10000"
               />
             </div>
           </div>
@@ -1529,9 +1355,12 @@ const CreatePurchaseOrderPage = () => {
           </div>
         </div>
 
-        {/* ─── Section 4: LC Preview ────────────────────────── */}
+        {/* ─── Section 4: Cost Basis (Stage 1 — Goods Value + Buying Fee only) ───────────────── */}
         <div className={styles.section}>
-          <h2>Cost Basis (Landed Cost Preview)</h2>
+          <h2>Cost Basis</h2>
+          <p className={styles.configHint}>
+            Landed cost will be calculated when goods arrive (Stage 2).
+          </p>
           <div className={styles.tableContainer}>
             <table className={styles.table}>
               <thead>
@@ -1541,14 +1370,14 @@ const CreatePurchaseOrderPage = () => {
                   <th>SKU</th>
                   <th style={{ textAlign: 'right' }}>Qty</th>
                   <th style={{ textAlign: 'right' }}>¥ CNY</th>
-                  <th style={{ textAlign: 'right' }}>W_charge (kg)</th>
-                  <th style={{ textAlign: 'right' }}>LC / Unit</th>
+                  <th style={{ textAlign: 'right' }}>Amount (VND)</th>
                 </tr>
               </thead>
               <tbody>
                 {groups.map((g) =>
                   g.variants.map((v, vi) => {
-                    const lc = lcMap[`${g._id}||${v._variantLabel}`];
+                    const rate = importConfig.exchangeRate || 3500;
+                    const amountVnd = Number(v.unitPriceCny) * rate * Number(v.quantity);
                     const isFirst = vi === 0;
                     return (
                       <tr
@@ -1557,7 +1386,6 @@ const CreatePurchaseOrderPage = () => {
                           isFirst && g.variants.length > 1 ? { borderTop: '2px solid #e2e8f0' } : {}
                         }
                       >
-                        {/* Product name cell — only on the FIRST variant row, spans all rows */}
                         {isFirst && (
                           <td
                             rowSpan={g.variants.length}
@@ -1575,18 +1403,14 @@ const CreatePurchaseOrderPage = () => {
                             {g.productName || '—'}
                           </td>
                         )}
-                        {/* Variant label */}
                         <td style={{ fontSize: 12, color: '#64748b' }}>
                           {v._variantLabel || <em style={{ color: '#cbd5e1' }}>—</em>}
                         </td>
                         <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{v.sku || '—'}</td>
                         <td style={{ textAlign: 'right' }}>{v.quantity}</td>
                         <td style={{ textAlign: 'right' }}>{fmtCny(v.unitPriceCny)}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          {lc ? (Number(lc.chargeableWeightKg) || 0).toFixed(3) : '0.000'} kg
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: '#d97706' }}>
-                          {lc ? fmt(lc.landedCostUnit) : '—'} ₫
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: '#059669' }}>
+                          {fmt(amountVnd)} ₫
                         </td>
                       </tr>
                     );
@@ -1596,34 +1420,34 @@ const CreatePurchaseOrderPage = () => {
             </table>
           </div>
 
-          {/* Summary */}
+          {/* Summary — Stage 1: Goods Value + Buying Fee only */}
           <div className={styles.summary} style={{ marginTop: 16 }}>
             <div className={styles.summaryRow}>
-              <span>Total Goods Value:</span>
               <span>
-                {fmt(summary.totalValueVnd)} ₫ ({fmtCny(summary.totalValueCny)})
+                <LabelWithTooltip tooltip="Total goods value = Σ(Unit Price ¥ × Qty × Exchange Rate). Excludes fees.">
+                  Total Goods Value:
+                </LabelWithTooltip>
+              </span>
+              <span>
+                {fmt(costBasis.totalValueVnd)} ₫ ({fmtCny(costBasis.totalValueCny)})
               </span>
             </div>
             <div className={styles.summaryRow}>
-              <span>Total Chargeable Weight:</span>
-              <span>{(Number(summary.totalChargeableKg) || 0).toFixed(3)} kg</span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span>Intl Ship + VN Ship:</span>
-              <span style={{ color: '#7c3aed' }}>
-                {fmt(summary.intlShippingVnd + summary.vnDomesticVnd)} ₫
+              <span>
+                <LabelWithTooltip tooltip="Buying fee = Total Goods Value × Buying Fee (%).">
+                  Total Buying Service Fee:
+                </LabelWithTooltip>
               </span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span>Buying Fee + CN Ship + Packaging:</span>
-              <span style={{ color: '#2563eb' }}>
-                {fmt(summary.buyingFeeVnd + summary.cnDomesticVnd + summary.packagingVnd)} ₫
-              </span>
+              <span style={{ color: '#2563eb' }}>{fmt(costBasis.buyingFeeVnd)} ₫</span>
             </div>
             <div className={`${styles.summaryRow} ${styles.total}`}>
-              <span>Total Landed Cost:</span>
-              <strong style={{ color: '#e38c00', fontSize: 18 }}>
-                {fmt(summary.finalAmount)} ₫
+              <span>
+                <LabelWithTooltip tooltip="Stage 1 cost basis = Goods Value + Buying Fee. Full landed cost calculated when goods arrive (Stage 2).">
+                  Cost Basis (Goods + Fee):
+                </LabelWithTooltip>
+              </span>
+              <strong style={{ color: '#059669', fontSize: 18 }}>
+                {fmt(costBasis.costBasisVnd)} ₫
               </strong>
             </div>
           </div>
@@ -1638,8 +1462,15 @@ const CreatePurchaseOrderPage = () => {
           >
             Cancel
           </button>
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={handleSaveAsDraft}
+          >
+            Save as Draft
+          </button>
           <button type="submit" className={styles.btnPrimary}>
-            Create Purchase Order
+            Create & Submit Order
           </button>
         </div>
       </form>

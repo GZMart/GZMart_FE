@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   fetchPurchaseOrderById,
-  completePurchaseOrder,
   updatePurchaseOrder,
   clearCurrentPurchaseOrder,
 } from '../../store/slices/erpSlice';
@@ -25,6 +24,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ReceivePOModal from '../../components/erp/ReceivePOModal';
 import styles from '@assets/styles/erp/PurchaseOrderDetailPage.module.css';
 
 /* ── Helper: Toast ──────────────────────────────────────────────── */
@@ -92,7 +92,8 @@ const PurchaseOrderDetailPage = () => {
   const navigate = useNavigate();
   const { currentPurchaseOrder: po, loading } = useSelector((state) => state.erp);
 
-  const [confirmAction, setConfirmAction] = useState(null); // null | 'receive' | 'submit' | 'setDraft'
+  const [confirmAction, setConfirmAction] = useState(null); // null | 'submit' | 'setDraft'
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
 
@@ -129,24 +130,44 @@ const PurchaseOrderDetailPage = () => {
 
   const getStatusConfig = (status) => {
     const map = {
-      Draft: { label: 'Nháp', heroClass: styles.badgeHero, lightClass: styles.badgeDraft },
+      Draft: { label: 'Draft', heroClass: styles.badgeHero, lightClass: styles.badgeDraft },
+      PENDING_APPROVAL: {
+        label: 'Pending Approval',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgePending,
+      },
+      ORDERED: {
+        label: 'Ordered',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgePending,
+      },
+      ARRIVED_VN: {
+        label: 'Arrived VN',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgePending,
+      },
       Pending: {
-        label: 'Đang đặt hàng',
+        label: 'Ordering',
         heroClass: styles.badgeHero,
         lightClass: styles.badgePending,
       },
       Completed: {
-        label: 'Đã nhận hàng',
+        label: 'Received',
+        heroClass: styles.badgeHero,
+        lightClass: styles.badgeCompleted,
+      },
+      COMPLETED: {
+        label: 'Received',
         heroClass: styles.badgeHero,
         lightClass: styles.badgeCompleted,
       },
       Cancelled: {
-        label: 'Đã hủy',
+        label: 'Cancelled',
         heroClass: styles.badgeHero,
         lightClass: styles.badgeCancelled,
       },
     };
-    return map[status] || map.Pending;
+    return map[status] || map.PENDING_APPROVAL;
   };
 
   const StatusBadge = ({ status, variant = 'light' }) => {
@@ -163,12 +184,9 @@ const PurchaseOrderDetailPage = () => {
   const handleConfirm = async () => {
     setActionLoading(true);
     try {
-      if (confirmAction === 'receive') {
-        await dispatch(completePurchaseOrder(id)).unwrap();
-        addToast('Goods received — inventory updated successfully!', 'success');
-      } else if (confirmAction === 'submit') {
-        await dispatch(updatePurchaseOrder({ id, updateData: { status: 'Pending' } })).unwrap();
-        addToast('Order submitted — status changed to Ordering.', 'success');
+      if (confirmAction === 'submit') {
+        await dispatch(updatePurchaseOrder({ id, updateData: { status: 'ORDERED' } })).unwrap();
+        addToast('Order submitted — status changed to Ordered.', 'success');
       } else if (confirmAction === 'setDraft') {
         await dispatch(updatePurchaseOrder({ id, updateData: { status: 'Draft' } })).unwrap();
         addToast('Order reverted to Draft.', 'success');
@@ -199,24 +217,17 @@ const PurchaseOrderDetailPage = () => {
         onConfirm={handleConfirm}
         isLoading={actionLoading}
         title={
-          confirmAction === 'receive'
-            ? 'Confirm goods received?'
-            : confirmAction === 'submit'
-              ? 'Submit this order?'
-              : confirmAction === 'setDraft'
-                ? 'Revert to Draft?'
-                : ''
+          confirmAction === 'submit'
+            ? 'Submit this order?'
+            : confirmAction === 'setDraft'
+              ? 'Revert to Draft?'
+              : ''
         }
         desc={
-          confirmAction === 'receive' ? (
+          confirmAction === 'submit' ? (
             <span>
-              This will <strong>update inventory stock</strong> and cannot be undone. Make sure all
-              goods have been received.
-            </span>
-          ) : confirmAction === 'submit' ? (
-            <span>
-              Status will change to <strong>Ordering</strong>. You can still cancel or revert to
-              Draft later.
+              Status will change to <strong>Ordered</strong>. You can still cancel or revert to
+              Draft before receiving goods.
             </span>
           ) : confirmAction === 'setDraft' ? (
             <span>
@@ -228,17 +239,24 @@ const PurchaseOrderDetailPage = () => {
           )
         }
         confirmLabel={
-          confirmAction === 'receive'
-            ? 'Yes, Receive Goods'
-            : confirmAction === 'submit'
-              ? 'Yes, Submit Order'
-              : confirmAction === 'setDraft'
-                ? 'Yes, Set as Draft'
-                : 'Confirm'
+          confirmAction === 'submit'
+            ? 'Yes, Submit Order'
+            : confirmAction === 'setDraft'
+              ? 'Yes, Set as Draft'
+              : 'Confirm'
         }
-        confirmVariant={
-          confirmAction === 'receive' ? 'green' : confirmAction === 'submit' ? 'amber' : 'amber'
-        }
+        confirmVariant="amber"
+      />
+
+      <ReceivePOModal
+        isOpen={receiveModalOpen}
+        onClose={() => setReceiveModalOpen(false)}
+        poId={id}
+        po={po}
+        onSuccess={() => {
+          addToast('Goods received — inventory updated successfully!', 'success');
+          dispatch(fetchPurchaseOrderById(id));
+        }}
       />
 
       {/* ── Breadcrumb ── */}
@@ -286,7 +304,7 @@ const PurchaseOrderDetailPage = () => {
                   Submit Order
                 </button>
               )}
-              {po.status === 'Pending' && (
+              {['ORDERED', 'ARRIVED_VN'].includes(po.status) && (
                 <>
                   <button
                     className={`${styles.btnComplete} ${styles.btnHeroGhost}`}
@@ -298,7 +316,7 @@ const PurchaseOrderDetailPage = () => {
                   </button>
                   <button
                     className={styles.btnComplete}
-                    onClick={() => setConfirmAction('receive')}
+                    onClick={() => setReceiveModalOpen(true)}
                     disabled={actionLoading}
                   >
                     <CheckCircle2 size={15} />
@@ -561,7 +579,7 @@ const PurchaseOrderDetailPage = () => {
                   className={`${styles.timelineDot} ${po.status === 'Draft' ? styles.active : styles.completed}`}
                 />
                 <div className={styles.timelineContent}>
-                  <div className={styles.timelineTitle}>Đơn hàng được tạo</div>
+                  <div className={styles.timelineTitle}>Order created</div>
                   <div className={styles.timelineDate}>{formatDate(po.createdAt)}</div>
                 </div>
               </div>
@@ -580,7 +598,7 @@ const PurchaseOrderDetailPage = () => {
                     }`}
                   />
                   <div className={styles.timelineContent}>
-                    <div className={styles.timelineTitle}>Đang đặt hàng</div>
+                    <div className={styles.timelineTitle}>Ordering</div>
                     <div className={styles.timelineDate}>
                       {po.updatedAt ? formatDate(po.updatedAt) : '-'}
                     </div>
@@ -592,7 +610,7 @@ const PurchaseOrderDetailPage = () => {
                 <div className={styles.timelineItem}>
                   <div className={`${styles.timelineDot} ${styles.completed}`} />
                   <div className={styles.timelineContent}>
-                    <div className={styles.timelineTitle}>Đã nhận hàng &amp; nhập kho</div>
+                    <div className={styles.timelineTitle}>Received &amp; stocked</div>
                     <div className={styles.timelineDate}>{formatDate(po.receivedDate)}</div>
                   </div>
                 </div>
@@ -602,7 +620,7 @@ const PurchaseOrderDetailPage = () => {
                 <div className={styles.timelineItem}>
                   <div className={`${styles.timelineDot} ${styles.cancelled}`} />
                   <div className={styles.timelineContent}>
-                    <div className={styles.timelineTitle}>Đơn hàng đã hủy</div>
+                    <div className={styles.timelineTitle}>Order cancelled</div>
                     <div className={styles.timelineDate}>{formatDate(po.cancelledAt)}</div>
                     {po.cancelReason && (
                       <div className={styles.timelineReason}>{po.cancelReason}</div>

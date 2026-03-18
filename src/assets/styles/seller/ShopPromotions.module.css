@@ -25,7 +25,7 @@
 }
 
 .learnMore {
-  color: #1890ff;
+  color: var(--sp-primary);
   text-decoration: none;
 }
 
@@ -48,11 +48,11 @@
   width: 40px;
   height: 40px;
   border-radius: 4px;
-  background-color: #e6f7ff;
+  background-color: var(--sp-blue-bg, #dbeafe);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1890ff;
+  color: var(--sp-primary);
   font-size: 20px;
   flex-shrink: 0;
 }
@@ -71,8 +71,8 @@
 }
 
 .createBtn {
-  background-color: #1890ff;
-  border-color: #1890ff;
+  background-color: var(--sp-primary);
+  border-color: var(--sp-primary);
   color: white;
   font-size: 13px;
   padding: 6px 16px;
@@ -80,8 +80,8 @@
 }
 
 .createBtn:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
+  background-color: var(--sp-primary-dark);
+  border-color: var(--sp-primary-dark);
 }
 
 /* Horizontal Tabs */
@@ -103,12 +103,12 @@
 }
 
 .tabItem:hover {
-  color: #1890ff;
+  color: var(--sp-primary);
 }
 
 .tabActive {
-  color: #1890ff !important;
-  border-bottom: 2px solid #1890ff !important;
+  color: var(--sp-primary) !important;
+  border-bottom: 2px solid var(--sp-primary) !important;
   font-weight: 500;
 }
 
@@ -132,7 +132,7 @@
 }
 
 .moreLink {
-  color: #1890ff;
+  color: var(--sp-primary);
   font-size: 13px;
   text-decoration: none;
 }
@@ -157,7 +157,7 @@
 .metricValue {
   font-size: 24px;
   font-weight: 600;
-  color: #1890ff;
+  color: var(--sp-primary);
   margin-bottom: 4px;
 }
 
@@ -188,13 +188,13 @@
 }
 
 .searchBtn {
-  background-color: #1890ff;
-  border-color: #1890ff;
+  background-color: var(--sp-primary);
+  border-color: var(--sp-primary);
 }
 
 .searchBtn:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
+  background-color: var(--sp-primary-dark);
+  border-color: var(--sp-primary-dark);
 }
 
 /* Status Badges */
@@ -237,7 +237,7 @@
 }
 
 .actionLink {
-  color: #1890ff;
+  color: var(--sp-primary);
   font-size: 13px;
   text-decoration: none;
 }

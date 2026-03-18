@@ -22,6 +22,20 @@ const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) ||
 const fmtVnd = (n) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+/** Label with tooltip (?) — hover to see fee explanation */
+const LabelWithTooltip = ({ children, tooltip }) => (
+  <span className={formStyles.labelWithTooltip}>
+    {children}
+    <span className={formStyles.tooltipIcon} title={tooltip}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </span>
+  </span>
+);
+
 const genSKU = (productName = '', variantLabel = '') => {
   const slug = (str) =>
     str
@@ -79,7 +93,7 @@ const EMPTY_GROUP = () => ({
 /* ── Tier Row ── */
 const MAX_OPTIONS = 20;
 
-const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s }) => {
+const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s, readOnly }) => {
   const tierDef = TIER_TYPES[tier.type];
   const availableTypes = TIER_TYPE_KEYS.filter((k) => k === tier.type || !usedTypes.includes(k));
 
@@ -111,6 +125,7 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s }
           className={s.tierTypeSelect}
           value={tier.type}
           onChange={(e) => onChangeType(e.target.value)}
+          disabled={readOnly}
         >
           <option value="">-- Select classification type --</option>
           {availableTypes.map((k) => (
@@ -119,9 +134,11 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s }
             </option>
           ))}
         </select>
-        <button type="button" className={s.btnRemoveTier} onClick={onRemove}>
-          ✕
-        </button>
+        {!readOnly && (
+          <button type="button" className={s.btnRemoveTier} onClick={onRemove}>
+            ✕
+          </button>
+        )}
       </div>
 
       {tier.type && tierDef && (
@@ -135,12 +152,15 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s }
                   placeholder="Enter custom value"
                   value={opt.value}
                   onChange={(e) => handleCustomInput(i, e.target.value)}
+                  disabled={readOnly}
+                  readOnly={readOnly}
                 />
               ) : (
                 <select
                   className={s.optionSelect}
                   value={opt.value}
                   onChange={(e) => handleOptionSelect(i, e.target.value)}
+                  disabled={readOnly}
                 >
                   <option value="">-- Select {tierDef.nameEn.toLowerCase()} --</option>
                   {tierDef.options.map((o) => (
@@ -151,14 +171,14 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s }
                   <option value={CUSTOM_OPTION}>✏️ Other (manual entry)</option>
                 </select>
               )}
-              {tier.options.length > 1 && (
+              {!readOnly && tier.options.length > 1 && (
                 <button type="button" className={s.btnRemoveOpt} onClick={() => removeOption(i)}>
                   ×
                 </button>
               )}
             </div>
           ))}
-          {tier.options.length < MAX_OPTIONS && (
+          {!readOnly && tier.options.length < MAX_OPTIONS && (
             <button type="button" className={s.btnAddOption} onClick={addOption}>
               + Add option
             </button>
@@ -169,34 +189,25 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s }
   );
 };
 
-function computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost) {
+/** Stage 1 cost basis only — Goods Value + Buying Fee. Stage 2 costs entered when receiving. */
+function computeStage1Summary(groups, importConfig) {
   const rate = parseFloat(importConfig.exchangeRate) || 3500;
   const buyingRate = (parseFloat(importConfig.buyingServiceFeeRate) || 0) / 100;
   const totalValueVnd = groups
     .flatMap((g) => g.variants)
     .reduce((s, v) => s + Number(v.unitPriceCny) * rate * Number(v.quantity), 0);
   const buyingFeeVnd = totalValueVnd * buyingRate;
-  const cnShipVnd = (parseFloat(fixedCosts.cnDomesticShippingCny) || 0) * rate;
-  const packVnd = parseFloat(fixedCosts.packagingCostVnd) || 0;
-  const vnShipVnd = parseFloat(fixedCosts.vnDomesticShippingVnd) || 0;
-  const tax = parseFloat(taxAmount) || 0;
-  const other = parseFloat(otherCost) || 0;
   return {
     totalValueVnd,
     buyingFeeVnd,
-    cnShipVnd,
-    packVnd,
-    vnShipVnd,
-    tax,
-    other,
-    finalAmount: totalValueVnd + buyingFeeVnd + cnShipVnd + packVnd + vnShipVnd + tax + other,
+    costBasisVnd: totalValueVnd + buyingFeeVnd,
   };
 }
 
 /* ────────────────────────────────────────────────────────────────────
    ProductGroup — Tier-select UX identical to CreatePurchaseOrderPage
    ──────────────────────────────────────────────────────────────────── */
-const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
+const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove, readOnly }) => {
   const [showDim, setShowDim] = useState(false);
   const s = formStyles;
   const { productName, tiers = [], variants } = group;
@@ -247,9 +258,11 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
     <div className={s.productGroup}>
       <div className={s.pgHeader}>
         <h3 className={s.pgTitle}>📦 Product #{index + 1}</h3>
-        <button type="button" className={s.btnRemove} onClick={onRemove}>
-          ✕
-        </button>
+        {!readOnly && (
+          <button type="button" className={s.btnRemove} onClick={onRemove}>
+            ✕
+          </button>
+        )}
       </div>
 
       <div className={s.formGroup} style={{ marginBottom: 16 }}>
@@ -261,6 +274,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
           placeholder="Ex: Guangzhou Fashion Leather Backpack"
           value={productName}
           onChange={(e) => updateProductName(e.target.value)}
+          disabled={readOnly}
+          readOnly={readOnly}
         />
       </div>
 
@@ -268,7 +283,7 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
       <div className={s.tiersSection}>
         <div className={s.tiersSectionHeader}>
           <span className={s.tiersLabel}>🏷️ Classification (optional)</span>
-          {tiers.length < 3 && (
+          {!readOnly && tiers.length < 3 && (
             <button type="button" className={s.btnAddTier} onClick={addTier}>
               + Add Classification
             </button>
@@ -282,6 +297,7 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
               tier={tier}
               usedTypes={usedTypes}
               s={s}
+              readOnly={readOnly}
               onChangeType={(type) => {
                 const tierDef = TIER_TYPES[type];
                 updateTier(i, {
@@ -337,6 +353,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                       value={v.sku}
                       onChange={(e) => updateVariant(vi, 'sku', e.target.value.toUpperCase())}
                       placeholder="AUTO"
+                      disabled={readOnly}
+                      readOnly={readOnly}
                     />
                   </td>
                   <td>
@@ -346,6 +364,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                       className={s.numInput}
                       value={v.quantity}
                       onChange={(e) => updateVariant(vi, 'quantity', e.target.value)}
+                      disabled={readOnly}
+                      readOnly={readOnly}
                     />
                   </td>
                   <td>
@@ -356,6 +376,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                       className={s.numInput}
                       value={v.unitPriceCny}
                       onChange={(e) => updateVariant(vi, 'unitPriceCny', e.target.value)}
+                      disabled={readOnly}
+                      readOnly={readOnly}
                     />
                   </td>
                   <td className={s.calcCell}>
@@ -370,6 +392,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                       style={{ width: 55 }}
                       value={v.weightKg}
                       onChange={(e) => updateVariant(vi, 'weightKg', e.target.value)}
+                      disabled={readOnly}
+                      readOnly={readOnly}
                     />
                   </td>
                   {showDim && (
@@ -383,6 +407,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                           value={v.dimLength}
                           onChange={(e) => updateVariant(vi, 'dimLength', e.target.value)}
                           placeholder="L"
+                          disabled={readOnly}
+                          readOnly={readOnly}
                         />
                         <input
                           type="number"
@@ -392,6 +418,8 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                           value={v.dimWidth}
                           onChange={(e) => updateVariant(vi, 'dimWidth', e.target.value)}
                           placeholder="W"
+                          disabled={readOnly}
+                          readOnly={readOnly}
                         />
                         <input
                           type="number"
@@ -401,12 +429,14 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                           value={v.dimHeight}
                           onChange={(e) => updateVariant(vi, 'dimHeight', e.target.value)}
                           placeholder="H"
+                          disabled={readOnly}
+                          readOnly={readOnly}
                         />
                       </div>
                     </td>
                   )}
                   <td>
-                    {vi === 0 && variants.length > 1 && (
+                    {!readOnly && vi === 0 && variants.length > 1 && (
                       <button
                         type="button"
                         className={s.btnCopyDim}
@@ -446,19 +476,11 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
   const [supplierId, setSupplierId] = useState('');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [taxAmount, setTaxAmount] = useState(0);
-  const [otherCost, setOtherCost] = useState(0);
 
   const [importConfig, setImportConfig] = useState({
     exchangeRate: 3500,
     buyingServiceFeeRate: 0,
-    shippingRatePerKg: 0,
     useVolumetricShipping: true,
-  });
-  const [fixedCosts, setFixedCosts] = useState({
-    cnDomesticShippingCny: 0,
-    packagingCostVnd: 0,
-    vnDomesticShippingVnd: 0,
   });
 
   const [groups, setGroups] = useState([EMPTY_GROUP()]);
@@ -507,9 +529,6 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
 
     setSupplierId(po.supplierId?._id || po.supplierId || '');
     setNotes(po.notes || '');
-    setTaxAmount(po.taxAmount || 0);
-    setOtherCost(po.otherCost || 0);
-
     if (po.expectedDeliveryDate) {
       setExpectedDeliveryDate(new Date(po.expectedDeliveryDate).toISOString().split('T')[0]);
     }
@@ -517,15 +536,7 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
       setImportConfig({
         exchangeRate: po.importConfig.exchangeRate || 3500,
         buyingServiceFeeRate: (po.importConfig.buyingServiceFeeRate || 0) * 100,
-        shippingRatePerKg: po.importConfig.shippingRatePerKg || 0,
         useVolumetricShipping: po.importConfig.useVolumetricShipping ?? true,
-      });
-    }
-    if (po.fixedCosts) {
-      setFixedCosts({
-        cnDomesticShippingCny: po.fixedCosts.cnDomesticShippingCny || 0,
-        packagingCostVnd: po.fixedCosts.packagingCostVnd || 0,
-        vnDomesticShippingVnd: po.fixedCosts.vnDomesticShippingVnd || 0,
       });
     }
     if (po.items?.length) {
@@ -567,7 +578,8 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
   );
 
   const rate = parseFloat(importConfig.exchangeRate) || 3500;
-  const summary = computeSummary(groups, importConfig, fixedCosts, taxAmount, otherCost);
+  const summary = computeStage1Summary(groups, importConfig);
+  const isLocked = po?.status === 'ORDERED' || po?.status === 'ARRIVED_VN';
 
   /* ── Validate ── */
   const validate = () => {
@@ -621,18 +633,18 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
       supplierId,
       expectedDeliveryDate,
       notes,
-      taxAmount: parseFloat(taxAmount) || 0,
-      otherCost: parseFloat(otherCost) || 0,
+      taxAmount: parseFloat(po?.taxAmount) ?? 0,
+      otherCost: parseFloat(po?.otherCost) ?? 0,
       importConfig: {
         exchangeRate: parseFloat(importConfig.exchangeRate) || 3500,
         buyingServiceFeeRate: (parseFloat(importConfig.buyingServiceFeeRate) || 0) / 100,
-        shippingRatePerKg: parseFloat(importConfig.shippingRatePerKg) || 0,
-        useVolumetricShipping: importConfig.useVolumetricShipping,
+        shippingRatePerKg: parseFloat(po?.importConfig?.shippingRatePerKg) ?? 0,
+        useVolumetricShipping: importConfig.useVolumetricShipping ?? true,
       },
       fixedCosts: {
-        cnDomesticShippingCny: parseFloat(fixedCosts.cnDomesticShippingCny) || 0,
-        packagingCostVnd: parseFloat(fixedCosts.packagingCostVnd) || 0,
-        vnDomesticShippingVnd: parseFloat(fixedCosts.vnDomesticShippingVnd) || 0,
+        cnDomesticShippingCny: parseFloat(po?.fixedCosts?.cnDomesticShippingCny) ?? 0,
+        packagingCostVnd: parseFloat(po?.fixedCosts?.packagingCostVnd) ?? 0,
+        vnDomesticShippingVnd: parseFloat(po?.fixedCosts?.vnDomesticShippingVnd) ?? 0,
       },
       items,
       ...extraFields,
@@ -673,7 +685,7 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
     setSubmitting(true);
     try {
       const result = await dispatch(
-        updatePurchaseOrder({ id: poId, updateData: buildUpdateData({ status: 'Pending' }) })
+        updatePurchaseOrder({ id: poId, updateData: buildUpdateData({ status: 'ORDERED' }) })
       ).unwrap();
       onSubmitted?.(result);
       onClose();
@@ -730,7 +742,7 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
               <div className={d.drawerTitle}>Edit Purchase Order</div>
               <div className={d.drawerSubtitle}>
                 <span className={d.drawerCodeBadge}>{po?.code || '...'}</span>
-                <span>· Only Drafts can be edited</span>
+                <span>· {isLocked ? 'Only Notes and Expected Date editable' : 'Draft: full edit'} </span>
               </div>
             </div>
           </div>
@@ -763,7 +775,7 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                 </div>
               )}
 
-              {/* ── Thông tin cơ bản ── */}
+              {/* Basic information */}
               <div className={s.section}>
                 <h2>Basic Information</h2>
                 <div className={s.formGrid}>
@@ -771,7 +783,11 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                     <label>
                       Supplier <span className={s.required}>*</span>
                     </label>
-                    <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                    <select
+                      value={supplierId}
+                      onChange={(e) => setSupplierId(e.target.value)}
+                      disabled={isLocked}
+                    >
                       <option value="">-- Select --</option>
                       {(suppliers || []).map((s) => (
                         <option key={s._id} value={s._id}>
@@ -794,26 +810,6 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                       <span className={s.errorText}>{errors.expectedDeliveryDate}</span>
                     )}
                   </div>
-                  <div className={s.formGroup}>
-                    <label>Import Tax (VND)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={taxAmount}
-                      onChange={(e) => setTaxAmount(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className={s.formGroup}>
-                    <label>Other Costs (VND)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={otherCost}
-                      onChange={(e) => setOtherCost(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
                   <div className={s.formGroup} style={{ gridColumn: '1 / -1' }}>
                     <label>Notes</label>
                     <textarea
@@ -826,13 +822,19 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                 </div>
               </div>
 
-              {/* ── Import Config ── */}
+              {/* ── Import Config (Stage 1 only: Exchange Rate + Buying Fee) ── */}
               <div className={s.configSection}>
                 <h2>⚙️ Import Configuration</h2>
-                <h3>Exchange Rate & Fees</h3>
+                <p className={s.hint} style={{ marginBottom: '0.75rem' }}>
+                  Shipping and fees are entered when goods arrive (Stage 2).
+                </p>
                 <div className={s.formGrid3}>
                   <div className={s.formGroup}>
-                    <label>Exchange Rate ¥ → VND</label>
+                    <label>
+                      <LabelWithTooltip tooltip="Exchange rate 1 ¥ (CNY) to VND. Used to convert goods value to VND.">
+                        Exchange Rate ¥ → VND
+                      </LabelWithTooltip>
+                    </label>
                     <input
                       type="number"
                       min="1"
@@ -842,8 +844,10 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                         setImportConfig((c) => ({ ...c, exchangeRate: e.target.value }))
                       }
                       placeholder="3500"
+                      disabled={isLocked}
+                      readOnly={isLocked}
                     />
-                    {liveRate?.rate ? (
+                    {!isLocked && liveRate?.rate ? (
                       <span className={s.rateHint}>
                         Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
                         {Number(importConfig.exchangeRate) !== liveRate.rate && (
@@ -858,12 +862,20 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                           </button>
                         )}
                       </span>
+                    ) : liveRate?.rate ? (
+                      <span className={s.rateHint}>
+                        Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
+                      </span>
                     ) : (
                       <span className={s.hint}>VND/¥</span>
                     )}
                   </div>
                   <div className={s.formGroup}>
-                    <label>Buying Service Fee (%)</label>
+                    <label>
+                      <LabelWithTooltip tooltip="Buying service fee (%). Applied to total goods value in VND. E.g. 5% = enter 5.">
+                        Buying Service Fee (%)
+                      </LabelWithTooltip>
+                    </label>
                     <input
                       type="number"
                       min="0"
@@ -873,53 +885,8 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                       onChange={(e) =>
                         setImportConfig((c) => ({ ...c, buyingServiceFeeRate: e.target.value }))
                       }
-                    />
-                  </div>
-                  <div className={s.formGroup}>
-                    <label>Intl Shipping (VND/kg)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={importConfig.shippingRatePerKg}
-                      onChange={(e) =>
-                        setImportConfig((c) => ({ ...c, shippingRatePerKg: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-                <h3 style={{ marginTop: '0.875rem' }}>Fixed Costs</h3>
-                <div className={s.formGrid3}>
-                  <div className={s.formGroup}>
-                    <label>CN Domestic Ship (¥)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={fixedCosts.cnDomesticShippingCny}
-                      onChange={(e) =>
-                        setFixedCosts((c) => ({ ...c, cnDomesticShippingCny: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className={s.formGroup}>
-                    <label>Packaging (VND)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={fixedCosts.packagingCostVnd}
-                      onChange={(e) =>
-                        setFixedCosts((c) => ({ ...c, packagingCostVnd: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className={s.formGroup}>
-                    <label>VN Domestic Ship (VND)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={fixedCosts.vnDomesticShippingVnd}
-                      onChange={(e) =>
-                        setFixedCosts((c) => ({ ...c, vnDomesticShippingVnd: e.target.value }))
-                      }
+                      disabled={isLocked}
+                      readOnly={isLocked}
                     />
                   </div>
                 </div>
@@ -942,14 +909,16 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                       ({groups.reduce((sum, g) => sum + g.variants.length, 0)} SKUs)
                     </span>
                   </h2>
-                  <button
-                    type="button"
-                    className={s.btnSecondary}
-                    style={{ fontSize: 12, padding: '4px 12px' }}
-                    onClick={() => setGroups((p) => [...p, EMPTY_GROUP()])}
-                  >
-                    + New Group
-                  </button>
+                  {!isLocked && (
+                    <button
+                      type="button"
+                      className={s.btnSecondary}
+                      style={{ fontSize: 12, padding: '4px 12px' }}
+                      onClick={() => setGroups((p) => [...p, EMPTY_GROUP()])}
+                    >
+                      + New Group
+                    </button>
+                  )}
                 </div>
 
                 {groups.map((group, idx) => (
@@ -964,56 +933,27 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
                         removeGroup(idx);
                       }
                     }}
+                    readOnly={isLocked}
                   />
                 ))}
               </div>
 
               <div className={s.section}>
-                <h2>Cost Estimate</h2>
+                <h2>Cost Basis (Stage 1)</h2>
                 <div className={s.summary}>
                   <div className={s.summaryRow}>
-                    <span>Subtotal</span>
+                    <span>Goods Value</span>
                     <strong>{fmtVnd(summary.totalValueVnd)}</strong>
                   </div>
                   {summary.buyingFeeVnd > 0 && (
                     <div className={s.summaryRow}>
-                      <span>Buying Service Fee</span>
+                      <span>Buying Fee</span>
                       <span>{fmtVnd(summary.buyingFeeVnd)}</span>
                     </div>
                   )}
-                  {summary.cnShipVnd > 0 && (
-                    <div className={s.summaryRow}>
-                      <span>CN Domestic Ship</span>
-                      <span>{fmtVnd(summary.cnShipVnd)}</span>
-                    </div>
-                  )}
-                  {summary.packVnd > 0 && (
-                    <div className={s.summaryRow}>
-                      <span>Packaging</span>
-                      <span>{fmtVnd(summary.packVnd)}</span>
-                    </div>
-                  )}
-                  {summary.vnShipVnd > 0 && (
-                    <div className={s.summaryRow}>
-                      <span>VN Domestic Ship</span>
-                      <span>{fmtVnd(summary.vnShipVnd)}</span>
-                    </div>
-                  )}
-                  {summary.tax > 0 && (
-                    <div className={s.summaryRow}>
-                      <span>Tax</span>
-                      <span>{fmtVnd(summary.tax)}</span>
-                    </div>
-                  )}
-                  {summary.other > 0 && (
-                    <div className={s.summaryRow}>
-                      <span>Other Costs</span>
-                      <span>{fmtVnd(summary.other)}</span>
-                    </div>
-                  )}
                   <div className={`${s.summaryRow} ${s.total}`}>
-                    <span>Total Estimate</span>
-                    <strong>{fmtVnd(summary.finalAmount)}</strong>
+                    <span>Cost Basis — Payment 1</span>
+                    <strong>{fmtVnd(summary.costBasisVnd)}</strong>
                   </div>
                 </div>
               </div>
@@ -1030,7 +970,7 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
             <div className={d.confirmContent}>
               <p className={d.confirmTitle}>Submit this order?</p>
               <p className={d.confirmDesc}>
-                Status will change to <strong>Ordering</strong>. You can still cancel later.
+                Status will change to <strong>Ordered</strong>. You can still cancel later.
               </p>
             </div>
             <div className={d.confirmActions}>
@@ -1122,17 +1062,19 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
               disabled={saving || submitting || cancelling || !!confirmMode || !po}
             >
               {saving ? <Loader2 size={14} className={d.spinIcon} /> : <Save size={14} />}
-              {saving ? 'Saving...' : 'Save Draft'}
+              {saving ? 'Saving...' : isLocked ? 'Save Changes' : 'Save Draft'}
             </button>
-            <button
-              type="button"
-              className={d.btnSubmitOrder}
-              onClick={handleSaveAndSubmit}
-              disabled={saving || submitting || cancelling || !!confirmMode || !po}
-            >
-              <Send size={14} />
-              Submit Order
-            </button>
+            {!isLocked && (
+              <button
+                type="button"
+                className={d.btnSubmitOrder}
+                onClick={handleSaveAndSubmit}
+                disabled={saving || submitting || cancelling || !!confirmMode || !po}
+              >
+                <Send size={14} />
+                Submit Order
+              </button>
+            )}
           </div>
         </div>
       </div>
