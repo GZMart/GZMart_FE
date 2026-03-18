@@ -57,6 +57,16 @@ const inventoryService = {
    * params: { startDate?, endDate?, productId? }
    */
   getStats: async (params = {}) => axiosClient.get(`${BASE}/stats`, { params }),
+
+  /**
+   * Get FIFO lot breakdown for a single SKU
+   * GET /api/inventory/lots/:sku
+   * Returns remaining stock per import batch (transaction "in")
+   */
+  getLotBreakdown: async (sku, warehouseId = null) => {
+    const params = warehouseId ? { warehouseId } : {};
+    return axiosClient.get(`${BASE}/lots/${encodeURIComponent(sku)}`, { params });
+  },
 };
 
 export default inventoryService;

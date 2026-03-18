@@ -503,11 +503,14 @@
 }
 
 /* Hidden row — dim to signal product is not visible in storefront */
-.rowHidden {
+.rowHidden > td:not(:last-child) {
   opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.rowHidden:hover > td:not(:last-child) {
+  opacity: 0.75;
 }
 .rowHidden:hover {
-  opacity: 0.75;
   background: #fafbff;
 }
 

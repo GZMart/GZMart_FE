@@ -458,8 +458,7 @@ const SupplierDetailPage = () => {
               <option value="PENDING_APPROVAL">Pending Approval</option>
               <option value="ORDERED">Ordered</option>
               <option value="ARRIVED_VN">Arrived VN</option>
-              <option value="COMPLETED">Received</option>
-              <option value="Completed">Completed</option>
+              <option value="Completed">Received</option>
               <option value="Cancelled">Cancelled</option>
             </select>
           </div>

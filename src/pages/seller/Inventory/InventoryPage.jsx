@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Package,
+  History,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -18,8 +19,10 @@ import {
   RefreshCw,
   X,
   Save,
+  Layers,
 } from 'lucide-react';
 import { productService } from '../../../services/api/productService';
+import inventoryService from '../../../services/api/inventoryService';
 import {
   adjustStockItem,
   selectInventoryAdjusting,
@@ -88,6 +91,135 @@ const formatVariantLabel = (model) => {
   return parts.length > 0 ? parts.join(' / ') : null;
 };
 
+// ─── Lot Breakdown Row ────────────────────────────────────────────
+const LotBreakdownRow = ({ sku, colCount }) => {
+  const [lots, setLots] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    inventoryService
+      .getLotBreakdown(sku)
+      .then((res) => {
+        if (!cancelled) setLots(res.data?.lots ?? []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err?.response?.data?.error || 'Failed to load lot data');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [sku]);
+
+  const fmtDate = (d) =>
+    d
+      ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '—';
+  const fmtCurrency = (v) =>
+    v > 0
+      ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v)
+      : '—';
+
+  return (
+    <tr className={styles.lotBreakdownRow}>
+      <td colSpan={colCount} className={styles.lotBreakdownCell}>
+        <div className={styles.lotBreakdownPanel}>
+          <div className={styles.lotPanelHeader}>
+            <Layers size={13} />
+            <span>Lot Breakdown — SKU: <strong>{sku}</strong></span>
+          </div>
+
+          {loading && (
+            <div className={styles.lotLoading}>
+              <RefreshCw size={14} className={styles.spin} /> Loading...
+            </div>
+          )}
+
+          {error && (
+            <div className={styles.lotError}>{error}</div>
+          )}
+
+          {!loading && !error && lots?.length === 0 && (
+            <div className={styles.lotEmpty}>No import history for this SKU.</div>
+          )}
+
+          {!loading && !error && lots?.length > 0 && (
+            <table className={styles.lotTable}>
+              <thead>
+                <tr>
+                  <th>Lot #</th>
+                  <th>Date</th>
+                  <th>PO Ref</th>
+                  <th>Supplier</th>
+                  <th style={{ textAlign: 'right' }}>Orig Qty</th>
+                  <th style={{ textAlign: 'right' }}>Remaining</th>
+                  <th style={{ textAlign: 'right' }}>Cost/Unit</th>
+                  <th style={{ textAlign: 'right' }}>Selling Price</th>
+                  <th style={{ textAlign: 'right' }}>Est. Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lots.map((lot) => {
+                  const isLow = lot.remainingQty > 0 && lot.remainingQty <= 5;
+                  return (
+                    <tr key={lot.txId} className={isLow ? styles.lotRowLow : ''}>
+                      <td>
+                        <span className={styles.lotBadge}>Lot {lot.lotIndex}</span>
+                      </td>
+                      <td>{fmtDate(lot.lotDate)}</td>
+                      <td>
+                        {lot.poCode ? (
+                          <a
+                            href={`/seller/erp/purchase-orders/${lot.poId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.lotPoLink}
+                          >
+                            {lot.poCode} ↗
+                          </a>
+                        ) : (
+                          <span className={styles.lotManualBadge}>Manual</span>
+                        )}
+                      </td>
+                      <td className={styles.lotSupplier}>{lot.supplierName || '—'}</td>
+                      <td style={{ textAlign: 'right' }} className={styles.lotQty}>{lot.originalQty}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span className={`${styles.lotRemaining} ${isLow ? styles.lotRemainingLow : ''}`}>
+                          {lot.remainingQty}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }} className={styles.lotCost}>
+                        {fmtCurrency(lot.costPrice)}
+                      </td>
+                      <td style={{ textAlign: 'right' }} className={styles.lotCost}>
+                        {fmtCurrency(lot.sellingPrice)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {lot.sellingPrice > 0 ? (
+                           <span style={{ 
+                             color: lot.sellingPrice > lot.costPrice ? '#059669' : '#dc2626',
+                             fontWeight: 600
+                           }}>
+                             {Math.round(((lot.sellingPrice - lot.costPrice) / lot.sellingPrice) * 100)}%
+                           </span>
+                        ) : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 // ─── Sortable Column Header ───────────────────────────────────────
 const SortableHeader = ({ label, colKey, sortKey, sortDir, onSort, align = 'left' }) => {
   const active = sortKey === colKey;
@@ -118,6 +250,121 @@ const SortableHeader = ({ label, colKey, sortKey, sortDir, onSort, align = 'left
         </span>
       </span>
     </th>
+  );
+};
+
+// ─── Transaction History Drawer ───────────────────────────────────
+const TransactionHistoryDrawer = ({ item, onClose }) => {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const today = new Date();
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+  
+  const [startDate, setStartDate] = useState(thirtyDaysAgo.toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+
+  const loadHistory = useCallback(async () => {
+    if (!item?.sku) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await inventoryService.getTransactions({
+        sku: item.sku,
+        startDate,
+        endDate,
+        limit: 100
+      });
+      setTransactions(res.data || []);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Failed to load history');
+    } finally {
+      setLoading(false);
+    }
+  }, [item?.sku, startDate, endDate]);
+
+  useEffect(() => {
+    if (item) {
+      loadHistory();
+    }
+  }, [item, loadHistory]);
+
+  if (!item) return null;
+
+  return (
+    <>
+      <div className={styles.modalOverlay} onClick={onClose} style={{ zIndex: 998 }} />
+      <div className={styles.modal} style={{ maxWidth: 700, width: '90%', zIndex: 999 }} role="dialog">
+        <div className={styles.modalHeader}>
+          <div>
+            <p className={styles.modalTitle}>Transaction History</p>
+            <p className={styles.modalSub}>
+              {item.productName}
+              {item.variantLabel ? ` · ${item.variantLabel}` : ''} (SKU: {item.sku})
+            </p>
+          </div>
+          <button className={styles.modalClose} onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+        
+        <div className={styles.modalBody} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '70vh', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: '#f8fafc', padding: '12px', borderRadius: '8px' }}>
+            <div className={styles.formGroup} style={{ flex: 1, marginBottom: 0 }}>
+              <label className={styles.formLabel}>From Date</label>
+              <input type="date" className={styles.formInput} value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className={styles.formGroup} style={{ flex: 1, marginBottom: 0 }}>
+              <label className={styles.formLabel}>To Date</label>
+              <input type="date" className={styles.formInput} value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+            <button className={styles.btnSecondary} onClick={loadHistory} style={{ height: '38px', color: '#1e293b' }} disabled={loading}>
+              <RefreshCw size={14} className={loading ? styles.spin : ''} />
+              Filter
+            </button>
+          </div>
+          
+          {loading ? (
+             <div style={{ padding: '40px', textAlign: 'center' }}><RefreshCw size={24} className={styles.spin} style={{ color: '#94a3b8' }} /></div>
+          ) : error ? (
+             <div className={styles.errorState}>{error}</div>
+          ) : transactions.length === 0 ? (
+             <div className={styles.emptyState} style={{ padding: '40px' }}><History size={32} color="#cbd5e1" /><p>No transactions found in this period.</p></div>
+          ) : (
+            <table className={styles.table} style={{ fontSize: '13px' }}>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th style={{ textAlign: 'right' }}>Qty</th>
+                  <th>PO / Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map(tx => (
+                  <tr key={tx._id} className={styles.tr}>
+                    <td>{new Date(tx.createdAt).toLocaleString('vi-VN')}</td>
+                    <td>
+                      <span className={tx.type === 'in' ? styles.badgeOk : tx.type === 'out' ? styles.badgeOut : styles.badgeLow}>
+                        {tx.type.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'in' ? '#059669' : tx.type === 'out' ? '#dc2626' : '#d97706' }}>
+                      {tx.type === 'in' ? '+' : tx.type === 'out' ? '-' : ''}{tx.quantity}
+                    </td>
+                    <td style={{ color: '#475569' }}>
+                      {tx.poCode ? <a href={`/seller/erp/purchase-orders/${tx.poId}`} target="_blank" rel="noopener noreferrer">{tx.poCode}</a> : tx.note || 'Manual Adjustment'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -331,12 +578,27 @@ const InventoryPage = () => {
   const [stockTab, setStockTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [adjustTarget, setAdjustTarget] = useState(null);
+  const [historyTarget, setHistoryTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const [alertDismissed, setAlertDismissed] = useState(false);
   // Per-SKU thresholds — persisted in localStorage, merged with backend defaults
   const [customThresholds, setCustomThresholds] = useState(loadStoredThresholds);
+  // Set of SKUs with expanded lot panel
+  const [expandedSkus, setExpandedSkus] = useState(new Set());
+
+  const toggleExpand = useCallback((sku) => {
+    setExpandedSkus((prev) => {
+      const next = new Set(prev);
+      if (next.has(sku)) {
+        next.delete(sku);
+      } else {
+        next.add(sku);
+      }
+      return next;
+    });
+  }, []);
 
   // ── Load products ──────────────────────────────────────────────
   const loadProducts = useCallback(async () => {
@@ -781,7 +1043,8 @@ const InventoryPage = () => {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th className={styles.sortableTh}></th>
+                    <th className={styles.sortableTh} style={{ width: '40px' }}></th>
+                    <th className={styles.sortableTh} style={{ width: '48px' }}></th>
                     <SortableHeader
                       label="Product / Variant"
                       colKey="productName"
@@ -834,129 +1097,171 @@ const InventoryPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginated.map((row) => (
-                    <tr
-                      key={row._key}
-                      className={`${styles.tr} ${row.stockStatus === 'out' ? styles.trOut : row.stockStatus === 'low' ? styles.trLow : ''}`}
-                    >
-                      {/* Thumbnail */}
-                      <td className={styles.tdImg}>
-                        {row.productImage ? (
-                          <img
-                            src={row.productImage}
-                            alt={row.productName}
-                            className={styles.thumb}
-                          />
-                        ) : (
-                          <div className={styles.thumbPlaceholder}>
-                            <Package size={14} color="#d1d5db" />
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Product + variant */}
-                      <td>
-                        <div className={styles.productCell}>
-                          <span className={styles.productName}>{row.productName}</span>
-                          {row.variantLabel && (
-                            <span className={styles.variantLabel}>{row.variantLabel}</span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* SKU */}
-                      <td>
-                        <span className={styles.sku}>{row.sku}</span>
-                      </td>
-
-                      {/* Stock */}
-                      <td style={{ textAlign: 'center' }}>
-                        <span
-                          className={
-                            row.stockStatus === 'out'
-                              ? styles.stockOut
-                              : row.stockStatus === 'low'
-                                ? styles.stockLow
-                                : styles.stockOk
-                          }
+                  {paginated.map((row) => {
+                    const isExpanded = expandedSkus.has(row.sku);
+                    const canExpand = !!row.modelId && row.stock > 0;
+                    return (
+                      <React.Fragment key={row._key}>
+                        <tr
+                          key={row._key}
+                          className={`${styles.tr} ${row.stockStatus === 'out' ? styles.trOut : row.stockStatus === 'low' ? styles.trLow : ''} ${isExpanded ? styles.trExpanded : ''}`}
                         >
-                          {row.stock}
-                        </span>
-                      </td>
+                          {/* Expand toggle */}
+                          <td className={styles.tdExpand}>
+                            {canExpand && (
+                              <button
+                                className={`${styles.expandBtn} ${isExpanded ? styles.expandBtnOpen : ''}`}
+                                onClick={() => toggleExpand(row.sku)}
+                                title={isExpanded ? 'Hide lot details' : 'View stock by lot'}
+                                aria-expanded={isExpanded}
+                              >
+                                {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                              </button>
+                            )}
+                          </td>
 
-                      {/* Threshold */}
-                      <td style={{ textAlign: 'center' }}>
-                        <span className={styles.threshold}>{row.threshold}</span>
-                      </td>
+                          {/* Thumbnail */}
+                          <td className={styles.tdImg}>
+                            {row.productImage ? (
+                              <img
+                                src={row.productImage}
+                                alt={row.productName}
+                                className={styles.thumb}
+                              />
+                            ) : (
+                              <div className={styles.thumbPlaceholder}>
+                                <Package size={14} color="#d1d5db" />
+                              </div>
+                            )}
+                          </td>
 
-                      {/* Status badge */}
-                      <td style={{ textAlign: 'center' }}>
-                        {row.stockStatus === 'out' ? (
-                          <span className={styles.badgeOut}>Out of Stock</span>
-                        ) : row.stockStatus === 'low' ? (
-                          <span className={styles.badgeLow}>Low Stock</span>
-                        ) : (
-                          <span className={styles.badgeOk}>In Stock</span>
-                        )}
-                      </td>
+                          {/* Product + variant */}
+                          <td>
+                            <div className={styles.productCell}>
+                              <span className={styles.productName}>{row.productName}</span>
+                              {row.variantLabel && (
+                                <span className={styles.variantLabel}>{row.variantLabel}</span>
+                              )}
+                            </div>
+                          </td>
 
-                      {/* Cost */}
-                      <td style={{ textAlign: 'right' }}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            gap: '3px',
-                          }}
-                        >
-                          <span className={styles.costPrice}>
-                            {row.costPrice > 0
-                              ? new Intl.NumberFormat('vi-VN', {
-                                  style: 'currency',
-                                  currency: 'VND',
-                                }).format(row.costPrice)
-                              : '—'}
-                          </span>
-                          {row.costSource === 'po' ? (
-                            <a
-                              href="/seller/erp/purchase-orders"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.costSourcePo}
-                              title="Cost price set from a completed Purchase Order"
+                          {/* SKU */}
+                          <td>
+                            <span className={styles.sku}>{row.sku}</span>
+                          </td>
+
+                          {/* Stock */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span
+                              className={
+                                row.stockStatus === 'out'
+                                  ? styles.stockOut
+                                  : row.stockStatus === 'low'
+                                    ? styles.stockLow
+                                    : styles.stockOk
+                              }
                             >
-                              via PO ↗
-                            </a>
-                          ) : (
-                            <span className={styles.costSourceManual}>Manual</span>
-                          )}
-                        </div>
-                      </td>
+                              {row.stock}
+                            </span>
+                          </td>
 
-                      {/* Adjust button */}
-                      <td style={{ textAlign: 'center' }}>
-                        {row.modelId ? (
-                          <button
-                            className={styles.btnAdjust}
-                            onClick={() => setAdjustTarget(row)}
-                            title="Adjust stock quantity"
-                          >
-                            <SlidersHorizontal size={13} />
-                            Adjust
-                          </button>
-                        ) : (
-                          <span
-                            className={styles.btnAdjustDisabled}
-                            title="This product has no SKU variants. Edit the product to add models before adjusting stock."
-                          >
-                            <SlidersHorizontal size={13} />
-                            No SKU
-                          </span>
+                          {/* Threshold */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={styles.threshold}>{row.threshold}</span>
+                          </td>
+
+                          {/* Status badge */}
+                          <td style={{ textAlign: 'center' }}>
+                            {row.stockStatus === 'out' ? (
+                              <span className={styles.badgeOut}>Out of Stock</span>
+                            ) : row.stockStatus === 'low' ? (
+                              <span className={styles.badgeLow}>Low Stock</span>
+                            ) : (
+                              <span className={styles.badgeOk}>In Stock</span>
+                            )}
+                          </td>
+
+                          {/* Cost */}
+                          <td style={{ textAlign: 'right' }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                gap: '3px',
+                              }}
+                            >
+                              <span className={styles.costPrice}>
+                                {row.costPrice > 0
+                                  ? new Intl.NumberFormat('vi-VN', {
+                                      style: 'currency',
+                                      currency: 'VND',
+                                    }).format(row.costPrice)
+                                  : '—'}
+                              </span>
+                              {row.costSource === 'po' ? (
+                                <a
+                                  href="/seller/erp/purchase-orders"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={styles.costSourcePo}
+                                  title="Cost price set from a completed Purchase Order"
+                                >
+                                  via PO ↗
+                                </a>
+                              ) : (
+                                <span className={styles.costSourceManual}>Manual</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Adjust button */}
+                          <td style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            {row.modelId ? (
+                              <button
+                                className={styles.btnAdjust}
+                                onClick={() => setAdjustTarget(row)}
+                                title="Adjust stock quantity"
+                              >
+                                <SlidersHorizontal size={13} />
+                                Adjust
+                              </button>
+                            ) : (
+                              <span
+                                className={styles.btnAdjustDisabled}
+                                title="This product has no SKU variants. Edit the product to add models before adjusting stock."
+                              >
+                                <SlidersHorizontal size={13} />
+                                No SKU
+                              </span>
+                            )}
+                            {row.modelId && (
+                              <button
+                                className={styles.btnSecondary}
+                                style={{ padding: '6px 8px', height: '32px', fontSize: '13px', border: '1px solid #e2e8f0', background: 'white', color: '#1e293b' }}
+                                onClick={() => setHistoryTarget(row)}
+                                title="View transaction history"
+                              >
+                                <History size={13} />
+                                History
+                              </button>
+                            )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Lot breakdown sub-row */}
+                        {isExpanded && (
+                          <LotBreakdownRow
+                            key={`lots-${row.sku}`}
+                            sku={row.sku}
+                            colCount={9}
+                          />
                         )}
-                      </td>
-                    </tr>
-                  ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -998,6 +1303,13 @@ const InventoryPage = () => {
           }}
           onSave={handleAdjustSave}
           saving={adjusting}
+        />
+      )}
+
+      {historyTarget && (
+        <TransactionHistoryDrawer
+          item={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </div>

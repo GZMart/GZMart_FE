@@ -8,6 +8,7 @@ import {
   fetchMyProducts,
   fetchExchangeRate,
 } from '../../store/slices/erpSlice';
+import inventoryService from '../../services/api/inventoryService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import styles from '@assets/styles/erp/CreatePurchaseOrderPage.module.css';
 import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../constants/tierTypes';
@@ -692,6 +693,39 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
   const [showPicker, setShowPicker] = useState(false);
   const [bulkQty, setBulkQty] = useState('');
   const [bulkPrice, setBulkPrice] = useState('');
+  const [warnings, setWarnings] = useState({});
+
+  useEffect(() => {
+    const fetchWarnings = async () => {
+      const newWarnings = { ...warnings };
+      let updated = false;
+
+      for (const v of variants) {
+        if (!v.sku || v.sku.length < 3) continue;
+        if (newWarnings[v.sku]) continue;
+
+        try {
+          const res = await inventoryService.getLotBreakdown(v.sku);
+          if (res && res.totalRemaining > 0) {
+            newWarnings[v.sku] = res;
+            updated = true;
+          } else {
+            newWarnings[v.sku] = { empty: true };
+            updated = true;
+          }
+        } catch (err) {
+          // ignore error (probably not found)
+        }
+      }
+
+      if (updated) {
+        setWarnings(newWarnings);
+      }
+    };
+
+    const timer = setTimeout(fetchWarnings, 500);
+    return () => clearTimeout(timer);
+  }, [variants]);
 
   const openPicker = useCallback(() => {
     dispatch(fetchMyProducts({ limit: 200, status: 'active' }));
@@ -890,43 +924,59 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
               </tr>
             </thead>
             <tbody>
-              {variants.map((v, vi) => (
-                <tr key={vi}>
-                  <td className={styles.variantLabel}>
-                    {v._variantLabel || <em style={{ color: '#aaa' }}>—</em>}
-                  </td>
-                  <td>
-                    <input
-                      className={styles.skuInput}
-                      value={v.sku}
-                      onChange={(e) => updateVariant(vi, 'sku', e.target.value.toUpperCase())}
-                      placeholder="AUTO"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      min="1"
-                      className={styles.numInput}
-                      value={v.quantity}
-                      onChange={(e) => updateVariant(vi, 'quantity', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      className={styles.numInput}
-                      value={v.unitPriceCny}
-                      onChange={(e) => updateVariant(vi, 'unitPriceCny', e.target.value)}
-                    />
-                  </td>
-                  <td className={styles.calcCell}>
-                    {fmt(Number(v.unitPriceCny) * exchangeRate * Number(v.quantity))} ₫
-                  </td>
-                </tr>
-              ))}
+              {variants.map((v, vi) => {
+                const warn = warnings[v.sku];
+                const hasWarning = warn && !warn.empty && warn.totalRemaining > 0;
+                
+                return (
+                  <React.Fragment key={vi}>
+                    <tr>
+                      <td className={styles.variantLabel}>
+                        {v._variantLabel || <em style={{ color: '#aaa' }}>—</em>}
+                      </td>
+                      <td>
+                        <input
+                          className={styles.skuInput}
+                          value={v.sku}
+                          onChange={(e) => updateVariant(vi, 'sku', e.target.value.toUpperCase())}
+                          placeholder="AUTO"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="1"
+                          className={styles.numInput}
+                          value={v.quantity}
+                          onChange={(e) => updateVariant(vi, 'quantity', e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          className={styles.numInput}
+                          value={v.unitPriceCny}
+                          onChange={(e) => updateVariant(vi, 'unitPriceCny', e.target.value)}
+                        />
+                      </td>
+                      <td className={styles.calcCell}>
+                        {fmt(Number(v.unitPriceCny) * exchangeRate * Number(v.quantity))} ₫
+                      </td>
+                    </tr>
+                    {hasWarning && (
+                      <tr>
+                        <td colSpan="5" style={{ padding: '8px 12px', background: '#fffbeb', color: '#b45309', fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>
+                          ⚠️ <strong>Cảnh báo tồn kho:</strong> SKU này đang còn tồn <strong>{warn.totalRemaining}</strong> sản phẩm từ lô cũ 
+                          {warn.lots?.length > 0 && ` (giá vốn: ${warn.lots.map((l) => fmt(l.costPrice) + 'đ').join(', ')})`}.
+                          Xin lưu ý khi định giá mua mới.
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
