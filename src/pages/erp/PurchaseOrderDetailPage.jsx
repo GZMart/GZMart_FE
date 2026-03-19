@@ -356,15 +356,21 @@ const PurchaseOrderDetailPage = () => {
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Contact Person</span>
-                <span className={styles.infoValue}>{po.supplierId?.contactPerson || '-'}</span>
+                <span className={styles.infoValue}>
+                  {po.supplierId?.contact?.contactPerson || po.supplierId?.contactPerson || '-'}
+                </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Phone</span>
-                <span className={styles.infoValue}>{po.supplierId?.phone || '-'}</span>
+                <span className={styles.infoValue}>
+                  {po.supplierId?.contact?.phone || po.supplierId?.phone || '-'}
+                </span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Email</span>
-                <span className={styles.infoValue}>{po.supplierId?.email || '-'}</span>
+                <span className={styles.infoValue}>
+                  {po.supplierId?.contact?.email || po.supplierId?.email || '-'}
+                </span>
               </div>
             </div>
           </div>
@@ -424,6 +430,9 @@ const PurchaseOrderDetailPage = () => {
                     <th>SKU / Product</th>
                     <th style={{ textAlign: 'center' }}>Quantity</th>
                     <th style={{ textAlign: 'right' }}>Unit Price</th>
+                    {po.status === 'Completed' || po.status === 'COMPLETED' ? (
+                      <th style={{ textAlign: 'right' }}>Landed Cost/Unit</th>
+                    ) : null}
                     <th>Amount</th>
                   </tr>
                 </thead>
@@ -450,6 +459,13 @@ const PurchaseOrderDetailPage = () => {
                       <td>
                         <span className={styles.unitPrice}>{formatCurrency(item.unitPrice)}</span>
                       </td>
+                      {po.status === 'Completed' || po.status === 'COMPLETED' ? (
+                        <td>
+                          <span className={styles.unitPrice} style={{ color: '#16a34a' }}>
+                            {item.landedCostUnit ? formatCurrency(item.landedCostUnit) : '—'}
+                          </span>
+                        </td>
+                      ) : null}
                       <td>
                         <span className={styles.amountCell}>
                           {formatCurrency(item.totalPrice ?? item.quantity * item.unitPrice)}
@@ -533,13 +549,52 @@ const PurchaseOrderDetailPage = () => {
                 <span className={styles.summaryRowValue}>{formatCurrency(po.totalAmount)}</span>
               </div>
               <div className={styles.summaryRow}>
-                <span className={styles.summaryRowLabel}>Shipping Cost</span>
+                <span className={styles.summaryRowLabel}>Intl Shipping</span>
                 <span
                   className={po.shippingCost ? styles.summaryRowValue : styles.summaryRowValueMuted}
                 >
                   {formatCurrency(po.shippingCost)}
                 </span>
               </div>
+              
+              {po.importConfig?.buyingServiceFeeRate > 0 && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryRowLabel}>
+                    Buying Fee ({po.importConfig.buyingServiceFeeRate * 100}%)
+                  </span>
+                  <span className={styles.summaryRowValue}>
+                    {formatCurrency(po.totalAmount * po.importConfig.buyingServiceFeeRate)}
+                  </span>
+                </div>
+              )}
+
+              {po.fixedCosts?.cnDomesticShippingCny > 0 && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryRowLabel}>CN Domestic Ship</span>
+                  <span className={styles.summaryRowValue}>
+                    {formatCurrency(po.fixedCosts.cnDomesticShippingCny * (po.importConfig?.exchangeRate || 3500))}
+                  </span>
+                </div>
+              )}
+
+              {po.fixedCosts?.packagingCostVnd > 0 && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryRowLabel}>Packaging Cost</span>
+                  <span className={styles.summaryRowValue}>
+                    {formatCurrency(po.fixedCosts.packagingCostVnd)}
+                  </span>
+                </div>
+              )}
+
+              {po.fixedCosts?.vnDomesticShippingVnd > 0 && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryRowLabel}>VN Domestic Ship</span>
+                  <span className={styles.summaryRowValue}>
+                    {formatCurrency(po.fixedCosts.vnDomesticShippingVnd)}
+                  </span>
+                </div>
+              )}
+
               <div className={styles.summaryRow}>
                 <span className={styles.summaryRowLabel}>Tax</span>
                 <span
@@ -548,12 +603,10 @@ const PurchaseOrderDetailPage = () => {
                   {formatCurrency(po.taxAmount)}
                 </span>
               </div>
-              {po.otherCost !== undefined && (
+              {po.otherCost !== undefined && po.otherCost > 0 && (
                 <div className={styles.summaryRow}>
                   <span className={styles.summaryRowLabel}>Other Costs</span>
-                  <span
-                    className={po.otherCost ? styles.summaryRowValue : styles.summaryRowValueMuted}
-                  >
+                  <span className={styles.summaryRowValue}>
                     {formatCurrency(po.otherCost)}
                   </span>
                 </div>

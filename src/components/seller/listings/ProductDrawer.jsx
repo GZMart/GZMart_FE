@@ -155,7 +155,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       });
       // If any model has per-variant weight/dim, show per-variant
       const hasModelShipping = (editingProduct.models || []).some(
-        (m) => (m.weight && m.weight > 0) || (m.dimLength || m.dimWidth || m.dimHeight)
+        (m) => (m.weight && m.weight > 0) || m.dimLength || m.dimWidth || m.dimHeight
       );
       setShippingPerVariant(!!hasModelShipping);
     } else if (!show) {
@@ -199,7 +199,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       }
       generateModels();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- generateModels is stable, deps would cause loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generateModels is stable, deps would cause loops
   }, [tiers, productType]);
 
   const generateModels = () => {
@@ -259,14 +259,35 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryService.getAll();
+      // Match Admin Attribute Management: use tree endpoint and flatten with depth.
+      const response = await categoryService.getTree();
 
       if (response.success) {
-        setCategories(response.data);
+        const flat = [];
+        const flatten = (nodes, depth = 0) => {
+          (nodes || []).forEach((node) => {
+            flat.push({ ...node, depth });
+            if (node.children?.length) {
+              flatten(node.children, depth + 1);
+            }
+          });
+        };
+
+        flatten(response.data || []);
+        setCategories(flat);
       } else {
         setCategories([]);
       }
     } catch (error) {
+      // Fallback to flat list if tree endpoint fails.
+      try {
+        const fallback = await categoryService.getAll({ status: 'active' });
+        if (fallback.success) {
+          setCategories((fallback.data || []).map((cat) => ({ ...cat, depth: 0 })));
+          return;
+        }
+      } catch {}
+
       console.error('❌ Error fetching categories:', error);
     }
   };
@@ -437,19 +458,21 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     }));
   };
 
-  const validateForm = () => {
+  const validateForm = (forcedStatus) => {
     const newErrors = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Product name is required';
     }
 
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Category is required';
-    }
+    if (forcedStatus !== 'draft') {
+      if (!formData.categoryId) {
+        newErrors.categoryId = 'Category is required';
+      }
 
-    if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
-      newErrors.originalPrice = 'Valid price is required';
+      if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
+        newErrors.originalPrice = 'Valid price is required';
+      }
     }
 
     // Validate required attributes
@@ -464,7 +487,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
     // For simple products, stock is required only on CREATE
     // In edit mode, stock is controlled via the Inventory page
-    if (productType === 'simple' && !isEditMode) {
+    if (forcedStatus !== 'draft' && productType === 'simple' && !isEditMode) {
       if (!formData.stock || parseInt(formData.stock) < 0) {
         newErrors.stock = 'Valid stock quantity is required';
       }
@@ -509,16 +532,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         newErrors.models = `${invalidModels.length} variant(s) have invalid price${!isEditMode ? ' or stock' : ''}`;
       }
 
-      // Every SKU must have an image
-      const noImageCount = models.filter((m) => !m.imageFile && !m.image).length;
-      if (noImageCount > 0) {
-        newErrors.modelImages = `${noImageCount} SKU${noImageCount !== 1 ? 's are' : ' is'} missing an image. Add an image to every variant before saving.`;
+      // Every SKU must have an image (unless saving as draft)
+      if (forcedStatus !== 'draft') {
+        const noImageCount = models.filter((m) => !m.imageFile && !m.image).length;
+        if (noImageCount > 0) {
+          newErrors.modelImages = `${noImageCount} SKU${noImageCount !== 1 ? 's are' : ' is'} missing an image. Add an image to every variant before publishing.`;
+        }
       }
     }
 
-    // Simple product must have at least 1 product image
-    if (productType === 'simple' && imagePreviews.length === 0) {
-      newErrors.images = 'At least one product image is required before saving.';
+    // Simple product must have at least 1 product image (unless saving as draft)
+    if (forcedStatus !== 'draft' && productType === 'simple' && imagePreviews.length === 0) {
+      newErrors.images = 'At least one product image is required before publishing.';
     }
 
     // SKU is optional - backend will auto-generate if not provided
@@ -537,10 +562,10 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, forcedStatus = null) => {
+    if (e && e.preventDefault) e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm(forcedStatus)) {
       return;
     }
 
@@ -563,7 +588,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         productModels = [
           {
             ...(formData.sku.trim() && { sku: formData.sku.trim().toUpperCase() }),
-            price: parseFloat(formData.originalPrice),
+            price: parseFloat(formData.originalPrice) || 0,
             ...(!isEditMode && formData.costPrice
               ? { costPrice: parseFloat(formData.costPrice) }
               : {}),
@@ -616,8 +641,10 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         // Append text fields
         formDataToSend.append('name', formData.name.trim());
         formDataToSend.append('description', formData.description.trim());
-        formDataToSend.append('categoryId', formData.categoryId);
-        formDataToSend.append('originalPrice', parseFloat(formData.originalPrice));
+        if (formData.categoryId) {
+          formDataToSend.append('categoryId', formData.categoryId);
+        }
+        formDataToSend.append('originalPrice', parseFloat(formData.originalPrice) || 0);
         // formDataToSend.append('status', 'draft');
 
         // Append tags
@@ -652,9 +679,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         // Append models (without imageFile which is not serializable)
         const modelsData = productModels.map((model) =>
           Object.fromEntries(
-            Object.entries(model).filter(
-              ([k]) => k !== 'imageFile' && k !== 'imagePreview'
-            )
+            Object.entries(model).filter(([k]) => k !== 'imageFile' && k !== 'imagePreview')
           )
         );
         formDataToSend.append('models', JSON.stringify(modelsData));
@@ -685,6 +710,10 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             formDataToSend.append('images', image);
           });
         }
+        
+        if (forcedStatus) {
+          formDataToSend.append('status', forcedStatus);
+        }
 
         response = isEditMode
           ? await productService.update(editingProduct._id, formDataToSend)
@@ -694,8 +723,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         const productData = {
           name: formData.name.trim(),
           description: formData.description.trim(),
-          categoryId: formData.categoryId,
-          originalPrice: parseFloat(formData.originalPrice),
+          ...(formData.categoryId && { categoryId: formData.categoryId }),
+          originalPrice: parseFloat(formData.originalPrice) || 0,
           tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()) : [],
           attributes: attributesArray,
           preOrderDays: preOrderEnabled ? preOrderDays : 0,
@@ -714,7 +743,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                 }))
               : [],
           models: productModels,
-          // status: 'draft',
+          ...(forcedStatus && { status: forcedStatus }),
         };
 
         response = isEditMode
@@ -958,12 +987,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const missingVariantImages =
     productType === 'variant' ? models.filter((m) => !m.imageFile && !m.image).length : 0;
   const missingProductImage = productType === 'simple' && imagePreviews.length === 0;
-  const saveBlocked = missingVariantImages > 0 || missingProductImage;
-  const saveBlockReason =
+  const publishBlocked = missingVariantImages > 0 || missingProductImage;
+  const publishBlockReason =
     missingVariantImages > 0
       ? `${missingVariantImages} SKU${missingVariantImages !== 1 ? 's are' : ' is'} missing an image`
       : missingProductImage
-        ? 'Add at least one product image'
+        ? 'Add at least one product image to publish'
         : '';
 
   return createPortal(
@@ -1014,10 +1043,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             {isEditMode && <span className={styles.editingBadge}>Editing</span>}
             <button
               type="button"
+              className={styles.drawerDraftBtn}
+              onClick={(e) => handleSubmit(e, 'draft')}
+              disabled={loading}
+            >
+              Save Draft
+            </button>
+            <button
+              type="button"
               className={styles.drawerSaveBtn}
-              onClick={handleSubmit}
-              disabled={loading || saveBlocked}
-              title={saveBlockReason || undefined}
+              onClick={(e) => handleSubmit(e, isEditMode && editingProduct?.status === 'draft' ? 'active' : null)}
+              disabled={loading || publishBlocked}
+              title={publishBlockReason || undefined}
             >
               {loading ? (
                 <>
@@ -1032,7 +1069,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                   >
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  {isEditMode ? 'Updating...' : 'Saving...'}
+                  {isEditMode ? (editingProduct?.status === 'draft' ? 'Publishing...' : 'Updating...') : 'Saving...'}
                 </>
               ) : (
                 <>
@@ -1048,7 +1085,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                     <polyline points="17 21 17 13 7 13 7 21" />
                     <polyline points="7 3 7 8 15 8" />
                   </svg>
-                  {isEditMode ? 'Update Product' : 'Save Product'}
+                  {isEditMode ? (editingProduct?.status === 'draft' ? 'Publish Product' : 'Update Product') : 'Publish Product'}
                 </>
               )}
             </button>
@@ -1103,6 +1140,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                       <option value="">Select category...</option>
                       {categories.map((cat) => (
                         <option key={cat._id} value={cat._id}>
+                          {cat.depth > 0 ? `${'  '.repeat(cat.depth * 2)}› ` : ''}
                           {cat.name}
                         </option>
                       ))}
@@ -1358,7 +1396,9 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                       className={styles.shippingToggle}
                     />
                     {productType !== 'variant' && (
-                      <p className={styles.textMuted}>Chỉ áp dụng cho sản phẩm có phân loại (biến thể)</p>
+                      <p className={styles.textMuted}>
+                        Chỉ áp dụng cho sản phẩm có phân loại (biến thể)
+                      </p>
                     )}
                   </Form.Group>
                 </Col>
@@ -1372,10 +1412,16 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                             type="number"
                             min="0"
                             step={productWeightUnit === 'gr' ? 1 : 0.01}
-                            value={productWeightUnit === 'gr' ? productWeight || '' : (productWeight / 1000) || ''}
+                            value={
+                              productWeightUnit === 'gr'
+                                ? productWeight || ''
+                                : productWeight / 1000 || ''
+                            }
                             onChange={(e) => {
                               const v = parseFloat(e.target.value) || 0;
-                              setProductWeight(productWeightUnit === 'gr' ? v : Math.round(v * 1000));
+                              setProductWeight(
+                                productWeightUnit === 'gr' ? v : Math.round(v * 1000)
+                              );
                             }}
                             disabled={loading}
                             className={styles.formControl}
@@ -1394,7 +1440,9 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                     </Col>
                     <Col md={8}>
                       <Form.Group className="mb-3">
-                        <label className={styles.formLabel}>Kích thước đóng gói (R × D × C cm)</label>
+                        <label className={styles.formLabel}>
+                          Kích thước đóng gói (R × D × C cm)
+                        </label>
                         <div className={styles.dimRow}>
                           <Form.Control
                             type="number"
@@ -1402,7 +1450,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                             step="0.5"
                             placeholder="R"
                             value={productDim.length || ''}
-                            onChange={(e) => setProductDim((d) => ({ ...d, length: parseFloat(e.target.value) || 0 }))}
+                            onChange={(e) =>
+                              setProductDim((d) => ({
+                                ...d,
+                                length: parseFloat(e.target.value) || 0,
+                              }))
+                            }
                             disabled={loading}
                             className={styles.dimInput}
                           />
@@ -1412,7 +1465,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                             step="0.5"
                             placeholder="D"
                             value={productDim.width || ''}
-                            onChange={(e) => setProductDim((d) => ({ ...d, width: parseFloat(e.target.value) || 0 }))}
+                            onChange={(e) =>
+                              setProductDim((d) => ({
+                                ...d,
+                                width: parseFloat(e.target.value) || 0,
+                              }))
+                            }
                             disabled={loading}
                             className={styles.dimInput}
                           />
@@ -1422,7 +1480,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                             step="0.5"
                             placeholder="C"
                             value={productDim.height || ''}
-                            onChange={(e) => setProductDim((d) => ({ ...d, height: parseFloat(e.target.value) || 0 }))}
+                            onChange={(e) =>
+                              setProductDim((d) => ({
+                                ...d,
+                                height: parseFloat(e.target.value) || 0,
+                              }))
+                            }
                             disabled={loading}
                             className={styles.dimInput}
                           />
@@ -1469,13 +1532,16 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                           type="number"
                           min="1"
                           value={preOrderDays}
-                          onChange={(e) => setPreOrderDays(Math.max(1, parseInt(e.target.value, 10) || 2))}
+                          onChange={(e) =>
+                            setPreOrderDays(Math.max(1, parseInt(e.target.value, 10) || 2))
+                          }
                           disabled={loading}
                           className={styles.formControl}
                           style={{ width: 80 }}
                         />
                         <span className={styles.preOrderText}>
-                          Tôi sẽ gửi hàng trong {preOrderDays} ngày (không bao gồm ngày nghỉ lễ, Tết và những ngày đơn vị vận chuyển không làm việc)
+                          Tôi sẽ gửi hàng trong {preOrderDays} ngày (không bao gồm ngày nghỉ lễ, Tết
+                          và những ngày đơn vị vận chuyển không làm việc)
                         </span>
                       </div>
                     )}
@@ -1781,13 +1847,13 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           <button
             type="button"
             className={styles.btnPrimary}
-            onClick={handleSubmit}
-            disabled={loading || saveBlocked}
-            title={saveBlockReason || undefined}
+            onClick={(e) => handleSubmit(e, isEditMode && editingProduct?.status === 'draft' ? 'active' : null)}
+            disabled={loading || publishBlocked}
+            title={publishBlockReason || undefined}
           >
             {loading ? 'Saving...' : isEditMode ? 'Update Product' : 'Save Product'}
-            {saveBlocked && !loading && (
-              <span className={styles.saveBtnHint}>&nbsp;· {saveBlockReason}</span>
+            {publishBlocked && !loading && (
+              <span className={styles.saveBtnHint}>&nbsp;· {publishBlockReason}</span>
             )}
           </button>
         </div>
