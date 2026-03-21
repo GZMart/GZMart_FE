@@ -39,7 +39,7 @@ import {
 } from '@ant-design/icons';
 import {
   DndContext,
-  closestCenter,
+  rectIntersection,
   PointerSensor,
   useSensor,
   useSensors,
@@ -733,7 +733,7 @@ const CategoriesPage = () => {
         <RootIdsContext.Provider value={isDragDisabled ? new Set() : rootIdsSet}>
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={rectIntersection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >

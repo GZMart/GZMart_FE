@@ -542,6 +542,75 @@
 }
 
 /* ═══════════════════════════════════════
+   Shop Appearance - Link to Decoration
+   ═══════════════════════════════════════ */
+.appearanceLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  border: 2px solid #e0e7ff;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.appearanceLink:hover {
+  border-color: #4f46e5;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8efff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+.appearanceLinkContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.appearanceLinkIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+}
+
+.appearanceLinkText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.appearanceLinkTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e1b4b;
+}
+
+.appearanceLinkDesc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.appearanceLink > i {
+  font-size: 18px;
+  color: #4f46e5;
+  transition: transform 0.2s;
+}
+
+.appearanceLink:hover > i {
+  transform: translateX(4px);
+}
+
+/* ═══════════════════════════════════════
    Save Section (bottom of form)
    ═══════════════════════════════════════ */
 .saveSection {

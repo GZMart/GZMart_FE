@@ -14,6 +14,7 @@ const NAV_GROUPS = [
       { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
       { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
       { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
+      { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
       { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
@@ -40,6 +41,7 @@ const NAV_GROUPS = [
     label: 'SETTINGS',
     items: [
       { to: SELLER_ROUTES.PROFILE, icon: 'bi-person', label: 'Profile' },
+      { to: SELLER_ROUTES.SHOP_DECORATION, icon: 'bi-palette', label: 'Shop Decoration' },
       { to: '/seller/billing', icon: 'bi-credit-card', label: 'Billing' },
     ],
   },

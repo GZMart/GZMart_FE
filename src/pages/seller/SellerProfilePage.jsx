@@ -12,9 +12,9 @@ import {
   Phone,
   Calendar,
   Shield,
-  Store,
   ImagePlus,
   X,
+  Palette,
 } from 'lucide-react';
 import { Offcanvas } from 'react-bootstrap';
 import locationService from '@services/api/locationService';
@@ -24,13 +24,10 @@ const SellerProfilePage = () => {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const fileInputRef = useRef(null);
-  const bannerInputRef = useRef(null);
 
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [bannerFile, setBannerFile] = useState(null);
-  const [bannerPreview, setBannerPreview] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [showAddressDrawer, setShowAddressDrawer] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
@@ -100,7 +97,6 @@ const SellerProfilePage = () => {
         lng: user.location?.lng ?? null,
       });
       setAvatarPreview(user.avatar || null);
-      setBannerPreview(user.profileImage || null);
     }
   }, [user]);
 
@@ -135,7 +131,6 @@ const SellerProfilePage = () => {
   };
 
   const handleAvatarClick = () => fileInputRef.current?.click();
-  const handleBannerClick = () => bannerInputRef.current?.click();
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -194,28 +189,6 @@ const SellerProfilePage = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleBannerChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Banner must be less than 10MB');
-      return;
-    }
-    setBannerFile(file);
-    setHasChanges(true);
-    const reader = new FileReader();
-    reader.onloadend = () => setBannerPreview(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveBanner = () => {
-    setBannerFile(null);
-    setBannerPreview(null);
-    setHasChanges(true);
-  };
-
   const handleSave = async () => {
     if (!formData.fullName.trim()) {
       toast.error('Full name is required');
@@ -243,15 +216,11 @@ const SellerProfilePage = () => {
       if (avatarFile) {
         submitData.append('avatar', avatarFile);
       }
-      if (bannerFile) {
-        submitData.append('profileImage', bannerFile);
-      }
 
       const result = await dispatch(updateUserProfile({ formData: submitData }));
       if (updateUserProfile.fulfilled.match(result)) {
         toast.success('Profile updated successfully!');
         setAvatarFile(null);
-        setBannerFile(null);
         setHasChanges(false);
       } else {
         toast.error(result.payload || 'Failed to update profile');
@@ -417,61 +386,29 @@ const SellerProfilePage = () => {
           {/* Shop Appearance */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <Store size={20} />
+              <Palette size={20} />
               <h2 className={styles.cardTitle}>Shop Appearance</h2>
             </div>
             <p className={styles.sectionHint}>
-              This banner and description will be displayed when buyers visit your shop page.
+              Customize your shop page layout, banners, and modules.
             </p>
-
-            <div className={styles.bannerUpload}>
-              {bannerPreview ? (
-                <div className={styles.bannerPreviewWrapper}>
-                  <img src={bannerPreview} alt="Shop banner" className={styles.bannerPreviewImg} />
-                  <div className={styles.bannerActions}>
-                    <button
-                      type="button"
-                      className={styles.bannerChangeBtn}
-                      onClick={handleBannerClick}
-                    >
-                      <Camera size={16} /> Change
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.bannerRemoveBtn}
-                      onClick={handleRemoveBanner}
-                    >
-                      <X size={16} /> Remove
-                    </button>
-                  </div>
+            <a
+              href="/seller/shop-decoration"
+              className={styles.appearanceLink}
+            >
+              <div className={styles.appearanceLinkContent}>
+                <div className={styles.appearanceLinkIcon}>
+                  <Palette size={28} />
                 </div>
-              ) : (
-                <div className={styles.bannerPlaceholder} onClick={handleBannerClick}>
-                  <ImagePlus size={32} />
-                  <span>Upload Shop Banner</span>
-                  <small>Recommended: 1200×300px, max 10MB</small>
+                <div className={styles.appearanceLinkText}>
+                  <span className={styles.appearanceLinkTitle}>Customize Shop Design</span>
+                  <span className={styles.appearanceLinkDesc}>
+                    Go to Shop Decoration to manage your shop homepage layout
+                  </span>
                 </div>
-              )}
-              <input
-                ref={bannerInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleBannerChange}
-                className={styles.hiddenInput}
-              />
-            </div>
-
-            <div className={`${styles.formGroup} ${styles.fullWidth}`} style={{ marginTop: 20 }}>
-              <label className={styles.label}>Shop Description</label>
-              <textarea
-                name="aboutMe"
-                value={formData.aboutMe}
-                onChange={handleChange}
-                className={styles.textarea}
-                rows={3}
-                placeholder="Describe your shop, what you sell, your specialties..."
-              />
-            </div>
+              </div>
+              <i className="bi bi-arrow-right" />
+            </a>
           </section>
 
           {/* Address & Location */}
