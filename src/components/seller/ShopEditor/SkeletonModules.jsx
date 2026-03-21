@@ -5,7 +5,6 @@
  * khi du lieu dang duoc fetch tu API.
  */
 
-import React from 'react';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
 /** Full preview skeleton - hien thi khi ca page dang loading */

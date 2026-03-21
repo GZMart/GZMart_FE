@@ -11,7 +11,6 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { PlusOutlined } from '@ant-design/icons';
 import PageTransition from '@components/common/PageTransition';
@@ -71,7 +70,9 @@ function LibraryItem({ type, icon, label }) {
   };
 
   const handleClick = () => {
-    if (dragCounterRef.current > 0) return; // Ghost click — ignore
+    if (dragCounterRef.current > 0) {
+return;
+} // Ghost click — ignore
     dispatch(addModule({ type, insertAt: undefined }));
   };
 
@@ -104,7 +105,6 @@ function ImageListEditor({
   aspectRatio,
 }) {
   const [cropEditingIndex, setCropEditingIndex] = useState(null);
-  const pendingUploadRef = useRef(null);
   const [openPicker, setOpenPicker] = useState({ type: null, index: null });
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -128,7 +128,9 @@ function ImageListEditor({
       const wrapper = document.querySelector(`[data-change-img-idx="${index}"]`);
       if (wrapper) {
         const input = wrapper.querySelector('input[type="file"]');
-        if (input) input.click();
+        if (input) {
+input.click();
+}
       }
     },
     []
@@ -159,7 +161,9 @@ function ImageListEditor({
 
   const handleMoveUp = useCallback(
     (index) => {
-      if (index <= 0) return;
+      if (index <= 0) {
+return;
+}
       const next = [...images];
       [next[index - 1], next[index]] = [next[index], next[index - 1]];
       onChange(next);
@@ -169,7 +173,9 @@ function ImageListEditor({
 
   const handleMoveDown = useCallback(
     (index) => {
-      if (index >= images.length - 1) return;
+      if (index >= images.length - 1) {
+return;
+}
       const next = [...images];
       [next[index], next[index + 1]] = [next[index + 1], next[index]];
       onChange(next);
@@ -189,12 +195,24 @@ function ImageListEditor({
   const opts = linkOptions || PRESET_LINKS;
 
   const getLinkSelectValue = (link) => {
-    if (!link) return '';
-    if (link.startsWith('/product/')) return '__product__';
-    if (link.startsWith('/category/')) return '__category__';
-    if (link.startsWith('/combo/')) return '__combo__';
-    if (link.startsWith('/voucher/')) return '__voucher__';
-    if (link.startsWith('/addon/')) return '__addon__';
+    if (!link) {
+return '';
+}
+    if (link.startsWith('/product/')) {
+return '__product__';
+}
+    if (link.startsWith('/category/')) {
+return '__category__';
+}
+    if (link.startsWith('/combo/')) {
+return '__combo__';
+}
+    if (link.startsWith('/voucher/')) {
+return '__voucher__';
+}
+    if (link.startsWith('/addon/')) {
+return '__addon__';
+}
     const found = opts.find((o) => o.value && o.value !== '__custom__' && o.value === link);
     return found ? link : '__custom__';
   };
@@ -237,8 +255,12 @@ function ImageListEditor({
           if (product.categoryId) {
             if (typeof product.categoryId === 'object' && product.categoryId !== null) {
               // categoryId is an object (e.g., { _id: '...', name: '...' })
-              if (product.categoryId._id) categoryIdsWithProducts.add(String(product.categoryId._id));
-              if (product.categoryId.id) categoryIdsWithProducts.add(String(product.categoryId.id));
+              if (product.categoryId._id) {
+categoryIdsWithProducts.add(String(product.categoryId._id));
+}
+              if (product.categoryId.id) {
+categoryIdsWithProducts.add(String(product.categoryId.id));
+}
             } else {
               // categoryId is a string ID
               categoryIdsWithProducts.add(String(product.categoryId));
@@ -246,15 +268,25 @@ function ImageListEditor({
           }
           // Nested category object (e.g., product.category._id)
           if (product.category && typeof product.category === 'object') {
-            if (product.category._id) categoryIdsWithProducts.add(String(product.category._id));
-            if (product.category.id) categoryIdsWithProducts.add(String(product.category.id));
+            if (product.category._id) {
+categoryIdsWithProducts.add(String(product.category._id));
+}
+            if (product.category.id) {
+categoryIdsWithProducts.add(String(product.category.id));
+}
           }
           // Array of categories (e.g., product.categories)
           if (product.categories && Array.isArray(product.categories)) {
             product.categories.forEach((cat) => {
-              if (cat._id) categoryIdsWithProducts.add(String(cat._id));
-              if (cat.id) categoryIdsWithProducts.add(String(cat.id));
-              if (typeof cat === 'string') categoryIdsWithProducts.add(String(cat));
+              if (cat._id) {
+categoryIdsWithProducts.add(String(cat._id));
+}
+              if (cat.id) {
+categoryIdsWithProducts.add(String(cat.id));
+}
+              if (typeof cat === 'string') {
+categoryIdsWithProducts.add(String(cat));
+}
             });
           }
         });
@@ -838,7 +870,9 @@ function ModuleConfigPanel({ module, onUpdate, onDelete }) {
 
   const update = useCallback(
     (changes) => {
-      if (!module) return;
+      if (!module) {
+return;
+}
       onUpdate({ id: module.id, changes });
     },
     [module, onUpdate]
@@ -846,7 +880,9 @@ function ModuleConfigPanel({ module, onUpdate, onDelete }) {
 
   const updateProps = useCallback(
     (propsUpdate) => {
-      if (!module) return;
+      if (!module) {
+return;
+}
       onUpdate({ id: module.id, props: { ...module.props, ...propsUpdate } });
     },
     [module, onUpdate]
@@ -1301,7 +1337,9 @@ function CoverPhotoPanel({ coverUrl, onChangeCoverUrl, onClose }) {
 
   const handleUploadSuccess = useCallback(
     (url) => {
-      if (!url) return;
+      if (!url) {
+return;
+}
       onChangeCoverUrl(url);
     },
     [onChangeCoverUrl]
@@ -1317,7 +1355,9 @@ function CoverPhotoPanel({ coverUrl, onChangeCoverUrl, onClose }) {
     const wrapper = document.querySelector('[data-cover-upload]');
     if (wrapper) {
       const input = wrapper.querySelector('input[type="file"]');
-      if (input) input.click();
+      if (input) {
+input.click();
+}
     }
   }, []);
 
@@ -1325,7 +1365,7 @@ function CoverPhotoPanel({ coverUrl, onChangeCoverUrl, onClose }) {
     <div className={styles.rightPanel}>
       <div className={styles.rightHeader}>
         <h3 className={styles.rightTitle}>Shop Cover Photo</h3>
-        <p className={styles.rightSubtitle}>Update your shop's hero banner</p>
+        <p className={styles.rightSubtitle}>Update your shop&apos;s hero banner</p>
         <button
           type="button"
           onClick={onClose}
@@ -1466,13 +1506,19 @@ export default function ShopDecorationPage() {
   const isDirty = useSelector(selectIsDirty);
 
   useEffect(() => {
-    if (!isDirty || isSaving) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    if (!isDirty || isSaving) {
+return;
+}
+    if (autoSaveTimerRef.current) {
+clearTimeout(autoSaveTimerRef.current);
+}
     autoSaveTimerRef.current = setTimeout(() => {
       dispatch(saveDecoration({ modules: rawModules, widgets: {} }));
     }, 3000);
     return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      if (autoSaveTimerRef.current) {
+clearTimeout(autoSaveTimerRef.current);
+}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawModules, isDirty]);
@@ -1486,7 +1532,7 @@ export default function ShopDecorationPage() {
       // Ctrl/Cmd + S → Save
       if (ctrl && e.key === 's') {
         e.preventDefault();
-        dispatch(saveDecoration({ modules, widgets: {} }));
+        dispatch(saveDecoration({ modules: rawModules, widgets: {} }));
       }
       // Ctrl/Cmd + Shift + P → Publish
       if (ctrl && e.shiftKey && e.key === 'P') {
@@ -1496,8 +1542,9 @@ export default function ShopDecorationPage() {
       // Delete / Backspace → Delete selected module
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedModule) {
         const target = e.target;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-          return;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+return;
+}
         if (selectedModule.isMandatory) {
           toast.info('This module cannot be removed.');
           return;
@@ -1568,8 +1615,12 @@ export default function ShopDecorationPage() {
     ];
 
     for (const module of modulesToCheck) {
-      if (!module.isEnabled) continue;
-      if (!imageModules.includes(module.type)) continue;
+      if (!module.isEnabled) {
+continue;
+}
+      if (!imageModules.includes(module.type)) {
+continue;
+}
 
       const { props = {} } = module;
 
@@ -1772,9 +1823,15 @@ function VoucherPickerModal({ selectedIds = [], onApply, onClose }) {
   };
 
   const filtered = vouchers.filter((v) => {
-    if (tab === 'active') return v.status === 'active';
-    if (tab === 'upcoming') return v.status === 'upcoming';
-    if (tab === 'expired') return v.status === 'expired';
+    if (tab === 'active') {
+return v.status === 'active';
+}
+    if (tab === 'upcoming') {
+return v.status === 'upcoming';
+}
+    if (tab === 'expired') {
+return v.status === 'expired';
+}
     return true;
   });
 

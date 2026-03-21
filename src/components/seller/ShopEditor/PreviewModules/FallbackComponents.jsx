@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * Fallback Preview Components
  *
@@ -10,7 +11,7 @@
  */
 
 import PropTypes from 'prop-types';
-import { MODULE_TYPES, MODULE_LABELS } from '@services/api/shopDecorationService';
+import { MODULE_LABELS } from '@services/api/shopDecorationService';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
 // ─── Shared placeholder wrapper ─────────────────────────────────────────────
@@ -33,7 +34,7 @@ PlaceholderWrap.propTypes = {
 };
 
 // ─── BannerSinglePreview ─────────────────────────────────────────────────────
-export function BannerSinglePreview({ module, isSelected, onSelect }) {
+export function BannerSinglePreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <div className={styles.bannerSingleWrap} onClick={onSelect}>
@@ -51,7 +52,7 @@ export function BannerSinglePreview({ module, isSelected, onSelect }) {
 }
 
 // ─── BannerHotspotPreview ───────────────────────────────────────────────────
-export function BannerHotspotPreview({ module, isSelected, onSelect }) {
+export function BannerHotspotPreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <div className={styles.bannerHotspotWrap} onClick={onSelect}>
@@ -89,7 +90,7 @@ export function BannerHotspotPreview({ module, isSelected, onSelect }) {
 }
 
 // ─── AddonDealsPreview ──────────────────────────────────────────────────────
-export function AddonDealsPreview({ module, isSelected, onSelect }) {
+export function AddonDealsPreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <PlaceholderWrap
@@ -103,7 +104,7 @@ export function AddonDealsPreview({ module, isSelected, onSelect }) {
 }
 
 // ─── ComboPromosPreview ─────────────────────────────────────────────────────
-export function ComboPromosPreview({ module, isSelected, onSelect }) {
+export function ComboPromosPreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <PlaceholderWrap
@@ -126,7 +127,7 @@ const FALLBACK_CATEGORIES = [
   { name: 'Sắc Đẹp', icon: 'bi-stars' },
 ];
 
-export function CategoriesPreview({ module, isSelected, onSelect }) {
+export function CategoriesPreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <div className={styles.categoriesWrap} onClick={onSelect}>
@@ -148,7 +149,7 @@ export function CategoriesPreview({ module, isSelected, onSelect }) {
 }
 
 // ─── TextPreview ────────────────────────────────────────────────────────────
-export function TextPreview({ module, isSelected, onSelect }) {
+export function TextPreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <div className={styles.textModuleWrap} onClick={onSelect}>
@@ -161,7 +162,7 @@ export function TextPreview({ module, isSelected, onSelect }) {
 }
 
 // ─── ImageTextPreview ───────────────────────────────────────────────────────
-export function ImageTextPreview({ module, isSelected, onSelect }) {
+export function ImageTextPreview({ module, _isSelected, onSelect }) {
   const { props = {} } = module || {};
   return (
     <div className={styles.imageTextWrap} onClick={onSelect}>

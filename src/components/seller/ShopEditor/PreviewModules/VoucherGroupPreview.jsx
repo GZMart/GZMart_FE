@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * VoucherGroupPreview — Live Render Component cho Voucher Group Module
  *
@@ -9,7 +10,6 @@
  * - onSelect: callback
  */
 
-import React from 'react';
 import { getModuleVouchers } from '@services/shopDecoration/moduleTemplates';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 

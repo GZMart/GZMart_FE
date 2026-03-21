@@ -96,12 +96,16 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
   scaleRef.current = scale;
 
   const initCropBox = useCallback((img, container, ratio, zoom = 1) => {
-    if (!container || !img?.naturalWidth) return;
+    if (!container || !img?.naturalWidth) {
+return;
+}
     const rect = container.getBoundingClientRect();
     const rw = rect.width;
     const rh = rect.height;
     // Modal open animation: first reads are often ~0 or too small — skip until layout is real
-    if (rw < 48 || rh < 48) return;
+    if (rw < 48 || rh < 48) {
+return;
+}
 
     const { displayW } = getImageLayout(img, rw, rh, zoom);
 
@@ -117,7 +121,9 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     }
     if (boxW > rw * 0.88) {
       boxW = rw * 0.88;
-      if (ratio != null) boxH = boxW / ratio;
+      if (ratio != null) {
+boxH = boxW / ratio;
+}
     }
 
     const boxX = (rw - boxW) / 2;
@@ -150,24 +156,34 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
 
   // ── When preview area gets real size (modal animation / resize), re-fit crop + bitmap ──
   useEffect(() => {
-    if (loading) return undefined;
+    if (loading) {
+return undefined;
+}
     const el = containerRef.current;
     const img = imgRef.current;
-    if (!el || !img?.naturalWidth) return undefined;
+    if (!el || !img?.naturalWidth) {
+return undefined;
+}
 
     const syncIfSizeChanged = () => {
       const r = el.getBoundingClientRect();
       const w = Math.round(r.width);
       const h = Math.round(r.height);
-      if (w < 48 || h < 48) return;
+      if (w < 48 || h < 48) {
+return;
+}
       const prev = lastContainerSizeRef.current;
-      if (prev.w === w && prev.h === h) return;
+      if (prev.w === w && prev.h === h) {
+return;
+}
       initCropBox(img, el, selectedRatioRef.current, scaleRef.current);
       lastContainerSizeRef.current = { w, h };
     };
 
     syncIfSizeChanged();
-    if (typeof ResizeObserver === 'undefined') return undefined;
+    if (typeof ResizeObserver === 'undefined') {
+return undefined;
+}
     const ro = new ResizeObserver(() => {
       syncIfSizeChanged();
     });
@@ -180,7 +196,9 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     const canvas = canvasRef.current;
     const img = imgRef.current;
     const container = containerRef.current;
-    if (!canvas || !img || !container || !cropBox) return;
+    if (!canvas || !img || !container || !cropBox) {
+return;
+}
 
     const ctx = canvas.getContext('2d');
     const rect = container.getBoundingClientRect();
@@ -274,7 +292,9 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
   // ── Drag / resize handlers ──────────────────────────────────────────────────
   const getCanvasPos = (e) => {
     const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
+    if (!canvas) {
+return { x: 0, y: 0 };
+}
     const rect = canvas.getBoundingClientRect();
     const sx = canvas.width / (rect.width || 1);
     const sy = canvas.height / (rect.height || 1);
@@ -290,14 +310,30 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     if (handle === 'move') {
       return pos.x >= x && pos.x <= x + w && pos.y >= y && pos.y <= y + h;
     }
-    if (handle === 'nw') return pos.x >= x - pad && pos.x <= x + pad && pos.y >= y - pad && pos.y <= y + pad;
-    if (handle === 'ne') return pos.x >= x + w - pad && pos.x <= x + w + pad && pos.y >= y - pad && pos.y <= y + pad;
-    if (handle === 'sw') return pos.x >= x - pad && pos.x <= x + pad && pos.y >= y + h - pad && pos.y <= y + h + pad;
-    if (handle === 'se') return pos.x >= x + w - pad && pos.x <= x + w + pad && pos.y >= y + h - pad && pos.y <= y + h + pad;
-    if (handle === 'n') return pos.x >= x + pad && pos.x <= x + w - pad && pos.y >= y - pad && pos.y <= y + pad;
-    if (handle === 's') return pos.x >= x + pad && pos.x <= x + w - pad && pos.y >= y + h - pad && pos.y <= y + h + pad;
-    if (handle === 'w') return pos.x >= x - pad && pos.x <= x + pad && pos.y >= y + pad && pos.y <= y + h - pad;
-    if (handle === 'e') return pos.x >= x + w - pad && pos.x <= x + w + pad && pos.y >= y + pad && pos.y <= y + h - pad;
+    if (handle === 'nw') {
+return pos.x >= x - pad && pos.x <= x + pad && pos.y >= y - pad && pos.y <= y + pad;
+}
+    if (handle === 'ne') {
+return pos.x >= x + w - pad && pos.x <= x + w + pad && pos.y >= y - pad && pos.y <= y + pad;
+}
+    if (handle === 'sw') {
+return pos.x >= x - pad && pos.x <= x + pad && pos.y >= y + h - pad && pos.y <= y + h + pad;
+}
+    if (handle === 'se') {
+return pos.x >= x + w - pad && pos.x <= x + w + pad && pos.y >= y + h - pad && pos.y <= y + h + pad;
+}
+    if (handle === 'n') {
+return pos.x >= x + pad && pos.x <= x + w - pad && pos.y >= y - pad && pos.y <= y + pad;
+}
+    if (handle === 's') {
+return pos.x >= x + pad && pos.x <= x + w - pad && pos.y >= y + h - pad && pos.y <= y + h + pad;
+}
+    if (handle === 'w') {
+return pos.x >= x - pad && pos.x <= x + pad && pos.y >= y + pad && pos.y <= y + h - pad;
+}
+    if (handle === 'e') {
+return pos.x >= x + w - pad && pos.x <= x + w + pad && pos.y >= y + pad && pos.y <= y + h - pad;
+}
     return false;
   };
 
@@ -316,10 +352,16 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'w', 'e'];
     let hit = null;
     for (const h of handles) {
-      if (hitTest(pos, cropBox, h)) { hit = h; break; }
+      if (hitTest(pos, cropBox, h)) {
+ hit = h; break; 
+}
     }
-    if (!hit && hitTest(pos, cropBox, 'move')) hit = 'move';
-    if (!hit) return;
+    if (!hit && hitTest(pos, cropBox, 'move')) {
+hit = 'move';
+}
+    if (!hit) {
+return;
+}
 
     dragState.current = { handle: hit, startX: pos.x, startY: pos.y, origBox: { ...cropBox } };
   };
@@ -331,7 +373,9 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
       // Update cursor without dragging
       const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'w', 'e'];
       for (const h of handles) {
-        if (hitTest(pos, cropBox, h)) { setCursorStyle(getCursor(h)); return; }
+        if (hitTest(pos, cropBox, h)) {
+ setCursorStyle(getCursor(h)); return; 
+}
       }
       if (cropBox && hitTest(pos, cropBox, 'move')) {
         setCursorStyle('move');
@@ -353,7 +397,9 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     } else if (handle === 'se') {
       w = Math.max(40, origBox.w + dx);
       h = ratio != null ? w / ratio : Math.max(40, origBox.h + dy);
-      if (ratio == null && e.shiftKey) h = Math.max(40, origBox.h + dy);
+      if (ratio == null && e.shiftKey) {
+h = Math.max(40, origBox.h + dy);
+}
     } else if (handle === 'nw') {
       const nwW = Math.max(40, origBox.w - dx);
       const nwH = ratio != null ? nwW / ratio : Math.max(40, origBox.h - dy);
@@ -371,17 +417,25 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     } else if (handle === 'n') {
       h = Math.max(40, origBox.h - dy);
       y = origBox.y + dy;
-      if (ratio != null) w = h * ratio;
+      if (ratio != null) {
+w = h * ratio;
+}
     } else if (handle === 's') {
       h = Math.max(40, origBox.h + dy);
-      if (ratio != null) w = h * ratio;
+      if (ratio != null) {
+w = h * ratio;
+}
     } else if (handle === 'w') {
       w = Math.max(40, origBox.w - dx);
       x = origBox.x + dx;
-      if (ratio != null) h = w / ratio;
+      if (ratio != null) {
+h = w / ratio;
+}
     } else if (handle === 'e') {
       w = Math.max(40, origBox.w + dx);
-      if (ratio != null) h = w / ratio;
+      if (ratio != null) {
+h = w / ratio;
+}
     }
 
     // Clamp to canvas
@@ -413,14 +467,20 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
   // ── Apply crop ─────────────────────────────────────────────────────────────
   const handleApply = async () => {
     const img = imgRef.current;
-    if (!img || !cropBox) return;
+    if (!img || !cropBox) {
+return;
+}
 
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+return;
+}
     const rect = container.getBoundingClientRect();
 
     const { displayW, displayH, offsetX, offsetY } = getImageLayout(img, rect.width, rect.height, scale);
-    if (!displayW || !displayH) return;
+    if (!displayW || !displayH) {
+return;
+}
 
     // Map crop rect from canvas coords → natural image pixels (matches drawCanvas layout)
     const relX = cropBox.x - offsetX;
@@ -467,14 +527,18 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
       );
 
       outCanvas.toBlob((blob) => {
-        if (!blob) return;
+        if (!blob) {
+return;
+}
         const formData = new FormData();
         formData.append('image', blob, 'cropped.jpg');
         fetch('/api/upload/single', { method: 'POST', body: formData })
           .then((r) => r.json())
           .then((data) => {
             const url = data?.data?.url || data?.url;
-            if (url) onApply(url);
+            if (url) {
+onApply(url);
+}
           })
           .catch(() => {
             onApply(outCanvas.toDataURL('image/jpeg', 0.92));
@@ -490,14 +554,18 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outCanvas.width, outCanvas.height);
 
     outCanvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) {
+return;
+}
       const formData = new FormData();
       formData.append('image', blob, 'cropped.jpg');
       fetch('/api/upload/single', { method: 'POST', body: formData })
         .then((r) => r.json())
         .then((data) => {
           const url = data?.data?.url || data?.url;
-          if (url) onApply(url);
+          if (url) {
+onApply(url);
+}
         })
         .catch(() => {
           // Fallback: use data URL
@@ -508,7 +576,9 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
 
   const handleRatioChange = (ratio) => {
     setSelectedRatio(ratio);
-    if (!cropBox || !containerRef.current) return;
+    if (!cropBox || !containerRef.current) {
+return;
+}
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
     // Resize box to fit new ratio, centered
@@ -535,10 +605,14 @@ export default function CropModal({ imageUrl, aspectRatio, onApply, onClose }) {
       destroyOnClose
       closable={false}
       afterOpenChange={(open) => {
-        if (!open) return;
+        if (!open) {
+return;
+}
         const img = imgRef.current;
         const el = containerRef.current;
-        if (!img?.naturalWidth || !el) return;
+        if (!img?.naturalWidth || !el) {
+return;
+}
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             lastContainerSizeRef.current = { w: 0, h: 0 };

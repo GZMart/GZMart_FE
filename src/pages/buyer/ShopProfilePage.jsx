@@ -14,6 +14,8 @@ import promotionBuyerService from '../../services/api/promotionBuyerService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/ShopProfilePage.module.css';
 
+/* eslint-disable react/prop-types */
+
 const normalizeProduct = (p) => {
   const activeModel = p.models?.find((m) => m.isActive) || p.models?.[0] || {};
   return {
@@ -34,7 +36,9 @@ const normalizeProduct = (p) => {
 
 // ─── Link handler helper ────────────────────────────────────────────────────────
 const handleModuleLink = (link) => {
-  if (!link) return;
+  if (!link) {
+return;
+}
   if (link.startsWith('/')) {
     window.location.href = link;
   } else if (link.startsWith('http')) {
@@ -123,7 +127,9 @@ function BannerCarouselModule({ module }) {
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd) {
+return;
+}
     const distance = touchStart - touchEnd;
     if (distance > minSwipeDistance) {
       goNext();
@@ -135,7 +141,9 @@ function BannerCarouselModule({ module }) {
   // Keyboard navigation
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+return;
+}
 
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowLeft') {
@@ -149,7 +157,7 @@ function BannerCarouselModule({ module }) {
 
     container.addEventListener('keydown', handleKeyDown);
     return () => container.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [goNext, goPrev]);
 
   const handleImageError = useCallback((idx) => {
     setImageErrors((prev) => new Set([...prev, idx]));
@@ -433,12 +441,15 @@ function FlashDealsModule({ module }) {
   const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
 
   useEffect(() => {
+    const productsList = props.products || [];
     // Find the soonest endDate across all deals
-    const endDates = products
+    const endDates = productsList
       .map((d) => d.endDate)
       .filter(Boolean)
       .map((d) => new Date(d).getTime());
-    if (endDates.length === 0) return;
+    if (endDates.length === 0) {
+return;
+}
 
     const tick = () => {
       const now = Date.now();
@@ -453,9 +464,11 @@ function FlashDealsModule({ module }) {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [products]);
+  }, [props.products]);
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+return null;
+}
 
   const pad = (n) => String(n).padStart(2, '0');
 
@@ -506,7 +519,9 @@ function FeaturedProductsModule({ module }) {
   const { props = {} } = module;
   const products = (props.products || []).map(normalizeProduct);
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -533,7 +548,9 @@ function BestSellingModule({ module }) {
   const { props = {} } = module;
   const products = (props.products || []).map(normalizeProduct);
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -563,7 +580,9 @@ function NewProductsModule({ module }) {
   const { props = {} } = module;
   const products = (props.products || []).map(normalizeProduct);
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -590,7 +609,9 @@ function AddonDealsModule({ module }) {
   const { props = {} } = module;
   const products = (props.products || []).map(normalizeProduct);
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -617,7 +638,9 @@ function ComboPromosModule({ module }) {
   const { props = {} } = module;
   const products = (props.products || []).map(normalizeProduct);
 
-  if (products.length === 0) return null;
+  if (products.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -644,7 +667,9 @@ function FeaturedCategoriesModule({ module, onCategoryClick }) {
   const { props = {} } = module;
   const categories = props.categories || [];
 
-  if (categories.length === 0) return null;
+  if (categories.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -683,7 +708,9 @@ function CategoryListModule({ module, onCategoryClick }) {
   const { props = {} } = module;
   const categories = props.categories || [];
 
-  if (categories.length === 0) return null;
+  if (categories.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.decorationBlock}>
@@ -1008,7 +1035,9 @@ const ShopProfilePage = () => {
 
   const handleChatClick = () => {
     const sellerId = seller._id || seller.id;
-    if (!sellerId) return;
+    if (!sellerId) {
+return;
+}
     window.dispatchEvent(
       new CustomEvent('openChatWithShop', { detail: { shopId: sellerId, productInfo: null } })
     );
@@ -1295,7 +1324,9 @@ const ShopProfilePage = () => {
           {(activeTab === 'HOME' || activeTab === 'PROFILE') && liveModules.length > 0 && (
             <div className={styles.decorationBlocks}>
               {liveModules.map((mod) => {
-                if (!mod.isEnabled) return null;
+                if (!mod.isEnabled) {
+return null;
+}
                 const { type } = mod;
 
                 // Banner Single

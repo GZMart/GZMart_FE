@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * BannerCarouselPreview — Live Render Component cho Banner Carousel Module
  *
@@ -7,7 +8,7 @@
  * - onSelect: callback
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getModuleBanners } from '@services/shopDecoration/moduleTemplates';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
@@ -34,20 +35,26 @@ export default function BannerCarouselPreview({ module, isSelected, onSelect }) 
   // Auto-play logic
   useEffect(() => {
     if (!autoplay || total <= 1) {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+clearInterval(timerRef.current);
+}
       return;
     }
     timerRef.current = setInterval(() => {
       setCurrent((c) => (c + 1) % total);
     }, interval);
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+clearInterval(timerRef.current);
+}
     };
   }, [autoplay, interval, total]);
 
   const goTo = (idx) => {
     setCurrent(idx);
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current) {
+clearInterval(timerRef.current);
+}
     if (autoplay && total > 1) {
       timerRef.current = setInterval(() => {
         setCurrent((c) => (c + 1) % total);

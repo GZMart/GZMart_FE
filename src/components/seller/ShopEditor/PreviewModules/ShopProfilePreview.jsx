@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * ShopProfilePreview — Live Render Component cho Shop Info Module
  *
@@ -7,17 +8,19 @@
  * - onSelect: callback khi click vao module
  */
 
-import React from 'react';
 import { getModuleShopInfo } from '@services/shopDecoration/moduleTemplates';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
 export default function ShopProfilePreview({ module, isSelected, onSelect }) {
   const shop = getModuleShopInfo(module);
-  const { props = {} } = module || {};
 
   const formatCount = (n) => {
-    if (!n) return '0';
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    if (!n) {
+return '0';
+}
+    if (n >= 1000) {
+return `${(n / 1000).toFixed(1)}k`;
+}
     return n.toString();
   };
 

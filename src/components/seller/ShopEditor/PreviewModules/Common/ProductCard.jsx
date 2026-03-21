@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * ProductCard — Reusable product card component cho Grid/Bento/Flash Deals
  *
@@ -7,12 +8,13 @@
  * - showDiscount: boolean (default true)
  */
 
-import React from 'react';
 import { formatPrice, formatSold } from '@services/shopDecoration/mockData';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
 export default function ProductCard({ product, size = 'md', showDiscount = true }) {
-  if (!product) return null;
+  if (!product) {
+return null;
+}
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discount = product.discount || (hasDiscount

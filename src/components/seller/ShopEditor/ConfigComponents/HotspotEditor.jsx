@@ -12,7 +12,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Modal } from 'antd';
-import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
 const MAX_HOTSPOTS = 10;
 const MIN_HOTSPOT_SIZE = 60; // pixels
@@ -40,15 +39,21 @@ export default function HotspotEditor({ image, hotspots = [], onSave }) {
 
   const getRelativePos = useCallback((e) => {
     const rect = imageRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
+    if (!rect) {
+return { x: 0, y: 0 };
+}
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
     return { x, y };
   }, []);
 
   const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0) return;
-    if (localHotspots.length >= MAX_HOTSPOTS) return;
+    if (e.button !== 0) {
+return;
+}
+    if (localHotspots.length >= MAX_HOTSPOTS) {
+return;
+}
     const pos = getRelativePos(e);
     setDrawing(true);
     setDrawStart(pos);
@@ -56,7 +61,9 @@ export default function HotspotEditor({ image, hotspots = [], onSave }) {
   }, [localHotspots.length, getRelativePos]);
 
   const handleMouseMove = useCallback((e) => {
-    if (!drawing || !drawStart) return;
+    if (!drawing || !drawStart) {
+return;
+}
     const pos = getRelativePos(e);
     setCurrentRect({
       x1: Math.min(drawStart.x, pos.x),
@@ -67,12 +74,16 @@ export default function HotspotEditor({ image, hotspots = [], onSave }) {
   }, [drawing, drawStart, getRelativePos]);
 
   const handleMouseUp = useCallback(() => {
-    if (!drawing || !currentRect) return;
+    if (!drawing || !currentRect) {
+return;
+}
     setDrawing(false);
     setDrawStart(null);
 
     const rect = imageRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect) {
+return;
+}
     const pixelW = ((currentRect.x2 - currentRect.x1) / 100) * rect.width;
     const pixelH = ((currentRect.y2 - currentRect.y1) / 100) * rect.height;
 

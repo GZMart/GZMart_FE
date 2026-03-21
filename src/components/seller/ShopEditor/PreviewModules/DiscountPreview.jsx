@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * DiscountPreview — Live Render Component for Discount Module
  *
@@ -7,11 +8,9 @@
  * - onSelect: callback
  */
 
-import React from 'react';
-import { getModuleVouchers } from '@services/shopDecoration/moduleTemplates';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
-export default function DiscountPreview({ module, isSelected, onSelect }) {
+export default function DiscountPreview({ _module, isSelected, onSelect }) {
   // Always show skeleton in preview (not actual vouchers)
   const skeletonCount = 4; // Show 4 skeleton cards
 
@@ -27,7 +26,7 @@ export default function DiscountPreview({ module, isSelected, onSelect }) {
         <div className={styles.discountHeader}>
           <div className={styles.discountHeaderLeft}>
             <i className="bi bi-ticket-perforated" />
-            <h3 className={styles.discountTitle}>Shop's Discount Codes</h3>
+            <h3 className={styles.discountTitle}>Shop&apos;s Discount Codes</h3>
           </div>
           <button className={styles.discountSeeAll}>
             See All

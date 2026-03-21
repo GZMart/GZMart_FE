@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * FlashDealsPreview — Live Render Component cho Flash Deals Module
  *
@@ -9,7 +10,7 @@
  * - onSelect: callback
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getModuleProducts } from '@services/shopDecoration/moduleTemplates';
 import ProductCard from './Common/ProductCard';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';

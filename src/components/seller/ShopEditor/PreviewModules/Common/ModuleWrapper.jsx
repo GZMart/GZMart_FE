@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * ModuleWrapper — Edit-mode wrapper cho moi module preview
  *
@@ -10,7 +11,6 @@
  * - children: render component content
  */
 
-import React from 'react';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 
 export default function ModuleWrapper({

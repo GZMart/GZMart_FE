@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * BannerMultiPreview — Live Render Component cho Banner Multi-Column Module
  *
@@ -7,7 +8,6 @@
  * - onSelect: callback
  */
 
-import React from 'react';
 import { getModuleBanners } from '@services/shopDecoration/moduleTemplates';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
 

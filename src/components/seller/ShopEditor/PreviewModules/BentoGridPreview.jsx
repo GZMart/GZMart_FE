@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * BentoGridPreview — Live Render Component cho Product Grid Module
  *
@@ -11,7 +12,6 @@
  * - onSelect: callback
  */
 
-import React from 'react';
 import { getModuleProducts } from '@services/shopDecoration/moduleTemplates';
 import ProductCard from './Common/ProductCard';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';

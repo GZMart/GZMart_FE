@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * SuggestedForYouPreview — Live Render Component for Suggested For You Module
  *
@@ -7,7 +8,6 @@
  * - onSelect: callback
  */
 
-import React from 'react';
 import { getModuleProducts } from '@services/shopDecoration/moduleTemplates';
 import ProductCard from './Common/ProductCard';
 import styles from '@assets/styles/seller/ShopDecorationPage.module.css';
@@ -47,7 +47,7 @@ export default function SuggestedForYouPreview({ module, isSelected, onSelect })
             <i className="bi bi-hand-thumbs-up" />
           </div>
           <p className={styles.suggestedWarningText}>
-            Less than 3 valid products. This design will not be displayed on the Shop's homepage.
+            Less than 3 valid products. This design will not be displayed on the Shop&apos;s homepage.
           </p>
         </div>
       )}

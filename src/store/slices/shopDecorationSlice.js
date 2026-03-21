@@ -30,7 +30,9 @@ export const VOUCHER_MODULE_ID = 'mandatory_voucher';
  * e.g. { props: { props: { props: { displayLimit: 5 } } } } becomes { displayLimit: 5 }
  */
 function flattenNestedProps(obj) {
-  if (!obj || typeof obj !== 'object') return obj;
+  if (!obj || typeof obj !== 'object') {
+return obj;
+}
 
   const result = {};
 
@@ -62,7 +64,9 @@ function flattenNestedProps(obj) {
  * SHOP_INFO modules are filtered out.
  */
 function ensureMandatoryModules(existingModules = []) {
-  if (!Array.isArray(existingModules)) existingModules = [];
+  if (!Array.isArray(existingModules)) {
+existingModules = [];
+}
 
   // Separate mandatory modules and regular modules
   // Filter out SHOP_INFO and VOUCHER (VOUCHER is now merged into DISCOUNT)
@@ -223,8 +227,9 @@ const shopDecorationSlice = createSlice({
         type === MODULE_TYPES.DISCOUNT ||
         type === MODULE_TYPES.SUGGESTED_FOR_YOU ||
         type === MODULE_TYPES.VOUCHER
-      )
-        return;
+      ) {
+return;
+}
       const target = state[`${state.activeVersion}Draft`];
       const newModule = getModuleTemplate(type);
       if (insertAt !== undefined && insertAt >= 0 && insertAt <= target.length) {
@@ -245,7 +250,9 @@ const shopDecorationSlice = createSlice({
       // Prevent removing mandatory modules
       const target = state[`${state.activeVersion}Draft`];
       const module = target.find((m) => m.id === id);
-      if (module?.isMandatory) return;
+      if (module?.isMandatory) {
+return;
+}
       const idx = target.findIndex((m) => m.id === id);
       if (idx !== -1) {
         target.splice(idx, 1);

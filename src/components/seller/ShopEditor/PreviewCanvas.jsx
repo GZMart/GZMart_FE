@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 /**
  * PreviewCanvas — Central Live Preview Renderer Engine
  *
@@ -172,8 +173,7 @@ function DragOverlayItem({ module }) {
 // ─── Main PreviewCanvas ───────────────────────────────────────────────────────
 
 // ─── Seller shop preview frame (banner + strip + tabs) ───────────────────────
-function ShopPreviewFrame({ user, modules, children, onCoverClick, pendingCoverUrl }) {
-  const displayName = user?.fullName || user?.name || 'Your Shop';
+function ShopPreviewFrame({ user, children, onCoverClick, pendingCoverUrl }) {
   const avatarUrl = user?.avatar;
   // Ảnh bìa shop quay về dùng profileImage của user
   const coverUrl = pendingCoverUrl !== undefined ? pendingCoverUrl : (user?.profileImage || null);
@@ -316,19 +316,27 @@ export default function PreviewCanvas({ pendingCoverUrl }) {
 
   const handleDragEnd = useCallback(({ active, over }) => {
     setActiveId(null);
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+return;
+}
     
     // Double-check: cannot drag mandatory modules
     const activeModule = modules.find((m) => m.id === active.id);
     const overModule = modules.find((m) => m.id === over.id);
     
-    if (!activeModule || !overModule) return;
-    if (activeModule.isMandatory) return;
+    if (!activeModule || !overModule) {
+return;
+}
+    if (activeModule.isMandatory) {
+return;
+}
     
     const oldIndex = modules.findIndex((m) => m.id === active.id);
     const newIndex = modules.findIndex((m) => m.id === over.id);
     
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
+return;
+}
     
     // Find the number of mandatory modules at the start
     let mandatoryCount = 0;
@@ -356,7 +364,9 @@ export default function PreviewCanvas({ pendingCoverUrl }) {
   // ── Drop from sidebar (HTML5) — insert at nearest section position ────────
   const getInsertIndexFromDrop = useCallback((dropY) => {
     const sectionEls = document.querySelectorAll('[data-section-wrap]');
-    if (!sectionEls.length) return undefined;
+    if (!sectionEls.length) {
+return undefined;
+}
 
     // Find the number of mandatory modules at the start
     let mandatoryCount = 0;
@@ -402,7 +412,7 @@ export default function PreviewCanvas({ pendingCoverUrl }) {
     return (
       <div className={styles.previewWrap}>
         <div className={styles.previewInner}>
-          <ShopPreviewFrame user={user} modules={[]} onCoverClick={handleCoverClick}>
+          <ShopPreviewFrame user={user} onCoverClick={handleCoverClick}>
             <SkeletonModules />
           </ShopPreviewFrame>
         </div>
@@ -415,7 +425,7 @@ export default function PreviewCanvas({ pendingCoverUrl }) {
     return (
       <div className={styles.previewWrap}>
         <div className={styles.previewInner}>
-          <ShopPreviewFrame user={user} modules={[]} onCoverClick={handleCoverClick} pendingCoverUrl={pendingCoverUrl}>
+          <ShopPreviewFrame user={user} onCoverClick={handleCoverClick} pendingCoverUrl={pendingCoverUrl}>
             <div
               className={styles.canvasDropZone}
               onDrop={handleCanvasDrop}
@@ -445,7 +455,7 @@ export default function PreviewCanvas({ pendingCoverUrl }) {
       onDragOver={handleCanvasDragOver}
     >
       <div className={styles.previewInner}>
-        <ShopPreviewFrame user={user} modules={modules} onCoverClick={handleCoverClick} pendingCoverUrl={pendingCoverUrl}>
+        <ShopPreviewFrame user={user} onCoverClick={handleCoverClick} pendingCoverUrl={pendingCoverUrl}>
           <DndContext
             sensors={sensors}
             collisionDetection={rectIntersection}
