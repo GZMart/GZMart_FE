@@ -20,9 +20,11 @@ import {
   LayoutDashboard,
   Loader2,
   ChevronRight,
+  Camera,
 } from 'lucide-react';
 
 import NotificationBell from './NotificationBell';
+import ImageSearchModal from './ImageSearchModal';
 
 // Fashion categories data from Guangzhou market
 const FAKE_CATEGORIES_DATA = [
@@ -1099,6 +1101,7 @@ const Header = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showImageSearchModal, setShowImageSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState({
     products: [],
@@ -1654,7 +1657,15 @@ const Header = () => {
                 <div className="position-relative flex-grow-1 w-100" ref={searchDropdownRef}>
                   <form onSubmit={handleSearchSubmit} className="input-group">
                     <span
-                      className="input-group-text border-0 pe-0 rounded-start"
+                      className="input-group-text border-0 pe-2 rounded-start"
+                      style={{ backgroundColor: '#F3F4F6', cursor: 'pointer' }}
+                      title={t('header.search_by_image') || 'Search by image'}
+                      onClick={() => setShowImageSearchModal(true)}
+                    >
+                      <Camera size={20} className="text-secondary" />
+                    </span>
+                    <span
+                      className="input-group-text border-0 pe-0 rounded-0"
                       style={{ backgroundColor: '#F3F4F6', cursor: 'pointer' }}
                       onClick={handleSearchIconClick}
                     >
@@ -2348,6 +2359,12 @@ const Header = () => {
           </div>
         </>
       )}
+
+      {/* Image Search Modal */}
+      <ImageSearchModal 
+        isOpen={showImageSearchModal} 
+        onClose={() => setShowImageSearchModal(false)} 
+      />
     </header>
   );
 };

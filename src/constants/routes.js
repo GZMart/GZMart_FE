@@ -12,6 +12,7 @@ export const PUBLIC_ROUTES = {
   DEALS: '/deals',
   PRODUCT_DETAILS: '/product/:id',
   SEARCH: '/search',
+  IMAGE_SEARCH: '/search/image',
   LOGIN: '/login',
   REGISTER: '/register',
   OTP_VERIFICATION: '/otp-verification',
