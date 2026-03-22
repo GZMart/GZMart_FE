@@ -13,8 +13,8 @@
   -moz-osx-font-smoothing: grayscale;
 
   /* Theme Colors */
-  --color-primary: #B13C36;
-  --color-secondary: #741E20;
+  --color-primary: #b13c36;
+  --color-secondary: #741e20;
   --color-dark: #1f2937;
   --color-light: #f9fafb;
   --color-white: #ffffff;
@@ -40,39 +40,58 @@
    ============================================================ */
 :root {
   /* Brand */
-  --sp-primary:         #1a56db;
-  --sp-primary-dark:    #0f3fa8;
-  --sp-primary-light:   #3b82f6;
+  --sp-primary: #1a56db;
+  --sp-primary-dark: #0f3fa8;
+  --sp-primary-light: #3b82f6;
   --sp-primary-gradient: linear-gradient(135deg, #1a56db 0%, #0f3fa8 100%);
 
   /* Surfaces */
-  --sp-bg:              #f8f9fa;
-  --sp-surface:         #ffffff;
-  --sp-surface-hover:   #f4f6f9;
-  --sp-active-bg:       #eef2ff;
-  --sp-hover-bg:        #f0f4ff;
+  --sp-bg: #f8f9fa;
+  --sp-surface: #ffffff;
+  --sp-surface-hover: #f4f6f9;
+  --sp-active-bg: #eef2ff;
+  --sp-hover-bg: #f0f4ff;
 
   /* Borders */
-  --sp-border:          #e8ecf0;
-  --sp-border-light:    #f1f3f5;
+  --sp-border: #e8ecf0;
+  --sp-border-light: #f1f3f5;
 
   /* Text */
-  --sp-text-primary:    #111827;
-  --sp-text-secondary:  #4b5563;
-  --sp-text-muted:      #9ca3af;
-  --sp-text-label:      #b0b7c3;
+  --sp-text-primary: #111827;
+  --sp-text-secondary: #4b5563;
+  --sp-text-muted: #9ca3af;
+  --sp-text-label: #b0b7c3;
 
   /* Status colors — consistent with sidebar dot */
-  --sp-blue:            #1a56db;
-  --sp-blue-bg:         #dbeafe;
+  --sp-blue: #1a56db;
+  --sp-blue-bg: #dbeafe;
 
   /* Focus ring */
-  --sp-focus-ring:      rgba(26, 86, 219, 0.18);
+  --sp-focus-ring: rgba(26, 86, 219, 0.18);
 
   /* Shadows */
-  --sp-shadow-sm:       0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-  --sp-shadow-md:       0 2px 8px rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.05);
-  --sp-primary-glow:    0 4px 14px rgba(26, 86, 219, 0.28);
+  --sp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --sp-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.05);
+  --sp-primary-glow: 0 4px 14px rgba(26, 86, 219, 0.28);
+}
+
+/* Shop Profile Page design tokens (match reference UI) */
+:root {
+  --shop-bg: #f8f9fa;
+  --shop-primary: #902421;
+  --shop-primary-container: #b13c36;
+  --shop-secondary: #b62506;
+  --shop-surface: #fff8f7;
+  --shop-surface-container: #ffe9e6;
+  --shop-surface-container-high: #fae3e0;
+  --shop-surface-container-low: #fff0ef;
+  --shop-surface-container-lowest: #ffffff;
+  --shop-surface-container-highest: #f4dddb;
+  --shop-outline: #8b716e;
+  --shop-outline-variant: #dfbfbc;
+  --shop-on-surface: #241917;
+  --shop-on-surface-variant: #58413f;
+  --shop-on-primary: #f8f9fa;
 }
 
 * {
@@ -231,7 +250,8 @@ body {
   border-color: var(--color-primary) !important;
   color: #ffffff !important;
 }
-.btn-primary:hover, .btn-primary:focus {
+.btn-primary:hover,
+.btn-primary:focus {
   background-color: var(--color-secondary) !important;
   border-color: var(--color-secondary) !important;
   color: #ffffff !important;
@@ -243,7 +263,8 @@ body {
 }
 
 /* Ensure price/emphasis readable on dark backgrounds */
-.price-on-dark, .text-price {
+.price-on-dark,
+.text-price {
   color: var(--color-secondary) !important;
   font-weight: 700;
 }

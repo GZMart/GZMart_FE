@@ -18,6 +18,7 @@ import purchaseOrderReducer from './slices/purchaseOrderSlice';
 import inventoryReducer from './slices/inventorySlice';
 import erpReducer from './slices/erpSlice';
 import chatReducer from './slices/chatSlice';
+import shopDecorationReducer from './slices/shopDecorationSlice';
 
 // Persist configuration
 const persistConfig = {
@@ -54,6 +55,7 @@ export const store = configureStore({
     inventory: inventoryReducer,
     erp: erpReducer,
     chat: chatReducer,
+    shopDecoration: shopDecorationReducer,
     // Add more reducers as needed:
     // products: productsReducer,
     // orders: ordersReducer,

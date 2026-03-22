@@ -40,6 +40,7 @@ const NAV_GROUPS = [
     label: 'SETTINGS',
     items: [
       { to: SELLER_ROUTES.PROFILE, icon: 'bi-person', label: 'Profile' },
+      { to: SELLER_ROUTES.SHOP_DECORATION, icon: 'bi-palette', label: 'Shop Decoration' },
       { to: '/seller/billing', icon: 'bi-credit-card', label: 'Billing' },
     ],
   },

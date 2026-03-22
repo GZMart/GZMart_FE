@@ -23,8 +23,8 @@
 }
 
 .uploadTrigger:hover {
-  border-color: #6366f1;
-  background: #f0f4ff;
+  border-color: #1a56db;
+  background: #eff6ff;
 }
 
 .uploadIcon {
@@ -33,7 +33,7 @@
 }
 
 .uploadTrigger:hover .uploadIcon {
-  color: #6366f1;
+  color: #1a56db;
 }
 
 .uploadText {
@@ -114,4 +114,13 @@
 
 .removeBtn:hover {
   background: rgba(239, 68, 68, 0.25);
+}
+
+.cropBtn {
+  border-color: rgba(26, 86, 219, 0.8);
+  color: #eff6ff;
+}
+
+.cropBtn:hover {
+  background: rgba(26, 86, 219, 0.25);
 }
