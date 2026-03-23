@@ -8,13 +8,20 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import styles from '../../../assets/styles/seller/Dashboard.module.css';
 
-export function OverallSalesCard({ chartData = [], loading = false }) {
+export function OverallSalesCard({
+  chartData = [],
+  loading = false,
+  period = 'This Month',
+  growth = 0,
+}) {
+  const isPositiveGrowth = Number(growth) >= 0;
+
   return (
-    <div className={styles.chartCard}>
+    <>
       <div
         style={{
           display: 'flex',
@@ -24,10 +31,9 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
         }}
       >
         <h3 className={styles.chartCardTitle}>Overall Sales</h3>
-        <button className={styles.dateButton}>
-          <Calendar size={16} />
-          This Month
-        </button>
+        <div className={styles.periodBadge}>
+          {period}
+        </div>
       </div>
 
       <div style={{ marginBottom: '24px' }}>
@@ -37,14 +43,18 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
               ? formatCurrency(chartData[chartData.length - 1].revenue || 0)
               : formatCurrency(0)}
           </div>
-          <span className={styles.trendup}>
-            <TrendingUp size={16} style={{ display: 'inline-block', marginRight: '4px' }} />
-            +13.02%
+          <span className={`${styles.trendup} ${!isPositiveGrowth ? styles.trenddown : ''}`}>
+            {isPositiveGrowth ? (
+              <TrendingUp size={16} style={{ display: 'inline-block', marginRight: '4px' }} />
+            ) : (
+              <TrendingDown size={16} style={{ display: 'inline-block', marginRight: '4px' }} />
+            )}
+            {isPositiveGrowth ? '+' : ''}{growth}%
           </span>
         </div>
       </div>
-      
-      <div className={styles.chartContainer}>
+
+      <div className={styles.chartCanvas}>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
@@ -88,6 +98,6 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

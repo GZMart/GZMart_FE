@@ -85,6 +85,17 @@ export const dashboardService = {
   getComparison: async (params = {}) => await axiosClient.get(`${BASE_URL}/comparison`, { params }),
 
   /**
+   * Get growth comparison with optional custom date range
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='week'] - Period type: 'week' | 'month' | 'year'
+   * @param {string} [params.startDate] - Start date for custom range (ISO format)
+   * @param {string} [params.endDate] - End date for custom range (ISO format)
+   * @returns {Promise} Growth comparison with revenueGrowth, profitGrowth, ordersGrowth
+   */
+  getGrowthComparison: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/growth-comparison`, { params }),
+
+  /**
    * Get profit and loss analysis by period
    * @param {object} params - Query parameters
    * @param {string} [params.period='daily'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'

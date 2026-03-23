@@ -1,21 +1,37 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, ShoppingCart, Zap, BarChart3, RefreshCw, TrendingUp, DollarSign } from 'lucide-react';
+import { CreditCard, ShoppingCart, RefreshCw, TrendingUp, DollarSign, Package, Truck, Wallet, Calendar, ChevronDown } from 'lucide-react';
 import dashboardService from '../../services/api/dashboardService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/Dashboard.module.css';
 import { OverallSalesCard } from '../../components/seller/dashboard/OverallSalesCard';
-import { StatCard } from '../../components/seller/dashboard/StatCard';
 import { ProductsTable } from '../../components/seller/dashboard/ProductsTable';
+
+// Period mapping: filter label → API period + chart grouping
+const PERIOD_OPTIONS = [
+  { label: 'This Week', value: 'week', apiPeriod: 'week', chartPeriod: 'week', xAxisFormat: 'day' },
+  { label: 'This Month', value: 'month', apiPeriod: 'month', chartPeriod: 'month', xAxisFormat: 'day' },
+  { label: 'This Year', value: 'year', apiPeriod: 'year', chartPeriod: 'monthly', xAxisFormat: 'month' },
+  { label: 'Custom Range', value: 'custom', apiPeriod: null, chartPeriod: 'daily', xAxisFormat: 'auto' },
+];
 
 const SellerDashboard = () => {
   const [loading, setLoading] = useState(false);
-  const [period, setPeriod] = useState('monthly');
+  const [period, setPeriod] = useState('month');
+  const [chartPeriod, setChartPeriod] = useState('month');
+  const [xAxisFormat, setXAxisFormat] = useState('day');
+  const [customRange, setCustomRange] = useState({ startDate: '', endDate: '' });
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [revenueTrend, setRevenueTrend] = useState([]);
   const [profitLossData, setProfitLossData] = useState([]);
   const [expenseData, setExpenseData] = useState(null);
+  const [growthData, setGrowthData] = useState({
+    revenueGrowth: 0,
+    profitGrowth: 0,
+    ordersGrowth: 0,
+  });
 
-  // Sample data for Overall Sales chart
+  // Sample data for chart fallback
   const sampleRevenueTrendData = [
     { _id: '1', revenue: 132450000 },
     { _id: '2', revenue: 128900000 },
@@ -31,21 +47,59 @@ const SellerDashboard = () => {
     { _id: '12', revenue: 348253650 },
   ];
 
-  // Fetch all dashboard data including P&L analytics
-  const fetchDashboard = async (selectedPeriod = 'monthly') => {
+  // Map period value to API period and chart period
+  const getPeriodConfig = (p, custom = null) => {
+    if (p === 'custom' && custom) {
+      return { apiPeriod: 'week', chartPeriod: 'daily', xAxisFormat: 'auto' };
+    }
+    const config = PERIOD_OPTIONS.find(opt => opt.value === p) || PERIOD_OPTIONS[1];
+    return {
+      apiPeriod: config.apiPeriod || 'week',
+      chartPeriod: config.chartPeriod,
+      xAxisFormat: config.xAxisFormat,
+    };
+  };
+
+  // Fetch all dashboard data
+  const fetchDashboard = async (selectedPeriod = 'month', customDateRange = null) => {
     try {
       setLoading(true);
-      const [dashResponse, trendResponse, profitLossResponse, expenseResponse] = await Promise.all([
+      const config = getPeriodConfig(selectedPeriod, customDateRange);
+      setChartPeriod(config.chartPeriod);
+      setXAxisFormat(config.xAxisFormat);
+
+      // Build params for API calls
+      const trendParams = { period: config.chartPeriod };
+      const profitLossParams = { period: config.chartPeriod };
+      const expenseParams = { period: config.chartPeriod };
+
+      // Build growth comparison params
+      const growthParams = { period: config.apiPeriod };
+      if (customDateRange) {
+        growthParams.startDate = customDateRange.startDate;
+        growthParams.endDate = customDateRange.endDate;
+      }
+
+      const [dashResponse, trendResponse, profitLossResponse, expenseResponse, growthResponse] = await Promise.all([
         dashboardService.getComplete(),
-        dashboardService.getRevenueTrend({ period: selectedPeriod }),
-        dashboardService.getProfitLossAnalysis({ period: selectedPeriod }),
-        dashboardService.getExpenseAnalysis({ period: selectedPeriod }),
+        dashboardService.getRevenueTrend(trendParams),
+        dashboardService.getProfitLossAnalysis(profitLossParams),
+        dashboardService.getExpenseAnalysis(expenseParams),
+        dashboardService.getGrowthComparison(growthParams),
       ]);
 
       setDashboardData(dashResponse.data);
       setRevenueTrend(trendResponse.data && trendResponse.data.length > 0 ? trendResponse.data : sampleRevenueTrendData);
       setProfitLossData(profitLossResponse.data || []);
       setExpenseData(expenseResponse.data || null);
+
+      if (growthResponse.data) {
+        setGrowthData({
+          revenueGrowth: growthResponse.data.revenueGrowth || 0,
+          profitGrowth: growthResponse.data.profitGrowth || 0,
+          ordersGrowth: growthResponse.data.ordersGrowth || 0,
+        });
+      }
     } catch (error) {
       console.error('Dashboard fetch error:', error);
       setRevenueTrend(sampleRevenueTrendData);
@@ -55,26 +109,38 @@ const SellerDashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboard(period);
+    fetchDashboard(period, period === 'custom' ? customRange : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle period change
   const handlePeriodChange = (newPeriod) => {
+    if (newPeriod === 'custom') {
+      setShowDatePicker(true);
+      return;
+    }
     setPeriod(newPeriod);
+    setShowDatePicker(false);
     fetchDashboard(newPeriod);
+  };
+
+  // Handle custom range apply
+  const handleApplyCustomRange = () => {
+    if (customRange.startDate && customRange.endDate) {
+      setPeriod('custom');
+      setShowDatePicker(false);
+      fetchDashboard('custom', customRange);
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchDashboard(period, period === 'custom' ? customRange : null);
   };
 
   if (loading && !dashboardData) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-        }}
-      >
+      <div className={styles.loadingContainer}>
         <div>Loading...</div>
       </div>
     );
@@ -89,18 +155,40 @@ const SellerDashboard = () => {
             <p>You can add your credit and debit card details here for future purchases.</p>
           </div>
         </div>
-        <div style={{ textAlign: 'center', padding: '40px' }}>No data available</div>
+        <div className={styles.noDataContainer}>No data available</div>
       </div>
     );
   }
 
-  const { revenue, bestSellers, orderStats, customerStats } = dashboardData;
+  const { bestSellers, orderStats, customerStats } = dashboardData;
 
   // Calculate totals from profit-loss data
   const totalProfit = profitLossData.reduce((sum, item) => sum + (item.profit || 0), 0);
   const totalCost = profitLossData.reduce((sum, item) => sum + (item.cost || 0), 0);
   const totalRevenue = profitLossData.reduce((sum, item) => sum + (item.revenue || 0), 0);
   const profitMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
+
+  const totalOrders = profitLossData.reduce((sum, item) => sum + (item.orders || 0), 0);
+
+  // Format growth percentage for display
+  const formatGrowth = (value) => {
+    const num = Number(value) || 0;
+    const prefix = num > 0 ? '+' : '';
+    return `${prefix}${num}%`;
+  };
+
+  // Determine growth color class
+  const getGrowthClass = (value) => {
+    if (value > 0) return styles.growthPositive;
+    if (value < 0) return styles.growthNegative;
+    return '';
+  };
+
+  // Get current period label
+  const currentPeriodLabel = PERIOD_OPTIONS.find(p => p.value === period)?.label || 'This Month';
+  const displayPeriodLabel = period === 'custom' && customRange.startDate
+    ? `${new Date(customRange.startDate).toLocaleDateString()} - ${new Date(customRange.endDate).toLocaleDateString()}`
+    : currentPeriodLabel;
 
   return (
     <div className={styles.container}>
@@ -110,32 +198,50 @@ const SellerDashboard = () => {
           <h1>Dashboard</h1>
           <p>You can add your credit and debit card details here for future purchases.</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className={styles.periodFilterContainer}>
           {/* Period Filter Buttons */}
-          <div style={{ display: 'flex', gap: '6px', backgroundColor: '#f5f5f5', padding: '4px', borderRadius: '6px' }}>
-            {['weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
+          <div className={styles.periodFilterButtons}>
+            {PERIOD_OPTIONS.map((p) => (
               <button
-                key={p}
-                onClick={() => handlePeriodChange(p)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '4px',
-                  border: period === p ? '2px solid #1890ff' : '1px solid #ddd',
-                  backgroundColor: period === p ? '#e6f7ff' : '#fff',
-                  color: period === p ? '#1890ff' : '#666',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: period === p ? '600' : '500',
-                  transition: 'all 0.2s ease',
-                }}
+                key={p.value}
+                onClick={() => handlePeriodChange(p.value)}
+                className={`${styles.periodButton} ${period === p.value ? styles.active : ''}`}
               >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
+                {p.label}
               </button>
             ))}
           </div>
-          
+
+          {/* Custom Range Date Picker */}
+          {showDatePicker && (
+            <div className={styles.customRangePicker}>
+              <input
+                type="date"
+                className={styles.dateInput}
+                value={customRange.startDate}
+                onChange={(e) => setCustomRange({ ...customRange, startDate: e.target.value })}
+                placeholder="Start date"
+              />
+              <span style={{ color: '#666' }}>→</span>
+              <input
+                type="date"
+                className={styles.dateInput}
+                value={customRange.endDate}
+                onChange={(e) => setCustomRange({ ...customRange, endDate: e.target.value })}
+                placeholder="End date"
+              />
+              <button
+                className={styles.applyBtn}
+                onClick={handleApplyCustomRange}
+                disabled={!customRange.startDate || !customRange.endDate}
+              >
+                Apply
+              </button>
+            </div>
+          )}
+
           <button
-            onClick={() => fetchDashboard(period)}
+            onClick={handleRefresh}
             disabled={loading}
             className={styles.refreshBtn}
           >
@@ -145,157 +251,145 @@ const SellerDashboard = () => {
         </div>
       </div>
 
-      {/* Overall Sales & Stat Cards Row */}
-      <div className={styles.chartAndStats}>
-        {/* Overall Sales Chart - 2/3 */}
-        <OverallSalesCard chartData={revenueTrend} loading={loading} />
-
-        {/* Stat Cards - 1/3 */}
-        <div className={styles.statCardsGrid}>
-          <StatCard
-            icon={CreditCard}
-            label="Total Sales"
-            value={formatCurrency(revenue?.total || 0)}
-            trend="13.02%"
-            trendUp={true}
-            fromLabel="From Jan"
-          />
-          <StatCard
-            icon={ShoppingCart}
-            label="Avg. Order Value"
-            value={formatCurrency(
-              orderStats?.total > 0 ? (revenue?.total || 0) / orderStats?.total : 0
-            )}
-            trend="3.02%"
-            trendUp={false}
-            fromLabel="From Jan"
-          />
-          <StatCard
-            icon={Zap}
-            label="Online Sessions"
-            value={`${(orderStats?.total || 0).toLocaleString('vi-VN')} orders`}
-            trend="9.58%"
-            trendUp={true}
-            fromLabel="From Jan"
-          />
-          <StatCard
-            icon={BarChart3}
-            label="Conversion Rate"
-            value={`${(customerStats?.repeatedPurchaseRate || 0).toFixed(2)}%`}
-            trend="0.35%"
-            trendUp={false}
-            fromLabel="From Jan"
-          />
-        </div>
-      </div>
-
-      {/* Profit & Loss Analytics Section */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '16px',
-        marginTop: '24px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <DollarSign size={20} style={{ color: '#10b981', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Gross Profit</span>
+      {/* ROW 1: KEY METRICS - 4 Main KPIs (Prominent) */}
+      <div className={styles.kpiGrid}>
+        {/* Total Revenue - KPI 1 */}
+        <div className={`${styles.kpiCard} ${styles.kpiCardRevenue}`}>
+          <div className={styles.kpiCardHeader}>
+            <DollarSign size={24} style={{ color: '#1890ff' }} className={styles.kpiCardIcon} />
+            <span className={styles.kpiCardLabel}>TOTAL REVENUE</span>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: totalProfit >= 0 ? '#10b981' : '#ef4444' }}>
-            {formatCurrency(totalProfit)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            Period: {period}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <ShoppingCart size={20} style={{ color: '#3b82f6', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Total Cost</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3b82f6' }}>
-            {formatCurrency(totalCost)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            (COGS + Shipping)
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <TrendingUp size={20} style={{ color: '#f59e0b', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Profit Margin</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>
-            {profitMargin}%
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            of revenue
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <DollarSign size={20} style={{ color: '#8b5cf6', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Total Revenue</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8b5cf6' }}>
+          <div className={`${styles.kpiCardValue} ${styles.kpiCardValueRevenue}`}>
             {formatCurrency(totalRevenue)}
           </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            from sales
+          <div className={styles.kpiCardSubtitle}>
+            <span className={`${styles.growthBadge} ${getGrowthClass(growthData.revenueGrowth)}`}>
+              {formatGrowth(growthData.revenueGrowth)} vs last period
+            </span>
+          </div>
+        </div>
+
+        {/* Total Profit - KPI 2 */}
+        <div className={`${styles.kpiCard} ${totalProfit >= 0 ? styles.kpiCardProfit : styles.kpiCardProfitNegative}`}>
+          <div className={styles.kpiCardHeader}>
+            <TrendingUp size={24} style={{ color: totalProfit >= 0 ? '#10b981' : '#ef4444' }} className={styles.kpiCardIcon} />
+            <span className={styles.kpiCardLabel}>TOTAL PROFIT</span>
+          </div>
+          <div className={`${styles.kpiCardValue} ${totalProfit >= 0 ? styles.kpiCardValueProfit : styles.kpiCardValueProfitNegative}`}>
+            {formatCurrency(totalProfit)}
+          </div>
+          <div className={styles.kpiCardSubtitle}>
+            Margin: <strong>{profitMargin}%</strong>
+            <span className={`${styles.growthBadgeSmall} ${getGrowthClass(growthData.profitGrowth)}`} style={{ marginLeft: '8px' }}>
+              {formatGrowth(growthData.profitGrowth)}
+            </span>
+          </div>
+        </div>
+
+        {/* Total Orders - KPI 3 */}
+        <div className={`${styles.kpiCard} ${styles.kpiCardOrders}`}>
+          <div className={styles.kpiCardHeader}>
+            <ShoppingCart size={24} style={{ color: '#722ed1' }} className={styles.kpiCardIcon} />
+            <span className={styles.kpiCardLabel}>TOTAL ORDERS</span>
+          </div>
+          <div className={`${styles.kpiCardValue} ${styles.kpiCardValueOrders}`}>
+            {totalOrders}
+          </div>
+          <div className={styles.kpiCardSubtitle}>
+            <span className={`${styles.growthBadge} ${getGrowthClass(growthData.ordersGrowth)}`}>
+              {formatGrowth(growthData.ordersGrowth)} vs last period
+            </span>
+          </div>
+        </div>
+
+        {/* Avg Order Value - KPI 4 */}
+        <div className={`${styles.kpiCard} ${styles.kpiCardAOV}`}>
+          <div className={styles.kpiCardHeader}>
+            <CreditCard size={24} style={{ color: '#faad14' }} className={styles.kpiCardIcon} />
+            <span className={styles.kpiCardLabel}>AVG ORDER VALUE</span>
+          </div>
+          <div className={`${styles.kpiCardValue} ${styles.kpiCardValueAOV}`}>
+            {formatCurrency(totalOrders > 0 ? totalRevenue / totalOrders : 0)}
+          </div>
+          <div className={styles.kpiCardSubtitle}>
+            per order (Conversion: {(customerStats?.repeatedPurchaseRate || 0).toFixed(2)}%)
           </div>
         </div>
       </div>
 
-      {/* Expense Breakdown */}
+      {/* ROW 2: Revenue Trend Chart */}
+      <div className={styles.chartContainer}>
+        <OverallSalesCard
+          chartData={revenueTrend}
+          loading={loading}
+          period={displayPeriodLabel}
+          growth={growthData.revenueGrowth}
+        />
+      </div>
+
+      {/* ROW 3: Cost Summary (Aligned with KPI design) */}
+      <div className={styles.costSummaryGrid}>
+        {/* Total Cost */}
+        <div className={`${styles.kpiCard} ${styles.kpiCardCost}`}>
+          <div className={styles.kpiCardHeader}>
+            <ShoppingCart size={24} style={{ color: '#3b82f6' }} className={styles.kpiCardIcon} />
+            <span className={styles.kpiCardLabel}>TOTAL COST</span>
+          </div>
+          <div className={`${styles.kpiCardValue} ${styles.kpiCardValueCost}`}>
+            {formatCurrency(totalCost)}
+          </div>
+          <div className={styles.kpiCardSubtitle}>
+            COGS + Shipping combined
+          </div>
+        </div>
+
+        {/* Profit Margin */}
+        <div className={`${styles.kpiCard} ${styles.kpiCardMargin}`}>
+          <div className={styles.kpiCardHeader}>
+            <TrendingUp size={24} style={{ color: '#f59e0b' }} className={styles.kpiCardIcon} />
+            <span className={styles.kpiCardLabel}>PROFIT MARGIN</span>
+          </div>
+          <div className={`${styles.kpiCardValue} ${styles.kpiCardValueMargin}`}>
+            {profitMargin}%
+          </div>
+          <div className={styles.kpiCardSubtitle}>
+            of total revenue
+          </div>
+        </div>
+      </div>
+
+      {/* ROW 4: Expense Breakdown */}
       {expenseData && (
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          marginBottom: '24px'
-        }}>
-          <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Expense Breakdown</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <div>
-              <span style={{ fontSize: '14px', color: '#666' }}>Product Cost (COGS)</span>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6', marginTop: '4px' }}>
+        <div className={styles.expenseBreakdownContainer}>
+          <h3 className={styles.expenseTitle}>
+            <Wallet size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            Expense Breakdown
+          </h3>
+          <div className={styles.expenseGrid}>
+            <div className={styles.expenseItem}>
+              <span className={styles.expenseItemLabel}>
+                <Package size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                PRODUCT COST (COGS)
+              </span>
+              <div className={`${styles.expenseItemValue} ${styles.expenseItemValueCOGS}`}>
                 {formatCurrency(expenseData.totalProductCost || 0)}
               </div>
             </div>
-            <div>
-              <span style={{ fontSize: '14px', color: '#666' }}>Shipping Cost</span>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f59e0b', marginTop: '4px' }}>
+            <div className={styles.expenseItem}>
+              <span className={styles.expenseItemLabel}>
+                <Truck size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                SHIPPING COST
+              </span>
+              <div className={`${styles.expenseItemValue} ${styles.expenseItemValueShipping}`}>
                 {formatCurrency(expenseData.totalShippingCost || 0)}
               </div>
             </div>
-            <div>
-              <span style={{ fontSize: '14px', color: '#666' }}>Total Expense</span>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444', marginTop: '4px' }}>
+            <div className={styles.expenseItem}>
+              <span className={styles.expenseItemLabel}>
+                <Wallet size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                TOTAL EXPENSE
+              </span>
+              <div className={`${styles.expenseItemValue} ${styles.expenseItemValueTotal}`}>
                 {formatCurrency(expenseData.totalExpense || 0)}
               </div>
             </div>

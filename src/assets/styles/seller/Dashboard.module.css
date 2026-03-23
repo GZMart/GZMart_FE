@@ -153,7 +153,110 @@
   border: 1px solid #b7eb8f;
 }
 
-.chartContainer {
+.trenddown {
+  color: #ff4d4f;
+  background-color: #fff1f0;
+  border-color: #ffccc7;
+}
+
+/* Period Badge */
+.periodBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s;
+}
+
+/* Growth Badges */
+.growthBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.growthBadgeSmall {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.growthPositive {
+  color: #52c41a;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.growthNegative {
+  color: #ff4d4f;
+  background-color: #fff1f0;
+  border: 1px solid #ffccc7;
+}
+
+/* Custom Range Picker */
+.customRangePicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dateInput {
+  padding: 6px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #333;
+  background: #fff;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.applyBtn {
+  padding: 6px 14px;
+  background: #1890ff;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.applyBtn:hover {
+  background: #096dd9;
+}
+
+.applyBtn:disabled {
+  background: #d9d9d9;
+  cursor: not-allowed;
+}
+
+.chartCanvas {
   height: 320px;
   margin-top: 16px;
   background: #fafafa;
@@ -385,6 +488,296 @@
   padding: 12px;
   border-bottom: 1px solid #f0f0f0;
   color: #333333;
+}
+
+/* Period Filter Controls */
+.periodFilterContainer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.periodFilterButtons {
+  display: flex;
+  gap: 6px;
+  background-color: #f5f5f5;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.periodButton {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #666;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.periodButton:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.periodButton.active {
+  border: 2px solid #1890ff;
+  background-color: #e6f7ff;
+  color: #1890ff;
+  font-weight: 600;
+}
+
+/* KPI Grid Container */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+  margin-bottom: 32px;
+}
+
+/* KPI Card Base Styles */
+.kpiCard {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* KPI Card Variants */
+.kpiCardRevenue {
+  border-left: 4px solid #1890ff;
+}
+
+.kpiCardProfit {
+  border-left: 4px solid #10b981;
+}
+
+.kpiCardProfitNegative {
+  border-left: 4px solid #ef4444;
+}
+
+.kpiCardOrders {
+  border-left: 4px solid #722ed1;
+}
+
+.kpiCardAOV {
+  border-left: 4px solid #faad14;
+}
+
+.kpiCardCost {
+  border-left: 4px solid #3b82f6;
+}
+
+.kpiCardMargin {
+  border-left: 4px solid #f59e0b;
+}
+
+.kpiCardExpense {
+  border-left: 4px solid #722ed1;
+}
+
+/* KPI Card Header (Icon + Label) */
+.kpiCardHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kpiCardIcon {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.kpiCardLabel {
+  font-size: 13px;
+  color: #999;
+  font-weight: 600;
+}
+
+/* KPI Card Value and Subtitle */
+.kpiCardValue {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.kpiCardValueRevenue {
+  color: #1890ff;
+}
+
+.kpiCardValueProfit {
+  color: #10b981;
+}
+
+.kpiCardValueProfitNegative {
+  color: #ef4444;
+}
+
+.kpiCardValueOrders {
+  color: #722ed1;
+}
+
+.kpiCardValueAOV {
+  color: #faad14;
+}
+
+.kpiCardValueCost {
+  color: #3b82f6;
+}
+
+.kpiCardValueMargin {
+  color: #f59e0b;
+}
+
+.kpiCardSubtitle {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Revenue Trend Chart Container */
+.chartContainer {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #1890ff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  margin-bottom: 24px;
+}
+
+.chartContainer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Cost Summary Grid */
+.costSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+/* Expense Breakdown Container */
+.expenseBreakdownContainer {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #722ed1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  margin-bottom: 24px;
+}
+
+.expenseBreakdownContainer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.expenseTitle {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+}
+
+.expenseGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.expenseItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.expenseItemLabel {
+  font-size: 13px;
+  color: #999;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.expenseItemValue {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.expenseItemValueCOGS {
+  color: #3b82f6;
+}
+
+.expenseItemValueShipping {
+  color: #f59e0b;
+}
+
+.expenseItemValueTotal {
+  color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .costSummaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .expenseGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .costSummaryGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .expenseGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .periodFilterButtons {
+    flex-wrap: wrap;
+  }
+}
+
+/* Loading and Empty States */
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.noDataContainer {
+  text-align: center;
+  padding: 40px;
 }
 
 .table tbody tr {
