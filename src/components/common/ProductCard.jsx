@@ -8,6 +8,9 @@ import { getProductImages } from '@utils/data/ProductsPage_MockData';
 import * as wishlistService from '@/services/api/wishlistService';
 import styles from '@assets/styles/ProductCard.module.css';
 
+// Placeholder when product has no image (avoid empty src = broken image)
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f1f5f9" width="200" height="200"/%3E%3Ctext fill="%2394a3b8" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="14"%3ENo image%3C/text%3E%3C/svg%3E';
+
 const ProductCard = React.forwardRef(({ product }, ref) => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
@@ -17,9 +20,11 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
   const productImage = (() => {
     if (product.tier_variations && product.tier_variations.length > 0) {
       const images = getProductImages(product);
-      return images.length > 0 ? images[0] : product.image;
+      const url = images.length > 0 ? images[0] : product.image;
+      return url && String(url).trim() ? url : PLACEHOLDER_IMAGE;
     }
-    return product.image;
+    const url = product.image;
+    return url && String(url).trim() ? url : PLACEHOLDER_IMAGE;
   })();
 
   const discountPercentage =

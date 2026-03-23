@@ -1265,3 +1265,208 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ─── Expand Toggle Button ───────────────────────────────────────── */
+.tdExpand {
+  width: 36px;
+  padding: 0.5rem 0.25rem 0.5rem 0.75rem !important;
+  vertical-align: middle;
+}
+
+.expandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.expandBtn:hover {
+  background: #e0f2fe;
+  border-color: #1a56db;
+  color: #1a56db;
+}
+.expandBtnOpen {
+  background: #dbeafe;
+  border-color: #1a56db;
+  color: #1a56db;
+}
+
+/* Expanded row — subtle left accent */
+.trExpanded {
+  background: #f0f7ff !important;
+  border-left: 3px solid #1a56db;
+}
+
+/* ─── Lot Breakdown Sub-Row ──────────────────────────────────────── */
+.lotBreakdownRow {
+  background: #f7faff;
+}
+
+.lotBreakdownCell {
+  padding: 0 !important;
+  border-bottom: 2px solid #bfdbfe !important;
+}
+
+.lotBreakdownPanel {
+  padding: 0.875rem 1.25rem 1rem 2.5rem;
+  border-top: 1px solid #dbeafe;
+  animation: expandIn 150ms ease;
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lotPanelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1a56db;
+  margin-bottom: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lotLoading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+  padding: 0.5rem 0;
+}
+
+.lotError {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  padding: 0.5rem 0;
+}
+
+.lotEmpty {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+/* ─── Nested Lot Table ───────────────────────────────────────────── */
+.lotTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.lotTable thead tr {
+  background: #e8f1ff;
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.lotTable th {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.675rem;
+  font-weight: 700;
+  color: #3b5fad;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.lotTable td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e8f1ff;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.lotTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lotTable tbody tr:hover {
+  background: #eff6ff;
+}
+
+.lotRowLow {
+  background: #fffbeb !important;
+}
+.lotRowLow:hover {
+  background: #fef3c7 !important;
+}
+
+/* Lot cells */
+.lotBadge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lotPoLink {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.lotPoLink:hover {
+  text-decoration: underline;
+}
+
+.lotManualBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.lotSupplier {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.lotQty {
+  color: #64748b;
+}
+
+.lotRemaining {
+  font-weight: 700;
+  color: #059669;
+}
+.lotRemainingLow {
+  color: #d97706;
+}
+
+.lotCost {
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+}
+

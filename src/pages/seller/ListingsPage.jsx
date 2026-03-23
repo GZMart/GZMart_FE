@@ -307,8 +307,8 @@ const ListingsPage = () => {
           <>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
-                <thead>
-                  <tr className={styles.thead}>
+                <thead className={styles.thead}>
+                  <tr>
                     <th className={styles.th} style={{ width: 40 }}>
                       #
                     </th>
@@ -481,7 +481,7 @@ const ListingsPage = () => {
                                 </svg>
                               )}
                             </Dropdown.Toggle>
-                            <Dropdown.Menu>
+                            <Dropdown.Menu renderOnMount popperConfig={{ strategy: 'fixed', modifiers: [{ name: 'computeStyles', options: { adaptive: false } }] }}>
                               <Dropdown.Item onClick={() => handleEditItem(product)}>
                                 <i className="bi bi-pencil me-2" />
                                 Edit
