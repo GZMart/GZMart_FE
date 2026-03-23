@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ProductDrawer from '../../components/seller/listings/ProductDrawer';
 import ListingsPagination from '../../components/seller/listings/ListingsPagination';
 import SortableHeader, { useSortState, sortRows } from '../../components/common/SortableHeader';
+import AiPriceSuggestModal from '../../components/seller/listings/AiPriceSuggestModal';
+import AiPriceDetailModal from '../../components/seller/listings/AiPriceDetailModal';
 import { productService } from '../../services/api/productService';
-import { useSearchParams } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/ListingsPage.module.css';
 
@@ -47,6 +48,9 @@ const ListingsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [aiModalProduct, setAiModalProduct] = useState(null); // product for AI price modal
+  /** Competitor detail modal — separate from batch modal so closing batch keeps this open */
+  const [aiVariantDetail, setAiVariantDetail] = useState(null);
 
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState(searchParams.get('status') || 'all');
@@ -78,12 +82,16 @@ const ListingsPage = () => {
   const mapProduct = (p) => {
     const categoryName =
       typeof p.categoryId === 'object' ? p.categoryId?.name : (p.category?.name ?? 'Uncategorized');
+    const prices = (p.models || []).map((m) => m.price).filter((x) => typeof x === 'number');
+    const minPrice = prices.length ? Math.min(...prices) : p.originalPrice || 0;
+    const maxPrice = prices.length ? Math.max(...prices) : p.originalPrice || 0;
     return {
       id: p._id,
       image: p.images?.[0] || p.tiers?.[0]?.images?.[0] || null,
       name: p.name,
       category: categoryName || 'Uncategorized',
-      price: p.originalPrice,
+      minPrice,
+      maxPrice,
       status: p.status,
       sku: p.models?.[0]?.sku || '—',
       brand: p.brand || '—',
@@ -149,6 +157,55 @@ const ListingsPage = () => {
       setLoading(false);
     }
   };
+
+  // Called when seller clicks "Apply" in the AI price panel (legacy single-variant flow).
+  // Opens ProductDrawer in edit mode so seller can review before saving.
+  const handleAiApply = useCallback(async (product, suggestedPrice) => {
+    try {
+      setLoading(true);
+      const response = await productService.getById(product.id);
+      if (response.success) {
+        // Attach suggestedPrice as a hint for ProductDrawer to pre-fill
+        setEditingProduct({ ...response.data, _suggestedPrice: suggestedPrice });
+        setShowAddModal(true);
+      }
+    } catch (error) {
+      console.error('Error opening product for AI price apply:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // [Batch] Called when seller selects variants in AiPriceSuggestModal and clicks Apply.
+  // Opens ProductDrawer with pre-filled suggested prices per model.
+  const handleAiBatchApply = useCallback(async (product, changes) => {
+    try {
+      setLoading(true);
+      const response = await productService.getById(product.id);
+      if (response.success) {
+        // Inject suggested prices into the models array
+        const priceMap = new Map(changes.map((c) => [c.modelId, c.suggestedPrice]));
+        const updatedModels = (response.data.models || []).map((m) => {
+          const newPrice = priceMap.get(m._id?.toString());
+          return newPrice != null ? { ...m, price: newPrice } : m;
+        });
+        setEditingProduct({
+          ...response.data,
+          models: updatedModels,
+          _aiPriceChanges: changes, // track what AI suggested for audit
+        });
+        setShowAddModal(true);
+      }
+    } catch (error) {
+      console.error('Error opening product for AI batch price apply:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleOpenAiModal = useCallback((product) => {
+    setAiModalProduct(product);
+  }, []);
 
   const handleToggleVisibility = useCallback(async (product) => {
     const newStatus = product.status === 'inactive' ? 'active' : 'inactive';
@@ -440,7 +497,25 @@ const ListingsPage = () => {
                           <span className={styles.sku}>{product.sku}</span>
                         </td>
                         <td className={styles.td} style={{ textAlign: 'right' }}>
-                          <span className={styles.price}>{formatCurrency(product.price)}</span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                            {product.minPrice !== product.maxPrice ? (
+                              <span className={styles.price}>
+                                {formatCurrency(product.minPrice)} &ndash; {formatCurrency(product.maxPrice)}
+                              </span>
+                            ) : (
+                              <span className={styles.price}>{formatCurrency(product.minPrice)}</span>
+                            )}
+                            <button
+                              className={styles.aiBtn}
+                              onClick={() => handleOpenAiModal(product)}
+                              title="AI gợi ý giá cho tất cả variants"
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
+                              </svg>
+                              AI Giá
+                            </button>
+                          </div>
                         </td>
                         <td className={styles.td} style={{ textAlign: 'center' }}>
                           <span
@@ -544,6 +619,53 @@ const ListingsPage = () => {
         onSuccess={fetchListings}
         editingProduct={editingProduct}
       />
+
+      <AiPriceSuggestModal
+        show={!!aiModalProduct}
+        product={aiModalProduct}
+        onApply={(changes) => {
+          if (aiModalProduct && changes.length > 0) {
+            handleAiBatchApply(aiModalProduct, changes);
+          }
+        }}
+        onClose={() => setAiModalProduct(null)}
+        onViewDetail={({ detailResult, batchData }) => {
+          setAiVariantDetail({
+            detailResult,
+            batchData,
+            productSnapshot: aiModalProduct,
+          });
+        }}
+      />
+
+      {aiVariantDetail && (
+        <AiPriceDetailModal
+          show
+          data={{
+            suggestedPrice: aiVariantDetail.detailResult.suggestedPrice,
+            reasoning: aiVariantDetail.detailResult.reasoning,
+            riskLevel: aiVariantDetail.detailResult.riskLevel,
+            warning: aiVariantDetail.detailResult.warning,
+            warningMessage: aiVariantDetail.detailResult.warningMessage,
+            discountPct: aiVariantDetail.detailResult.discountPct,
+            marketData: aiVariantDetail.batchData.marketData,
+            competitors: aiVariantDetail.batchData.competitors,
+            product: {
+              ...aiVariantDetail.batchData.product,
+              currentPrice: aiVariantDetail.detailResult.currentPrice,
+              modelId: aiVariantDetail.detailResult.modelId,
+              modelSku: aiVariantDetail.detailResult.sku,
+            },
+          }}
+          product={{
+            id: aiVariantDetail.productSnapshot?.id,
+            name: aiVariantDetail.productSnapshot?.name,
+            price: aiVariantDetail.detailResult.currentPrice,
+          }}
+          onApply={() => setAiVariantDetail(null)}
+          onClose={() => setAiVariantDetail(null)}
+        />
+      )}
     </div>
   );
 };
