@@ -549,9 +549,10 @@
 
 /* ── Variant count badge ────────────────────────────────────────── */
 .variantCountBadge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
@@ -564,6 +565,31 @@
 .overLimitBadge {
   color: #dc2626;
   font-size: 11px;
+}
+.aiSuggestBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  height: 22px;
+  background: #fff;
+  border: 1px solid #c7d2fe;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a56db;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.aiSuggestBtn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+.aiSuggestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Media blocks ───────────────────────────────────────────────── */
@@ -992,4 +1018,22 @@
 .mediaRow .mediaBlock {
   flex: 1;
   min-width: 160px;
+}
+
+/* ── Variant mode — pricing fields are collapsed, replaced by per-variant table ─ */
+.variantPricingPlaceholder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.variantPricingPlaceholderIcon {
+  color: #94a3b8;
+  flex-shrink: 0;
 }
