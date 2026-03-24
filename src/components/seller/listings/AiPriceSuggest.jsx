@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
@@ -39,11 +40,15 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
 
   // Close panel on outside click (panel is portaled — check both roots)
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+return;
+}
     const handler = (e) => {
       const inAnchor = anchorRef.current?.contains(e.target);
       const inPanel = panelRef.current?.contains(e.target);
-      if (!inAnchor && !inPanel) setOpen(false);
+      if (!inAnchor && !inPanel) {
+setOpen(false);
+}
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -51,7 +56,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
 
   // Fixed position under anchor; flip above if clipped (table card uses overflow:hidden)
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return;
+    if (!open || !anchorRef.current) {
+return;
+}
 
     const updatePosition = () => {
       const ar = anchorRef.current.getBoundingClientRect();
@@ -66,7 +73,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
       if (top + h > window.innerHeight - VIEW_MARGIN) {
         top = ar.top - h - PANEL_GAP;
       }
-      if (top < VIEW_MARGIN) top = VIEW_MARGIN;
+      if (top < VIEW_MARGIN) {
+top = VIEW_MARGIN;
+}
       setPanelPos({ top, left });
     };
 
@@ -74,7 +83,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
     const ro = new ResizeObserver(updatePosition);
     const rafId = requestAnimationFrame(() => {
       updatePosition();
-      if (panelRef.current) ro.observe(panelRef.current);
+      if (panelRef.current) {
+ro.observe(panelRef.current);
+}
     });
     window.addEventListener('scroll', updatePosition, true);
     window.addEventListener('resize', updatePosition);
@@ -442,6 +453,17 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
       )}
     </div>
   );
+};
+
+AiPriceSuggest.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string,
+    modelId: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
+  onApply: PropTypes.func.isRequired,
+  modelId: PropTypes.string,
 };
 
 export default AiPriceSuggest;

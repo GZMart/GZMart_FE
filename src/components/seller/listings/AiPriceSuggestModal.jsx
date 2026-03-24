@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
@@ -32,15 +33,23 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
 
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+return;
+}
     document.body.classList.add('drawer-open');
     return () => document.body.classList.remove('drawer-open');
   }, [show]);
 
   // Close on Escape
   useEffect(() => {
-    if (!show) return;
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    if (!show) {
+return;
+}
+    const handler = (e) => {
+ if (e.key === 'Escape') {
+onClose();
+} 
+};
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [show, onClose]);
@@ -59,7 +68,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
 
   // Re-fetch when strategy changes (user picks a different strategy after modal is open)
   useEffect(() => {
-    if (!show || status === 'loading') return;
+    if (!show || status === 'loading') {
+return;
+}
     setStatus('loading');
     setData(null);
     setSelected(new Set());
@@ -117,7 +128,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
     return (tierIndex || [])
       .map((idx, tierIdx) => {
         const tier = tiers[tierIdx];
-        if (!tier) return `?`;
+        if (!tier) {
+return `?`;
+}
         const opt = tier.options?.[idx];
         return typeof opt === 'object' ? opt?.value : opt;
       })
@@ -132,7 +145,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
   };
 
   const toggleAll = () => {
-    if (!data?.results) return;
+    if (!data?.results) {
+return;
+}
     const allIds = data.results.map((r) => r.modelId);
     if (selected.size === allIds.length) {
       setSelected(new Set());
@@ -142,7 +157,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
   };
 
   const handleApply = () => {
-    if (!data?.results || !selected.size) return;
+    if (!data?.results || !selected.size) {
+return;
+}
     const changes = data.results
       .filter((r) => selected.has(r.modelId))
       .map((r) => ({ modelId: r.modelId, suggestedPrice: r.suggestedPrice }));
@@ -158,24 +175,38 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
 
   // Price diff helpers
   const diffClass = (diff) => {
-    if (diff > 0) return styles.diffUp;
-    if (diff < 0) return styles.diffDown;
+    if (diff > 0) {
+return styles.diffUp;
+}
+    if (diff < 0) {
+return styles.diffDown;
+}
     return styles.diffNeutral;
   };
 
   const riskClass = (level) => {
-    if (level === 'high') return `${styles.riskBadge} ${styles.riskHigh}`;
-    if (level === 'moderate') return `${styles.riskBadge} ${styles.riskModerate}`;
+    if (level === 'high') {
+return `${styles.riskBadge} ${styles.riskHigh}`;
+}
+    if (level === 'moderate') {
+return `${styles.riskBadge} ${styles.riskModerate}`;
+}
     return `${styles.riskBadge} ${styles.riskSafe}`;
   };
 
   const riskLabel = (level) => {
-    if (level === 'high') return 'Cao';
-    if (level === 'moderate') return 'TB';
+    if (level === 'high') {
+return 'Cao';
+}
+    if (level === 'moderate') {
+return 'TB';
+}
     return 'OK';
   };
 
-  if (!show) return null;
+  if (!show) {
+return null;
+}
 
   const results = data?.results || [];
 
@@ -340,7 +371,6 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
                       : '0.0';
                     const isSelected = selected.has(result.modelId);
                     const label = getVariantLabel(result.tierIndex);
-                    const isTopSeller = data?.marketData?.topSeller;
 
                     return (
                       <>
@@ -387,7 +417,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
                             <button
                               type="button"
                               className={styles.detailBtn}
-                              onClick={(e) => { e.stopPropagation(); handleViewDetail(result); }}
+                              onClick={(e) => {
+ e.stopPropagation(); handleViewDetail(result); 
+}}
                               title="Xem chi tiết so sánh đối thủ"
                             >
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -457,6 +489,21 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
     </>,
     document.body
   );
+};
+
+AiPriceSuggestModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  product: PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string,
+    tiers: PropTypes.array,
+    _raw: PropTypes.shape({
+      tiers: PropTypes.array,
+    }),
+  }),
+  onApply: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onViewDetail: PropTypes.func.isRequired,
 };
 
 export default AiPriceSuggestModal;

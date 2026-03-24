@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ProductDrawer from '../../components/seller/listings/ProductDrawer';
@@ -26,15 +26,6 @@ const STATUS_MAP = {
   out_of_stock: { label: 'Out of Stock', cls: styles.badgeOutOfStock },
 };
 
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'price-low', label: 'Price: Low → High' },
-  { value: 'price-high', label: 'Price: High → Low' },
-  { value: 'name-asc', label: 'Name: A → Z' },
-  { value: 'name-desc', label: 'Name: Z → A' },
-];
-
 const ITEMS_PER_PAGE = 8;
 
 /* ─────────────────────────────────────────────────────────────────── */
@@ -57,11 +48,7 @@ const ListingsPage = () => {
   const { sortKey, sortDir, handleSort } = useSortState('_createdAt', 'desc');
 
   /* ── Fetch ──────────────────────────────────────────────────────── */
-  useEffect(() => {
-    fetchListings();
-  }, []);
-
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -77,7 +64,11 @@ const ListingsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   const mapProduct = (p) => {
     const categoryName =
@@ -157,24 +148,6 @@ const ListingsPage = () => {
       setLoading(false);
     }
   };
-
-  // Called when seller clicks "Apply" in the AI price panel (legacy single-variant flow).
-  // Opens ProductDrawer in edit mode so seller can review before saving.
-  const handleAiApply = useCallback(async (product, suggestedPrice) => {
-    try {
-      setLoading(true);
-      const response = await productService.getById(product.id);
-      if (response.success) {
-        // Attach suggestedPrice as a hint for ProductDrawer to pre-fill
-        setEditingProduct({ ...response.data, _suggestedPrice: suggestedPrice });
-        setShowAddModal(true);
-      }
-    } catch (error) {
-      console.error('Error opening product for AI price apply:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // [Batch] Called when seller selects variants in AiPriceSuggestModal and clicks Apply.
   // Opens ProductDrawer with pre-filled suggested prices per model.

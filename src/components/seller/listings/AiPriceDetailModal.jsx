@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { formatCurrency } from '../../../utils/formatters';
 import styles from './AiPriceDetailModal.module.css';
@@ -38,9 +39,13 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
 
   // Close on Escape
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+return;
+}
     const handler = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+onClose();
+}
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -56,7 +61,9 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
     }
   };
 
-  if (!show) return null;
+  if (!show) {
+return null;
+}
 
   const currentPrice = product?.price ?? data?.product?.currentPrice ?? 0;
   const priceDiff = data?.suggestedPrice != null
@@ -98,13 +105,19 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
   };
 
   const getSimilarityBadge = (score) => {
-    if (score == null) return null;
+    if (score == null) {
+return null;
+}
     const pct = Math.round(score * 100);
-    let label = `${pct}%`;
+    const label = `${pct}%`;
     let cls = styles.simBadgeMedium;
-    if (pct >= 90) cls = styles.simBadgeHigh;
-    else if (pct >= 80) cls = styles.simBadgeMedium;
-    else cls = styles.simBadgeLow;
+    if (pct >= 90) {
+cls = styles.simBadgeHigh;
+} else if (pct >= 80) {
+cls = styles.simBadgeMedium;
+} else {
+cls = styles.simBadgeLow;
+}
     return <span className={`${styles.simBadge} ${cls}`}>{label}</span>;
   };
 
@@ -368,6 +381,32 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
     </>,
     document.body
   );
+};
+
+AiPriceDetailModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  product: PropTypes.shape({
+    name: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
+  data: PropTypes.shape({
+    product: PropTypes.shape({
+      name: PropTypes.string,
+      currentPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    }),
+    suggestedPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    competitors: PropTypes.array,
+    marketData: PropTypes.shape({
+      min: PropTypes.number,
+      max: PropTypes.number,
+      avg: PropTypes.number,
+    }),
+    riskLevel: PropTypes.string,
+    warningMessage: PropTypes.string,
+    reasoning: PropTypes.string,
+  }),
+  onApply: PropTypes.func.isRequired,
 };
 
 export default AiPriceDetailModal;

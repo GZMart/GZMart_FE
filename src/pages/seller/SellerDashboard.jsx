@@ -1,310 +1,978 @@
-import { useState, useEffect } from 'react';
-import { CreditCard, ShoppingCart, Zap, BarChart3, RefreshCw, TrendingUp, DollarSign } from 'lucide-react';
-import dashboardService from '../../services/api/dashboardService';
+import { useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
+import {
+  AlertTriangle,
+  ArrowRightLeft,
+  ChevronRight,
+  DollarSign,
+  PackageOpen,
+  Percent,
+  Repeat,
+  ShoppingBag,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
+import {
+  Button,
+  Card,
+  Progress,
+  Segmented,
+  Spin,
+  Table,
+} from 'antd';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
-import styles from '../../assets/styles/seller/Dashboard.module.css';
+import dashboardService from '../../services/api/dashboardService';
+import { chatService } from '../../services/api/chatService';
 import { OverallSalesCard } from '../../components/seller/dashboard/OverallSalesCard';
-import { StatCard } from '../../components/seller/dashboard/StatCard';
-import { ProductsTable } from '../../components/seller/dashboard/ProductsTable';
+import { RevenueDetailModal } from '../../components/seller/dashboard/modals/RevenueDetailModal';
+import { OrdersDetailModal } from '../../components/seller/dashboard/modals/OrdersDetailModal';
+import { AOVDetailModal } from '../../components/seller/dashboard/modals/AOVDetailModal';
+import { ProfitDetailModal } from '../../components/seller/dashboard/modals/ProfitDetailModal';
+import styles from '../../assets/styles/seller/Dashboard.module.css';
 
+const ACTION_ITEMS = [
+  {
+    key: 'pending',
+    label: 'Đơn chờ xác nhận',
+    sub: 'Cần xác nhận trước khi xử lý',
+    icon: ShoppingBag,
+    color: '#1677ff',
+    bg: '#eff6ff',
+    nav: '/seller/orders?status=pending',
+    countKey: 'pending',
+  },
+  {
+    key: 'toShip',
+    label: 'Chờ đóng gói / giao ĐVVC',
+    sub: 'Cần đóng gói và bàn giao',
+    icon: PackageOpen,
+    color: '#fa8c16',
+    bg: '#fff7e6',
+    nav: '/seller/orders?status=processing',
+    countKey: 'toShip',
+  },
+  {
+    key: 'cancelOrReturn',
+    label: 'Yêu cầu hủy / hoàn trả',
+    sub: 'Cần phản hồi trong 24h',
+    icon: Repeat,
+    color: '#f5222d',
+    bg: '#fff1f0',
+    nav: '/seller/returns',
+    countKey: 'cancelOrReturn',
+  },
+  {
+    key: 'unreadMessages',
+    label: 'Tin nhắn chưa đọc',
+    sub: 'Phản hồi khách hàng',
+    icon: AlertTriangle,
+    color: '#722ed1',
+    bg: '#f9f0ff',
+    nav: '/seller/messages',
+    countKey: 'unreadMessages',
+  },
+];
+
+const EXPENSE_COLORS = {
+  'Goods Value (PO)':             '#1677ff',
+  'Buying Service Fee':           '#52c41a',
+  'Intl Freight (CN→VN)':        '#fa8c16',
+  'Import Tax':                   '#f5222d',
+  'CN Domestic Shipping':         '#722ed1',
+  'Packaging / Insurance':        '#13c2c2',
+  'VN Last-Mile (PO→Warehouse)': '#faad14',
+  'Other Costs':                  '#8c8c8c',
+  'Last-Mile Delivery (Order)':   '#eb2f96',
+};
+
+// ─── Skeleton: Action Card ──────────────────────────────────────────────────
+const SkeletonActionCard = () => (
+  <div className={styles.skeletonActionCard}>
+    <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
+    <div className={styles.skeletonTextBlock}>
+      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '75%', height: 14 }} />
+      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '55%', height: 11 }} />
+    </div>
+  </div>
+);
+
+// ─── Skeleton: Stat Card ────────────────────────────────────────────────────
+const SkeletonStatCard = () => (
+  <div className={styles.skeletonCard}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className={`${styles.skeleton} ${styles.skeletonIcon}`} style={{ width: 40, height: 40 }} />
+    </div>
+    <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '45%', height: 10, marginTop: 4 }} />
+    <div className={`${styles.skeleton} ${styles.skeletonStatValue}`} />
+    <div className={`${styles.skeleton} ${styles.skeletonStatTrend}`} />
+  </div>
+);
+
+// ─── Action Card ─────────────────────────────────────────────────────────────
+const ActionCard = ({ item, count, onClick }) => {
+  const Icon = item.icon;
+
+  return (
+    <div
+      className={styles.actionCard}
+      style={{
+        '--accent': item.color,
+        '--bg': item.bg,
+      }}
+      onClick={onClick}
+    >
+      <div className={styles.actionCardIconWrap}>
+        <Icon size={22} color={item.color} />
+      </div>
+      <div className={styles.actionCardContent}>
+        <div className={styles.actionCardLabelRow}>
+          <span className={styles.actionCardLabel}>{item.label}</span>
+          {count > 0 && (
+            <span className={styles.actionCountBadge}>{count > 99 ? '99+' : count}</span>
+          )}
+        </div>
+        <span className={styles.actionCardSub}>{item.sub}</span>
+      </div>
+      <ChevronRight size={16} className={styles.actionArrow} />
+    </div>
+  );
+};
+
+ActionCard.propTypes = {
+  item: PropTypes.shape({
+    icon: PropTypes.any,
+    color: PropTypes.string,
+    bg: PropTypes.string,
+    label: PropTypes.string,
+    sub: PropTypes.string,
+  }).isRequired,
+  count: PropTypes.number,
+  onClick: PropTypes.func,
+};
+
+// ─── Stat Card ──────────────────────────────────────────────────────────────
+const StatCard = ({ icon: IconComponent, label, value, trend, trendUp, fromLabel, cardColor, onClick }) => {
+  const accentColor = cardColor || '#0d6efd';
+  const bgColor = `${accentColor}14`;
+
+  return (
+    <div
+      className={styles.statCard}
+      style={{ '--accent': accentColor, '--bg': bgColor }}
+      onClick={onClick}
+    >
+      <div className={styles.statHeader}>
+        <div className={styles.statIconWrap}>
+          <IconComponent size={20} color={accentColor} />
+        </div>
+      </div>
+      <p className={styles.statLabel}>{label}</p>
+      <p className={styles.statValue}>{value}</p>
+      {trend && (
+        <div className={styles.statTrend}>
+          <span className={`${styles.statTrendPill} ${trendUp ? styles.statTrendPillUp : styles.statTrendPillDown}`}>
+            {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            {trend}
+          </span>
+          {fromLabel && <span className={styles.statTrendLabel}>{fromLabel}</span>}
+        </div>
+      )}
+    </div>
+  );
+};
+
+StatCard.propTypes = {
+  icon: PropTypes.any,
+  label: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  trend: PropTypes.string,
+  trendUp: PropTypes.bool,
+  fromLabel: PropTypes.string,
+  cardColor: PropTypes.string,
+  onClick: PropTypes.func,
+};
+
+// ─── Greeting Helper ────────────────────────────────────────────────────────
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) {
+    return 'Chào buổi sáng';
+  }
+  if (hour < 18) {
+    return 'Chào buổi chiều';
+  }
+  return 'Chào buổi tối';
+};
+
+const getFormattedDate = () => new Date().toLocaleDateString('vi-VN', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+// ─── Main Component ─────────────────────────────────────────────────────────
 const SellerDashboard = () => {
-  const [loading, setLoading] = useState(false);
-  const [period, setPeriod] = useState('monthly');
-  const [dashboardData, setDashboardData] = useState(null);
+  const navigate = useNavigate();
+
+  // ── Loading states ──
+  const [loading, setLoading] = useState(true);
+  const [trendLoading, setTrendLoading] = useState(false);
+  const [expenseLoading, setExpenseLoading] = useState(true);
+
+  // ── Period selectors ──
+  const [trendPeriod, setTrendPeriod] = useState('daily');
+  const [expensePeriod, setExpensePeriod] = useState('monthly');
+
+  // ── External data ──
+  const [exchangeRate, setExchangeRate] = useState(null);
+
+  // ── Action center ──
+  const [todoCounts, setTodoCounts] = useState({});
+
+  // ── Financial & KPI ──
+  const [financial, setFinancial] = useState({
+    netSales: null,
+    profit: null,
+    totalOrders: null,
+    cogs: null,
+  });
+
+  // ── Revenue trend & comparison ──
   const [revenueTrend, setRevenueTrend] = useState([]);
-  const [profitLossData, setProfitLossData] = useState([]);
-  const [expenseData, setExpenseData] = useState(null);
+  const [comparison, setComparison] = useState(null);
 
-  // Sample data for Overall Sales chart
-  const sampleRevenueTrendData = [
-    { _id: '1', revenue: 132450000 },
-    { _id: '2', revenue: 128900000 },
-    { _id: '3', revenue: 145230000 },
-    { _id: '4', revenue: 152680000 },
-    { _id: '5', revenue: 138450000 },
-    { _id: '6', revenue: 149250000 },
-    { _id: '7', revenue: 155890000 },
-    { _id: '8', revenue: 142100000 },
-    { _id: '9', revenue: 158340000 },
-    { _id: '10', revenue: 165120000 },
-    { _id: '11', revenue: 172450000 },
-    { _id: '12', revenue: 348253650 },
-  ];
+  // ── Product analytics ──
+  const [lowStock, setLowStock] = useState([]);
+  const [expense, setExpense] = useState(null);
+  const [topProfitProducts, setTopProfitProducts] = useState([]);
 
-  // Fetch all dashboard data including P&L analytics
-  const fetchDashboard = async (selectedPeriod = 'monthly') => {
-    try {
-      setLoading(true);
-      const [dashResponse, trendResponse, profitLossResponse, expenseResponse] = await Promise.all([
-        dashboardService.getComplete(),
-        dashboardService.getRevenueTrend({ period: selectedPeriod }),
-        dashboardService.getProfitLossAnalysis({ period: selectedPeriod }),
-        dashboardService.getExpenseAnalysis({ period: selectedPeriod }),
-      ]);
+  // ── Detail modals ──
+  const [revenueModalOpen, setRevenueModalOpen] = useState(false);
+  const [ordersModalOpen, setOrdersModalOpen] = useState(false);
+  const [aovModalOpen, setAOVModalOpen] = useState(false);
+  const [profitModalOpen, setProfitModalOpen] = useState(false);
 
-      setDashboardData(dashResponse.data);
-      setRevenueTrend(trendResponse.data && trendResponse.data.length > 0 ? trendResponse.data : sampleRevenueTrendData);
-      setProfitLossData(profitLossResponse.data || []);
-      setExpenseData(expenseResponse.data || null);
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      setRevenueTrend(sampleRevenueTrendData);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ── Fetch tỷ giá CNY/VND ──
   useEffect(() => {
-    fetchDashboard(period);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let mounted = true;
+
+    const fetchExchangeRate = async () => {
+      try {
+        const resp = await fetch('https://open.er-api.com/v6/latest/CNY');
+        const json = await resp.json();
+        const rate = json?.rates?.VND;
+        if (!mounted) {
+          return;
+        }
+        if (typeof rate === 'number') {
+          setExchangeRate({
+            cnyToVnd: rate,
+            lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          });
+        } else {
+          setExchangeRate(null);
+        }
+      } catch {
+        if (mounted) {
+          setExchangeRate(null);
+        }
+      }
+    };
+
+    fetchExchangeRate();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Handle period change
-  const handlePeriodChange = (newPeriod) => {
-    setPeriod(newPeriod);
-    fetchDashboard(newPeriod);
-  };
+  // ── Fetch KPI & action center data ──
+  useEffect(() => {
+    let mounted = true;
 
-  if (loading && !dashboardData) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <div>Loading...</div>
-      </div>
-    );
-  }
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [
+          orderCountsRes,
+          unreadNotifRes,
+          lowStockRes,
+          profitLossRes,
+          topProfitRes,
+          revenueRes,
+        ] = await Promise.all([
+          dashboardService.getSellerOrderCounts(),
+          chatService.getUnreadCount(),
+          dashboardService.getLowStock({ threshold: 20, limit: 6 }),
+          dashboardService.getProfitLossAnalysis({ period: 'monthly' }),
+          dashboardService.getTopSellingProductsWithProfit({ limit: 5, period: 'monthly' }),
+          dashboardService.getRevenue(),
+        ]);
 
-  if (!dashboardData) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h1>Dashboard</h1>
-            <p>You can add your credit and debit card details here for future purchases.</p>
-          </div>
+        if (!mounted) {
+          return;
+        }
+
+        const counts = orderCountsRes?.data ?? {};
+        const rmaCount = typeof counts.rmaCount === 'number' ? counts.rmaCount : 0;
+        const cancellationCount = typeof counts.cancellationCount === 'number' ? counts.cancellationCount : 0;
+
+        const unread =
+          typeof unreadNotifRes?.count === 'number'
+            ? unreadNotifRes.count
+            : typeof unreadNotifRes?.data?.count === 'number'
+              ? unreadNotifRes.data.count
+              : null;
+
+        const revenueData = revenueRes?.data ?? {};
+
+        setTodoCounts({
+          pending: typeof counts.pending === 'number' ? counts.pending : null,
+          toShip: typeof counts.toShip === 'number' ? counts.toShip : null,
+          cancelOrReturn: rmaCount + cancellationCount,
+          unreadMessages: unread,
+        });
+
+        setLowStock(Array.isArray(lowStockRes?.data) ? lowStockRes.data : []);
+
+        const plArr = Array.isArray(profitLossRes?.data) ? profitLossRes.data : [];
+        const netSales = plArr.reduce((sum, it) => sum + (it?.revenue || 0), 0);
+        const profit = plArr.reduce((sum, it) => sum + (it?.profit || 0), 0);
+        const expenseCost = plArr.reduce((sum, it) => sum + (it?.cost || 0), 0);
+
+        setFinancial({
+          netSales: netSales || revenueData.thisMonth || null,
+          profit,
+          totalOrders: typeof counts.pending === 'number' ? counts.pending : null,
+          cogs: expenseCost,
+        });
+
+        const topArr = Array.isArray(topProfitRes?.data) ? topProfitRes.data : [];
+        setTopProfitProducts(
+          topArr.map((p) => ({
+            key: p?._id,
+            productName: p?.name ?? '—',
+            soldQty: p?.totalQuantity ?? p?.quantitySold ?? 0,
+            netSales: p?.totalRevenue ?? p?.revenue ?? 0,
+            profit: p?.profit ?? 0,
+            margin: typeof p?.profitMargin === 'number' ? `${p.profitMargin.toFixed(1)}%` : '—',
+          })),
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchAll();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ── Fetch revenue trend & comparison ──
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchTrendData = async () => {
+      setTrendLoading(true);
+      try {
+        const [trendRes, comparisonRes] = await Promise.all([
+          dashboardService.getRevenueTrend({ period: trendPeriod }),
+          dashboardService.getComparison({ period: trendPeriod }),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setRevenueTrend(Array.isArray(trendRes?.data) ? trendRes.data : []);
+        setComparison(comparisonRes?.data ?? null);
+      } catch {
+        if (!cancelled) {
+          setRevenueTrend([]);
+          setComparison(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setTrendLoading(false);
+        }
+      }
+    };
+
+    fetchTrendData();
+    return () => {
+      cancelled = true;
+    };
+  }, [trendPeriod]);
+
+  // ── Refetch expense when period changes ──
+  useEffect(() => {
+    let cancelled = false;
+    setExpenseLoading(true);
+    dashboardService
+      .getExpenseAnalysis({ period: expensePeriod })
+      .then((res) => {
+        if (cancelled) {
+          return;
+        }
+        const payload = res?.data;
+        setExpense(
+          payload && typeof payload === 'object' && !Array.isArray(payload)
+            ? payload
+            : null,
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setExpenseLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [expensePeriod]);
+
+  // ── Derived: revenue trend KPI ──
+  const trendRevenue = useMemo(() => {
+    if (!revenueTrend.length) {
+      return 0;
+    }
+    return revenueTrend.reduce((sum, it) => sum + (it?.revenue || 0), 0);
+  }, [revenueTrend]);
+
+  const trendGrowth = useMemo(() => {
+    const v = comparison?.growth?.revenue;
+    return typeof v === 'number' && !Number.isNaN(v) ? v : 0;
+  }, [comparison]);
+
+  const periodFromLabel = useMemo(() => {
+    const map = {
+      daily:     'so với 30 ngày trước',
+      weekly:    'so với 13 tuần trước',
+      monthly:   'so với 12 tháng trước',
+      quarterly: 'so với 4 quý trước',
+      yearly:    'so với 5 năm trước',
+    };
+    return map[trendPeriod] ?? 'so với kỳ trước';
+  }, [trendPeriod]);
+
+  // ── Derived: expense pie ──
+  const expensePieSlices = useMemo(() => {
+    if (!Array.isArray(expense?.breakdownByType)) {
+      return [];
+    }
+    return expense.breakdownByType.map((x) => ({
+      name: x.type,
+      value: Number(x.amount) || 0,
+      type: x.type,
+      color: EXPENSE_COLORS[x.type] ?? '#d9d9d9',
+    }));
+  }, [expense]);
+
+  // ── Derived: comparison KPIs ──
+  const comparisonKpis = useMemo(() => {
+    if (!comparison) {
+      return { ordersGrowth: 0, avgOrderValue: null, aovGrowth: 0, profitGrowth: 0 };
+    }
+
+    const current = comparison.currentPeriod ?? {};
+    const prev = comparison.previousPeriod ?? {};
+    const growth = comparison.growth ?? {};
+
+    const ordersGrowth =
+      typeof growth.orders === 'number' && !Number.isNaN(growth.orders)
+        ? growth.orders
+        : 0;
+    const avgOrderValue = current.orders > 0
+      ? Math.round((current.revenue || 0) / current.orders)
+      : null;
+
+    const currAov = current.orders > 0 ? (current.revenue || 0) / current.orders : null;
+    const prevAov = prev.orders > 0 ? (prev.revenue || 0) / prev.orders : null;
+    let aovGrowth = 0;
+    if (prevAov != null && prevAov > 0 && currAov != null) {
+      aovGrowth = Math.round(((currAov - prevAov) / prevAov) * 100);
+    } else if (
+      (prev.orders ?? 0) <= 0
+      && (current.orders ?? 0) > 0
+      && currAov != null
+      && currAov > 0
+    ) {
+      aovGrowth = 100;
+    }
+
+    const profitGrowth =
+      typeof growth.profit === 'number' && !Number.isNaN(growth.profit)
+        ? growth.profit
+        : 0;
+
+    return { ordersGrowth, avgOrderValue, aovGrowth, profitGrowth };
+  }, [comparison]);
+
+  const chartPeriodRevenue = useMemo(() => {
+    if (comparison?.currentPeriod && typeof comparison.currentPeriod.revenue === 'number') {
+      return comparison.currentPeriod.revenue;
+    }
+    if (trendRevenue > 0) {
+      return trendRevenue;
+    }
+    if (typeof financial.netSales === 'number') {
+      return financial.netSales;
+    }
+    return 0;
+  }, [comparison, trendRevenue, financial.netSales]);
+
+  // ── Active tasks count ──
+  const activeTasksCount = useMemo(() =>
+    Object.values(todoCounts).filter((v) => typeof v === 'number' && v > 0).length,
+  [todoCounts]);
+
+  // ─── Top profit products columns ──
+  const topProfitColumns = [
+    {
+      title: 'Sản phẩm',
+      dataIndex: 'productName',
+      key: 'productName',
+      render: (text) => <span className={styles.productNameCell}>{text}</span>,
+    },
+    {
+      title: 'Đã bán',
+      dataIndex: 'soldQty',
+      key: 'soldQty',
+      width: 90,
+      render: (v) => Number(v).toLocaleString('vi-VN'),
+    },
+    {
+      title: 'Doanh thu',
+      dataIndex: 'netSales',
+      key: 'netSales',
+      render: (value) => formatCurrency(value),
+      width: 140,
+    },
+    {
+      title: 'Lợi nhuận',
+      dataIndex: 'profit',
+      key: 'profit',
+      render: (value) => {
+        const num = Number(value) || 0;
+        return (
+          <span className={`${styles.profitCell} ${num >= 0 ? styles.profitPositive : styles.profitNegative}`}>
+            {formatCurrency(value)}
+          </span>
+        );
+      },
+      width: 140,
+    },
+    {
+      title: 'Margin',
+      dataIndex: 'margin',
+      key: 'margin',
+      width: 80,
+      render: (v) => <span className={styles.marginCell}>{v}</span>,
+    },
+  ];
+
+  // ─── Expense legend items ──
+  const renderExpenseLegend = () => (
+    <div className={styles.pieLegend}>
+      {expensePieSlices.map((s) => (
+        <div key={s.type} className={styles.pieLegendItem} style={{ background: `${s.color}14` }}>
+          <span className={styles.pieLegendDot} style={{ background: s.color }} />
+          <span style={{ color: '#334155' }}>{s.name}:</span>
+          <strong style={{ color: s.color }}>{formatCurrency(s.value)}</strong>
         </div>
-        <div style={{ textAlign: 'center', padding: '40px' }}>No data available</div>
-      </div>
-    );
-  }
-
-  const { revenue, bestSellers, orderStats, customerStats } = dashboardData;
-
-  // Calculate totals from profit-loss data
-  const totalProfit = profitLossData.reduce((sum, item) => sum + (item.profit || 0), 0);
-  const totalCost = profitLossData.reduce((sum, item) => sum + (item.cost || 0), 0);
-  const totalRevenue = profitLossData.reduce((sum, item) => sum + (item.revenue || 0), 0);
-  const profitMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
+      ))}
+    </div>
+  );
 
   return (
     <div className={styles.container}>
-      {/* Header with Period Filter Buttons */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1>Dashboard</h1>
-          <p>You can add your credit and debit card details here for future purchases.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Period Filter Buttons */}
-          <div style={{ display: 'flex', gap: '6px', backgroundColor: '#f5f5f5', padding: '4px', borderRadius: '6px' }}>
-            {['weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
-              <button
-                key={p}
-                onClick={() => handlePeriodChange(p)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '4px',
-                  border: period === p ? '2px solid #1890ff' : '1px solid #ddd',
-                  backgroundColor: period === p ? '#e6f7ff' : '#fff',
-                  color: period === p ? '#1890ff' : '#666',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: period === p ? '600' : '500',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
-              </button>
-            ))}
+      <div className={styles.pageContent}>
+
+        {/* ── Header ── */}
+        <Card
+          className={styles.headerCard}
+          styles={{ body: { padding: '14px 20px' } }}
+        >
+          <div className={styles.headerInner}>
+            <div className={styles.headerLeft}>
+              <span className={styles.headerGreeting}>{getGreeting()}</span>
+              <h1 className={styles.headerTitle}>Dashboard</h1>
+            </div>
+            <div className={styles.headerRight}>
+              {exchangeRate && (
+                <div className={styles.xrBanner}>
+                  <div className={styles.xrBannerIcon}>
+                    <ArrowRightLeft size={16} color="#d97706" />
+                  </div>
+                  <div className={styles.xrBannerInfo}>
+                    <span className={styles.xrBannerLabel}>Tỷ giá CNY / VND</span>
+                    <span className={styles.xrBannerRate}>
+                      <strong>1 CNY = {Math.round(exchangeRate.cnyToVnd).toLocaleString('vi-VN')}</strong>
+                      VND
+                    </span>
+                    <span className={styles.xrBannerUpdated}>
+                      Cập nhật: {exchangeRate.lastUpdated}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          
-          <button
-            onClick={() => fetchDashboard(period)}
-            disabled={loading}
-            className={styles.refreshBtn}
-          >
-            <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            Refresh
-          </button>
-        </div>
-      </div>
+        </Card>
 
-      {/* Overall Sales & Stat Cards Row */}
-      <div className={styles.chartAndStats}>
-        {/* Overall Sales Chart - 2/3 */}
-        <OverallSalesCard chartData={revenueTrend} loading={loading} />
-
-        {/* Stat Cards - 1/3 */}
-        <div className={styles.statCardsGrid}>
-          <StatCard
-            icon={CreditCard}
-            label="Total Sales"
-            value={formatCurrency(revenue?.total || 0)}
-            trend="13.02%"
-            trendUp={true}
-            fromLabel="From Jan"
-          />
-          <StatCard
-            icon={ShoppingCart}
-            label="Avg. Order Value"
-            value={formatCurrency(
-              orderStats?.total > 0 ? (revenue?.total || 0) / orderStats?.total : 0
+        {/* ── 1) Action Center ── */}
+        <Card
+          className={styles.sectionCard}
+          styles={{ body: { padding: 0 } }}
+        >
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitleRow}>
+              <AlertTriangle size={16} color="#fa8c16" />
+              <span className={styles.sectionTitle}>Việc cần làm hôm nay</span>
+              {activeTasksCount > 0 && (
+                <span className={styles.sectionBadge}>{activeTasksCount}</span>
+              )}
+            </div>
+            <span className={styles.sectionMeta}>{getFormattedDate()}</span>
+          </div>
+          <div className={styles.sectionBody}>
+            {loading ? (
+              <div className={styles.actionCardsGrid}>
+                {[0, 1, 2, 3].map((i) => <SkeletonActionCard key={i} />)}
+              </div>
+            ) : (
+              <div className={styles.actionCardsGrid}>
+                {ACTION_ITEMS.map((item) => (
+                  <ActionCard
+                    key={item.key}
+                    item={item}
+                    count={todoCounts[item.countKey] ?? 0}
+                    onClick={() => navigate(item.nav)}
+                  />
+                ))}
+              </div>
             )}
-            trend="3.02%"
-            trendUp={false}
-            fromLabel="From Jan"
+          </div>
+        </Card>
+
+        {/* ── 2) Revenue Trend Chart + Comparison KPIs ── */}
+        <div className={styles.chartAndStats}>
+          {/* Left: Line Chart */}
+          <OverallSalesCard
+            chartData={revenueTrend}
+            period={trendPeriod}
+            onPeriodChange={(p) => setTrendPeriod(p)}
+            loading={trendLoading}
+            revenueCurrent={trendRevenue}
+            trend={trendGrowth}
           />
-          <StatCard
-            icon={Zap}
-            label="Online Sessions"
-            value={`${(orderStats?.total || 0).toLocaleString('vi-VN')} orders`}
-            trend="9.58%"
-            trendUp={true}
-            fromLabel="From Jan"
-          />
-          <StatCard
-            icon={BarChart3}
-            label="Conversion Rate"
-            value={`${(customerStats?.repeatedPurchaseRate || 0).toFixed(2)}%`}
-            trend="0.35%"
-            trendUp={false}
-            fromLabel="From Jan"
-          />
+
+          {/* Right: 4 Stat Cards */}
+          {loading ? (
+            <div className={styles.statCardsGrid}>
+              {[0, 1, 2, 3].map((i) => <SkeletonStatCard key={i} />)}
+            </div>
+          ) : (
+            <div className={styles.statCardsGrid}>
+              <StatCard
+                icon={TrendingUp}
+                label="Doanh thu kỳ này"
+                value={formatCurrency(chartPeriodRevenue)}
+                trend={`${trendGrowth >= 0 ? '+' : ''}${trendGrowth}%`}
+                trendUp={trendGrowth >= 0}
+                fromLabel={periodFromLabel}
+                cardColor="#1677ff"
+                onClick={() => setRevenueModalOpen(true)}
+              />
+              <StatCard
+                icon={ShoppingCart}
+                label="Đơn hàng kỳ này"
+                value={comparison?.currentPeriod?.orders != null
+                  ? Number(comparison.currentPeriod.orders).toLocaleString('vi-VN')
+                  : '—'}
+                trend={`${comparisonKpis.ordersGrowth >= 0 ? '+' : ''}${comparisonKpis.ordersGrowth}%`}
+                trendUp={comparisonKpis.ordersGrowth >= 0}
+                fromLabel={periodFromLabel}
+                cardColor="#722ed1"
+                onClick={() => setOrdersModalOpen(true)}
+              />
+              <StatCard
+                icon={DollarSign}
+                label="Giá trị TB / đơn"
+                value={comparisonKpis.avgOrderValue != null
+                  ? formatCurrency(comparisonKpis.avgOrderValue)
+                  : '—'}
+                trend={`${comparisonKpis.aovGrowth >= 0 ? '+' : ''}${comparisonKpis.aovGrowth}%`}
+                trendUp={comparisonKpis.aovGrowth >= 0}
+                fromLabel={periodFromLabel}
+                cardColor="#fa8c16"
+                onClick={() => setAOVModalOpen(true)}
+              />
+              <StatCard
+                icon={Percent}
+                label="Tổng lợi nhuận"
+                value={
+                  comparison?.currentPeriod && typeof comparison.currentPeriod.profit === 'number'
+                    ? formatCurrency(comparison.currentPeriod.profit)
+                    : financial.profit != null
+                      ? formatCurrency(financial.profit)
+                      : '—'
+                }
+                trend={`${comparisonKpis.profitGrowth >= 0 ? '+' : ''}${comparisonKpis.profitGrowth}%`}
+                trendUp={comparisonKpis.profitGrowth >= 0}
+                fromLabel={periodFromLabel}
+                cardColor="#52c41a"
+                onClick={() => setProfitModalOpen(true)}
+              />
+            </div>
+          )}
         </div>
+
+        {/* ── 3) Low Stock Alerts ── */}
+        <Card
+          className={styles.sectionCard}
+          styles={{ body: { padding: 0 } }}
+        >
+          <div className={`${styles.sectionHeader} ${styles.lowStockSectionHeader}`}>
+            <div className={styles.sectionTitleRow}>
+              <AlertTriangle size={16} color="#fa8c16" />
+              <span className={styles.sectionTitle}>Cảnh báo sắp hết hàng</span>
+              {lowStock.length > 0 && (
+                <span className={styles.sectionBadge}>{lowStock.length}</span>
+              )}
+            </div>
+            <Button
+              type="primary"
+              className={styles.poCreateHeaderBtn}
+              onClick={() => {
+                if (lowStock.length > 0) {
+                  navigate(`/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(lowStock))}`);
+                } else {
+                  navigate('/seller/erp/purchase-orders/create');
+                }
+              }}
+            >
+              Tạo PO mới
+            </Button>
+          </div>
+          <div className={styles.sectionBody}>
+            {loading ? (
+              <div className={styles.lowStockGrid}>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className={`${styles.skeletonCard} ${styles.lowStockCard}`}>
+                    <div className={`${styles.skeleton}`} style={{ width: 20, height: 20, borderRadius: '50%' }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '60%', height: 13 }} />
+                      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '40%', height: 10 }} />
+                      <div className={`${styles.skeleton}`} style={{ height: 6, borderRadius: 3, marginTop: 4 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : lowStock.length > 0 ? (
+              <div className={styles.lowStockGrid}>
+                {lowStock.map((p) => {
+                  const safetyStock = 20;
+                  const currentStock = p?.stock ?? 0;
+                  const stockPercent = Math.min(100, Math.round((currentStock / safetyStock) * 100));
+                  const sku = p?.lowestStockModel?.sku ?? p?._id;
+                  const isCritical = currentStock <= 5;
+
+                  return (
+                    <div
+                      key={p?._id}
+                      className={`${styles.lowStockCard} ${isCritical ? styles.lowStockCritical : styles.lowStockWarning}`}
+                      onClick={() => navigate('/seller/inventory')}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className={styles.lowStockIcon}>
+                        <AlertTriangle
+                          size={16}
+                          color={isCritical ? '#cf1322' : '#d46b08'}
+                        />
+                      </div>
+                      <div className={styles.lowStockContent}>
+                        <div className={styles.lowStockNameRow}>
+                          <span className={styles.lowStockName}>{p?.name ?? '—'}</span>
+                          {isCritical && (
+                            <span className={styles.lowStockCriticalTag}>Nguy hiểm</span>
+                          )}
+                        </div>
+                        <div className={styles.lowStockSku}>SKU: {sku ?? '—'}</div>
+                        <Progress
+                          className={styles.lowStockProgress}
+                          percent={stockPercent}
+                          strokeColor={isCritical ? '#ff4d4f' : '#fa8c16'}
+                          showInfo={false}
+                          size="small"
+                        />
+                        <div className={styles.lowStockFooter}>
+                          <span className={styles.lowStockStock}>
+                            {currentStock} / {safetyStock} sản phẩm
+                          </span>
+                          <Button
+                            type="primary"
+                            size="small"
+                            className={styles.lowStockBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(p))}`);
+                            }}
+                          >
+                            Lên PO
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <p>Tất cả sản phẩm đều có đủ hàng trong kho</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* ── 4) ERP Report ── */}
+        <div className={styles.erpReportGrid}>
+          {/* Left: Cost Breakdown Pie */}
+          <Card
+            className={styles.erpSectionCard}
+            styles={{ body: { padding: 0 } }}
+          >
+            <div className={styles.erpSectionHeader}>
+              <div className={styles.erpSectionTitleRow}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" strokeWidth="2">
+                  <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.488 15H12a9 9 0 010 18h8.488a9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className={styles.erpSectionTitle}>Phân tích chi phí</span>
+                {expense?.period && (
+                  <span className={styles.erpSectionSub}>— {expense.period}</span>
+                )}
+              </div>
+              <Segmented
+                size="small"
+                value={expensePeriod}
+                onChange={(val) => setExpensePeriod(val)}
+                options={[
+                  { label: 'Tuần', value: 'daily' },
+                  { label: 'Tháng', value: 'monthly' },
+                  { label: 'Quý', value: 'quarterly' },
+                  { label: 'Năm', value: 'yearly' },
+                ]}
+              />
+            </div>
+            <div className={styles.erpSectionBody}>
+              <div className={styles.pieChartContainer}>
+                {(loading || expenseLoading) ? (
+                  <div className={styles.loadingCenter}>
+                    <Spin />
+                  </div>
+                ) : expensePieSlices.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={expensePieSlices}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={52}
+                        outerRadius={82}
+                        paddingAngle={2}
+                      >
+                        {expensePieSlices.map((entry) => (
+                          <Cell key={entry.type} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>Không có dữ liệu chi phí</p>
+                  </div>
+                )}
+              </div>
+              {expensePieSlices.length > 0 && renderExpenseLegend()}
+              {expense?.poDetail?.poCount > 0 && (
+                <span className={styles.pieSourceNote}>
+                  Nguồn: {expense.poDetail.poCount} PO đã hoàn thành
+                </span>
+              )}
+            </div>
+          </Card>
+
+          {/* Right: Top Profitable Products */}
+          <Card
+            className={styles.erpSectionCard}
+            styles={{ body: { padding: 0 } }}
+          >
+            <div className={styles.erpSectionHeader}>
+              <div className={styles.erpSectionTitleRow}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" strokeWidth="2">
+                  <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className={styles.erpSectionTitle}>Top sản phẩm lợi nhuận cao</span>
+              </div>
+              <Button
+                type="link"
+                onClick={() => navigate('/seller/products')}
+                style={{ padding: 0, height: 'auto', fontSize: '0.8125rem' }}
+              >
+                Xem tất cả
+              </Button>
+            </div>
+            <div className={styles.erpSectionBody}>
+              <Table
+                columns={topProfitColumns}
+                dataSource={topProfitProducts}
+                pagination={false}
+                size="middle"
+                loading={loading}
+                scroll={{ x: 560 }}
+              />
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Detail Modals ── */}
+        <RevenueDetailModal
+          open={revenueModalOpen}
+          onClose={() => setRevenueModalOpen(false)}
+          period={trendPeriod}
+          comparison={comparison}
+        />
+        <OrdersDetailModal
+          open={ordersModalOpen}
+          onClose={() => setOrdersModalOpen(false)}
+          period={trendPeriod}
+          comparison={comparison}
+        />
+        <AOVDetailModal
+          open={aovModalOpen}
+          onClose={() => setAOVModalOpen(false)}
+          period={trendPeriod}
+          comparison={comparison}
+        />
+        <ProfitDetailModal
+          open={profitModalOpen}
+          onClose={() => setProfitModalOpen(false)}
+          period={trendPeriod}
+          comparison={comparison}
+        />
+
       </div>
-
-      {/* Profit & Loss Analytics Section */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '16px',
-        marginTop: '24px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <DollarSign size={20} style={{ color: '#10b981', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Gross Profit</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: totalProfit >= 0 ? '#10b981' : '#ef4444' }}>
-            {formatCurrency(totalProfit)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            Period: {period}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <ShoppingCart size={20} style={{ color: '#3b82f6', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Total Cost</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3b82f6' }}>
-            {formatCurrency(totalCost)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            (COGS + Shipping)
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <TrendingUp size={20} style={{ color: '#f59e0b', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Profit Margin</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>
-            {profitMargin}%
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            of revenue
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <DollarSign size={20} style={{ color: '#8b5cf6', marginRight: '8px' }} />
-            <span style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>Total Revenue</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8b5cf6' }}>
-            {formatCurrency(totalRevenue)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-            from sales
-          </div>
-        </div>
-      </div>
-
-      {/* Expense Breakdown */}
-      {expenseData && (
-        <div style={{
-          backgroundColor: '#fff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          marginBottom: '24px'
-        }}>
-          <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Expense Breakdown</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <div>
-              <span style={{ fontSize: '14px', color: '#666' }}>Product Cost (COGS)</span>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6', marginTop: '4px' }}>
-                {formatCurrency(expenseData.totalProductCost || 0)}
-              </div>
-            </div>
-            <div>
-              <span style={{ fontSize: '14px', color: '#666' }}>Shipping Cost</span>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f59e0b', marginTop: '4px' }}>
-                {formatCurrency(expenseData.totalShippingCost || 0)}
-              </div>
-            </div>
-            <div>
-              <span style={{ fontSize: '14px', color: '#666' }}>Total Expense</span>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444', marginTop: '4px' }}>
-                {formatCurrency(expenseData.totalExpense || 0)}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Selling Products Table */}
-      <ProductsTable products={bestSellers} loading={loading} />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import styles from '../../../assets/styles/seller/ListingsPage.module.css';
 
 const ListingsPagination = ({ currentPage, totalPages, onPageChange }) => {

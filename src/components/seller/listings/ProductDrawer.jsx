@@ -584,7 +584,9 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   };
 
   const handleSubmit = async (e, forcedStatus = null) => {
-    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.preventDefault) {
+e.preventDefault();
+}
 
     if (!validateForm(forcedStatus)) {
       return;
