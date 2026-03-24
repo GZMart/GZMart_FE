@@ -31,6 +31,7 @@ import { RevenueDetailModal } from '../../components/seller/dashboard/modals/Rev
 import { OrdersDetailModal } from '../../components/seller/dashboard/modals/OrdersDetailModal';
 import { AOVDetailModal } from '../../components/seller/dashboard/modals/AOVDetailModal';
 import { ProfitDetailModal } from '../../components/seller/dashboard/modals/ProfitDetailModal';
+import { TopProfitProductsModal } from '../../components/seller/dashboard/modals/TopProfitProductsModal';
 import styles from '../../assets/styles/seller/Dashboard.module.css';
 
 const ACTION_ITEMS = [
@@ -255,6 +256,7 @@ const SellerDashboard = () => {
   const [ordersModalOpen, setOrdersModalOpen] = useState(false);
   const [aovModalOpen, setAOVModalOpen] = useState(false);
   const [profitModalOpen, setProfitModalOpen] = useState(false);
+  const [topProfitProductsModalOpen, setTopProfitProductsModalOpen] = useState(false);
 
   // ── Fetch tỷ giá CNY/VND ──
   useEffect(() => {
@@ -927,7 +929,7 @@ const SellerDashboard = () => {
               </div>
               <Button
                 type="link"
-                onClick={() => navigate('/seller/products')}
+                onClick={() => setTopProfitProductsModalOpen(true)}
                 style={{ padding: 0, height: 'auto', fontSize: '0.8125rem' }}
               >
                 Xem tất cả
@@ -970,6 +972,10 @@ const SellerDashboard = () => {
           onClose={() => setProfitModalOpen(false)}
           period={trendPeriod}
           comparison={comparison}
+        />
+        <TopProfitProductsModal
+          open={topProfitProductsModalOpen}
+          onClose={() => setTopProfitProductsModalOpen(false)}
         />
 
       </div>
