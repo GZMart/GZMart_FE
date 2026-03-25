@@ -750,6 +750,11 @@
   gap: 1.25rem;
 }
 
+/* Extra vertical rhythm between ERP row (chi phí + top SP) and category analytics */
+.erpCategoryBlock {
+  margin-top: 2.25rem;
+}
+
 .erpSectionCard {
   background: #ffffff;
   border-radius: 14px;

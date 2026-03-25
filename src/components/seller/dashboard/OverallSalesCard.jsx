@@ -1,7 +1,7 @@
 import React from 'react';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -85,7 +85,7 @@ export function OverallSalesCard({
           </div>
         ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }} barCategoryGap="25%">
               <CartesianGrid strokeDasharray="3 3" stroke="#e8ecf0" vertical={false} />
               <XAxis
                 dataKey="_id"
@@ -99,11 +99,11 @@ export function OverallSalesCard({
                 tickLine={false}
                 tickFormatter={(v) => {
                   if (v >= 1_000_000) {
-return `${(v / 1_000_000).toFixed(0)}M`;
-}
+                    return `${(v / 1_000_000).toFixed(0)}M`;
+                  }
                   if (v >= 1_000) {
-return `${(v / 1_000).toFixed(0)}K`;
-}
+                    return `${(v / 1_000).toFixed(0)}K`;
+                  }
                   return v;
                 }}
               />
@@ -117,15 +117,13 @@ return `${(v / 1_000).toFixed(0)}K`;
                 }}
                 labelStyle={{ color: '#0f172a', fontWeight: 600 }}
               />
-              <Line
-                type="monotone"
+              <Bar
                 dataKey="revenue"
-                stroke="#1677ff"
-                strokeWidth={2.5}
-                dot={{ fill: '#1677ff', r: 4 }}
-                activeDot={{ r: 6 }}
+                fill="#1677ff"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={60}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         ) : (
           <div

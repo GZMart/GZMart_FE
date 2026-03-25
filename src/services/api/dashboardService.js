@@ -109,6 +109,16 @@ export const dashboardService = {
    */
   getTopSellingProductsWithProfit: async (params = {}) => await axiosClient.get(`${BASE_URL}/top-products-profit`, { params }),
 
+  /**
+   * Get product analytics by category
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @param {number} [params.limit=8] - Number of categories to retrieve
+   * @returns {Promise} { categories: [{categoryName, totalRevenue, totalQuantity, profit, profitMargin, revenuePercent}], totalRevenue, totalQuantity, totalProfit, period }
+   */
+  getProductAnalyticsByCategory: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/product-by-category`, { params }),
+
   // ============= ADMIN DASHBOARD ENDPOINTS =============
 
   /**

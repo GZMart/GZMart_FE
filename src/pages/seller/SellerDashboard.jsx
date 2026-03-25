@@ -89,6 +89,19 @@ const EXPENSE_COLORS = {
   'Last-Mile Delivery (Order)':   '#eb2f96',
 };
 
+const CATEGORY_CHART_COLORS = [
+  '#1677ff', '#52c41a', '#fa8c16', '#f5222d',
+  '#722ed1', '#13c2c2', '#faad14', '#eb2f96',
+];
+
+const CATEGORY_PERIOD_LABELS = {
+  daily: '30 ngày gần nhất',
+  weekly: '13 tuần gần nhất',
+  monthly: '12 tháng gần nhất',
+  quarterly: '4 quý gần nhất',
+  yearly: '5 năm gần nhất',
+};
+
 // ─── Skeleton: Action Card ──────────────────────────────────────────────────
 const SkeletonActionCard = () => (
   <div className={styles.skeletonActionCard}>
@@ -223,10 +236,12 @@ const SellerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(false);
   const [expenseLoading, setExpenseLoading] = useState(true);
+  const [categoryLoading, setCategoryLoading] = useState(true);
 
   // ── Period selectors ──
   const [trendPeriod, setTrendPeriod] = useState('daily');
   const [expensePeriod, setExpensePeriod] = useState('monthly');
+  const [categoryPeriod, setCategoryPeriod] = useState('monthly');
 
   // ── External data ──
   const [exchangeRate, setExchangeRate] = useState(null);
@@ -250,6 +265,7 @@ const SellerDashboard = () => {
   const [lowStock, setLowStock] = useState([]);
   const [expense, setExpense] = useState(null);
   const [topProfitProducts, setTopProfitProducts] = useState([]);
+  const [categoryAnalytics, setCategoryAnalytics] = useState(null);
 
   // ── Detail modals ──
   const [revenueModalOpen, setRevenueModalOpen] = useState(false);
@@ -439,6 +455,27 @@ const SellerDashboard = () => {
     };
   }, [expensePeriod]);
 
+  // ── Refetch category analytics when period changes ──
+  useEffect(() => {
+    let cancelled = false;
+    setCategoryLoading(true);
+    dashboardService
+      .getProductAnalyticsByCategory({ period: categoryPeriod })
+      .then((res) => {
+        if (cancelled) return;
+        const payload = res?.data;
+        setCategoryAnalytics(
+          payload && typeof payload === 'object' && !Array.isArray(payload)
+            ? payload
+            : null,
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setCategoryLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [categoryPeriod]);
+
   // ── Derived: revenue trend KPI ──
   const trendRevenue = useMemo(() => {
     if (!revenueTrend.length) {
@@ -587,6 +624,39 @@ const SellerDashboard = () => {
           <span className={styles.pieLegendDot} style={{ background: s.color }} />
           <span style={{ color: '#334155' }}>{s.name}:</span>
           <strong style={{ color: s.color }}>{formatCurrency(s.value)}</strong>
+        </div>
+      ))}
+    </div>
+  );
+
+  // ── Derived: category chart data (pie slices + stable keys for a11y) ──
+  const categoryChartData = useMemo(() => {
+    if (!Array.isArray(categoryAnalytics?.categories)) return [];
+    return categoryAnalytics.categories.map((cat, idx) => ({
+      rowKey: cat._id != null ? String(cat._id) : `cat-${idx}`,
+      categoryName: cat.categoryName || 'Không phân loại',
+      totalRevenue: Number(cat.totalRevenue) || 0,
+      revenuePercent: typeof cat.revenuePercent === 'number' ? cat.revenuePercent : 0,
+      color: CATEGORY_CHART_COLORS[idx % CATEGORY_CHART_COLORS.length],
+    }));
+  }, [categoryAnalytics]);
+
+  const renderCategoryLegend = () => (
+    <div className={styles.pieLegend}>
+      {categoryChartData.map((s) => (
+        <div
+          key={s.rowKey}
+          className={styles.pieLegendItem}
+          style={{ background: `${s.color}14` }}
+          title={`${s.categoryName} — ${s.revenuePercent}% doanh thu kỳ`}
+        >
+          <span className={styles.pieLegendDot} style={{ background: s.color }} />
+          <span style={{ color: '#334155' }}>
+            {s.categoryName}
+            {s.revenuePercent > 0 ? ` (${s.revenuePercent}%)` : ''}
+            :
+          </span>
+          <strong style={{ color: s.color }}>{formatCurrency(s.totalRevenue)}</strong>
         </div>
       ))}
     </div>
@@ -944,6 +1014,79 @@ const SellerDashboard = () => {
                 loading={loading}
                 scroll={{ x: 560 }}
               />
+            </div>
+          </Card>
+        </div>
+
+        {/* ── 5) Product Analytics by Category (aligned with Phân tích chi phí) ── */}
+        <div className={styles.erpCategoryBlock}>
+          <Card
+            className={styles.erpSectionCard}
+            styles={{ body: { padding: 0 } }}
+          >
+            <div className={styles.erpSectionHeader}>
+              <div className={styles.erpSectionTitleRow}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" strokeWidth="2">
+                  <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.488 15H12a9 9 0 010 18h8.488a9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className={styles.erpSectionTitle}>Phân tích sản phẩm theo danh mục</span>
+                <span className={styles.erpSectionSub}>
+                  — {CATEGORY_PERIOD_LABELS[categoryPeriod] ?? categoryPeriod}
+                </span>
+              </div>
+              <Segmented
+                size="small"
+                value={categoryPeriod}
+                onChange={(val) => setCategoryPeriod(val)}
+                options={[
+                  { label: 'Tuần', value: 'daily' },
+                  { label: 'Tháng', value: 'monthly' },
+                  { label: 'Quý', value: 'quarterly' },
+                  { label: 'Năm', value: 'yearly' },
+                ]}
+              />
+            </div>
+            <div className={styles.erpSectionBody}>
+              {categoryLoading ? (
+                <div className={styles.loadingCenter}>
+                  <Spin />
+                </div>
+              ) : categoryChartData.length > 0 ? (
+                <>
+                  <div className={styles.pieChartContainer}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryChartData}
+                          dataKey="totalRevenue"
+                          nameKey="categoryName"
+                          innerRadius={52}
+                          outerRadius={82}
+                          paddingAngle={2}
+                        >
+                          {categoryChartData.map((entry) => (
+                            <Cell key={entry.rowKey} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {renderCategoryLegend()}
+                  <span className={styles.pieSourceNote}>
+                    Nguồn: doanh thu theo danh mục — {categoryChartData.length} danh mục trong kỳ
+                  </span>
+                </>
+              ) : (
+                <div className={styles.emptyState}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+                    <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20.488 15H12a9 9 0 010 18h8.488a9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p>Không có dữ liệu phân tích theo danh mục</p>
+                </div>
+              )}
             </div>
           </Card>
         </div>
