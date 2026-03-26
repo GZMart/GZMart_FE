@@ -10,8 +10,6 @@ import {
   XCircle,
   RefreshCw,
   MessageSquare,
-  Edit2,
-  ExternalLink,
   Package,
   ChevronLeft,
   ChevronRight,
@@ -57,7 +55,6 @@ const STATUS_TABS = [
   { value: 'refund_pending',                label: 'Refund' },
 ];
 
-const TERMINAL_STATUSES = ['completed', 'refunded'];
 const ITEMS_PER_PAGE = 10;
 
 /* ─── Helper ──────────────────────────────────────────────────── */
@@ -159,17 +156,6 @@ const OrdersPage = () => {
 
   const handleStatusTabClick = (value) => {
     handleFilterChange('status', value);
-  };
-
-  const handleOpenStatusModal = (e, order) => {
-    e.stopPropagation();
-    setSelectedOrder(order._originalData);
-    setShowStatusModal(true);
-  };
-
-  const handleViewDetail = (e, orderId) => {
-    e.stopPropagation();
-    navigate(`/seller/orders/${orderId}`);
   };
 
   const handleCardClick = (orderId) => {

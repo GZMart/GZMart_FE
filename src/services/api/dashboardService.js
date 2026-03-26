@@ -79,7 +79,7 @@ export const dashboardService = {
   /**
    * Get comparison statistics (current vs previous period)
    * @param {object} params - Query parameters
-   * @param {string} [params.period='month'] - Period type: 'month' or 'week'
+   * @param {string} [params.period='month'] - Calendar: 'month', 'week'. Rolling (matches revenue-trend): 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
    * @returns {Promise} Comparison data with growth percentages
    */
   getComparison: async (params = {}) => await axiosClient.get(`${BASE_URL}/comparison`, { params }),
@@ -101,9 +101,7 @@ export const dashboardService = {
    * @param {string} [params.period='daily'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
    * @returns {Promise} P&L data grouped by period with { _id, revenue, cost, quantity, orders, profit }
    */
-  getProfitLossAnalysis: async (params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/profit-loss`, { params });
-  },
+  getProfitLossAnalysis: async (params = {}) => await axiosClient.get(`${BASE_URL}/profit-loss`, { params }),
 
   /**
    * Get expense analysis (product cost vs shipping cost)
@@ -111,9 +109,7 @@ export const dashboardService = {
    * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
    * @returns {Promise} Expense breakdown with { totalProductCost, totalShippingCost, totalExpense, breakdownByType }
    */
-  getExpenseAnalysis: async (params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/expense`, { params });
-  },
+  getExpenseAnalysis: async (params = {}) => await axiosClient.get(`${BASE_URL}/expense`, { params }),
 
   /**
    * Get top selling products with profit analysis
@@ -122,9 +118,17 @@ export const dashboardService = {
    * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
    * @returns {Promise} Array of products with { _id, name, totalQuantity, totalRevenue, cost, profit, profitMargin }
    */
-  getTopSellingProductsWithProfit: async (params = {}) => {
-    return await axiosClient.get(`${BASE_URL}/top-products-profit`, { params });
-  },
+  getTopSellingProductsWithProfit: async (params = {}) => await axiosClient.get(`${BASE_URL}/top-products-profit`, { params }),
+
+  /**
+   * Get product analytics by category
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @param {number} [params.limit=8] - Number of categories to retrieve
+   * @returns {Promise} { categories: [{categoryName, totalRevenue, totalQuantity, profit, profitMargin, revenuePercent}], totalRevenue, totalQuantity, totalProfit, period }
+   */
+  getProductAnalyticsByCategory: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/product-by-category`, { params }),
 
   // ============= ADMIN DASHBOARD ENDPOINTS =============
 
@@ -191,6 +195,21 @@ export const dashboardService = {
    */
   getAllDashboardData: async (params = {}) =>
     await axiosClient.get(`${BASE_URL}/admin/all`, { params }),
+
+  /**
+   * Get seller order counts by status (for Immediate To-Do section)
+   * @returns {Promise} { pending, confirmed, packing, shipping, toShip, cancellationCount, rmaCount }
+   */
+  getSellerOrderCounts: async () => await axiosClient.get(`${BASE_URL}/seller-order-counts`),
+
+  /**
+   * Get recent orders filtered by seller products (for detail modal)
+   * @param {object} params - Query parameters
+   * @param {number} [params.limit=20] - Number of orders to retrieve
+   * @returns {Promise} Array of { _id, orderNumber, customer, email, phone, totalPrice, status, statusLabel, statusColor, itemsCount, createdAt, createdAtStr }
+   */
+  getSellerRecentOrders: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/seller-recent-orders`, { params }),
 };
 
 export default dashboardService;

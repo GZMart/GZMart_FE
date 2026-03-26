@@ -79,6 +79,8 @@ export function formatPrice(price) {
 
 /** Format sold count */
 export function formatSold(sold) {
-  if (sold >= 1000) return `${(sold / 1000).toFixed(1)}k`;
+  if (sold >= 1000) {
+return `${(sold / 1000).toFixed(1)}k`;
+}
   return sold.toString();
 }

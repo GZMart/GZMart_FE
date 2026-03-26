@@ -20,7 +20,9 @@ function BannerCarouselModule({ module, isMobile }) {
   const ratioPad = aspectRatio === '2:1' ? '50%' : aspectRatio === '16:9' ? '56.25%' : '75%';
 
   const handleLinkClick = (link) => {
-    if (!link) return;
+    if (!link) {
+return;
+}
     if (link.startsWith('/product/')) {
       navigate(`/product/${link.replace('/product/', '')}`);
     } else if (link.startsWith('/category/')) {
@@ -38,7 +40,9 @@ function BannerCarouselModule({ module, isMobile }) {
     }
   };
 
-  if (images.length === 0) return null;
+  if (images.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.bannerCarousel}>
@@ -68,7 +72,9 @@ function BannerMultiModule({ module }) {
   const columns = props.columns || 2;
 
   const handleLinkClick = (link) => {
-    if (!link) return;
+    if (!link) {
+return;
+}
     if (link.startsWith('/product/')) {
       navigate(`/product/${link.replace('/product/', '')}`);
     } else if (link.startsWith('/category/')) {
@@ -78,7 +84,9 @@ function BannerMultiModule({ module }) {
     }
   };
 
-  if (images.length === 0) return null;
+  if (images.length === 0) {
+return null;
+}
 
   return (
     <div className={styles.bannerMulti} style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
@@ -104,7 +112,9 @@ function BannerSingleModule({ module }) {
   const link = props.link;
 
   const handleLinkClick = () => {
-    if (!link) return;
+    if (!link) {
+return;
+}
     if (link.startsWith('/product/')) {
       navigate(`/product/${link.replace('/product/', '')}`);
     } else if (link.startsWith('/category/')) {
@@ -114,7 +124,9 @@ function BannerSingleModule({ module }) {
     }
   };
 
-  if (!image) return null;
+  if (!image) {
+return null;
+}
 
   return (
     <div className={styles.bannerSingle} onClick={handleLinkClick} style={{ cursor: link ? 'pointer' : 'default' }}>
@@ -131,7 +143,9 @@ function BannerHotspotModule({ module }) {
   const hotspots = props.hotspots || [];
 
   const handleLinkClick = (link) => {
-    if (!link) return;
+    if (!link) {
+return;
+}
     if (link.startsWith('/product/')) {
       navigate(`/product/${link.replace('/product/', '')}`);
     } else if (link.startsWith('/category/')) {
@@ -141,7 +155,9 @@ function BannerHotspotModule({ module }) {
     }
   };
 
-  if (!image) return null;
+  if (!image) {
+return null;
+}
 
   return (
     <div className={styles.bannerHotspot}>
@@ -171,7 +187,9 @@ function TextModule({ module }) {
   const content = props.content;
   const align = props.align || 'left';
 
-  if (!title && !content) return null;
+  if (!title && !content) {
+return null;
+}
 
   return (
     <div className={styles.textModule} style={{ textAlign: align }}>
@@ -191,7 +209,9 @@ function ImageTextModule({ module }) {
   const position = props.position || 'left';
 
   const handleLinkClick = () => {
-    if (!props.link) return;
+    if (!props.link) {
+return;
+}
     if (props.link.startsWith('/product/')) {
       navigate(`/product/${props.link.replace('/product/', '')}`);
     } else if (props.link.startsWith('/category/')) {

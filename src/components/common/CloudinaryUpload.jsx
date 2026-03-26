@@ -54,7 +54,9 @@ const CloudinaryUpload = ({ value, onChange, hint, aspectRatio }) => {
       setUploading(true);
       const res = await axiosClient.post('/api/upload/single', formData);
       const url = res?.data?.url || res?.url;
-      if (!url) throw new Error('No URL returned from server');
+      if (!url) {
+throw new Error('No URL returned from server');
+}
       onChange?.(url);
       message.success('Image uploaded!');
     } catch (err) {
@@ -71,7 +73,9 @@ const CloudinaryUpload = ({ value, onChange, hint, aspectRatio }) => {
   const handleCropApply = (croppedUrl) => {
     // CropModal already uploaded the cropped blob → croppedUrl is the final URL.
     setCropModalUrl(null);
-    if (!croppedUrl) return;
+    if (!croppedUrl) {
+return;
+}
     onChange?.(croppedUrl);
     message.success('Anh da cat va tai len!');
   };

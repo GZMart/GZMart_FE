@@ -5,6 +5,19 @@ import 'react-quill/dist/quill.snow.css';
 import axiosClient from '../../services/axiosClient';
 import styles from '../../assets/styles/common/RichTextEditor.module.css';
 
+// Suppress react-quill's internal findDOMNode deprecation warning
+// (react-quill v2 uses legacy internal APIs; upgrade path exists in v3)
+const _origError = console.error;
+console.error = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    args[0].includes('findDOMNode is deprecated')
+  ) {
+    return;
+  }
+  _origError(...args);
+};
+
 /**
  * RichTextEditor — Shopee-style description editor with text + images
  * Uses Quill with custom image handler that uploads to /api/upload/single

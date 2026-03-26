@@ -109,15 +109,23 @@ const LotBreakdownRow = ({ sku, colCount }) => {
     inventoryService
       .getLotBreakdown(sku)
       .then((res) => {
-        if (!cancelled) setLots(res.data?.lots ?? []);
+        if (!cancelled) {
+setLots(res.data?.lots ?? []);
+}
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.response?.data?.error || 'Failed to load lot data');
+        if (!cancelled) {
+setError(err?.response?.data?.error || 'Failed to load lot data');
+}
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+setLoading(false);
+}
       });
-    return () => { cancelled = true; };
+    return () => {
+ cancelled = true; 
+};
   }, [sku]);
 
   const fmtDate = (d) =>
@@ -272,7 +280,9 @@ const TransactionHistoryDrawer = ({ item, onClose }) => {
   const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
 
   const loadHistory = useCallback(async () => {
-    if (!item?.sku) return;
+    if (!item?.sku) {
+return;
+}
     setLoading(true);
     setError(null);
     try {
@@ -296,7 +306,9 @@ const TransactionHistoryDrawer = ({ item, onClose }) => {
     }
   }, [item, loadHistory]);
 
-  if (!item) return null;
+  if (!item) {
+return null;
+}
 
   return (
     <>

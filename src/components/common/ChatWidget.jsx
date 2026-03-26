@@ -469,15 +469,33 @@ const ChatWidget = () => {
     .split('\n')
     .filter((line) => {
       const l = line.trim().toLowerCase().replace(/\*/g, '');
-      if (!l) { return true; }
-      if (/^-?\s*(giá|price)\s*:/i.test(l)) { return false; }
-      if (/^-?\s*(đánh giá|rating)\s*:/i.test(l)) { return false; }
-      if (/^-?\s*(đã bán|lượt bán|sold)\s*:/i.test(l)) { return false; }
-      if (/^-?\s*(danh mục|category)\s*:/i.test(l)) { return false; }
-      if (/^-?\s*(thương hiệu|brand)\s*:/i.test(l)) { return false; }
-      if (/^-?\s*(đánh giá)\s*:?\s*⭐/i.test(l)) { return false; }
-      if (/^\d+[.,]\d+\s*(đ|₫|vnd)/i.test(l)) { return false; }
-      if (/^⭐\s*\d/i.test(l)) { return false; }
+      if (!l) {
+ return true; 
+}
+      if (/^-?\s*(giá|price)\s*:/i.test(l)) {
+ return false; 
+}
+      if (/^-?\s*(đánh giá|rating)\s*:/i.test(l)) {
+ return false; 
+}
+      if (/^-?\s*(đã bán|lượt bán|sold)\s*:/i.test(l)) {
+ return false; 
+}
+      if (/^-?\s*(danh mục|category)\s*:/i.test(l)) {
+ return false; 
+}
+      if (/^-?\s*(thương hiệu|brand)\s*:/i.test(l)) {
+ return false; 
+}
+      if (/^-?\s*(đánh giá)\s*:?\s*⭐/i.test(l)) {
+ return false; 
+}
+      if (/^\d+[.,]\d+\s*(đ|₫|vnd)/i.test(l)) {
+ return false; 
+}
+      if (/^⭐\s*\d/i.test(l)) {
+ return false; 
+}
       return true;
     })
     .join('\n')
@@ -487,7 +505,9 @@ const ChatWidget = () => {
 
   const renderAiContent = (msg) => {
     const { content, isStreaming, products } = msg;
-    if (!content) { return null; }
+    if (!content) {
+ return null; 
+}
 
     if (isStreaming) {
       const cleanText = content.replace(/\[\[product:[a-f0-9]{24}\]\]/gi, '');
@@ -501,7 +521,9 @@ const ChatWidget = () => {
       const match = part.match(/\[\[product:([a-f0-9]{24})\]\]/i);
       if (match) {
         const product = productMap[match[1]];
-        if (!product) { return null; }
+        if (!product) {
+ return null; 
+}
         return (
           <div
             key={i}
@@ -548,7 +570,9 @@ const ChatWidget = () => {
         );
       }
       const cleaned = cleanProductText(part);
-      if (!cleaned) { return null; }
+      if (!cleaned) {
+ return null; 
+}
       return <span key={i}>{cleaned}</span>;
     });
 

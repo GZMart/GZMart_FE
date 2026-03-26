@@ -40,7 +40,15 @@ export function ProductsTable({ products = [], loading = false }) {
                       <span>{product.name}</span>
                     </div>
                   </td>
-                  <td className={styles.priceCell}>{formatCurrency(product.originalPrice || 0)}</td>
+                  <td className={styles.priceCell}>
+                    {product.minPrice != null && product.maxPrice != null && product.minPrice !== product.maxPrice ? (
+                      <span>
+                        {formatCurrency(product.minPrice)} &ndash; {formatCurrency(product.maxPrice)}
+                      </span>
+                    ) : (
+                      <span>{formatCurrency(product.originalPrice || product.minPrice || 0)}</span>
+                    )}
+                  </td>
                   <td className={styles.soldCell}>{product.totalSold || 0} pcs</td>
                   <td>
                     <span className={styles.statusBadge}>
