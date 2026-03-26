@@ -176,7 +176,7 @@ bucket.count++;
       onCancel={onClose}
       footer={null}
       width={860}
-      destroyOnClose
+      destroyOnHidden
     >
       <Spin spinning={loading} tip="Đang tải dữ liệu...">
         {/* AOV summary */}
@@ -315,5 +315,5 @@ AOVDetailModal.propTypes = {
       orders: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
       revenue: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     }),
-  }).isRequired,
+  }),
 };

@@ -6,6 +6,7 @@ import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
 import TiersEditor from './TiersEditor';
 import VariantsTable from './VariantsTable';
+import AiPriceSuggest from './AiPriceSuggest';
 import AiPriceSuggestModal from './AiPriceSuggestModal';
 import AiPriceDetailModal from './AiPriceDetailModal';
 import RichTextEditor from '../../common/RichTextEditor';
@@ -44,6 +45,11 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [preOrderDays, setPreOrderDays] = useState(2);
   const [aiModalShow, setAiModalShow] = useState(false);
   const [aiVariantDetail, setAiVariantDetail] = useState(null);
+  // [Tham khảo giá] State for simple-product inline price suggestion
+  const [aiPriceSuggestData, setAiPriceSuggestData] = useState(null);
+  const [showAiPriceDetail, setShowAiPriceDetail] = useState(false);
+  /** Stable id for AI rate-limit / cache while creating a product (avoid temp-${Date.now()} every render). */
+  const [draftAiProductId, setDraftAiProductId] = useState(null);
 
   const isEditMode = !!editingProduct;
   // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
@@ -59,6 +65,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     }
     return () => document.body.classList.remove('drawer-open');
   }, [show]);
+
+  useEffect(() => {
+    if (!show) {
+      setDraftAiProductId(null);
+      return;
+    }
+    if (editingProduct) {
+      setDraftAiProductId(null);
+      return;
+    }
+    setDraftAiProductId((prev) => prev || `temp-${Date.now()}`);
+  }, [show, editingProduct]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -248,6 +266,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         return {
           ...existingModel,
           tierIndex, // Ensure tierIndex is correct
+          // Ensure a stable clientId exists so AI batch calls are deterministic
+          clientId: existingModel.clientId || `m-${key}`,
         };
       }
 
@@ -258,6 +278,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         costPrice: parseFloat(formData.costPrice) || 0,
         stock: 0,
         sku: '',
+        clientId: `m-${key}`,
       };
     });
 
@@ -418,13 +439,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
   // [Batch AI] Apply AI-suggested prices to selected models
   const handleAiBatchApply = (changes) => {
-    const priceMap = new Map(changes.map((c) => [c.modelId, c.suggestedPrice]));
+    const priceMap = new Map(changes.map((c) => [String(c.modelId), c.suggestedPrice]));
     setModels((prev) =>
       prev.map((m) => {
-        const newPrice = priceMap.get(m._id?.toString());
+        const key = m.clientId || m._id?.toString();
+        const newPrice = key != null ? priceMap.get(String(key)) : undefined;
         return newPrice != null ? { ...m, price: newPrice } : m;
       })
     );
+  };
+  // [Tham khảo giá] Apply suggested price to simple product
+  const handleAiSimplePriceApply = (suggestedPrice) => {
+    setFormData((prev) => ({ ...prev, originalPrice: String(Math.round(suggestedPrice)) }));
   };
   const fetchAttributes = async (categoryId, existingAttributes = []) => {
     try {
@@ -1262,6 +1288,19 @@ e.preventDefault();
                         <div className={styles.invalidFeedback}>{errors.originalPrice}</div>
                       )}
                     </Form.Group>
+                    {/* Tham khảo giá — simple products only */}
+                    {productType === 'simple' && (
+                      <AiPriceSuggest
+                        product={{
+                          id: editingProduct?._id || draftAiProductId,
+                          name: formData.name || 'Sản phẩm mới',
+                          price: parseFloat(formData.originalPrice) || 0,
+                        }}
+                        onApply={handleAiSimplePriceApply}
+                        disabled={!formData.name.trim() || !formData.categoryId}
+                        disabledTitle="Cần nhập Tên sản phẩm và Danh mục trước"
+                      />
+                    )}
                   </Col>
                   <Col md={3}>
                     <Form.Group className="mb-3">
@@ -1619,12 +1658,12 @@ e.preventDefault();
                             <span className={styles.overLimitBadge}> (max 200)</span>
                           )}
                         </span>
-                        {models.length > 0 && !loading && (
+                        {models.length > 0 && !loading && formData.name.trim() && formData.categoryId && (
                           <button
                             type="button"
                             className={styles.aiSuggestBtn}
                             onClick={() => setAiModalShow(true)}
-                            title="AI đề xuất giá cho tất cả variants"
+                            title="Gợi ý giá tham khảo cho tất cả variants"
                           >
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
@@ -1914,9 +1953,10 @@ e.preventDefault();
       <AiPriceSuggestModal
         show={aiModalShow}
         product={{
-          id: editingProduct?._id || formData.sku || 'new-product',
+          id: editingProduct?._id || draftAiProductId || 'new-product',
           name: formData.name || 'Sản phẩm mới',
-          _raw: editingProduct || { tiers, models },
+          // Always use live tiers/models from state — editingProduct.models can be stale or empty
+          _raw: { ...(editingProduct || {}), tiers, models },
           tiers,
           models,
         }}
@@ -1927,7 +1967,7 @@ e.preventDefault();
             detailResult,
             batchData,
             productSnapshot: {
-              id: editingProduct?._id || formData.sku || 'new-product',
+              id: editingProduct?._id || draftAiProductId || 'new-product',
               name: formData.name || 'Sản phẩm mới',
             },
           });
@@ -1946,6 +1986,10 @@ e.preventDefault();
             discountPct: aiVariantDetail.detailResult.discountPct,
             marketData: aiVariantDetail.batchData.marketData,
             competitors: aiVariantDetail.batchData.competitors,
+            costData:
+              aiVariantDetail.detailResult.costData ??
+              aiVariantDetail.batchData.costData ??
+              null,
             product: {
               ...aiVariantDetail.batchData.product,
               currentPrice: aiVariantDetail.detailResult.currentPrice,

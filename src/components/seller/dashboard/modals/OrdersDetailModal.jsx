@@ -258,7 +258,7 @@ setLoading(false);
         </div>
       }
       width={1000}
-      destroyOnClose
+      destroyOnHidden
     >
       <Spin spinning={loading} tip="Đang tải đơn hàng...">
         {/* Comparison summary */}

@@ -602,7 +602,7 @@ return;
       width={720}
       centered
       className={styles.modal}
-      destroyOnClose
+      destroyOnHidden
       closable={false}
       afterOpenChange={(open) => {
         if (!open) {

@@ -1669,7 +1669,7 @@ const FlashSalesPage = () => {
         onCancel={handleCloseModal}
         width={1200}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Steps
           current={currentStep}

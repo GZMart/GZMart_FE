@@ -333,6 +333,76 @@
   word-break: break-word;
 }
 
+.reasoningBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reasoningMainLine {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.reasoningSectionHeader {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 5px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.reasoningCostLine {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  padding-left: 6px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reasoningTotal {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6ee7b7;
+  padding-left: 6px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 4px;
+}
+
+.reasoningAnalysis {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reasoningSpacer {
+  height: 3px;
+}
+
+.reasoningNoPo {
+  margin-top: 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #fde68a;
+  line-height: 1.5;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 /* ─── Competitor table section ────────────────────────────────── */
 .tableSection {
   display: flex;

@@ -210,7 +210,7 @@ return [];
       onCancel={onClose}
       footer={null}
       width={960}
-      destroyOnClose
+      destroyOnHidden
     >
       <Spin spinning={loading} tip="Đang tải dữ liệu...">
         {/* Period selector */}
@@ -416,7 +416,7 @@ return [formatCurrency(Math.abs(value)), 'Doanh thu'];
 ProfitDetailModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  period: PropTypes.string.isRequired,
+  period: PropTypes.string,
   comparison: PropTypes.shape({
     growth: PropTypes.shape({
       profit: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -427,5 +427,5 @@ ProfitDetailModal.propTypes = {
     previousPeriod: PropTypes.shape({
       profit: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     }),
-  }).isRequired,
+  }),
 };

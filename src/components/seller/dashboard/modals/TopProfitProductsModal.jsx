@@ -222,7 +222,7 @@ export function TopProfitProductsModal({ open, onClose }) {
       onCancel={onClose}
       footer={null}
       width={900}
-      destroyOnClose
+      destroyOnHidden
     >
       <Spin spinning={loading} tip="Đang tải dữ liệu…">
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>

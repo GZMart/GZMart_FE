@@ -171,7 +171,7 @@ return;
       cancelText="Hủy"
       width={900}
       bodyStyle={{ padding: 0 }}
-      destroyOnClose
+      destroyOnHidden
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 16 }}>
         {/* Instructions */}

@@ -229,7 +229,7 @@ setLoading(false);
       onCancel={onClose}
       footer={null}
       width={960}
-      destroyOnClose
+      destroyOnHidden
     >
       <Spin spinning={loading} tip="Đang tải dữ liệu...">
         {/* Period selector */}

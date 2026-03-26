@@ -481,12 +481,12 @@ const ListingsPage = () => {
                             <button
                               className={styles.aiBtn}
                               onClick={() => handleOpenAiModal(product)}
-                              title="AI gợi ý giá cho tất cả variants"
+                              title="Gợi ý giá tham khảo cho tất cả variants"
                             >
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
                               </svg>
-                              AI Giá
+                              Tham khảo giá
                             </button>
                           </div>
                         </td>
@@ -623,6 +623,11 @@ const ListingsPage = () => {
             discountPct: aiVariantDetail.detailResult.discountPct,
             marketData: aiVariantDetail.batchData.marketData,
             competitors: aiVariantDetail.batchData.competitors,
+            // PO / landed cost: từng dòng batch hoặc top-level payload (trước đây thiếu → luôn báo "chưa có phiếu nhập")
+            costData:
+              aiVariantDetail.detailResult.costData ??
+              aiVariantDetail.batchData.costData ??
+              null,
             product: {
               ...aiVariantDetail.batchData.product,
               currentPrice: aiVariantDetail.detailResult.currentPrice,

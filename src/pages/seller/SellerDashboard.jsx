@@ -462,7 +462,9 @@ const SellerDashboard = () => {
     dashboardService
       .getProductAnalyticsByCategory({ period: categoryPeriod })
       .then((res) => {
-        if (cancelled) return;
+        if (cancelled) {
+return;
+}
         const payload = res?.data;
         setCategoryAnalytics(
           payload && typeof payload === 'object' && !Array.isArray(payload)
@@ -471,9 +473,13 @@ const SellerDashboard = () => {
         );
       })
       .finally(() => {
-        if (!cancelled) setCategoryLoading(false);
+        if (!cancelled) {
+setCategoryLoading(false);
+}
       });
-    return () => { cancelled = true; };
+    return () => {
+ cancelled = true; 
+};
   }, [categoryPeriod]);
 
   // ── Derived: revenue trend KPI ──
@@ -631,7 +637,9 @@ const SellerDashboard = () => {
 
   // ── Derived: category chart data (pie slices + stable keys for a11y) ──
   const categoryChartData = useMemo(() => {
-    if (!Array.isArray(categoryAnalytics?.categories)) return [];
+    if (!Array.isArray(categoryAnalytics?.categories)) {
+return [];
+}
     return categoryAnalytics.categories.map((cat, idx) => ({
       rowKey: cat._id != null ? String(cat._id) : `cat-${idx}`,
       categoryName: cat.categoryName || 'Không phân loại',

@@ -32,6 +32,16 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+/* disabled due to missing required fields — slightly dimmer + no pointer */
+.aiBtn[data-gated] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.aiBtn[data-gated]:hover {
+  background: #f0f4ff;
+  border-color: #c7d2fe;
+  box-shadow: none;
+}
 .aiBtn svg {
   flex-shrink: 0;
 }
@@ -229,6 +239,16 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
+/* Wrapper for PoCostBreakdown in popover (light theme) */
+.poCostBreakdownWrap {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0 6px 6px 0;
+  border-left: 3px solid #16a34a;
+}
+
 /* ─── Reasoning text ────────────────────────────────────────────── */
 .reasoning {
   font-size: 11.5px;
@@ -399,6 +419,84 @@
 .strategySelect:focus {
   border-color: #1a56db;
   background: #fff;
+}
+
+.reasoningSpacer {
+  height: 3px;
+}
+
+.reasoningStructured {
+  margin-bottom: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0 6px 6px 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10.5px;
+  color: #334155;
+  border-left: 3px solid #16a34a;
+}
+
+.reasoningMainLine {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.reasoningSectionHeader {
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  margin-top: 4px;
+  margin-bottom: 1px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.reasoningCostLine {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #475569;
+  line-height: 1.5;
+  padding-left: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reasoningTotal {
+  font-size: 11px;
+  font-weight: 700;
+  color: #15803d;
+  padding-left: 4px;
+  margin-top: 3px;
+  border-top: 1px solid #bbf7d0;
+  padding-top: 4px;
+}
+
+.reasoningAnalysis {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reasoningNoPo {
+  margin-top: 7px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #92400e;
+  line-height: 1.5;
+  background: #fffbeb;
+  border-radius: 4px;
+  padding: 5px 7px;
+  border: 1px solid #fde68a;
 }
 
 /* ─── [Phase 1] Warning / Risk banners ─────────────────────────── */
