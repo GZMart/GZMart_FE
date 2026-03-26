@@ -20,6 +20,10 @@ import {
   X,
   Save,
   Layers,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  BarChart3,
 } from 'lucide-react';
 import { productService } from '../../../services/api/productService';
 import inventoryService from '../../../services/api/inventoryService';
@@ -29,6 +33,7 @@ import {
   selectInventoryError,
   clearError,
 } from '../../../store/slices/inventorySlice';
+import { selectUser } from '../../../store/slices/authSlice';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import styles from '../../../assets/styles/seller/InventoryPage.module.css';
 
@@ -565,6 +570,217 @@ const AdjustModal = ({ item, onClose, onSave, saving }) => {
   );
 };
 
+// ─── Demand Forecast Block ────────────────────────────────────
+const DemandForecastBlock = () => {
+  const user = useSelector(selectUser);
+  const sellerId = user?._id;
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [periodDays, setPeriodDays] = useState(90);
+  const [forecastTab, setForecastTab] = useState('restock');
+
+  const loadForecast = useCallback(async () => {
+    if (!sellerId) return;
+    setLoading(true);
+    try {
+      const res = await inventoryService.getDemandForecast({ days: periodDays });
+      setData(res.data);
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [sellerId, periodDays]);
+
+  useEffect(() => { loadForecast(); }, [loadForecast]);
+
+  if (!data && !loading) return null;
+
+  const urgentCount = data?.summary?.urgentRestock || 0;
+  const moderateCount = data?.summary?.moderateRestock || 0;
+  const restockSkuTotal =
+    data?.summary?.restockSkuAlerts ?? urgentCount + moderateCount;
+  const trendingUpCount = data?.summary?.trendingUp || 0;
+  const trendingDownCount = data?.summary?.trendingDown || 0;
+  const trendingUp = data?.trendAnalysis?.trendingUp || [];
+  const trendingDown = data?.trendAnalysis?.trendingDown || [];
+
+  const restockItems = (data?.restockAlerts || []).slice(0, 6);
+  const showRestock = restockSkuTotal > 0;
+  const showTrending = trendingUpCount > 0 || trendingDownCount > 0;
+  const trendTwoCols = trendingUp.length > 0 && trendingDown.length > 0;
+
+  const handleCreatePO = (item) => {
+    const qty = item.suggestedQuantity || Math.max(item.currentStock * 2, 10);
+    window.open(
+      `/seller/erp/purchase-orders?add=${encodeURIComponent(
+        JSON.stringify({ sku: item.sku, productId: item.productId, name: item.name, qty })
+      )}`,
+      '_blank'
+    );
+  };
+
+  return (
+    <div className={styles.demandBlock}>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className={styles.demandHeader}>
+        <div className={styles.demandTitle}>
+          <BarChart3 size={18} />
+          <span>AI Forecast</span>
+          <span className={styles.demandSubtitle}>
+            {data ? `${data?.summary?.totalProducts || 0} sản phẩm · ${periodDays} ngày` : 'Đang phân tích...'}
+          </span>
+        </div>
+        <div className={styles.demandActions}>
+          <select
+            className={styles.periodSelect}
+            value={periodDays}
+            onChange={(e) => setPeriodDays(Number(e.target.value))}
+          >
+            <option value={30}>30 ngày</option>
+            <option value={60}>60 ngày</option>
+            <option value={90}>90 ngày</option>
+          </select>
+          <button className={styles.iconBtnSm} onClick={loadForecast} disabled={loading} title="Refresh">
+            <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Metric Pills ──────────────────────────────────────── */}
+      <div className={styles.pillRow}>
+        <button
+          className={`${styles.pill} ${forecastTab === 'restock' ? styles.pillActive : ''}`}
+          onClick={() => setForecastTab('restock')}
+        >
+          <Package size={13} />
+          Cần nhập
+          {showRestock && <span className={styles.pillBadge}>{restockSkuTotal}</span>}
+        </button>
+        <button
+          className={`${styles.pill} ${forecastTab === 'trending' ? styles.pillActive : ''}`}
+          onClick={() => setForecastTab('trending')}
+        >
+          <TrendingUp size={13} />
+          Xu hướng
+          {showTrending && (
+            <span className={`${styles.pillBadge} ${styles.pillBadgeGreen}`}>
+              {trendingUpCount + trendingDownCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ── Tab: Cần nhập ─────────────────────────────────────── */}
+      {forecastTab === 'restock' && (
+        <>
+          {loading ? (
+            <div className={styles.forecastEmpty}>Đang phân tích...</div>
+          ) : restockItems.length > 0 ? (
+            <div className={styles.restockGrid}>
+              {restockItems.map((item, idx) => {
+                const rowKey = item.modelId || item.sku || item.productId || idx;
+                const isOos = item.currentStock === 0;
+                if (isOos) {
+                  const qtyOos = item.suggestedQuantity || 20;
+                  return (
+                    <div key={rowKey} className={styles.restockCard}>
+                      <div className={styles.restockCardLeft}>
+                        <span className={styles.restockName}>{item.name}</span>
+                        <span className={styles.restockSku}>{item.sku}</span>
+                      </div>
+                      <div className={styles.restockCardRight}>
+                        <span className={styles.outOfStockBadge}>Hết hàng</span>
+                        <button
+                          className={styles.restockBtn}
+                          onClick={() => handleCreatePO({ ...item, suggestedQuantity: qtyOos })}
+                        >
+                          Nhập hàng
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                const qty = item.suggestedQuantity || Math.max(item.currentStock * 2, 10);
+                const isUrgent = item.restockPriority === 'urgent';
+                return (
+                  <div key={rowKey} className={`${styles.restockCard} ${isUrgent ? styles.restockCardUrgent : ''}`}>
+                    <div className={styles.restockCardLeft}>
+                      <span className={styles.restockName}>{item.name}</span>
+                      <span className={styles.restockSku}>{item.sku}</span>
+                    </div>
+                    <div className={styles.restockCardMid}>
+                      <span className={styles.stockNum}>{item.currentStock}</span>
+                      <span className={styles.stockUnit}>còn lại</span>
+                    </div>
+                    <div className={styles.restockCardRight}>
+                      <span className={styles.suggestBadge}>+{qty}</span>
+                      <button
+                        className={`${styles.restockBtn} ${isUrgent ? styles.restockBtnUrgent : ''}`}
+                        onClick={() => handleCreatePO({ ...item, suggestedQuantity: qty })}
+                      >
+                        Nhập hàng
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.forecastEmpty}>
+              <CheckCircle2 size={28} style={{ color: '#16a34a' }} />
+              <p>Tất cả sản phẩm đều ổn định.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Xu hướng ─────────────────────────────────────── */}
+      {forecastTab === 'trending' && (
+        <div className={trendTwoCols ? styles.trendGrid : styles.trendGridSingle}>
+          {trendingUp.length > 0 && (
+            <div className={styles.trendCol}>
+              <div className={styles.trendColHeader}>
+                <TrendingUp size={13} />
+                Đang tăng
+                <span className={styles.trendCount}>{trendingUp.length}</span>
+              </div>
+              {trendingUp.map((item, idx) => (
+                <div key={idx} className={styles.trendItem}>
+                  <span className={styles.trendName}>{item.name}</span>
+                  <span className={styles.trendPctUp}>+{item.trendPercent}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {trendingDown.length > 0 && (
+            <div className={styles.trendCol}>
+              <div className={styles.trendColHeader}>
+                <TrendingDown size={13} />
+                Giảm nhu cầu
+                <span className={styles.trendCount}>{trendingDown.length}</span>
+              </div>
+              {trendingDown.map((item, idx) => (
+                <div key={idx} className={styles.trendItem}>
+                  <span className={styles.trendName}>{item.name}</span>
+                  <span className={styles.trendPctDown}>{item.trendPercent}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {!showTrending && (
+            <div className={styles.forecastEmpty}>
+              <Activity size={28} style={{ color: '#94a3b8' }} />
+              <p>Chưa có đủ dữ liệu xu hướng.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main Page ────────────────────────────────────────────────────
 const InventoryPage = () => {
   const dispatch = useDispatch();
@@ -955,6 +1171,9 @@ const InventoryPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── Demand Forecast Block ───────────────────────────────── */}
+      <DemandForecastBlock />
 
       {/* ── Toolbar ─────────────────────────────────────────────── */}
       <div className={styles.toolbar}>

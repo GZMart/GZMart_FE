@@ -67,6 +67,22 @@ const inventoryService = {
     const params = warehouseId ? { warehouseId } : {};
     return axiosClient.get(`${BASE}/lots/${encodeURIComponent(sku)}`, { params });
   },
+
+  /**
+   * Get demand forecast and restock alerts for seller
+   * GET /api/inventory/demand-forecast
+   * params: { days?: number } (default 90 days)
+   */
+  getDemandForecast: async (params = {}) =>
+    axiosClient.get(`${BASE}/demand-forecast`, { params }),
+
+  /**
+   * Get detailed product performance with weekly breakdown
+   * GET /api/inventory/product-performance/:productId
+   * params: { weeks?: number } (default 12 weeks)
+   */
+  getProductPerformance: async (productId, params = {}) =>
+    axiosClient.get(`${BASE}/product-performance/${productId}`, { params }),
 };
 
 export default inventoryService;
