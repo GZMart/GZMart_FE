@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { formatCurrency } from '../../../utils/formatters';
+import PoCostBreakdown from './PoCostBreakdown';
 import styles from './AiPriceDetailModal.module.css';
 
 const SORT_FIELDS = [
@@ -38,9 +40,13 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
 
   // Close on Escape
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+return;
+}
     const handler = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+onClose();
+}
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -56,7 +62,9 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
     }
   };
 
-  if (!show) return null;
+  if (!show) {
+return null;
+}
 
   const currentPrice = product?.price ?? data?.product?.currentPrice ?? 0;
   const priceDiff = data?.suggestedPrice != null
@@ -98,14 +106,53 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
   };
 
   const getSimilarityBadge = (score) => {
-    if (score == null) return null;
+    if (score == null) {
+return null;
+}
     const pct = Math.round(score * 100);
-    let label = `${pct}%`;
+    const label = `${pct}%`;
     let cls = styles.simBadgeMedium;
-    if (pct >= 90) cls = styles.simBadgeHigh;
-    else if (pct >= 80) cls = styles.simBadgeMedium;
-    else cls = styles.simBadgeLow;
+    if (pct >= 90) {
+cls = styles.simBadgeHigh;
+} else if (pct >= 80) {
+cls = styles.simBadgeMedium;
+} else {
+cls = styles.simBadgeLow;
+}
     return <span className={`${styles.simBadge} ${cls}`}>{label}</span>;
+  };
+
+  // ── Lý giải: có PO → list phí + giải thích từ costData; không có PO → cảnh báo + text AI ──
+  const renderSuggestionExplanation = () => {
+    const costData = data?.costData;
+    const reasoning = data?.reasoning;
+
+    if (costData?.hasCostData) {
+      return (
+        <div className={styles.reasoningBox}>
+          <PoCostBreakdown
+            variant="modal"
+            costData={costData}
+            suggestedPrice={data?.suggestedPrice}
+            currentPrice={currentPrice}
+            marketAvg={data?.marketData?.avg}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.reasoningBox}>
+        <div className={styles.reasoningLabel}>Lý giải gợi ý</div>
+        {reasoning ? (
+          <div className={styles.reasoningText}>{reasoning}</div>
+        ) : (
+          <div className={styles.reasoningNoPo}>
+            ⚠️ Chưa có thông tin phiếu nhập (Purchase Order) cho sản phẩm này. Không thể tính chính xác giá vốn landed.
+          </div>
+        )}
+      </div>
+    );
   };
 
   return createPortal(
@@ -122,7 +169,7 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
         className={styles.modal}
         role="dialog"
         aria-modal="true"
-        aria-label="Chi tiết phân tích giá AI"
+        aria-label="Chi tiết phân tích giá tham khảo"
       >
         {/* ── Header ── */}
         <div className={styles.modalHeader}>
@@ -133,7 +180,7 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
               </svg>
             </div>
             <div>
-              <h2 className={styles.modalTitle}>Chi tiết phân tích giá AI</h2>
+              <h2 className={styles.modalTitle}>Chi tiết phân tích giá tham khảo</h2>
               <p className={styles.modalSubtitle} title={data?.product?.name || product?.name}>
                 {data?.product?.name || product?.name || '—'}
               </p>
@@ -198,7 +245,7 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
               {priceDiff != null && (
                 <div className={`${styles.yourPriceNote} ${priceDiff >= 0 ? styles.noteUp : styles.noteDown}`}>
                   {priceDiff >= 0 ? '↑' : '↓'} {Math.abs(priceDiff).toLocaleString('vi-VN')}₫
-                  {' '}({priceDiff >= 0 ? '+' : ''}{diffPct}%) so với giá AI đề xuất
+                  {' '}({priceDiff >= 0 ? '+' : ''}{diffPct}%) so với mức giá tham khảo
                 </div>
               )}
               {isYourPriceLowest && (
@@ -235,7 +282,7 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
           {/* AI suggested price card */}
           <div className={styles.suggestCard}>
             <div className={styles.suggestLeft}>
-              <div className={styles.suggestLabel}>Giá AI đề xuất</div>
+              <div className={styles.suggestLabel}>Mức giá tham khảo</div>
               <div className={styles.suggestPrice}>
                 {formatCurrency(data?.suggestedPrice)}
               </div>
@@ -248,10 +295,7 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
               )}
             </div>
             <div className={styles.suggestRight}>
-              <div className={styles.reasoningBox}>
-                <div className={styles.reasoningLabel}>💡 Lý giải của AI</div>
-                <div className={styles.reasoningText}>{data?.reasoning || '—'}</div>
-              </div>
+              {renderSuggestionExplanation()}
             </div>
           </div>
 
@@ -320,7 +364,7 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
                             <div className={styles.priceMain}>{formatCurrency(comp.price)}</div>
                             {diffFromAi != null && (isAboveAi || isBelowAi) && (
                               <div className={`${styles.priceHint} ${isAboveAi ? styles.hintAbove : styles.hintBelow}`}>
-                                <span className={styles.priceHintLabel}>So với giá AI</span>
+                                <span className={styles.priceHintLabel}>So với giá tham khảo</span>
                                 <span className={styles.priceHintValue}>
                                   {isAboveAi ? '+' : '-'}
                                   {Math.abs(diffFromAi).toLocaleString('vi-VN')}₫
@@ -368,6 +412,52 @@ const AiPriceDetailModal = ({ show, onClose, data, product, onApply }) => {
     </>,
     document.body
   );
+};
+
+AiPriceDetailModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  product: PropTypes.shape({
+    name: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
+  data: PropTypes.shape({
+    product: PropTypes.shape({
+      name: PropTypes.string,
+      currentPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    }),
+    suggestedPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    competitors: PropTypes.array,
+    marketData: PropTypes.shape({
+      min: PropTypes.number,
+      max: PropTypes.number,
+      avg: PropTypes.number,
+    }),
+    riskLevel: PropTypes.string,
+    warningMessage: PropTypes.string,
+    reasoning: PropTypes.string,
+    // [Hướng 2] Chi phí nhập hàng từ Purchase Order
+    costData: PropTypes.shape({
+      hasCostData: PropTypes.bool,
+      landedCostPerUnit: PropTypes.number,
+      breakdown: PropTypes.shape({
+        productCostCny: PropTypes.number,
+        productCostVnd: PropTypes.number,
+        exchangeRate: PropTypes.number,
+        buyingServiceFeeRate: PropTypes.number,
+        buyingServiceFeeVnd: PropTypes.number,
+        shippingCostPerUnit: PropTypes.number,
+        chargeableWeightKg: PropTypes.number,
+        shippingRatePerKg: PropTypes.number,
+        taxPerUnit: PropTypes.number,
+        fixedCosts: PropTypes.shape({
+          perUnit: PropTypes.number,
+          note: PropTypes.string,
+        }),
+      }),
+    }),
+  }),
+  onApply: PropTypes.func.isRequired,
 };
 
 export default AiPriceDetailModal;

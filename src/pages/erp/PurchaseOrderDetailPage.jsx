@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -7,7 +8,6 @@ import {
   clearCurrentPurchaseOrder,
 } from '../../store/slices/erpSlice';
 import {
-  ArrowLeft,
   ChevronRight,
   CheckCircle2,
   Store,
@@ -43,6 +43,16 @@ const Toast = ({ toasts }) => (
     ))}
   </div>
 );
+
+Toast.propTypes = {
+  toasts: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      type: PropTypes.string,
+      message: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+};
 
 /* ── Helper: Generic Confirm Modal ──────────────────────────────── */
 const ConfirmModal = ({
@@ -83,6 +93,76 @@ const ConfirmModal = ({
       </div>
     </div>
   );
+};
+
+ConfirmModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool,
+  title: PropTypes.string.isRequired,
+  desc: PropTypes.string.isRequired,
+  confirmLabel: PropTypes.string.isRequired,
+  confirmVariant: PropTypes.string,
+};
+
+/* ── Helper: Status Badge ───────────────────────────────────────── */
+const getStatusConfig = (status) => {
+  const map = {
+    Draft: { label: 'Draft', heroClass: styles.badgeHero, lightClass: styles.badgeDraft },
+    PENDING_APPROVAL: {
+      label: 'Pending Approval',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgePending,
+    },
+    ORDERED: {
+      label: 'Ordered',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgePending,
+    },
+    ARRIVED_VN: {
+      label: 'Arrived VN',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgePending,
+    },
+    Pending: {
+      label: 'Ordering',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgePending,
+    },
+    Completed: {
+      label: 'Received',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgeCompleted,
+    },
+    COMPLETED: {
+      label: 'Received',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgeCompleted,
+    },
+    Cancelled: {
+      label: 'Cancelled',
+      heroClass: styles.badgeHero,
+      lightClass: styles.badgeCancelled,
+    },
+  };
+  return map[status] || map.PENDING_APPROVAL;
+};
+
+const StatusBadge = ({ status, variant = 'light' }) => {
+  const cfg = getStatusConfig(status);
+  const cls = variant === 'hero' ? cfg.heroClass : cfg.lightClass;
+  return (
+    <span className={`${styles.badge} ${cls}`}>
+      <span className={styles.badgeDot} />
+      {cfg.label}
+    </span>
+  );
+};
+
+StatusBadge.propTypes = {
+  status: PropTypes.string.isRequired,
+  variant: PropTypes.string,
 };
 
 /* ── Main Component ─────────────────────────────────────────────── */
@@ -126,59 +206,6 @@ const PurchaseOrderDetailPage = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const getStatusConfig = (status) => {
-    const map = {
-      Draft: { label: 'Draft', heroClass: styles.badgeHero, lightClass: styles.badgeDraft },
-      PENDING_APPROVAL: {
-        label: 'Pending Approval',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgePending,
-      },
-      ORDERED: {
-        label: 'Ordered',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgePending,
-      },
-      ARRIVED_VN: {
-        label: 'Arrived VN',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgePending,
-      },
-      Pending: {
-        label: 'Ordering',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgePending,
-      },
-      Completed: {
-        label: 'Received',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgeCompleted,
-      },
-      COMPLETED: {
-        label: 'Received',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgeCompleted,
-      },
-      Cancelled: {
-        label: 'Cancelled',
-        heroClass: styles.badgeHero,
-        lightClass: styles.badgeCancelled,
-      },
-    };
-    return map[status] || map.PENDING_APPROVAL;
-  };
-
-  const StatusBadge = ({ status, variant = 'light' }) => {
-    const cfg = getStatusConfig(status);
-    const cls = variant === 'hero' ? cfg.heroClass : cfg.lightClass;
-    return (
-      <span className={`${styles.badge} ${cls}`}>
-        <span className={styles.badgeDot} />
-        {cfg.label}
-      </span>
-    );
   };
 
   const handleConfirm = async () => {

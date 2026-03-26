@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
@@ -29,41 +30,94 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
   const [selected, setSelected] = useState(new Set()); // set of modelId strings
   // [Phase 3 - 5.1] Strategy selector state
   const [strategy, setStrategy] = useState('balanced');
+  // [Multi-strategy Redis cache] All 4 strategies — enables instant switching without re-fetch
+  const [allStrategies, setAllStrategies] = useState(null);
 
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+      return;
+    }
     document.body.classList.add('drawer-open');
     return () => document.body.classList.remove('drawer-open');
   }, [show]);
 
   // Close on Escape
   useEffect(() => {
-    if (!show) return;
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    if (!show) {
+      return;
+    }
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [show, onClose]);
 
-  // Reset when modal reopens, or when strategy changes
+  // Reset when modal reopens — fresh fetch
   useEffect(() => {
     if (show) {
       setStatus('loading');
       setData(null);
       setErrorMsg('');
       setSelected(new Set());
-      fetchBatch(strategy);
+      setAllStrategies(null);
+      fetchBatch('balanced');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
-  // Re-fetch when strategy changes (user picks a different strategy after modal is open)
+  /**
+   * Recalculate displayed results when user switches strategy — uses the already-
+   * cached allStrategies so switching is instant (no new API call / LLM wait).
+   */
   useEffect(() => {
-    if (!show || status === 'loading') return;
-    setStatus('loading');
-    setData(null);
-    setSelected(new Set());
-    fetchBatch(strategy);
+    if (!show || status === 'loading' || !allStrategies) {
+      return;
+    }
+    // Same data, different strategy — recompute from allStrategies
+    const strat = allStrategies[strategy];
+    if (!strat || !data?.results?.length) {
+      // Strategy not in cache — fall back to re-fetch (shouldn't happen with current BE)
+      fetchBatch(strategy);
+      return;
+    }
+
+    const refAvgForCalc = data.marketData?.confidence === 'high'
+      ? data.marketData?.clusterWeightedAvg
+      : (data.marketData?.weightedAvg || data.marketData?.avg || 0);
+    const floorPrice = data.costData?.hasCostData ? data.costData.landedCostPerUnit : 0;
+
+    const updated = data.results.map((r) => {
+      let suggested = Number(strat.suggestedPrice) || 0;
+      if (suggested > 0 && floorPrice > 0 && suggested < floorPrice) {
+suggested = floorPrice;
+}
+      const variantFloor = data.costData?.hasCostData ? data.costData.landedCostPerUnit : r.currentPrice;
+      if (suggested > 0 && suggested < variantFloor) {
+suggested = variantFloor;
+}
+      const variantDiscountPct = refAvgForCalc > 0 ? ((refAvgForCalc - suggested) / refAvgForCalc) * 100 : 0;
+      const suggestedMarginPct = data.costData?.hasCostData && data.costData.landedCostPerUnit > 0
+        ? ((suggested - data.costData.landedCostPerUnit) / data.costData.landedCostPerUnit) * 100
+        : 0;
+
+      return {
+        ...r,
+        suggestedPrice: Math.round(suggested),
+        reasoning: strat.reasoning || '',
+        discountPct: Math.round(variantDiscountPct * 10) / 10,
+        riskLevel: strat.riskLevel || 'safe',
+        warning: strat.warning || null,
+        warningMessage: strat.warningMessage || null,
+        strategy,
+        suggestedMarginPct: Math.round(suggestedMarginPct * 10) / 10,
+      };
+    });
+
+    setData((prev) => ({ ...prev, results: updated, strategy }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strategy]);
 
@@ -71,7 +125,28 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
     try {
       const sellerId = user?._id || user?.id;
       const rawProduct = product?._raw || product;
-      const modelIds = (rawProduct.models || []).map((m) => m._id?.toString()).filter(Boolean);
+      const rawModels =
+        Array.isArray(rawProduct.models) && rawProduct.models.length
+          ? rawProduct.models
+          : Array.isArray(product?.models)
+            ? product.models
+            : [];
+      // clientId (draft) → Mongo _id / id → stable fallback from tierIndex
+      const modelIds = rawModels
+        .map((m, idx) => {
+          const fromTier =
+            Array.isArray(m.tierIndex) && m.tierIndex.length
+              ? `m-${m.tierIndex.join('-')}`
+              : null;
+          return (
+            m.clientId ||
+            (m._id != null && String(m._id)) ||
+            (m.id != null && String(m.id)) ||
+            fromTier ||
+            `m-idx-${idx}`
+          );
+        })
+        .filter(Boolean);
 
       if (!modelIds.length) {
         setErrorMsg('Sản phẩm này chưa có variant nào để đề xuất giá.');
@@ -99,6 +174,8 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
         // Pre-select all by default
         const allIds = new Set(payload.results.map((r) => r.modelId));
         setSelected(allIds);
+        // [Multi-strategy Redis cache] Store all 4 strategies for instant strategy switching
+        setAllStrategies(payload.allStrategies || null);
         setData(payload);
         setStatus('success');
       } else {
@@ -117,7 +194,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
     return (tierIndex || [])
       .map((idx, tierIdx) => {
         const tier = tiers[tierIdx];
-        if (!tier) return `?`;
+        if (!tier) {
+return `?`;
+}
         const opt = tier.options?.[idx];
         return typeof opt === 'object' ? opt?.value : opt;
       })
@@ -132,7 +211,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
   };
 
   const toggleAll = () => {
-    if (!data?.results) return;
+    if (!data?.results) {
+return;
+}
     const allIds = data.results.map((r) => r.modelId);
     if (selected.size === allIds.length) {
       setSelected(new Set());
@@ -142,7 +223,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
   };
 
   const handleApply = () => {
-    if (!data?.results || !selected.size) return;
+    if (!data?.results || !selected.size) {
+return;
+}
     const changes = data.results
       .filter((r) => selected.has(r.modelId))
       .map((r) => ({ modelId: r.modelId, suggestedPrice: r.suggestedPrice }));
@@ -158,24 +241,38 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
 
   // Price diff helpers
   const diffClass = (diff) => {
-    if (diff > 0) return styles.diffUp;
-    if (diff < 0) return styles.diffDown;
+    if (diff > 0) {
+return styles.diffUp;
+}
+    if (diff < 0) {
+return styles.diffDown;
+}
     return styles.diffNeutral;
   };
 
   const riskClass = (level) => {
-    if (level === 'high') return `${styles.riskBadge} ${styles.riskHigh}`;
-    if (level === 'moderate') return `${styles.riskBadge} ${styles.riskModerate}`;
+    if (level === 'high') {
+return `${styles.riskBadge} ${styles.riskHigh}`;
+}
+    if (level === 'moderate') {
+return `${styles.riskBadge} ${styles.riskModerate}`;
+}
     return `${styles.riskBadge} ${styles.riskSafe}`;
   };
 
   const riskLabel = (level) => {
-    if (level === 'high') return 'Cao';
-    if (level === 'moderate') return 'TB';
+    if (level === 'high') {
+return 'Cao';
+}
+    if (level === 'moderate') {
+return 'TB';
+}
     return 'OK';
   };
 
-  if (!show) return null;
+  if (!show) {
+return null;
+}
 
   const results = data?.results || [];
 
@@ -185,7 +282,7 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
       <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="AI Price Suggestion for All Variants">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Gợi ý giá tham khảo cho tất cả biến thể">
 
         {/* ── Header ── */}
         <div className={styles.modalHeader}>
@@ -196,8 +293,20 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
               </svg>
             </div>
             <div className={styles.headerText}>
-              <h2 className={styles.modalTitle}>AI đề xuất giá — Tất cả Variants</h2>
+              <h2 className={styles.modalTitle}>Gợi ý giá tham khảo — Tất cả Variants</h2>
               <p className={styles.modalSubtitle} title={product?.name}>{product?.name}</p>
+              {/* [Analyzed timestamp] Show when this analysis was generated */}
+              {(data?.analyzedAt) && (
+                <p className={styles.analyzedAt}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                  </svg>
+                  Phân tích: {new Date(data.analyzedAt).toLocaleString('vi-VN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </p>
+              )}
             </div>
           </div>
 
@@ -301,7 +410,7 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
                     </th>
                     <th className={styles.thVar}>Variant</th>
                     <th className={styles.thCurrent}>Giá hiện tại</th>
-                    <th className={styles.thSuggested}>Giá AI đề xuất</th>
+                    <th className={styles.thSuggested}>Mức giá tham khảo</th>
                     <th className={styles.thDiff}>Chênh lệch</th>
                     <th className={styles.thRisk}>Rủi ro</th>
                     <th className={styles.thAction}></th>
@@ -340,12 +449,10 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
                       : '0.0';
                     const isSelected = selected.has(result.modelId);
                     const label = getVariantLabel(result.tierIndex);
-                    const isTopSeller = data?.marketData?.topSeller;
 
                     return (
-                      <>
+                      <Fragment key={result.modelId}>
                         <tr
-                          key={result.modelId}
                           className={isSelected ? styles.rowSelected : ''}
                           onClick={() => toggleRow(result.modelId)}
                           style={{ cursor: 'pointer' }}
@@ -387,7 +494,9 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
                             <button
                               type="button"
                               className={styles.detailBtn}
-                              onClick={(e) => { e.stopPropagation(); handleViewDetail(result); }}
+                              onClick={(e) => {
+ e.stopPropagation(); handleViewDetail(result); 
+}}
                               title="Xem chi tiết so sánh đối thủ"
                             >
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -412,7 +521,7 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -425,8 +534,15 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
         <div className={styles.modalFooter}>
           <div className={styles.footerLeft}>
             <button className={styles.selectAllBtn} onClick={toggleAll}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points={selected.size === results.length && results.length ? "20 6 9 17 4 12" : "9 11l2 2 4-4"} strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {selected.size === results.length && results.length ? (
+                  <path d="M20 6L9 17l-5-5" />
+                ) : (
+                  <>
+                    <path d="M9 11l2 2 4-4" />
+                    <line x1="9" y1="11" x2="9" y2="11" />
+                  </>
+                )}
               </svg>
               {selected.size === results.length && results.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
             </button>
@@ -457,6 +573,21 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
     </>,
     document.body
   );
+};
+
+AiPriceSuggestModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  product: PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string,
+    tiers: PropTypes.array,
+    _raw: PropTypes.shape({
+      tiers: PropTypes.array,
+    }),
+  }),
+  onApply: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onViewDetail: PropTypes.func.isRequired,
 };
 
 export default AiPriceSuggestModal;

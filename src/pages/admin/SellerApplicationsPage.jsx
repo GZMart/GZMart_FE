@@ -45,7 +45,9 @@ const SellerApplicationsPage = () => {
         page: pagination.current,
         limit: pagination.pageSize,
       };
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter) {
+params.status = statusFilter;
+}
 
       const data = await sellerApplicationService.listSellerApplications(params);
       setApplications(data.applications || []);
@@ -223,7 +225,9 @@ const SellerApplicationsPage = () => {
 
   const renderDetailModal = () => {
     const record = detailModal.record;
-    if (!record) return null;
+    if (!record) {
+return null;
+}
     const user = record.user || {};
     const statusCfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.pending;
     const addressParts = [user.address, user.wardName, user.provinceName].filter(Boolean);

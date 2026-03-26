@@ -16,6 +16,12 @@ export const chatService = {
    * @returns {Promise} Array of conversation objects
    */
   getConversations: async () => await axiosClient.get(`${BASE_URL}/conversations`),
+
+  /**
+   * Count unread messages (messages received but not read yet)
+   * @returns {Promise} { count: number }
+   */
+  getUnreadCount: async () => await axiosClient.get(`${BASE_URL}/unread/count`),
 };
 
 export default chatService;

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
 import { formatCurrency } from '../../../utils/formatters';
 import AiPriceDetailModal from './AiPriceDetailModal';
+import PoCostBreakdown from './PoCostBreakdown';
 import styles from './AiPriceSuggest.module.css';
 
 const PANEL_WIDTH = 300;
@@ -18,8 +20,10 @@ const PANEL_Z = 1100;
  *  - product: { id, name, price } — the row's product object
  *  - onApply(suggestedPrice): callback when seller clicks "Apply"
  *  - modelId (optional): selected variant ID for variant-aware price suggestion [Phase 2 - 4.1]
+ *  - disabled (optional): prevent interaction until required fields are filled
+ *  - disabledTitle (optional): tooltip shown when disabled
  */
-const AiPriceSuggest = ({ product, onApply, modelId }) => {
+const AiPriceSuggest = ({ product, onApply, modelId, disabled = false, disabledTitle = '' }) => {
   const { user } = useSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
@@ -39,11 +43,15 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
 
   // Close panel on outside click (panel is portaled — check both roots)
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+return;
+}
     const handler = (e) => {
       const inAnchor = anchorRef.current?.contains(e.target);
       const inPanel = panelRef.current?.contains(e.target);
-      if (!inAnchor && !inPanel) setOpen(false);
+      if (!inAnchor && !inPanel) {
+setOpen(false);
+}
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -51,7 +59,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
 
   // Fixed position under anchor; flip above if clipped (table card uses overflow:hidden)
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return;
+    if (!open || !anchorRef.current) {
+return;
+}
 
     const updatePosition = () => {
       const ar = anchorRef.current.getBoundingClientRect();
@@ -66,7 +76,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
       if (top + h > window.innerHeight - VIEW_MARGIN) {
         top = ar.top - h - PANEL_GAP;
       }
-      if (top < VIEW_MARGIN) top = VIEW_MARGIN;
+      if (top < VIEW_MARGIN) {
+top = VIEW_MARGIN;
+}
       setPanelPos({ top, left });
     };
 
@@ -74,7 +86,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
     const ro = new ResizeObserver(updatePosition);
     const rafId = requestAnimationFrame(() => {
       updatePosition();
-      if (panelRef.current) ro.observe(panelRef.current);
+      if (panelRef.current) {
+ro.observe(panelRef.current);
+}
     });
     window.addEventListener('scroll', updatePosition, true);
     window.addEventListener('resize', updatePosition);
@@ -194,12 +208,50 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
     ? ((priceDiff / product.price) * 100).toFixed(1)
     : null;
 
+  const renderSuggestionExplanation = () => {
+    const costData = data?.costData;
+    const cur = product?.price != null ? Number(product.price) : null;
+
+    if (costData?.hasCostData) {
+      return (
+        <div className={styles.poCostBreakdownWrap}>
+          <PoCostBreakdown
+            variant="panel"
+            costData={costData}
+            suggestedPrice={data?.suggestedPrice}
+            currentPrice={cur}
+            marketAvg={data?.marketData?.avg}
+          />
+        </div>
+      );
+    }
+
+    if (!reasoning) {
+      return (
+        <div className={styles.reasoning}>
+          <div className={styles.reasoningNoPo}>
+            ⚠️ Chưa có thông tin phiếu nhập (Purchase Order) cho sản phẩm này. Không thể tính chính xác giá vốn landed.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.reasoning}>
+        {reasoning}
+        <div className={styles.reasoningNoPo}>
+          ⚠️ Chưa có thông tin phiếu nhập (Purchase Order) cho sản phẩm này. Không thể tính chính xác giá vốn landed.
+        </div>
+      </div>
+    );
+  };
+
   const panelEl = open && (
     <div
       ref={panelRef}
       className={styles.panel}
       role="dialog"
-      aria-label="AI Price Suggestion"
+      aria-label="Gợi ý giá tham khảo"
       style={{
         position: 'fixed',
         top: panelPos.top,
@@ -210,7 +262,7 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
       {/* Header */}
       <div className={styles.panelHeader}>
         <span className={styles.panelTitle}>
-          ✨ Gợi ý giá AI
+          ✨ Gợi ý giá tham khảo
         </span>
         <button className={styles.closeBtn} onClick={() => setOpen(false)} aria-label="Đóng">
           <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
@@ -274,8 +326,9 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
           <>
             {/* Product name + competitor count + cache badge */}
             <div className={styles.metaRow}>
-              <span className={styles.productName} title={data.product?.name}>
-                {data.product?.name || product.name}
+              <span className={styles.productName} title={product.name || data.product?.name}>
+                {/* Prefer form / row name — API used to return a different DB product for draft listings */}
+                {product.name || data.product?.name}
               </span>
               <span className={styles.competitorCount}>
                 {data.marketData?.count ?? 0} đối thủ
@@ -328,7 +381,7 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
 
             {/* AI suggested price card */}
             <div className={styles.suggestCard}>
-              <div className={styles.suggestLabel}>Giá AI đề xuất</div>
+              <div className={styles.suggestLabel}>Mức giá tham khảo</div>
               <div className={styles.suggestPrice}>
                 {formatCurrency(data.suggestedPrice)}
               </div>
@@ -340,10 +393,8 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
               )}
             </div>
 
-            {/* AI Reasoning */}
-            {data.reasoning && (
-              <div className={styles.reasoning}>{data.reasoning}</div>
-            )}
+            {/* Lý giải: list phí PO + giải thích giá đề xuất (từ costData) */}
+            {renderSuggestionExplanation()}
 
             {/* ─ [Phase 1] Risk / Warning banners ─ */}
             {data.riskLevel === 'high' && data.warningMessage && (
@@ -403,9 +454,10 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
       <button
         className={styles.aiBtn}
         onClick={handleToggle}
-        disabled={status === 'loading'}
-        title="AI gợi ý giá bán"
-        aria-label="AI gợi ý giá cho sản phẩm"
+        disabled={disabled || status === 'loading'}
+        data-gated={disabled ? 'true' : undefined}
+        title={disabled ? disabledTitle : 'Gợi ý giá bán (tham khảo thị trường)'}
+        aria-label="Gợi ý giá tham khảo cho sản phẩm"
       >
         {status === 'loading' ? (
           <svg
@@ -420,7 +472,7 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
             <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
           </svg>
         )}
-        {status === 'loading' ? '...' : 'AI Giá'}
+        {status === 'loading' ? '...' : 'Tham khảo giá'}
       </button>
 
       {typeof document !== 'undefined' && panelEl
@@ -442,6 +494,19 @@ const AiPriceSuggest = ({ product, onApply, modelId }) => {
       )}
     </div>
   );
+};
+
+AiPriceSuggest.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.string,
+    name: PropTypes.string,
+    modelId: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
+  onApply: PropTypes.func.isRequired,
+  modelId: PropTypes.string,
+  disabled: PropTypes.bool,
+  disabledTitle: PropTypes.string,
 };
 
 export default AiPriceSuggest;

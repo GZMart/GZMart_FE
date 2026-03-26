@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { X, Save, Pencil, AlertTriangle, Send, XCircle, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -13,7 +14,7 @@ import {
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import drawerStyles from '@assets/styles/erp/EditPODrawer.module.css';
 import formStyles from '@assets/styles/erp/CreatePurchaseOrderPage.module.css';
-import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../constants/tierTypes';
+import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION, buildTierSelectOptions } from '../../constants/tierTypes';
 
 /* ────────────────────────────────────────────────────────────────────
    Utilities (shared with EditPurchaseOrderPage)
@@ -95,6 +96,7 @@ const MAX_OPTIONS = 20;
 
 const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s, readOnly }) => {
   const tierDef = TIER_TYPES[tier.type];
+  const selectOptions = useMemo(() => buildTierSelectOptions(tierDef, tier), [tierDef, tier]);
   const availableTypes = TIER_TYPE_KEYS.filter((k) => k === tier.type || !usedTypes.includes(k));
 
   const addOption = () => {
@@ -163,7 +165,7 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, s, 
                   disabled={readOnly}
                 >
                   <option value="">-- Select {tierDef.nameEn.toLowerCase()} --</option>
-                  {tierDef.options.map((o) => (
+                  {selectOptions.map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
@@ -1081,6 +1083,45 @@ const EditPODrawer = ({ poId, onClose, onSaved, onSubmitted, onCancelled }) => {
     </>,
     document.body
   );
+};
+
+LabelWithTooltip.propTypes = {
+  children: PropTypes.node.isRequired,
+  tooltip: PropTypes.string.isRequired,
+};
+
+TierRow.propTypes = {
+  tier: PropTypes.shape({
+    type: PropTypes.string,
+    options: PropTypes.array.isRequired,
+  }).isRequired,
+  usedTypes: PropTypes.array.isRequired,
+  onChangeType: PropTypes.func.isRequired,
+  onChangeOptions: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
+  s: PropTypes.object.isRequired,
+  readOnly: PropTypes.bool,
+};
+
+ProductGroup.propTypes = {
+  group: PropTypes.shape({
+    productName: PropTypes.string,
+    tiers: PropTypes.array,
+    variants: PropTypes.arrayOf(
+      PropTypes.shape({
+        sku: PropTypes.string,
+        weightKg: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        dimLength: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        dimWidth: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        dimHeight: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      })
+    ).isRequired,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  exchangeRate: PropTypes.number.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool,
 };
 
 export default EditPODrawer;

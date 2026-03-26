@@ -120,7 +120,9 @@ class AIChatService {
             } else if (data.type === 'error') {
               throw new Error(data.content || 'AI encountered an error');
             } else if (data.type === 'thinking') {
-              if (onThinking) onThinking(data.content);
+              if (onThinking) {
+onThinking(data.content);
+}
             } else if (data.type === 'heartbeat') {
               // keep-alive, no action needed
             }

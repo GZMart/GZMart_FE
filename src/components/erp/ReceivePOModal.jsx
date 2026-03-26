@@ -49,9 +49,13 @@ const ReceivePOModal = ({ isOpen, onClose, poId, po, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!id) return;
+    if (!id) {
+return;
+}
     setError('');
-    if (!validate()) return;
+    if (!validate()) {
+return;
+}
 
     setSubmitting(true);
     try {
@@ -78,7 +82,9 @@ const ReceivePOModal = ({ isOpen, onClose, poId, po, onSuccess }) => {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+return null;
+}
 
   return (
     <div className={styles.overlay} onClick={onClose}>

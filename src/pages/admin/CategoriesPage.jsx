@@ -818,7 +818,7 @@ const CategoriesPage = () => {
         cancelText="Cancel"
         confirmLoading={submitting}
         width={760}
-        destroyOnClose
+        destroyOnHidden
         className={styles.categoryModal}
       >
         <Form form={form} layout="vertical" className={styles.form}>

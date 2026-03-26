@@ -12,9 +12,15 @@ import styles from '../../assets/styles/ShopProfilePage.module.css';
 
 /** Cloudinary: request high-quality display for banner (width 1920, limit crop, best quality) */
 function bannerDisplayUrl(url) {
-  if (!url || typeof url !== 'string') return url;
-  if (!url.includes('cloudinary.com')) return url;
-  if (url.includes('w_1920') || url.includes('q_auto:best')) return url;
+  if (!url || typeof url !== 'string') {
+return url;
+}
+  if (!url.includes('cloudinary.com')) {
+return url;
+}
+  if (url.includes('w_1920') || url.includes('q_auto:best')) {
+return url;
+}
   return url.replace(/\/upload\//, '/upload/w_1920,c_limit,q_auto:best,f_auto/');
 }
 
@@ -28,18 +34,24 @@ export default function LiveBannerCarousel({ images = [], autoplay = true, inter
 
   useEffect(() => {
     if (!autoplay || total <= 1) {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+clearInterval(timerRef.current);
+}
       return;
     }
     timerRef.current = setInterval(() => {
       setCurrent((c) => (c + 1) % total);
     }, interval);
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+clearInterval(timerRef.current);
+}
     };
   }, [autoplay, interval, total]);
 
-  if (total === 0) return null;
+  if (total === 0) {
+return null;
+}
 
   const getSrc = (img) => {
     const raw = typeof img === 'string' ? img : img?.url || '';

@@ -8,7 +8,7 @@ export const aiService = {
    * [Phase 2 - 4.1] modelId added for variant-aware suggestion.
    * [Phase 3 - 5.1] strategy added for Pricing Personas (balanced | penetration | profit | clearance).
    * @param {{ productId?: string, productName: string, sellerId: string, modelId?: string, strategy?: string }} params
-   * @returns {Promise<{ success: boolean, suggestedPrice: number, reasoning: string, strategy: string, marketData: object, competitors: object[], product: object, fromCache?: boolean, cachedAt?: string }>}
+   * @returns {Promise<{ success: boolean, suggestedPrice: number, reasoning: string, strategy: string, marketData: object, competitors: object[], product: object, fromCache?: boolean, cachedAt?: string, costData?: object, marginInfo?: object, suggestedMarginPct?: number }>}
    */
   getPriceSuggestion: async ({ productId, productName, sellerId, modelId, strategy }) =>
     axiosClient.post(`${BASE_URL}/price-suggest`, { productId, productName, sellerId, modelId, strategy }),

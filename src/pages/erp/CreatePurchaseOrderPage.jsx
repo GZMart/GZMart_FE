@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -11,13 +12,106 @@ import {
 import inventoryService from '../../services/api/inventoryService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import styles from '@assets/styles/erp/CreatePurchaseOrderPage.module.css';
-import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../constants/tierTypes';
+import {
+  TIER_TYPES,
+  TIER_TYPE_KEYS,
+  CUSTOM_OPTION,
+  listingTierToFormState,
+  buildTierSelectOptions,
+} from '../../constants/tierTypes';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
 const fmtCny = (n) => `¥${(Number(n) || 0).toFixed(2)}`;
+
+/** tierIndex → human label; API Product.tiers with string[] options */
+const variantLabelFromRawTiers = (tiers, tierIndex) => {
+  if (!Array.isArray(tiers) || !Array.isArray(tierIndex) || tierIndex.length === 0) {
+return '';
+}
+  const parts = [];
+  for (let axis = 0; axis < Math.min(tiers.length, tierIndex.length); axis++) {
+    const idx = Number(tierIndex[axis]);
+    if (Number.isNaN(idx)) {
+continue;
+}
+    const opt = tiers[axis]?.options?.[idx];
+    const s = opt == null ? '' : typeof opt === 'string' ? opt : String(opt?.value ?? '');
+    if (s) {
+parts.push(s);
+}
+  }
+  return parts.join(' / ');
+};
+
+/** PO form tiers: options are { value, isCustom } */
+const variantLabelFromFormTiers = (tiersForm, tierIndex) => {
+  if (!Array.isArray(tiersForm) || !Array.isArray(tierIndex) || tierIndex.length === 0) {
+return '';
+}
+  const parts = [];
+  for (let axis = 0; axis < Math.min(tiersForm.length, tierIndex.length); axis++) {
+    const idx = Number(tierIndex[axis]);
+    if (Number.isNaN(idx)) {
+continue;
+}
+    const o = tiersForm[axis]?.options?.[idx];
+    const s = !o ? '' : typeof o === 'string' ? o : String(o.value ?? '');
+    if (s) {
+parts.push(s);
+}
+  }
+  return parts.join(' / ');
+};
+
+const listingTiersToPoFormTiers = (listingTiers = []) =>
+  (listingTiers || []).map((t) => listingTierToFormState(t));
+
+const vndToCnyHint = (vnd, rate) => {
+  const r = Number(rate) || 0;
+  const v = Number(vnd) || 0;
+  if (r <= 0 || v <= 0) {
+    return 0;
+  }
+  return Math.round((v / r) * 100) / 100;
+};
+
+/**
+ * Low-stock URL prefill: keep only tier option rows used by the prefilled SKU(s),
+ * so the classification UI matches the variant table (not full listing 4×4 vs 2 rows).
+ */
+const subsetTiersToMatchVariantTierIndexes = (tiersForm, variants) => {
+  if (!Array.isArray(tiersForm) || tiersForm.length === 0 || !Array.isArray(variants) || variants.length === 0) {
+    return tiersForm;
+  }
+  const withIdx = variants.filter(
+    (v) => Array.isArray(v._tierIndex) && v._tierIndex.length > 0,
+  );
+  if (withIdx.length === 0) {
+return tiersForm;
+}
+
+  return tiersForm.map((tier, axis) => {
+    const idxSet = new Set();
+    withIdx.forEach((v) => {
+      const idx = Number(v._tierIndex[axis]);
+      if (!Number.isNaN(idx) && idx >= 0) {
+idxSet.add(idx);
+}
+    });
+    if (idxSet.size === 0) {
+return tier;
+}
+    const sorted = [...idxSet].sort((a, b) => a - b);
+    const newOptions = sorted.map((i) => tier.options[i]).filter((o) => o != null);
+    if (newOptions.length === 0) {
+return tier;
+}
+    return { ...tier, options: newOptions };
+  });
+};
 
 /** Label with tooltip icon — hover to see fee explanation */
 const LabelWithTooltip = ({ children, tooltip }) => (
@@ -113,6 +207,7 @@ const MAX_OPTIONS = 20;
 
 const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, styles }) => {
   const tierDef = TIER_TYPES[tier.type];
+  const selectOptions = useMemo(() => buildTierSelectOptions(tierDef, tier), [tierDef, tier]);
   // Show all type keys that are either this tier's current type OR not already used
   const availableTypes = TIER_TYPE_KEYS.filter((k) => k === tier.type || !usedTypes.includes(k));
 
@@ -182,7 +277,7 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, sty
                   onChange={(e) => handleOptionSelect(i, e.target.value)}
                 >
                   <option value="">-- Select {tierDef.nameEn.toLowerCase()} --</option>
-                  {tierDef.options.map((o) => (
+                  {selectOptions.map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
@@ -216,7 +311,7 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, sty
 // LISTING PICKER MODAL
 // Let seller pick variants from their existing product listings
 // ─────────────────────────────────────────────────────────────────────────────
-const ListingPickerModal = ({ products, loading, onSelect, onClose }) => {
+const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate = 3500 }) => {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null); // { productId, product }
   const [checkedModels, setCheckedModels] = useState({}); // modelId → bool
@@ -243,16 +338,8 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose }) => {
     setCheckedModels(initial);
   };
 
-  const buildVariantLabel = (product, model) => {
-    const { tiers = [] } = product;
-    if (!tiers.length || !model.tierIndex?.length) {
-      return '';
-    }
-    return model.tierIndex
-      .map((ti, axis) => tiers[axis]?.options[ti] ?? '')
-      .filter(Boolean)
-      .join(' / ');
-  };
+  const buildVariantLabel = (product, model) =>
+    variantLabelFromRawTiers(product.tiers, model?.tierIndex || []);
 
   const handleConfirm = () => {
     if (!selected) {
@@ -263,17 +350,20 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose }) => {
       return;
     }
 
+    const rate = Number(exchangeRate) || 3500;
+
     // One group per product, variants = all picked models
     const group = {
       _id: Math.random().toString(36).slice(2),
       productName: selected.name,
       productId: selected._id,
-      tiers: [],
+      tiers: listingTiersToPoFormTiers(selected.tiers),
       variants: pickedModels.map((model) => ({
         _variantLabel: buildVariantLabel(selected, model),
         sku: model.sku,
         quantity: 1,
-        unitPriceCny: 0,
+        unitPriceCny:
+          vndToCnyHint(model.costPrice, rate) || vndToCnyHint(model.price, rate),
         _productId: selected._id,
         _modelId: model._id,
       })),
@@ -701,8 +791,12 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
       let updated = false;
 
       for (const v of variants) {
-        if (!v.sku || v.sku.length < 3) continue;
-        if (newWarnings[v.sku]) continue;
+        if (!v.sku || v.sku.length < 3) {
+continue;
+}
+        if (newWarnings[v.sku]) {
+continue;
+}
 
         try {
           const res = await inventoryService.getLotBreakdown(v.sku);
@@ -725,6 +819,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
 
     const timer = setTimeout(fetchWarnings, 500);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variants]);
 
   const openPicker = useCallback(() => {
@@ -774,7 +869,9 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
   };
 
   const bulkUpdateVariants = (field, value) => {
-    if (value === '' || value == null) return;
+    if (value === '' || value == null) {
+return;
+}
     const parsed = field === 'quantity' ? Math.max(1, parseInt(value, 10) || 1) : parseFloat(value) || 0;
     const newVariants = variants.map((v) => ({ ...v, [field]: parsed }));
     onUpdate({ ...group, variants: newVariants });
@@ -789,6 +886,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
           loading={myProductsLoading}
           onSelect={handlePickerSelect}
           onClose={() => setShowPicker(false)}
+          exchangeRate={exchangeRate}
         />
       )}
 
@@ -969,7 +1067,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                       <tr>
                         <td colSpan="5" style={{ padding: '8px 12px', background: '#fffbeb', color: '#b45309', fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>
                           ⚠️ <strong>Cảnh báo tồn kho:</strong> SKU này đang còn tồn <strong>{warn.totalRemaining}</strong> sản phẩm từ lô cũ 
-                          {warn.lots?.length > 0 && ` (giá vốn: ${warn.lots.map((l) => fmt(l.costPrice) + 'đ').join(', ')})`}.
+                          {warn.lots?.length > 0 && ` (giá vốn: ${warn.lots.map((l) => `${fmt(l.costPrice)  }đ`).join(', ')})`}.
                           Xin lưu ý khi định giá mua mới.
                         </td>
                       </tr>
@@ -1004,13 +1102,110 @@ const CreatePurchaseOrderPage = () => {
   const {
     suppliers,
     loading,
-    myProducts,
-    myProductsLoading,
     exchangeRate: liveRate,
   } = useSelector((state) => state.erp);
 
   const [searchParams] = useSearchParams();
   const supplierIdFromUrl = searchParams.get('supplierId') || '';
+
+  // Pre-fill products from URL params (?products=...)
+  useEffect(() => {
+    const raw = searchParams.get('products');
+    if (!raw) {
+return;
+}
+    try {
+      const decoded = JSON.parse(decodeURIComponent(raw));
+      const products = Array.isArray(decoded) ? decoded : [decoded];
+
+      let prefillRate = 3500;
+      try {
+        const saved = JSON.parse(localStorage.getItem('gz_import_config') || '{}');
+        if (saved?.exchangeRate != null) {
+prefillRate = Number(saved.exchangeRate) || 3500;
+}
+      } catch {
+        /* ignore */
+      }
+
+      const normNameKey = (name) =>
+        String(name || '')
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, ' ');
+
+      // Group by normalized product name: dashboard may return multiple Product docs
+      // (different _id) for the same listing title; they should be one PO line group.
+      const grouped = new Map();
+      products.forEach((p) => {
+        if (!p || !p.name) {
+return;
+}
+        const groupKey = normNameKey(p.name);
+
+        if (!grouped.has(groupKey)) {
+          // All docs with the same name share the same tier def; prefer first non-empty
+          const productTiers = Array.isArray(p.tiers) && p.tiers.length > 0
+            ? p.tiers.map((t) => listingTierToFormState(t))
+            : [];
+          grouped.set(groupKey, {
+            _id: Math.random().toString(36).slice(2),
+            productName: p.name.trim(),
+            tiers: productTiers,
+            variants: [],
+          });
+        } else {
+          // Fill in tiers if the first doc didn't have them
+          const existing = grouped.get(groupKey);
+          if (existing.tiers.length === 0 && Array.isArray(p.tiers) && p.tiers.length > 0) {
+            existing.tiers = p.tiers.map((t) => listingTierToFormState(t));
+          }
+        }
+        const g = grouped.get(groupKey);
+
+        // Only the model that triggered the low-stock warning (lowestStockModel)
+        const model = p.lowestStockModel;
+        if (model && (model.sku || model._id)) {
+          const mid = model._id ? String(model._id) : '';
+          const sku = model.sku ? String(model.sku) : '';
+          const isDup = g.variants.some(
+            (v) =>
+              (mid && String(v._modelId) === mid) ||
+              (sku && v.sku === sku),
+          );
+          if (!isDup) {
+            const variantLabel = variantLabelFromFormTiers(g.tiers, model.tierIndex || []);
+            g.variants.push({
+              _variantLabel: variantLabel,
+              sku: model.sku || '',
+              quantity: 1,
+              unitPriceCny:
+                vndToCnyHint(model.costPrice, prefillRate) || vndToCnyHint(model.price, prefillRate),
+              _productId: p._id || p.productId || '',
+              _modelId: model._id || '',
+              _tierIndex: Array.isArray(model.tierIndex) ? [...model.tierIndex] : [],
+            });
+          }
+        }
+      });
+
+      const prefilled = Array.from(grouped.values()).map((g) => {
+        const tiers = subsetTiersToMatchVariantTierIndexes(g.tiers, g.variants);
+        const variants = g.variants.map((v) => {
+          // eslint-disable-next-line no-unused-vars
+          const { _tierIndex, ...rest } = v;
+          return rest;
+        });
+        return { ...g, tiers, variants };
+      });
+      if (prefilled.length > 0) {
+        setGroups(prefilled);
+        toast.success(`Đã điền sẵn ${prefilled.length} sản phẩm sắp hết hàng`);
+      }
+    } catch {
+      // ignore malformed param
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [formData, setFormData] = useState({
     supplierId: supplierIdFromUrl,
@@ -1065,7 +1260,7 @@ const CreatePurchaseOrderPage = () => {
   useEffect(() => {
     try {
       localStorage.setItem('gz_import_config', JSON.stringify(importConfig));
-    } catch {}
+    } catch { /* persist failures are non-critical */ }
   }, [importConfig]);
 
   // Flatten all variants for Stage 1 cost basis
@@ -1526,6 +1721,44 @@ const CreatePurchaseOrderPage = () => {
       </form>
     </div>
   );
+};
+
+LabelWithTooltip.propTypes = {
+  children: PropTypes.node.isRequired,
+  tooltip: PropTypes.string.isRequired,
+};
+
+TierRow.propTypes = {
+  tier: PropTypes.shape({
+    type: PropTypes.string,
+    options: PropTypes.array.isRequired,
+  }).isRequired,
+  usedTypes: PropTypes.array.isRequired,
+  onChangeType: PropTypes.func.isRequired,
+  onChangeOptions: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
+  styles: PropTypes.object.isRequired,
+};
+
+ListingPickerModal.propTypes = {
+  products: PropTypes.array.isRequired,
+  loading: PropTypes.bool.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  exchangeRate: PropTypes.number,
+};
+
+ProductGroup.propTypes = {
+  group: PropTypes.shape({
+    productName: PropTypes.string,
+    tiers: PropTypes.array,
+    variants: PropTypes.array.isRequired,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
+  exchangeRate: PropTypes.number.isRequired,
+  onPickerSelect: PropTypes.func,
 };
 
 export default CreatePurchaseOrderPage;
