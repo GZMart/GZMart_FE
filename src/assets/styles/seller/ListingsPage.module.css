@@ -72,6 +72,37 @@
   box-shadow: 0 2px 8px rgba(26, 86, 219, 0.28);
 }
 
+/* ─── AI Price button (in table rows) ─────────────────────────── */
+.aiBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  height: 26px;
+  background: #f0f4ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1a56db;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.aiBtn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  box-shadow: 0 1px 4px rgba(26, 86, 219, 0.18);
+}
+.aiBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.aiBtn svg {
+  flex-shrink: 0;
+}
+
 /* ─── Stats row ────────────────────────────────────────────────── */
 .statsRow {
   display: flex;

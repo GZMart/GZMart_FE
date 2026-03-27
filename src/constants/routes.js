@@ -54,6 +54,7 @@ export const BUYER_ROUTES = {
 export const SELLER_ROUTES = {
   DASHBOARD: '/seller/dashboard',
   PROFILE: '/seller/profile',
+  SHOP_DECORATION: '/seller/shop-decoration',
   ORDERS: '/seller/orders',
 
   // Purchase Orders

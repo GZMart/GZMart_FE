@@ -79,8 +79,7 @@ const EMPTY_FORM = {
 /**
  * Map old flat structure to new nested structure (for backward compatibility)
  */
-const mapLegacyToNested = (supplier) => {
-  return {
+const mapLegacyToNested = (supplier) => ({
     name: supplier.name || '',
     category: supplier.category || [],
     status: supplier.status || 'Active',
@@ -111,8 +110,7 @@ const mapLegacyToNested = (supplier) => {
 
     leadTimeDays: supplier.leadTimeDays ?? 0,
     notes: supplier.notes || '',
-  };
-};
+  });
 
 /**
  * Reusable Supplier create/edit drawer with nested object structure.

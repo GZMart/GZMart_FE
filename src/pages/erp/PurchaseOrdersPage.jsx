@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import PropTypes from 'prop-types';
 import SortableHeader from '../../components/common/SortableHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -74,6 +75,18 @@ const KebabMenu = ({ items }) => {
       )}
     </div>
   );
+};
+
+KebabMenu.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      icon: PropTypes.node,
+      danger: PropTypes.bool,
+      onClick: PropTypes.func.isRequired,
+      disabled: PropTypes.bool,
+    })
+  ).isRequired,
 };
 
 // ── Main Component ────────────────────────────────────────────────────────────

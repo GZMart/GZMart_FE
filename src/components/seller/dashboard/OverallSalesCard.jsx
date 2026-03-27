@@ -1,78 +1,129 @@
 import React from 'react';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import styles from '../../../assets/styles/seller/Dashboard.module.css';
 
-export function OverallSalesCard({ chartData = [], loading = false }) {
+const PERIOD_LABELS = {
+  daily: '30 Ngày',
+  weekly: '13 Tuần',
+  monthly: '12 Tháng',
+  quarterly: '4 Quý',
+  yearly: '5 Năm',
+};
+
+export function OverallSalesCard({
+  chartData = [],
+  period = 'monthly',
+  onPeriodChange,
+  loading = false,
+  revenueCurrent = 0,
+  trend = 0,
+}) {
+  const isPositive = Number(trend) >= 0;
+  const trendAbs = Math.abs(Number(trend));
+
   return (
     <div className={styles.chartCard}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px',
-        }}
-      >
-        <h3 className={styles.chartCardTitle}>Overall Sales</h3>
-        <button className={styles.dateButton}>
-          <Calendar size={16} />
-          This Month
-        </button>
-      </div>
-
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
-          <div className={styles.salesValue}>
-            {chartData.length > 0
-              ? formatCurrency(chartData[chartData.length - 1].revenue || 0)
-              : formatCurrency(0)}
-          </div>
-          <span className={styles.trendup}>
-            <TrendingUp size={16} style={{ display: 'inline-block', marginRight: '4px' }} />
-            +13.02%
-          </span>
+      <div className={styles.chartHeader}>
+        <h3 className={styles.chartCardTitle}>Doanh thu theo thời gian</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {onPeriodChange ? (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => onPeriodChange(p)}
+                  className={`${styles.periodBtn} ${period === p ? styles.periodBtnActive : styles.periodBtnInactive}`}
+                >
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button className={styles.dateButton}>
+              <Calendar size={14} />
+              {PERIOD_LABELS[period] || period}
+            </button>
+          )}
         </div>
       </div>
-      
+
+      <div className={styles.chartMetricRow}>
+        <div className={styles.salesValue}>
+          {formatCurrency(revenueCurrent)}
+        </div>
+        <span className={isPositive ? styles.trendup : styles.trendDown}>
+          {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+          {isPositive ? '+' : '-'}
+          {trendAbs}%
+        </span>
+        <span className={styles.chartMetricLabel}>So với kỳ trước</span>
+      </div>
+
       <div className={styles.chartContainer}>
-        {chartData.length > 0 ? (
+        {loading ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: '#94a3b8',
+              fontSize: '0.875rem',
+            }}
+          >
+            Đang tải dữ liệu...
+          </div>
+        ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e8e8e8" vertical={false} />
+            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8ecf0" vertical={false} />
               <XAxis
                 dataKey="_id"
-                tick={{ fontSize: 12, fill: '#999' }}
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
                 axisLine={false}
                 tickLine={false}
               />
-              <YAxis tick={{ fontSize: 12, fill: '#999' }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => {
+                  if (v >= 1_000_000) {
+                    return `${(v / 1_000_000).toFixed(0)}M`;
+                  }
+                  if (v >= 1_000) {
+                    return `${(v / 1_000).toFixed(0)}K`;
+                  }
+                  return v;
+                }}
+              />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 contentStyle={{
-                  borderRadius: '8px',
-                  border: '1px solid #e8e8e8',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderRadius: 8,
+                  border: '1px solid #e8ecf0',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: 12,
                 }}
+                labelStyle={{ color: '#0f172a', fontWeight: 600 }}
               />
-              <Line
-                type="monotone"
+              <Bar
                 dataKey="revenue"
-                stroke="#1890ff"
-                strokeWidth={3}
-                dot={{ fill: '#1890ff', r: 5 }}
-                activeDot={{ r: 7 }}
+                fill="#1677ff"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={60}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         ) : (
           <div
@@ -80,11 +131,12 @@ export function OverallSalesCard({ chartData = [], loading = false }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              height: '300px',
-              color: '#999',
+              height: '100%',
+              color: '#94a3b8',
+              fontSize: '0.875rem',
             }}
           >
-            No data available
+            Không có dữ liệu
           </div>
         )}
       </div>

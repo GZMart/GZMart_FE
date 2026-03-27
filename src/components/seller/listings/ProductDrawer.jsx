@@ -6,6 +6,9 @@ import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
 import TiersEditor from './TiersEditor';
 import VariantsTable from './VariantsTable';
+import AiPriceSuggest from './AiPriceSuggest';
+import AiPriceSuggestModal from './AiPriceSuggestModal';
+import AiPriceDetailModal from './AiPriceDetailModal';
 import RichTextEditor from '../../common/RichTextEditor';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
@@ -40,6 +43,13 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [productDim, setProductDim] = useState({ length: 0, width: 0, height: 0 });
   const [preOrderEnabled, setPreOrderEnabled] = useState(false);
   const [preOrderDays, setPreOrderDays] = useState(2);
+  const [aiModalShow, setAiModalShow] = useState(false);
+  const [aiVariantDetail, setAiVariantDetail] = useState(null);
+  // [Tham khảo giá] State for simple-product inline price suggestion
+  const [aiPriceSuggestData, setAiPriceSuggestData] = useState(null);
+  const [showAiPriceDetail, setShowAiPriceDetail] = useState(false);
+  /** Stable id for AI rate-limit / cache while creating a product (avoid temp-${Date.now()} every render). */
+  const [draftAiProductId, setDraftAiProductId] = useState(null);
 
   const isEditMode = !!editingProduct;
   // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
@@ -56,6 +66,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     return () => document.body.classList.remove('drawer-open');
   }, [show]);
 
+  useEffect(() => {
+    if (!show) {
+      setDraftAiProductId(null);
+      return;
+    }
+    if (editingProduct) {
+      setDraftAiProductId(null);
+      return;
+    }
+    setDraftAiProductId((prev) => prev || `temp-${Date.now()}`);
+  }, [show, editingProduct]);
+
   // Pre-fill form when editing
   useEffect(() => {
     if (editingProduct && show) {
@@ -63,10 +85,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         name: editingProduct.name || '',
         description: editingProduct.description || '',
         categoryId:
+          editingProduct.categoryId &&
           typeof editingProduct.categoryId === 'object'
             ? editingProduct.categoryId._id
             : editingProduct.categoryId || '',
-        originalPrice: editingProduct.originalPrice || '',
+        // If AI suggested price was applied, pre-fill with it so seller can review
+        originalPrice: editingProduct._suggestedPrice || editingProduct.originalPrice || '',
         // costPrice lives in models[0].costPrice (synced from InventoryItem).
         // Product schema has no top-level costPrice — read from first model.
         costPrice: editingProduct.models?.[0]?.costPrice || '',
@@ -133,6 +157,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
       // Fetch attributes for the category
       const categoryId =
+        editingProduct.categoryId &&
         typeof editingProduct.categoryId === 'object'
           ? editingProduct.categoryId._id
           : editingProduct.categoryId;
@@ -241,6 +266,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         return {
           ...existingModel,
           tierIndex, // Ensure tierIndex is correct
+          // Ensure a stable clientId exists so AI batch calls are deterministic
+          clientId: existingModel.clientId || `m-${key}`,
         };
       }
 
@@ -251,6 +278,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         costPrice: parseFloat(formData.costPrice) || 0,
         stock: 0,
         sku: '',
+        clientId: `m-${key}`,
       };
     });
 
@@ -408,6 +436,22 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     setVideos((prev) => prev.filter((_, i) => i !== index));
     setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
+
+  // [Batch AI] Apply AI-suggested prices to selected models
+  const handleAiBatchApply = (changes) => {
+    const priceMap = new Map(changes.map((c) => [String(c.modelId), c.suggestedPrice]));
+    setModels((prev) =>
+      prev.map((m) => {
+        const key = m.clientId || m._id?.toString();
+        const newPrice = key != null ? priceMap.get(String(key)) : undefined;
+        return newPrice != null ? { ...m, price: newPrice } : m;
+      })
+    );
+  };
+  // [Tham khảo giá] Apply suggested price to simple product
+  const handleAiSimplePriceApply = (suggestedPrice) => {
+    setFormData((prev) => ({ ...prev, originalPrice: String(Math.round(suggestedPrice)) }));
+  };
   const fetchAttributes = async (categoryId, existingAttributes = []) => {
     try {
       const response = await attributeService.getByCategory(categoryId);
@@ -470,8 +514,11 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         newErrors.categoryId = 'Category is required';
       }
 
-      if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
-        newErrors.originalPrice = 'Valid price is required';
+      // Price is required only for simple products — variant prices are set in VariantsTable
+      if (productType === 'simple') {
+        if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
+          newErrors.originalPrice = 'Valid price is required';
+        }
       }
     }
 
@@ -563,7 +610,9 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   };
 
   const handleSubmit = async (e, forcedStatus = null) => {
-    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.preventDefault) {
+e.preventDefault();
+}
 
     if (!validateForm(forcedStatus)) {
       return;
@@ -1202,146 +1251,173 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionNum}>2</span>Pricing &amp; Stock
               </div>
-              <Row>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>
-                      Price (₫) <span className={styles.required}>*</span>
-                    </label>
-                    <div className={styles.inputAddon}>
-                      <span className={styles.addonPrefix}>₫</span>
-                      <Form.Control
-                        type="number"
-                        name="originalPrice"
-                        value={formData.originalPrice}
-                        onChange={handleChange}
-                        isInvalid={!!errors.originalPrice}
-                        placeholder="150000"
-                        min="0"
-                        disabled={loading}
-                        className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}
-                      />
-                    </div>
-                    {errors.originalPrice && (
-                      <div className={styles.invalidFeedback}>{errors.originalPrice}</div>
-                    )}
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>
-                      Cost Price (₫)
-                      {isEditMode && <span className={styles.lockBadge}>Locked</span>}
-                    </label>
-                    <div className={styles.inputAddon}>
-                      <span className={styles.addonPrefix}>₫</span>
-                      <Form.Control
-                        type="number"
-                        name="costPrice"
-                        value={formData.costPrice}
-                        onChange={handleChange}
-                        placeholder="80000"
-                        min="0"
-                        disabled={loading || isEditMode}
-                        readOnly={isEditMode}
-                        className={`${styles.formControl} ${styles.withPrefix}`}
-                      />
-                    </div>
-                    {isEditMode &&
-                      (() => {
-                        const src = editingProduct?.models?.[0]?.costSource;
-                        const poId = editingProduct?.models?.[0]?.costSourcePoId;
-                        return (
-                          <div className={styles.stockLockedNote}>
-                            {src === 'po' && poId ? (
-                              <>
-                                <span className={styles.costSourceBadgePo}>via PO</span>
-                                {' · '}
-                                <a
-                                  href="/seller/erp/purchase-orders"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  View POs ↗
-                                </a>
-                              </>
-                            ) : (
-                              <>
-                                <span className={styles.costSourceBadgeManual}>Manual</span>
-                                {' · update via '}
-                                <a
-                                  href="/seller/inventory"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  Inventory
-                                </a>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })()}
-                  </Form.Group>
-                </Col>
-                {productType === 'simple' && (
-                  <>
-                    <Col md={2}>
-                      <Form.Group className="mb-3">
-                        <label className={styles.formLabel}>
-                          Stock{' '}
-                          {isEditMode ? (
-                            <span className={styles.lockBadge}>Locked</span>
-                          ) : (
-                            <span className={styles.required}>*</span>
-                          )}
-                        </label>
+
+              {productType === 'variant' ? (
+                /* Variant mode: price is set per-variant in the table below */
+                <div className={styles.variantPricingPlaceholder}>
+                  <svg className={styles.variantPricingPlaceholderIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <span>Price is set individually for each variant in the <strong>Variations</strong> table below.</span>
+                </div>
+              ) : (
+                <Row>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <label className={styles.formLabel}>
+                        Price (₫) <span className={styles.required}>*</span>
+                      </label>
+                      <div className={styles.inputAddon}>
+                        <span className={styles.addonPrefix}>₫</span>
                         <Form.Control
                           type="number"
-                          name="stock"
-                          value={formData.stock}
+                          name="originalPrice"
+                          value={formData.originalPrice}
                           onChange={handleChange}
-                          isInvalid={!!errors.stock}
-                          placeholder="100"
+                          isInvalid={!!errors.originalPrice}
+                          placeholder="150000"
+                          min="0"
+                          disabled={loading}
+                          className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}
+                        />
+                      </div>
+                      {errors.originalPrice && (
+                        <div className={styles.invalidFeedback}>{errors.originalPrice}</div>
+                      )}
+                    </Form.Group>
+                    {/* Tham khảo giá — simple products only */}
+                    {productType === 'simple' && (
+                      <AiPriceSuggest
+                        product={{
+                          id: editingProduct?._id || draftAiProductId,
+                          name: formData.name || 'Sản phẩm mới',
+                          price: parseFloat(formData.originalPrice) || 0,
+                        }}
+                        onApply={handleAiSimplePriceApply}
+                        disabled={!formData.name.trim() || !formData.categoryId}
+                        disabledTitle="Cần nhập Tên sản phẩm và Danh mục trước"
+                      />
+                    )}
+                  </Col>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <label className={styles.formLabel}>
+                        Cost Price (₫)
+                        {isEditMode && <span className={styles.lockBadge}>Locked</span>}
+                      </label>
+                      <div className={styles.inputAddon}>
+                        <span className={styles.addonPrefix}>₫</span>
+                        <Form.Control
+                          type="number"
+                          name="costPrice"
+                          value={formData.costPrice}
+                          onChange={handleChange}
+                          placeholder="80000"
                           min="0"
                           disabled={loading || isEditMode}
                           readOnly={isEditMode}
-                          className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}
+                          className={`${styles.formControl} ${styles.withPrefix}`}
                         />
-                        {isEditMode ? (
-                          <div className={styles.stockLockedNote}>
-                            Via{' '}
-                            <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">
-                              Inventory
-                            </a>
-                          </div>
-                        ) : (
-                          errors.stock && (
-                            <div className={styles.invalidFeedback}>{errors.stock}</div>
-                          )
-                        )}
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <label className={styles.formLabel}>
-                          SKU <span className={styles.optionalBadge}>Optional</span>
-                        </label>
-                        <Form.Control
-                          type="text"
-                          name="sku"
-                          value={formData.sku}
-                          onChange={handleChange}
-                          isInvalid={!!errors.sku}
-                          placeholder="Auto-generated if left blank"
-                          disabled={loading}
-                          className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}
-                        />
-                        {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
-                      </Form.Group>
-                    </Col>
-                  </>
-                )}
-              </Row>
+                      </div>
+                      {isEditMode &&
+                        (() => {
+                          const src = editingProduct?.models?.[0]?.costSource;
+                          const poId = editingProduct?.models?.[0]?.costSourcePoId;
+                          return (
+                            <div className={styles.stockLockedNote}>
+                              {src === 'po' && poId ? (
+                                <>
+                                  <span className={styles.costSourceBadgePo}>via PO</span>
+                                  {' · '}
+                                  <a
+                                    href="/seller/erp/purchase-orders"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    View POs ↗
+                                  </a>
+                                </>
+                              ) : (
+                                <>
+                                  <span className={styles.costSourceBadgeManual}>Manual</span>
+                                  {' · update via '}
+                                  <a
+                                    href="/seller/inventory"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Inventory
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+                    </Form.Group>
+                  </Col>
+                  {productType === 'simple' && (
+                    <>
+                      <Col md={2}>
+                        <Form.Group className="mb-3">
+                          <label className={styles.formLabel}>
+                            Stock{' '}
+                            {isEditMode ? (
+                              <span className={styles.lockBadge}>Locked</span>
+                            ) : (
+                              <span className={styles.required}>*</span>
+                            )}
+                          </label>
+                          <Form.Control
+                            type="number"
+                            name="stock"
+                            value={formData.stock}
+                            onChange={handleChange}
+                            isInvalid={!!errors.stock}
+                            placeholder="100"
+                            min="0"
+                            disabled={loading || isEditMode}
+                            readOnly={isEditMode}
+                            className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}
+                          />
+                          {isEditMode ? (
+                            <div className={styles.stockLockedNote}>
+                              Via{' '}
+                              <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">
+                                Inventory
+                              </a>
+                            </div>
+                          ) : (
+                            errors.stock && (
+                              <div className={styles.invalidFeedback}>{errors.stock}</div>
+                            )
+                          )}
+                        </Form.Group>
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <label className={styles.formLabel}>
+                            SKU <span className={styles.optionalBadge}>Optional</span>
+                          </label>
+                          <Form.Control
+                            type="text"
+                            name="sku"
+                            value={formData.sku}
+                            onChange={handleChange}
+                            isInvalid={!!errors.sku}
+                            placeholder="Auto-generated if left blank"
+                            disabled={loading}
+                            className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}
+                          />
+                          {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
+                        </Form.Group>
+                      </Col>
+                    </>
+                  )}
+                </Row>
+              )}
 
               {/* ── Details ── */}
               <div className={styles.sectionHeader}>
@@ -1576,9 +1652,24 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                   {models.length > 0 && (
                     <>
                       <div className={styles.variantCountBadge}>
-                        {models.length} variant{models.length !== 1 ? 's' : ''} generated
-                        {models.length > 200 && (
-                          <span className={styles.overLimitBadge}> (max 200)</span>
+                        <span>
+                          {models.length} variant{models.length !== 1 ? 's' : ''} generated
+                          {models.length > 200 && (
+                            <span className={styles.overLimitBadge}> (max 200)</span>
+                          )}
+                        </span>
+                        {models.length > 0 && !loading && formData.name.trim() && formData.categoryId && (
+                          <button
+                            type="button"
+                            className={styles.aiSuggestBtn}
+                            onClick={() => setAiModalShow(true)}
+                            title="Gợi ý giá tham khảo cho tất cả variants"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
+                            </svg>
+                            Suggest All
+                          </button>
                         )}
                       </div>
                       {errors.models && (
@@ -1858,6 +1949,63 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           </button>
         </div>
       </div>
+
+      <AiPriceSuggestModal
+        show={aiModalShow}
+        product={{
+          id: editingProduct?._id || draftAiProductId || 'new-product',
+          name: formData.name || 'Sản phẩm mới',
+          // Always use live tiers/models from state — editingProduct.models can be stale or empty
+          _raw: { ...(editingProduct || {}), tiers, models },
+          tiers,
+          models,
+        }}
+        onApply={handleAiBatchApply}
+        onClose={() => setAiModalShow(false)}
+        onViewDetail={({ detailResult, batchData }) => {
+          setAiVariantDetail({
+            detailResult,
+            batchData,
+            productSnapshot: {
+              id: editingProduct?._id || draftAiProductId || 'new-product',
+              name: formData.name || 'Sản phẩm mới',
+            },
+          });
+        }}
+      />
+
+      {aiVariantDetail && (
+        <AiPriceDetailModal
+          show
+          data={{
+            suggestedPrice: aiVariantDetail.detailResult.suggestedPrice,
+            reasoning: aiVariantDetail.detailResult.reasoning,
+            riskLevel: aiVariantDetail.detailResult.riskLevel,
+            warning: aiVariantDetail.detailResult.warning,
+            warningMessage: aiVariantDetail.detailResult.warningMessage,
+            discountPct: aiVariantDetail.detailResult.discountPct,
+            marketData: aiVariantDetail.batchData.marketData,
+            competitors: aiVariantDetail.batchData.competitors,
+            costData:
+              aiVariantDetail.detailResult.costData ??
+              aiVariantDetail.batchData.costData ??
+              null,
+            product: {
+              ...aiVariantDetail.batchData.product,
+              currentPrice: aiVariantDetail.detailResult.currentPrice,
+              modelId: aiVariantDetail.detailResult.modelId,
+              modelSku: aiVariantDetail.detailResult.sku,
+            },
+          }}
+          product={{
+            id: aiVariantDetail.productSnapshot?.id,
+            name: aiVariantDetail.productSnapshot?.name,
+            price: aiVariantDetail.detailResult.currentPrice,
+          }}
+          onApply={() => setAiVariantDetail(null)}
+          onClose={() => setAiVariantDetail(null)}
+        />
+      )}
     </>,
     document.body
   );

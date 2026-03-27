@@ -1,0 +1,547 @@
+/* ================================================================
+   AiPriceSuggest.module.css
+   Component: 🪄 AI Price Suggestion button + panel popup
+   Design tokens from ListingsPage — #1a56db brand blue
+   ================================================================ */
+
+/* ─── Trigger button ────────────────────────────────────────────── */
+.aiBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  height: 26px;
+  background: #f0f4ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1a56db;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.aiBtn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  box-shadow: 0 1px 4px rgba(26, 86, 219, 0.18);
+}
+.aiBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* disabled due to missing required fields — slightly dimmer + no pointer */
+.aiBtn[data-gated] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.aiBtn[data-gated]:hover {
+  background: #f0f4ff;
+  border-color: #c7d2fe;
+  box-shadow: none;
+}
+.aiBtn svg {
+  flex-shrink: 0;
+}
+
+/* Spin for loading state */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ─── Popover wrapper (portal-style relative-to-cell) ───────────── */
+.panelAnchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Panel (position: fixed + top/left from JS — escapes table overflow) ─ */
+.panel {
+  width: 300px;
+  max-height: min(520px, calc(100vh - 16px));
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(26, 86, 219, 0.08);
+  padding: 0;
+  overflow: hidden;
+  animation: panelIn 0.18s ease;
+  box-sizing: border-box;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Panel header ──────────────────────────────────────────────── */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8faff 100%);
+}
+
+.panelTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a56db;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.closeBtn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.12s;
+}
+.closeBtn:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ─── Panel body ────────────────────────────────────────────────── */
+.panelBody {
+  padding: 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ─── Loading state ─────────────────────────────────────────────── */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeletonLine {
+  height: 12px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8edf4 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: shimmer 1.2s infinite;
+}
+.skeletonLine:nth-child(2) { width: 80%; }
+.skeletonLine:nth-child(3) { width: 60%; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Market data grid ──────────────────────────────────────────── */
+.marketGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.marketCell {
+  background: #f8fafc;
+  border: 1px solid #e8ecf0;
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.marketLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.marketValue {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.marketValueAvg {
+  color: #1a56db;
+}
+
+/* ─── AI Suggestion card ────────────────────────────────────────── */
+.suggestCard {
+  background: linear-gradient(135deg, #1a56db 0%, #2563eb 100%);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  color: #fff;
+  position: relative;
+  isolation: isolate;
+}
+
+.suggestCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 72px;
+  height: 72px;
+  transform: translate(30%, -30%);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.suggestLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.suggestPrice {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+  margin-bottom: 2px;
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
+.suggestDiff {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Wrapper for PoCostBreakdown in popover (light theme) */
+.poCostBreakdownWrap {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0 6px 6px 0;
+  border-left: 3px solid #16a34a;
+}
+
+/* ─── Reasoning text ────────────────────────────────────────────── */
+.reasoning {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.55;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  border-left: 2px solid #c7d2fe;
+  padding: 8px 10px;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ─── Top seller note ───────────────────────────────────────────── */
+.topSellerNote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 12px;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+/* ─── Action row (detail + apply) ──────────────────────────────── */
+.actionRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.detailBtn {
+  flex: 1;
+  height: 36px;
+  background: #fff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.detailBtn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+/* ─── Apply button ──────────────────────────────────────────────── */
+.applyBtn {
+  flex: 1;
+  height: 36px;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.applyBtn:hover {
+  background: #1447c7;
+  box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
+}
+
+/* ─── Error state ───────────────────────────────────────────────── */
+.errorBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #dc2626;
+  line-height: 1.45;
+}
+
+/* ─── Meta info ─────────────────────────────────────────────────── */
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.productName {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.competitorCount {
+  font-size: 10.5px;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ─── [Phase 2 - 4.2] Cache indicator badge ──────────────────── */
+.cacheBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #7c3aed;
+  background: #ede9fe;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* ─── [Phase 3 - 5.1] Strategy Selector ────────────────────────── */
+.strategySelector {
+  padding: 8px 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cachedBadge {
+  font-size: 10px;
+  padding: 1px 5px;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid #bbf7d0;
+}
+
+.strategySelect {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.strategySelect:hover {
+  border-color: #a5b4fc;
+}
+.strategySelect:focus {
+  border-color: #1a56db;
+  background: #fff;
+}
+
+.reasoningSpacer {
+  height: 3px;
+}
+
+.reasoningStructured {
+  margin-bottom: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0 6px 6px 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10.5px;
+  color: #334155;
+  border-left: 3px solid #16a34a;
+}
+
+.reasoningMainLine {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.reasoningSectionHeader {
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  margin-top: 4px;
+  margin-bottom: 1px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.reasoningCostLine {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #475569;
+  line-height: 1.5;
+  padding-left: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reasoningTotal {
+  font-size: 11px;
+  font-weight: 700;
+  color: #15803d;
+  padding-left: 4px;
+  margin-top: 3px;
+  border-top: 1px solid #bbf7d0;
+  padding-top: 4px;
+}
+
+.reasoningAnalysis {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.reasoningNoPo {
+  margin-top: 7px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #92400e;
+  line-height: 1.5;
+  background: #fffbeb;
+  border-radius: 4px;
+  padding: 5px 7px;
+  border: 1px solid #fde68a;
+}
+
+/* ─── [Phase 1] Warning / Risk banners ─────────────────────────── */
+.warningHigh {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 11.5px;
+  color: #be123c;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.warningModerate {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 11.5px;
+  color: #92400e;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.warningSafe {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 11.5px;
+  color: #166534;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+

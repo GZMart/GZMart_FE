@@ -64,6 +64,7 @@ const ComboPromotionForm = lazy(() => import('@pages/seller/promotions/ComboProm
 const AddOnDealForm = lazy(() => import('@pages/seller/promotions/AddOnDealForm'));
 const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
+const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage'));
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 
 // Buyer - Seller Application
@@ -313,6 +314,13 @@ export const routeConfig = [
   {
     path: '/seller/profile',
     element: SellerProfilePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/shop-decoration',
+    element: ShopDecorationPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

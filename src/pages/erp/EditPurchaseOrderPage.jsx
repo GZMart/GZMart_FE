@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -10,7 +11,8 @@ import {
 } from '../../store/slices/erpSlice';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import styles from '@assets/styles/erp/CreatePurchaseOrderPage.module.css';
-import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../constants/tierTypes';
+import inventoryService from '../../services/api/inventoryService';
+import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION, buildTierSelectOptions } from '../../constants/tierTypes';
 
 /* ────────────────────────────────────────────────────────────────────
    Utilities
@@ -32,6 +34,11 @@ const LabelWithTooltip = ({ children, tooltip }) => (
     </span>
   </span>
 );
+
+LabelWithTooltip.propTypes = {
+  children: PropTypes.node.isRequired,
+  tooltip: PropTypes.string.isRequired,
+};
 
 const genSKU = (productName = '', variantLabel = '') => {
   const slug = (str) =>
@@ -88,6 +95,7 @@ const MAX_OPTIONS = 20;
 
 const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove }) => {
   const tierDef = TIER_TYPES[tier.type];
+  const selectOptions = useMemo(() => buildTierSelectOptions(tierDef, tier), [tierDef, tier]);
   const availableTypes = TIER_TYPE_KEYS.filter((k) => k === tier.type || !usedTypes.includes(k));
 
   const addOption = () => {
@@ -154,7 +162,7 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove }) =
                   onChange={(e) => handleOptionSelect(i, e.target.value)}
                 >
                   <option value="">-- Select {tierDef.nameEn.toLowerCase()} --</option>
-                  {tierDef.options.map((o) => (
+                  {selectOptions.map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
@@ -182,6 +190,22 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove }) =
       )}
     </div>
   );
+};
+
+TierRow.propTypes = {
+  tier: PropTypes.shape({
+    type: PropTypes.string.isRequired,
+    options: PropTypes.arrayOf(
+      PropTypes.shape({
+        value: PropTypes.string.isRequired,
+        isCustom: PropTypes.bool,
+      })
+    ).isRequired,
+  }).isRequired,
+  usedTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onChangeType: PropTypes.func.isRequired,
+  onChangeOptions: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
 };
 
 /* ────────────────────────────────────────────────────────────────────
@@ -244,8 +268,12 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
       let updated = false;
 
       for (const v of variants) {
-        if (!v.sku || v.sku.length < 3) continue;
-        if (newWarnings[v.sku]) continue;
+        if (!v.sku || v.sku.length < 3) {
+continue;
+}
+        if (newWarnings[v.sku]) {
+continue;
+}
 
         try {
           const res = await inventoryService.getLotBreakdown(v.sku);
@@ -268,6 +296,7 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
 
     const timer = setTimeout(fetchWarnings, 500);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variants]);
 
   const updateProductName = (name) => {
@@ -418,7 +447,7 @@ const ProductGroup = ({ group, index, exchangeRate, onUpdate, onRemove }) => {
                       <tr>
                         <td colSpan="5" style={{ padding: '8px 12px', background: '#fffbeb', color: '#b45309', fontSize: 13, borderBottom: '1px solid #e2e8f0' }}>
                           ⚠️ <strong>Cảnh báo tồn kho:</strong> SKU này đang còn tồn <strong>{warn.totalRemaining}</strong> sản phẩm từ lô cũ 
-                          {warn.lots?.length > 0 && ` (giá vốn: ${warn.lots.map((l) => fmt(l.costPrice) + 'đ').join(', ')})`}.
+                          {warn.lots?.length > 0 && ` (giá vốn: ${warn.lots.map((l) => `${fmt(l.costPrice)  }đ`).join(', ')})`}.
                           Xin lưu ý khi định giá mua mới.
                         </td>
                       </tr>
@@ -1109,6 +1138,24 @@ const errorBannerStyle = {
   fontSize: '0.875rem',
   color: '#991b1b',
   marginBottom: '1rem',
+};
+
+ProductGroup.propTypes = {
+  group: PropTypes.shape({
+    productName: PropTypes.string,
+    tiers: PropTypes.array,
+    variants: PropTypes.arrayOf(
+      PropTypes.shape({
+        sku: PropTypes.string,
+        quantity: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        unitPriceCny: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      })
+    ).isRequired,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  exchangeRate: PropTypes.number.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
 };
 
 export default EditPurchaseOrderPage;

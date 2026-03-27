@@ -22,20 +22,19 @@ const uploadImage = async (file) => {
   formData.append('image', file);
 
   try {
-    const response = await axiosClient.post('/api/upload/single', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // axiosClient interceptor unwraps response → returns response.data directly
+    const data = await axiosClient.post('/api/upload/single', formData);
+
+    // Normalize URL extraction: support both { data: { url } } and { url } shapes
+    const url = data?.data?.url || data?.url || data?.secure_url || '';
 
     console.log('✅ [UPLOAD IMAGE API] Response:', {
-      status: response.status,
-      data: response.data,
-      url: response.data?.data?.url || response.data?.url,
+      url,
+      rawData: data,
       timestamp: new Date().toISOString(),
     });
 
-    return response.data;
+    return { ...data, url };
   } catch (error) {
     console.error('❌ [UPLOAD IMAGE API] Error:', {
       message: error.message,
