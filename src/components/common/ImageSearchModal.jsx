@@ -54,12 +54,14 @@ const ImageSearchModal = ({ isOpen, onClose }) => {
 
       const response = await searchService.searchByImage(formData);
       
-      if (response.data?.success) {
+      // axiosClient interceptor already unwraps response.data, so `response` IS the body object
+      if (response?.success) {
         onClose();
         navigate('/search/image', { 
           state: { 
-            results: response.data.data.products,
-            analyzedInfo: response.data.data.analyzedInfo,
+            results: response.data?.products || [],
+            analyzedInfo: response.data?.analyzedInfo || null,
+            aiAnalysisFailed: response.data?.aiAnalysisFailed || false,
             previewUrl 
           } 
         });

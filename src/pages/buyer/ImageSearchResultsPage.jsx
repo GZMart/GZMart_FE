@@ -13,6 +13,7 @@ const ImageSearchResultsPage = () => {
   const [results, setResults] = useState([]);
   const [analyzedInfo, setAnalyzedInfo] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [aiAnalysisFailed, setAiAnalysisFailed] = useState(false);
 
   useEffect(() => {
     // If accessed directly without state, redirect to home
@@ -24,6 +25,7 @@ const ImageSearchResultsPage = () => {
     setResults(location.state.results || []);
     setAnalyzedInfo(location.state.analyzedInfo || null);
     setPreviewUrl(location.state.previewUrl);
+    setAiAnalysisFailed(location.state.aiAnalysisFailed || false);
   }, [location, navigate]);
 
   if (!previewUrl) return null;
@@ -102,8 +104,17 @@ const ImageSearchResultsPage = () => {
         </div>
 
         <div className="col-12 col-md-8">
+          {aiAnalysisFailed && (
+            <div className="alert d-flex align-items-start gap-2 mb-4 border-0 rounded" style={{ backgroundColor: '#FFF8E7', borderLeft: '4px solid #FF8A00' }}>
+              <AlertCircle size={18} className="flex-shrink-0 mt-1" style={{ color: '#FF8A00' }} />
+              <div className="small">
+                <strong>AI analysis unavailable</strong> — The Gemini Vision API is not accessible in your current region.
+                Showing <strong>popular products</strong> as a fallback. To enable AI image search, configure a VPN or use an API key from a supported region.
+              </div>
+            </div>
+          )}
           <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-            <h4 className="fw-bold mb-0">Similar Products</h4>
+            <h4 className="fw-bold mb-0">{aiAnalysisFailed ? 'Popular Products' : 'Similar Products'}</h4>
             <span className="text-muted border rounded px-2 py-1 small">{results.length} found</span>
           </div>
 
