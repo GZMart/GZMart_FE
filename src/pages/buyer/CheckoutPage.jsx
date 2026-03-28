@@ -1,5 +1,5 @@
 import { Container, Row, Col, Card, Form, Button, Spinner, Badge } from 'react-bootstrap';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCartItems } from '@store/slices/cartSlice';
@@ -18,6 +18,16 @@ const randomDeliveryWindow = (minDays, maxDays) => {
   return `${start}-${end} days`;
 };
 
+/** API `eligible` can omit min-order checks; enforce minBasketPrice against cart subtotal in UI. */
+function voucherEligibleForCartSubtotal(voucher, cartSubtotal) {
+  if (!voucher) return false;
+  const min = Number(voucher.minBasketPrice);
+  if (!Number.isNaN(min) && min > 0 && cartSubtotal < min) {
+    return false;
+  }
+  return Boolean(voucher.eligible);
+}
+
 /**
  * Checkout Page Component
  * Multi-step checkout process with 3 steps:
@@ -30,8 +40,32 @@ const CheckoutPage = () => {
   const location = useLocation();
   const allCartItems = useSelector(selectCartItems);
 
-  // Use selected items from CartPage if available, otherwise use all items
-  const cartItems = location.state?.selectedItems || allCartItems;
+  // Separate persisted cart items from live-only items
+  const rawItems = location.state?.selectedItems || allCartItems;
+  const cartItems = rawItems; // still used for display
+
+  // Extract live-only items (have temp IDs starting with 'live_')
+  const liveItems = useMemo(
+    () =>
+      (rawItems || []).filter((item) => {
+        const id = item._id || item.id;
+        return id && String(id).startsWith('live_');
+      }),
+    [rawItems],
+  );
+
+  // Real cart item IDs (filter out the fake 'live_' prefixes used in live session checkout)
+  const realCartItemIds = useMemo(
+    () =>
+      (rawItems || [])
+        .map((item) => item._id || item.id)
+        .filter((id) => id && !String(id).startsWith('live_')),
+    [rawItems],
+  );
+
+  // Live session context — voucher is passed directly from LiveQuickBuySheet
+  const fromLiveSession = location.state?.fromLiveSession || null;
+  const preSelectedLiveVoucher = location.state?.preSelectedLiveVoucher || null;
 
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -57,9 +91,17 @@ const CheckoutPage = () => {
           const vouchers = response.data || [];
           setApplicableVouchers(vouchers);
 
+          const subtotal = cartItems.reduce(
+            (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+            0
+          );
+
           // Auto-select the best shop voucher (only from saved vouchers)
           const eligibleShopVouchers = vouchers.filter(
-            (v) => v.eligible && v.isSaved && (v.type === 'shop' || v.type === 'private')
+            (v) =>
+              voucherEligibleForCartSubtotal(v, subtotal) &&
+              v.isSaved &&
+              (v.type === 'shop' || v.type === 'private')
           );
           if (eligibleShopVouchers.length > 0) {
             const bestShopVoucher = eligibleShopVouchers.reduce((prev, current) =>
@@ -70,7 +112,7 @@ const CheckoutPage = () => {
 
           // Auto-select the best product voucher (only from saved vouchers)
           const eligibleProductVouchers = vouchers.filter(
-            (v) => v.eligible && v.isSaved && v.type === 'product'
+            (v) => voucherEligibleForCartSubtotal(v, subtotal) && v.isSaved && v.type === 'product'
           );
           if (eligibleProductVouchers.length > 0) {
             const bestProductVoucher = eligibleProductVouchers.reduce((prev, current) =>
@@ -344,7 +386,8 @@ const CheckoutPage = () => {
     }
   }, [addressForm.provinceCode]);
 
-  // Voucher state
+  // Voucher state — live voucher is a fixed "live" slot (always applied from session)
+  // Shop and product vouchers are user-selectable (auto-best on mount when not from live)
   const [applicableVouchers, setApplicableVouchers] = useState([]);
   const [selectedShopVoucherId, setSelectedShopVoucherId] = useState(null);
   const [selectedProductVoucherId, setSelectedProductVoucherId] = useState(null);
@@ -419,11 +462,11 @@ const CheckoutPage = () => {
     total: 0,
   });
 
-  // Calculate local subtotal for initial render/fallback
-  const localSubtotal = cartItems.reduce(
-    (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
-    0
-  );
+  // For pure live cart (no persisted cart items), compute subtotal locally
+  const isPureLiveCart = realCartItemIds.length === 0 && liveItems.length > 0;
+  const localSubtotal = isPureLiveCart
+    ? liveItems.reduce((sum, item) => sum + (Number(item.price) || 0) * item.quantity, 0)
+    : (rawItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
 
   // Get selected voucher IDs for API calls
   const getSelectedVoucherIds = useCallback(() => {
@@ -437,31 +480,93 @@ const CheckoutPage = () => {
     return ids;
   }, [selectedShopVoucherId, selectedProductVoucherId]);
 
+  // Drop shop/product selection if cart no longer meets min order (or API eligibility changed)
+  useEffect(() => {
+    if (!applicableVouchers.length) return;
+    setSelectedShopVoucherId((id) => {
+      if (!id) return id;
+      const v = applicableVouchers.find((x) => x._id === id);
+      return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
+    });
+    setSelectedProductVoucherId((id) => {
+      if (!id) return id;
+      const v = applicableVouchers.find((x) => x._id === id);
+      return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
+    });
+  }, [localSubtotal, applicableVouchers]);
+
   // Fetch order preview when city/state, cart, or vouchers change
   useEffect(() => {
     const fetchPreview = async () => {
-      const city = customerInfo.state;
+      // Resolve resolved voucher objects from IDs
+      const resolvedShopVoucher = applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+      const resolvedProductVoucher = applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
+
+      // Helper: compute discount from a single voucher against a subtotal
+      const calcDiscount = (voucher, sub) => {
+        if (!voucher) return 0;
+        if (voucher.discountType === 'percent') {
+          return Math.min(sub * (Number(voucher.discountValue) / 100), Number(voucher.maxDiscount) || Infinity);
+        }
+        return Number(voucher.discountValue) || 0;
+      };
+
       const selectedShipping = shippingCompanies.find((c) => c.id === shippingCompany);
       const previewShippingCost = selectedShipping ? selectedShipping.shippingCost : 0;
+      const rawSubtotal = cartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+
+      // Skip API when there are no real persisted cart items (live session flow)
+      if (realCartItemIds.length === 0) {
+        const liveDiscount = calcDiscount(preSelectedLiveVoucher, rawSubtotal);
+        const afterLive = rawSubtotal - liveDiscount;
+        const shopDiscount = calcDiscount(resolvedShopVoucher, afterLive);
+        const afterShop = afterLive - shopDiscount;
+        const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
+        const totalDiscount = liveDiscount + shopDiscount + productDiscount;
+
+        setOrderSummary({
+          subtotal: rawSubtotal,
+          shippingCost: previewShippingCost,
+          tax: 0,
+          discount: totalDiscount,
+          total: Math.max(0, rawSubtotal + previewShippingCost - totalDiscount),
+        });
+        return;
+      }
+
+      const city = customerInfo.state;
       try {
         const response = await orderService.previewOrder({
           city,
           shippingCost: previewShippingCost,
           giftBoxFee: includeGiftBox ? 11000 : 0,
           voucherIds: getSelectedVoucherIds(),
-          cartItemIds: cartItems.map((item) => item._id || item.id),
+          cartItemIds: realCartItemIds,
         });
         if (response.success) {
-          setOrderSummary(response.data);
+          // Stack live voucher discount on top of API totals
+          const apiSubtotal = response.data.subtotal ?? rawSubtotal;
+          const liveDiscount = calcDiscount(preSelectedLiveVoucher, apiSubtotal);
+          setOrderSummary({
+            ...response.data,
+            discount: (response.data.discount || 0) + liveDiscount,
+            total: Math.max(0, (response.data.total ?? apiSubtotal) - liveDiscount),
+          });
         }
       } catch (error) {
-        console.error('Failed to fetch order preview:', error);
+        if (error?.response?.status !== 404) {
+          console.error('Failed to fetch order preview:', error);
+        }
+        const shopDiscount = calcDiscount(resolvedShopVoucher, rawSubtotal);
+        const afterShop = rawSubtotal - shopDiscount;
+        const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
+        const totalDiscount = shopDiscount + productDiscount;
         setOrderSummary({
-          subtotal: localSubtotal,
-          shippingCost: 0,
+          subtotal: rawSubtotal,
+          shippingCost: previewShippingCost,
           tax: 0,
-          discount: 0,
-          total: localSubtotal,
+          discount: totalDiscount,
+          total: Math.max(0, rawSubtotal + previewShippingCost - totalDiscount),
         });
       }
     };
@@ -477,6 +582,11 @@ const CheckoutPage = () => {
     shippingCompany,
     includeGiftBox,
     shippingCompanies,
+    applicableVouchers,
+    selectedShopVoucherId,
+    selectedProductVoucherId,
+    preSelectedLiveVoucher,
+    realCartItemIds,
   ]);
 
   // Get selected shipping company cost
@@ -531,7 +641,18 @@ const CheckoutPage = () => {
         giftBoxFee: giftBoxPrice,
         notes: '',
         voucherIds: getSelectedVoucherIds(),
-        cartItemIds: cartItems.map((item) => item._id || item.id),
+        cartItemIds: realCartItemIds,
+        // Pass live items directly so BE can create order items without CartItem lookup
+        liveItems: liveItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          color: item.color,
+          size: item.size,
+          price: item.price,
+          image: item.image,
+        })),
+        liveSessionVoucherId: preSelectedLiveVoucher?._id || null,
+        fromLiveSession: fromLiveSession || null,
       };
 
       try {
@@ -570,7 +691,8 @@ const CheckoutPage = () => {
         }
       } catch (error) {
         console.error('Failed to create order', error);
-        alert(error.message || 'Failed to create order');
+        const serverMsg = error?.response?.data?.message || error.message;
+        alert(serverMsg || 'Failed to create order');
       } finally {
         setIsProcessing(false);
       }
@@ -926,11 +1048,13 @@ const CheckoutPage = () => {
         if (!exists) {
           setApplicableVouchers((prev) => [...prev, v]);
         }
-        // Auto-select
-        if (v.type === 'shop' || v.type === 'private') {
-          setSelectedShopVoucherId(v._id);
-        } else if (v.type === 'product') {
-          setSelectedProductVoucherId(v._id);
+        // Auto-select only if this basket meets min order + API eligibility
+        if (voucherEligibleForCartSubtotal(v, localSubtotal)) {
+          if (v.type === 'shop' || v.type === 'private') {
+            setSelectedShopVoucherId(v._id);
+          } else if (v.type === 'product') {
+            setSelectedProductVoucherId(v._id);
+          }
         }
         setManualCode('');
       }
@@ -953,7 +1077,10 @@ const CheckoutPage = () => {
           prev.map((v) => (v._id === voucher._id ? { ...v, isSaved: true } : v))
         );
       }
-      // Auto use
+      // Auto use only when usable for current subtotal
+      if (!voucherEligibleForCartSubtotal(voucher, localSubtotal)) {
+        return;
+      }
       if (voucher.type === 'shop' || voucher.type === 'private') {
         setSelectedShopVoucherId(voucher._id);
       } else if (voucher.type === 'product') {
@@ -966,10 +1093,8 @@ const CheckoutPage = () => {
 
   // Render Voucher Section (Minimized in Checkout Sidebar)
   const renderVoucherSection = () => {
-    const selectedShopVoucher = applicableVouchers.find((v) => v._id === selectedShopVoucherId);
-    const selectedProductVoucher = applicableVouchers.find(
-      (v) => v._id === selectedProductVoucherId
-    );
+    const selectedShopVoucher = applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+    const selectedProductVoucher = applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
 
     return (
       <div className="mb-3">
@@ -1000,6 +1125,46 @@ const CheckoutPage = () => {
 
         {!voucherLoading && (
           <div className="d-flex flex-column gap-2">
+            {/* Live session voucher — always applied, cannot be deselected */}
+            {preSelectedLiveVoucher && (
+              <div
+                className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
+                style={{
+                  background: 'linear-gradient(135deg, #B13C36 0%, #7a2820 100%)',
+                  color: '#fff',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <div className="flex-grow-1">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center gap-2">
+                      <span
+                        style={{
+                          background: 'rgba(255,255,255,0.25)',
+                          borderRadius: '0.35rem',
+                          padding: '0.2em 0.5em',
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.5px',
+                          color: '#fff',
+                        }}
+                      >
+                        LIVE
+                      </span>
+                      <span className="fw-semibold text-truncate" style={{ color: '#fff', maxWidth: '160px' }}>
+                        {preSelectedLiveVoucher.name}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', marginTop: '4px' }}>
+                    {preSelectedLiveVoucher.discountType === 'percent'
+                      ? `Giảm ${preSelectedLiveVoucher.discountValue}%`
+                      : `Giảm ${new Intl.NumberFormat('vi-VN').format(preSelectedLiveVoucher.discountValue)}đ`}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Show Selected Shop Voucher */}
             {selectedShopVoucher && (
               <div
@@ -1359,24 +1524,26 @@ const CheckoutPage = () => {
                   </div>
                   {applicableVouchers
                     .filter((v) => v.type === 'shop' || v.type === 'private')
-                    .map((v) => (
+                    .map((v) => {
+                      const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
+                      return (
                       <div
                         key={v._id}
                         className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
-                          !v.eligible ? 'opacity-50' : 'bg-white shadow-sm'
+                          !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
                         }`}
                         style={{
                           border:
                             selectedShopVoucherId === v._id
                               ? '2px solid #B13C36'
                               : '1px solid transparent',
-                          cursor: v.eligible ? 'pointer' : 'not-allowed',
+                          cursor: cartOk ? 'pointer' : 'not-allowed',
                           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                           position: 'relative',
                           overflow: 'hidden',
                         }}
                         onClick={() => {
-                          if (!v.eligible) {
+                          if (!cartOk) {
                             return;
                           }
                           if (!v.isSaved) {
@@ -1423,7 +1590,7 @@ const CheckoutPage = () => {
                                 ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
                                 : 'Không có mức tối thiểu'}
                             </div>
-                            {v.eligible && v.estimatedSaving > 0 && (
+                            {cartOk && v.estimatedSaving > 0 && (
                               <div
                                 className="mt-1 d-inline-block px-2 py-1 rounded"
                                 style={{
@@ -1436,14 +1603,25 @@ const CheckoutPage = () => {
                                 Giảm {formatCurrency(v.estimatedSaving)}
                               </div>
                             )}
-                            {!v.eligible && v.ineligibleReason && (
-                              <div
-                                className="text-danger mt-1 fw-medium"
-                                style={{ fontSize: '0.75rem' }}
-                              >
-                                {v.ineligibleReason}
-                              </div>
-                            )}
+                            {!cartOk &&
+                              (() => {
+                                const min = Number(v.minBasketPrice);
+                                const line =
+                                  v.eligible &&
+                                  !Number.isNaN(min) &&
+                                  min > 0 &&
+                                  localSubtotal < min
+                                    ? `Cần đơn tối thiểu ${formatCurrency(min)} (hiện ${formatCurrency(localSubtotal)})`
+                                    : v.ineligibleReason;
+                                return line ? (
+                                  <div
+                                    className="text-danger mt-1 fw-medium"
+                                    style={{ fontSize: '0.75rem' }}
+                                  >
+                                    {line}
+                                  </div>
+                                ) : null;
+                              })()}
                           </div>
                         </div>
 
@@ -1459,7 +1637,7 @@ const CheckoutPage = () => {
                                 borderRadius: '6px',
                               }}
                               onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                              disabled={!v.eligible}
+                              disabled={!cartOk}
                             >
                               Lưu
                             </Button>
@@ -1471,7 +1649,7 @@ const CheckoutPage = () => {
                                 id={`shop-v-${v._id}`}
                                 name="modalShopVoucher"
                                 checked={selectedShopVoucherId === v._id}
-                                disabled={!v.eligible}
+                                disabled={!cartOk}
                                 onChange={() => {}}
                                 style={{
                                   width: '1.4em',
@@ -1484,7 +1662,8 @@ const CheckoutPage = () => {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                 </div>
               )}
 
@@ -1503,24 +1682,26 @@ const CheckoutPage = () => {
                   </div>
                   {applicableVouchers
                     .filter((v) => v.type === 'product')
-                    .map((v) => (
+                    .map((v) => {
+                      const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
+                      return (
                       <div
                         key={v._id}
                         className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
-                          !v.eligible ? 'opacity-50' : 'bg-white shadow-sm'
+                          !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
                         }`}
                         style={{
                           border:
                             selectedProductVoucherId === v._id
                               ? '2px solid #B13C36'
                               : '1px solid transparent',
-                          cursor: v.eligible ? 'pointer' : 'not-allowed',
+                          cursor: cartOk ? 'pointer' : 'not-allowed',
                           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                           position: 'relative',
                           overflow: 'hidden',
                         }}
                         onClick={() => {
-                          if (!v.eligible) {
+                          if (!cartOk) {
                             return;
                           }
                           if (!v.isSaved) {
@@ -1569,7 +1750,7 @@ const CheckoutPage = () => {
                                 ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
                                 : 'Không có mức tối thiểu'}
                             </div>
-                            {v.eligible && v.estimatedSaving > 0 && (
+                            {cartOk && v.estimatedSaving > 0 && (
                               <div
                                 className="mt-1 d-inline-block px-2 py-1 rounded"
                                 style={{
@@ -1582,14 +1763,25 @@ const CheckoutPage = () => {
                                 Giảm {formatCurrency(v.estimatedSaving)}
                               </div>
                             )}
-                            {!v.eligible && v.ineligibleReason && (
-                              <div
-                                className="text-danger mt-1 fw-medium"
-                                style={{ fontSize: '0.75rem' }}
-                              >
-                                {v.ineligibleReason}
-                              </div>
-                            )}
+                            {!cartOk &&
+                              (() => {
+                                const min = Number(v.minBasketPrice);
+                                const line =
+                                  v.eligible &&
+                                  !Number.isNaN(min) &&
+                                  min > 0 &&
+                                  localSubtotal < min
+                                    ? `Cần đơn tối thiểu ${formatCurrency(min)} (hiện ${formatCurrency(localSubtotal)})`
+                                    : v.ineligibleReason;
+                                return line ? (
+                                  <div
+                                    className="text-danger mt-1 fw-medium"
+                                    style={{ fontSize: '0.75rem' }}
+                                  >
+                                    {line}
+                                  </div>
+                                ) : null;
+                              })()}
                           </div>
                         </div>
 
@@ -1605,7 +1797,7 @@ const CheckoutPage = () => {
                                 borderRadius: '6px',
                               }}
                               onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                              disabled={!v.eligible}
+                              disabled={!cartOk}
                             >
                               Lưu
                             </Button>
@@ -1617,7 +1809,7 @@ const CheckoutPage = () => {
                                 id={`prod-v-${v._id}`}
                                 name="modalProductVoucher"
                                 checked={selectedProductVoucherId === v._id}
-                                disabled={!v.eligible}
+                                disabled={!cartOk}
                                 onChange={() => {}}
                                 style={{
                                   width: '1.4em',
@@ -1630,7 +1822,8 @@ const CheckoutPage = () => {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                 </div>
               )}
             </div>

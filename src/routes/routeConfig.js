@@ -16,6 +16,7 @@ const ResetPasswordPage = lazy(() => import('@pages/auth/ResetPasswordPage'));
 const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage'));
 const ChangePasswordPage = lazy(() => import('@pages/auth/ChangePasswordPage'));
 const ShopProfilePage = lazy(() => import('@pages/buyer/ShopProfilePage'));
+const LiveViewerPage = lazy(() => import('@pages/buyer/LiveViewerPage'));
 
 const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
 const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'));
@@ -65,6 +66,7 @@ const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage'));
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
+const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
 
 // Buyer - Seller Application
 const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
@@ -134,6 +136,12 @@ export const routeConfig = [
     element: ShopProfilePage,
     public: true,
     layout: 'main',
+  },
+  {
+    path: '/shop/:shopId/live/:sessionId',
+    element: LiveViewerPage,
+    public: true,
+    layout: 'none',
   },
   {
     path: '/login',
@@ -307,6 +315,13 @@ export const routeConfig = [
   {
     path: '/seller/profile',
     element: SellerProfilePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/live',
+    element: LiveStreamPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

@@ -72,6 +72,19 @@ export const removeFromCart = createAsyncThunk(
   }
 );
 
+export const addToCartFromLive = createAsyncThunk(
+  'cart/addFromLive',
+  async ({ productId, quantity, price, color, size, image, name }, { dispatch, rejectWithValue }) => {
+    try {
+      await cartService.addToCart({ productId, quantity, color, size });
+      dispatch(fetchCart());
+      return;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 // Map backend item to frontend format
 const mapCartItem = (backendItem) => ({
   id: backendItem._id, // CartItem ID
@@ -156,6 +169,20 @@ const cartSlice = createSlice({
       state.totalPrice = total;
       state.totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
     });
+
+    // addToCartFromLive
+    builder
+      .addCase(addToCartFromLive.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addToCartFromLive.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(addToCartFromLive.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 

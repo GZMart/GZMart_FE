@@ -15,6 +15,27 @@
   flex-shrink: 0;
 }
 
+/* Outer wrapper when live: ring + LIVE badge sit here so they are not clipped by avatar/link overflow */
+.liveAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-right: 20px;
+  width: 86px;
+  height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.liveAvatarWrap .shopAvatarContainer {
+  margin-right: 0;
+  width: 78px;
+  height: 78px;
+}
+
 .shopAvatarContainer {
   position: relative;
   width: 78px;
@@ -34,6 +55,86 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+}
+
+/* TikTok-style LIVE ring on OUTER wrap (not on .shopAvatarContainer) */
+.liveAvatarRing {
+  border: none;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 5px #fe2c55,
+    0 0 20px rgba(254, 44, 85, 0.6),
+    0 0 40px rgba(254, 44, 85, 0.25);
+  animation: gzmLiveRingPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes gzmLiveRingPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px #ffffff,
+      0 0 0 5px #fe2c55,
+      0 0 20px rgba(254, 44, 85, 0.6),
+      0 0 40px rgba(254, 44, 85, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px #ffffff,
+      0 0 0 7px #ff6b8a,
+      0 0 30px rgba(254, 44, 85, 0.9),
+      0 0 60px rgba(254, 44, 85, 0.45);
+  }
+}
+
+.liveAvatarLink {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.liveBadge {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  z-index: 4;
+  background: linear-gradient(135deg, #fe2c55, #ff0050);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 5px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  animation: gzmLiveBadgeBlink 1.2s ease-in-out infinite;
+}
+
+@keyframes gzmLiveBadgeBlink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+    text-shadow: 0 0 14px rgba(255, 255, 255, 1);
+  }
+}
+
+.liveNameLink {
+  text-decoration: none;
+  color: inherit;
+  align-self: flex-start;
+}
+
+.liveNameLink:hover .shopName {
+  color: #fe2c55;
 }
 
 .shopFavBadge {
