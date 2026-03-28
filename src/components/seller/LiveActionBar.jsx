@@ -1,4 +1,5 @@
 import styles from '@pages/seller/LiveStreamPage.module.css';
+import PropTypes from 'prop-types';
 
 export default function LiveActionBar({ onDiscard, onGoLive, isLive, isLoading }) {
   return (
@@ -35,3 +36,10 @@ export default function LiveActionBar({ onDiscard, onGoLive, isLive, isLoading }
     </div>
   );
 }
+
+LiveActionBar.propTypes = {
+  onDiscard: PropTypes.func,
+  onGoLive: PropTypes.func,
+  isLive: PropTypes.bool,
+  isLoading: PropTypes.bool,
+};

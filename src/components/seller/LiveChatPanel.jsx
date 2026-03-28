@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { DataPacket_Kind } from 'livekit-client';
 import livestreamService from '@services/api/livestreamService';
@@ -6,10 +7,7 @@ import socketService from '@services/socket/socketService';
 import styles from '@pages/seller/LiveStreamPage.module.css';
 import OrderSyntaxPanel from './OrderSyntaxPanel';
 
-// Chat message topic for LiveKit DataChannel
-const CHAT_TOPIC = 'lk-chat';
-
-export default function LiveChatPanel({ room, sessionId, isLive, form, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {
+export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {
   const [activeTab, setActiveTab] = useState('interaction');
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -27,7 +25,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
 
   // ── Fetch chat history from REST API ────────────────────────────
   useEffect(() => {
-    if (!isLive || !sessionId) return;
+    if (!isLive || !sessionId) {
+return;
+}
 
     livestreamService
       .getSessionMessages(sessionId)
@@ -68,7 +68,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
   // LiveKit DataChannel is NOT listened to (causes duplicates).
   // Deduplication: skip if senderId matches the seller's own userId (those were added optimistically).
   useEffect(() => {
-    if (!isLive || !sessionId || !user?._id) return;
+    if (!isLive || !sessionId || !user?._id) {
+return;
+}
 
     socketService.connect(user._id);
     socketService.emit('livestream_join', {
@@ -77,14 +79,20 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
     });
 
     const onSocketChat = (msg) => {
-      if (!msg?.content || msg.sessionId !== sessionId) return;
+      if (!msg?.content || msg.sessionId !== sessionId) {
+return;
+}
       // Skip own messages (already added optimistically via localMsg)
       const sid = String(sellerIdRef.current);
-      if (String(msg.senderId) === sid || String(msg.userId) === sid) return;
+      if (String(msg.senderId) === sid || String(msg.userId) === sid) {
+return;
+}
       // Deduplicate by server-generated message id
       if (msg.id) {
         setMessages((prev) => {
-          if (prev.some((p) => p.id === msg.id)) return prev;
+          if (prev.some((p) => p.id === msg.id)) {
+return prev;
+}
           return [
             ...prev,
             {
@@ -134,7 +142,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
   // ── Send message ───────────────────────────────────────────────
   const handleSend = () => {
     const text = inputValue.trim();
-    if (!text) return;
+    if (!text) {
+return;
+}
 
     // Always update local state immediately
     const localMsg = {
@@ -284,7 +294,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
                         src={p.thumbnail || p.images?.[0] || '/placeholder.png'}
                         alt={p.name}
                         className={styles.featuredImg}
-                        onError={(e) => { e.target.src = '/placeholder.png'; }}
+                        onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
                       />
                       <div className={styles.featuredInfo}>
                         <div className={styles.featuredName}>{p.name}</div>
@@ -368,7 +380,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
                     src={p.thumbnail || p.images?.[0] || '/placeholder.png'}
                     alt={p.name}
                     className={styles.showcaseImg}
-                    onError={(e) => { e.target.src = '/placeholder.png'; }}
+                    onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
                   />
                   <div className={styles.showcaseInfo}>
                     <div className={styles.showcaseName}>{p.name}</div>
@@ -389,8 +403,12 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
                       transition: 'color 0.15s',
                     }}
                     title={isPinned ? 'Unpin' : 'Pin to viewer overlay'}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = '#B13C36'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = isPinned ? '#B13C36' : '#9ca3af'; }}
+                    onMouseEnter={(e) => {
+ e.currentTarget.style.color = '#B13C36'; 
+}}
+                    onMouseLeave={(e) => {
+ e.currentTarget.style.color = isPinned ? '#B13C36' : '#9ca3af'; 
+}}
                   >
                     <i className={`bi ${isPinned ? 'bi-pin-fill' : 'bi-pin'}`} style={{ fontSize: '14px' }} />
                   </button>
@@ -407,8 +425,12 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
                       transition: 'color 0.15s',
                     }}
                     title="Remove from live"
-                    onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; }}
+                    onMouseEnter={(e) => {
+ e.currentTarget.style.color = '#ef4444'; 
+}}
+                    onMouseLeave={(e) => {
+ e.currentTarget.style.color = '#9ca3af'; 
+}}
                   >
                     <i className="bi bi-x-circle-fill" style={{ fontSize: '14px' }} />
                   </button>
@@ -467,8 +489,12 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
                         transition: 'color 0.15s',
                       }}
                       title="Remove from live"
-                      onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; }}
+                      onMouseEnter={(e) => {
+ e.currentTarget.style.color = '#ef4444'; 
+}}
+                      onMouseLeave={(e) => {
+ e.currentTarget.style.color = '#9ca3af'; 
+}}
                     >
                       <i className="bi bi-x-circle-fill" style={{ fontSize: '14px' }} />
                     </button>
@@ -495,3 +521,23 @@ export default function LiveChatPanel({ room, sessionId, isLive, form, liveProdu
     </div>
   );
 }
+
+// eslint-disable-next-line react/display-name
+LiveChatPanel.propTypes = {
+  room: PropTypes.shape({
+    localParticipant: PropTypes.shape({
+      publishData: PropTypes.func,
+    }),
+  }),
+  sessionId: PropTypes.string,
+  isLive: PropTypes.bool,
+  liveProducts: PropTypes.arrayOf(PropTypes.object),
+  pinnedProductId: PropTypes.string,
+  onEditProducts: PropTypes.func,
+  onRemoveProduct: PropTypes.func,
+  onPinProduct: PropTypes.func,
+  onUnpinProduct: PropTypes.func,
+  liveVouchers: PropTypes.arrayOf(PropTypes.object),
+  onEditVouchers: PropTypes.func,
+  onRemoveVoucher: PropTypes.func,
+};

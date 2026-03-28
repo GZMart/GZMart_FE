@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { parseOrderSyntax } from '@utils/orderSyntax';
@@ -229,7 +230,9 @@ const syntaxTierOptionsResolved = (tier, product) => {
 
 // ── Syntax Guide Card (pinned at top of chat) ───────────────────────────────
 const SyntaxGuideCard = ({ guide }) => {
-  if (!guide) return null;
+  if (!guide) {
+return null;
+}
 
   const { prefix, product, variantTiers } = guide;
 
@@ -259,7 +262,9 @@ const SyntaxGuideCard = ({ guide }) => {
               src={product.thumbnail}
               alt={product.name}
               className={styles['ls-syntax-guide-thumb']}
-              onError={(e) => { e.target.style.display = 'none'; }}
+              onError={(e) => {
+ e.target.style.display = 'none'; 
+}}
             />
           )}
           <span className={styles['ls-syntax-guide-product-name']}>{product.name}</span>
@@ -317,7 +322,9 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
               src={item.image || '/placeholder.png'}
               alt={item.name}
               className={styles['ls-live-cart-item-img']}
-              onError={(e) => { e.target.src = '/placeholder.png'; }}
+              onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
             />
             <div className={styles['ls-live-cart-item-info']}>
               <span className={styles['ls-live-cart-item-name']}>{item.name}</span>
@@ -458,19 +465,29 @@ export default function LiveViewerPage() {
 
   const syntaxMatchedRef = useRef(null);
   const orderSyntaxRef = useRef(orderSyntax);
-  useEffect(() => { orderSyntaxRef.current = orderSyntax; }, [orderSyntax]);
+  useEffect(() => {
+ orderSyntaxRef.current = orderSyntax; 
+}, [orderSyntax]);
 
   const productsRef = useRef(products);
-  useEffect(() => { productsRef.current = products; }, [products]);
+  useEffect(() => {
+ productsRef.current = products; 
+}, [products]);
 
   const pinnedProductIdRef = useRef(pinnedProductId);
-  useEffect(() => { pinnedProductIdRef.current = pinnedProductId; }, [pinnedProductId]);
+  useEffect(() => {
+ pinnedProductIdRef.current = pinnedProductId; 
+}, [pinnedProductId]);
 
   const pinnedProductRef = useRef(pinnedProduct);
-  useEffect(() => { pinnedProductRef.current = pinnedProduct; }, [pinnedProduct]);
+  useEffect(() => {
+ pinnedProductRef.current = pinnedProduct; 
+}, [pinnedProduct]);
 
   const liveCartItemsRef = useRef([]);
-  useEffect(() => { liveCartItemsRef.current = liveCartItems; }, [liveCartItems]);
+  useEffect(() => {
+ liveCartItemsRef.current = liveCartItems; 
+}, [liveCartItems]);
 
   // Initial products API sets pinnedProduct but not pinnedProductId — keep id in sync for order syntax fallback
   useEffect(() => {
@@ -484,23 +501,35 @@ export default function LiveViewerPage() {
 
   // Auto-show pinned overlay when seller changes pinned product
   useEffect(() => {
-    if (pinnedProduct) setShowPinnedOverlay(true);
+    if (pinnedProduct) {
+setShowPinnedOverlay(true);
+}
   }, [pinnedProduct]);
 
   // ── Socket.IO: viewer count + chat relay ─
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+return;
+}
 
     socketService.connect(user?._id);
 
-    const handleViewerUpdate = ({ count }) => { setViewerCount(count); };
+    const handleViewerUpdate = ({ count }) => {
+ setViewerCount(count); 
+};
 
     const handleSocketChat = (msg) => {
-      if (!msg?.content || msg.sessionId !== sessionId) return;
-      if (String(msg.senderId) === String(user?._id)) return;
+      if (!msg?.content || msg.sessionId !== sessionId) {
+return;
+}
+      if (String(msg.senderId) === String(user?._id)) {
+return;
+}
 
       setMessages((prev) => {
-        if (msg.id && prev.some((p) => p.id === msg.id)) return prev;
+        if (msg.id && prev.some((p) => p.id === msg.id)) {
+return prev;
+}
         return [
           prev.slice(-49),
           { ...normalizeMessage(msg), isOwn: false },
@@ -517,16 +546,22 @@ export default function LiveViewerPage() {
     };
 
     const handlePinUpdate = ({ pinnedProduct: pp, products: prodList }) => {
-      if (prodList) setProducts(prodList);
+      if (prodList) {
+setProducts(prodList);
+}
       setPinnedProduct(pp || null);
     };
 
     const handleProductsUpdate = ({ products: prodList }) => {
-      if (prodList) setProducts(prodList);
+      if (prodList) {
+setProducts(prodList);
+}
     };
 
     const handleVouchersUpdate = ({ vouchers: voucherList }) => {
-      if (voucherList) setVouchers(voucherList);
+      if (voucherList) {
+setVouchers(voucherList);
+}
     };
 
     // Remote join notifications — broadcast from backend when anyone joins the session
@@ -543,7 +578,9 @@ export default function LiveViewerPage() {
     };
 
     const handleConfigUpdate = (config) => {
-      if (!config?.sessionId || String(config.sessionId) !== String(sessionId)) return;
+      if (!config?.sessionId || String(config.sessionId) !== String(sessionId)) {
+return;
+}
       const os = config.orderSyntax;
       setOrderSyntax({
         enabled: os?.enabled ?? false,
@@ -586,7 +623,9 @@ export default function LiveViewerPage() {
 
   // ── Initial data fetch ──
   useEffect(() => {
-    if (!sessionId || fetchedRef.current) return;
+    if (!sessionId || fetchedRef.current) {
+return;
+}
     fetchedRef.current = true;
 
     Promise.all([
@@ -691,7 +730,7 @@ export default function LiveViewerPage() {
         setError(e.response?.data?.message || e.message || 'Cannot load stream');
         setLoading(false);
       });
-  }, [sessionId]);
+  }, [sessionId, user]);
 
   // ── LiveKit Connected event ─
   useEffect(() => {
@@ -712,11 +751,17 @@ export default function LiveViewerPage() {
     };
 
     const onTrackSubscribed = (track) => {
-      if (track.kind === 'video' || track.kind === 'audio') setHasRemoteTrack(true);
+      if (track.kind === 'video' || track.kind === 'audio') {
+setHasRemoteTrack(true);
+}
     };
 
-    const onTrackUnsubscribed = () => { checkForRemoteTracks(); };
-    const onParticipantDisconnected = () => { checkForRemoteTracks(); };
+    const onTrackUnsubscribed = () => {
+ checkForRemoteTracks(); 
+};
+    const onParticipantDisconnected = () => {
+ checkForRemoteTracks(); 
+};
     const onParticipantConnected = () => {};
 
     if (r.state === 'connected') {
@@ -749,8 +794,7 @@ export default function LiveViewerPage() {
   }, [messages]);
 
   // ── Emit leave event on unmount ─────────────────────────────────
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (sessionId && user) {
         socketService.emit('livestream_leave', {
           sessionId,
@@ -759,8 +803,7 @@ export default function LiveViewerPage() {
           role: 'buyer',
         });
       }
-    };
-  }, [sessionId, user]);
+    }, [sessionId, user]);
 
   // ── Order syntax: resolve a model by tierIndex ─────────────────────────────
   const resolveVariantFromTiers = useCallback((product, variants) => {
@@ -776,15 +819,21 @@ export default function LiveViewerPage() {
       const tierIdx = tiers.findIndex(
         (t) => t.name.toLowerCase() === tierName.toLowerCase(),
       );
-      if (tierIdx === -1) return null;
+      if (tierIdx === -1) {
+return null;
+}
       const optionIdx = tiers[tierIdx].options?.findIndex(
         (o) => String(o).toLowerCase() === String(value).toLowerCase(),
       );
-      if (optionIdx === -1) return null;
+      if (optionIdx === -1) {
+return null;
+}
       tierIndex[tierIdx] = optionIdx;
     }
 
-    if (tierIndex.some((v) => v === -1)) return null;
+    if (tierIndex.some((v) => v === -1)) {
+return null;
+}
 
     return product.models.find(
       (m) =>
@@ -839,7 +888,9 @@ export default function LiveViewerPage() {
       size = 'Default';
       tiers.forEach((tier, tierPos) => {
         const optIdx = variantTierIdx[tierPos];
-        if (optIdx == null || optIdx < 0) return;
+        if (optIdx == null || optIdx < 0) {
+return;
+}
         const label = tiers[tierPos].options?.[optIdx] ?? 'Default';
         const n = tier.name.toLowerCase();
         if (n.includes('color') || n.includes('màu') || n.includes('mau')) {
@@ -890,7 +941,7 @@ export default function LiveViewerPage() {
     } catch (err) {
       toast.error(err?.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     }
-  }, [sessionId, resolveVariantFromTiers]);
+  }, [resolveVariantFromTiers]);
 
   // Keep syntaxMatchedRef in sync with the latest handleSyntaxMatched
   useEffect(() => {
@@ -900,7 +951,9 @@ export default function LiveViewerPage() {
   // ── Send chat via Socket.IO ─
   const sendChat = () => {
     const text = input.trim();
-    if (!text || !user) return;
+    if (!text || !user) {
+return;
+}
 
     setIsSending(true);
     const localMsg = {
@@ -944,7 +997,9 @@ export default function LiveViewerPage() {
   }, []);
 
   const handleLiveCartCheckout = useCallback(() => {
-    if (liveCartItemsRef.current.length === 0) return;
+    if (liveCartItemsRef.current.length === 0) {
+return;
+}
     navigate('/buyer/checkout', {
       state: {
         selectedItems: liveCartItemsRef.current.map(({ tempId, ...rest }) => ({
@@ -958,14 +1013,18 @@ export default function LiveViewerPage() {
 
   // ── Like via REST API ─
   const handleLike = () => {
-    if (liked || !sessionId) return;
+    if (liked || !sessionId) {
+return;
+}
 
     setLiked(true);
     setLikeCount((c) => c + 1);
 
     livestreamService.likeSession(sessionId)
       .then((res) => {
-        if (res?.data?.likeCount !== undefined) setLikeCount(res.data.likeCount);
+        if (res?.data?.likeCount !== undefined) {
+setLikeCount(res.data.likeCount);
+}
       })
       .catch(() => {
         setLiked(false);
@@ -973,7 +1032,9 @@ export default function LiveViewerPage() {
       });
   };
 
-  const handleFollow = () => { setIsFollowing((prev) => !prev); };
+  const handleFollow = () => {
+ setIsFollowing((prev) => !prev); 
+};
 
   const handleShare = () => {
     if (navigator.share) {
@@ -998,7 +1059,9 @@ export default function LiveViewerPage() {
     navigator.clipboard.writeText(code);
   };
 
-  const handleBack = () => { navigate(shopId ? `/shop/${shopId}` : '/'); };
+  const handleBack = () => {
+ navigate(shopId ? `/shop/${shopId}` : '/'); 
+};
 
   const handleQuickBuy = (product) => {
     setSelectedQuickBuyProduct(product);
@@ -1006,14 +1069,17 @@ export default function LiveViewerPage() {
   };
 
   const formatCount = (count) => {
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    if (count >= 1000) {
+return `${(count / 1000).toFixed(1)}k`;
+}
     return String(count);
   };
 
   const showLiveKit = token && typeof token === 'string' && token.length > 0;
 
   const displayProduct = pinnedProduct || products[0];
-  const { sale: saleNum, original: origNum, current: mainPrice, discount } = useMemo(() => computePrice(displayProduct), [displayProduct]);
+  const { original: origNum, current: mainPrice, discount } = useMemo(() => computePrice(displayProduct), [displayProduct]);
+  // eslint-disable-next-line no-unused-vars
   const showStrike = origNum != null && origNum > 0 && mainPrice < origNum;
   const isPinned = Boolean(pinnedProduct);
 
@@ -1115,7 +1181,9 @@ export default function LiveViewerPage() {
                   <img
                     src={session?.shopId?.avatar || '/placeholder.png'}
                     alt={session?.shopId?.fullName || 'Shop'}
-                    onError={(e) => { e.target.src = '/placeholder.png'; }}
+                    onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
                   />
                 </div>
                 <span className={styles['ls-shop-name']}>
@@ -1195,7 +1263,9 @@ export default function LiveViewerPage() {
                   <img
                     src={displayProduct?.thumbnail || displayProduct?.images?.[0] || '/placeholder.png'}
                     alt={displayProduct?.name || 'Product'}
-                    onError={(e) => { e.target.src = '/placeholder.png'; }}
+                    onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
                   />
                   {discount && (
                     <div className={styles['ls-discount-chip']}>-{discount}%</div>
@@ -1275,7 +1345,7 @@ export default function LiveViewerPage() {
                 ) : (
                   <div className={styles['ls-products-track']}>
                     {products.map((product, idx) => {
-                      const { sale: ps, original: op, current: mp, discount: disc } = computePrice(product);
+                      const { original: op, current: mp, discount: disc } = computePrice(product);
                       const ip = product._id === pinnedProduct?._id;
 
                       return (
@@ -1285,7 +1355,11 @@ export default function LiveViewerPage() {
                           onClick={() => handleQuickBuy(product)}
                           role="button"
                           tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleQuickBuy(product); }}
+                          onKeyDown={(e) => {
+ if (e.key === 'Enter') {
+handleQuickBuy(product);
+} 
+}}
                         >
                           {/* Image */}
                           <div className={styles['ls-product-img-wrap']}>
@@ -1295,7 +1369,9 @@ export default function LiveViewerPage() {
                               className={styles['ls-product-img']}
                               loading="lazy"
                               decoding="async"
-                              onError={(e) => { e.target.src = '/placeholder.png'; }}
+                              onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
                             />
                             {ip && (
                               <div className={styles['ls-product-pin-badge']}>Ghim</div>
@@ -1319,7 +1395,9 @@ export default function LiveViewerPage() {
                             <button
                               className={styles['ls-product-buy-btn']}
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleQuickBuy(product); }}
+                              onClick={(e) => {
+ e.stopPropagation(); handleQuickBuy(product); 
+}}
                             >
                               Mua ngay
                             </button>
@@ -1541,7 +1619,11 @@ export default function LiveViewerPage() {
                   className={styles['ls-text-input']}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); }}
+                  onKeyDown={(e) => {
+ if (e.key === 'Enter') {
+sendChat();
+} 
+}}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
                   placeholder={user ? 'Say something' : 'Login to chat'}
@@ -1620,3 +1702,59 @@ export default function LiveViewerPage() {
     </div>
   );
 }
+
+Icon.propTypes = {
+  size: PropTypes.number,
+  strokeWidth: PropTypes.number,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  animated: PropTypes.bool,
+};
+
+IconChevronLeft.propTypes = { size: PropTypes.number };
+IconShare.propTypes = { size: PropTypes.number };
+IconHeart.propTypes = { size: PropTypes.number, filled: PropTypes.bool, animated: PropTypes.bool };
+IconShoppingBag.propTypes = { size: PropTypes.number };
+IconCart.propTypes = { size: PropTypes.number };
+IconArrowRight.propTypes = { size: PropTypes.number };
+IconX.propTypes = {};
+IconSend.propTypes = { size: PropTypes.number };
+IconLoader.propTypes = { size: PropTypes.number };
+IconEye.propTypes = { size: PropTypes.number };
+IconSmile.propTypes = { size: PropTypes.number };
+IconGift.propTypes = { size: PropTypes.number };
+IconImage.propTypes = { size: PropTypes.number };
+IconCheck.propTypes = { size: PropTypes.number };
+IconPlus.propTypes = { size: PropTypes.number };
+IconChevronUp.propTypes = { size: PropTypes.number };
+IconAlert.propTypes = { size: PropTypes.number };
+IconPlay.propTypes = { size: PropTypes.number };
+IconMessageSquare.propTypes = { size: PropTypes.number };
+
+SyntaxGuideCard.propTypes = {
+  guide: PropTypes.shape({
+    prefix: PropTypes.string,
+    product: PropTypes.shape({
+      thumbnail: PropTypes.string,
+      name: PropTypes.string,
+      tiers: PropTypes.arrayOf(PropTypes.object),
+    }),
+    variantTiers: PropTypes.arrayOf(
+      PropTypes.shape({ name: PropTypes.string, options: PropTypes.array })
+    ),
+  }),
+};
+
+LiveCartDrawer.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      tempId: PropTypes.string,
+      quantity: PropTypes.number,
+      variantLabel: PropTypes.string,
+    })
+  ),
+  onHide: PropTypes.func,
+  onRemoveItem: PropTypes.func,
+  onUpdateQty: PropTypes.func,
+  onCheckout: PropTypes.func,
+};

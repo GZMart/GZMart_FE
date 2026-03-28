@@ -1,17 +1,19 @@
 // GZMart_FE/src/components/seller/LiveProductSelector.jsx
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { productService } from '@services/api/productService';
 
 export default function LiveProductSelector({ isOpen, onClose, onAdd, loading, existingProductIds = [] }) {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [selected, setSelected] = useState(new Set());
+  const [selected, setSelected] = useState(new Set(existingProductIds.map((id) => String(id))));
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+return;
+}
     setLoadingProducts(true);
-    setSelected(new Set(existingProductIds.map((id) => String(id))));
     productService
       .getMyProducts({ limit: 100, status: 'active' })
       .then((res) => {
@@ -29,18 +31,25 @@ export default function LiveProductSelector({ isOpen, onClose, onAdd, loading, e
   const toggleSelect = (id) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
       return next;
     });
   };
 
   const handleAdd = () => {
-    if (selected.size === 0) return;
+    if (selected.size === 0) {
+return;
+}
     onAdd(Array.from(selected));
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+return null;
+}
 
   return (
     <div
@@ -53,7 +62,11 @@ export default function LiveProductSelector({ isOpen, onClose, onAdd, loading, e
         justifyContent: 'center',
         zIndex: 9999,
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+ if (e.target === e.currentTarget) {
+onClose();
+} 
+}}
     >
       <div
         style={{
@@ -103,8 +116,12 @@ export default function LiveProductSelector({ isOpen, onClose, onAdd, loading, e
               outline: 'none',
               boxSizing: 'border-box',
             }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(177,60,54,0.4)'; }}
-            onBlur={(e) => { e.target.style.borderColor = '#e8e8e8'; }}
+            onFocus={(e) => {
+ e.target.style.borderColor = 'rgba(177,60,54,0.4)'; 
+}}
+            onBlur={(e) => {
+ e.target.style.borderColor = '#e8e8e8'; 
+}}
           />
         </div>
 
@@ -159,7 +176,9 @@ export default function LiveProductSelector({ isOpen, onClose, onAdd, loading, e
                         objectFit: 'cover',
                         flexShrink: 0,
                       }}
-                      onError={(e) => { e.target.src = '/placeholder.png'; }}
+                      onError={(e) => {
+ e.target.src = '/placeholder.png'; 
+}}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p
@@ -239,3 +258,11 @@ export default function LiveProductSelector({ isOpen, onClose, onAdd, loading, e
     </div>
   );
 }
+
+LiveProductSelector.propTypes = {
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  onAdd: PropTypes.func,
+  loading: PropTypes.bool,
+  existingProductIds: PropTypes.arrayOf(PropTypes.string),
+};

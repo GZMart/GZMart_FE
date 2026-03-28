@@ -62,7 +62,9 @@ export default function LiveStreamPage() {
   }, [form]);
 
   const handleEndLive = useCallback(async () => {
-    if (!session) return;
+    if (!session) {
+return;
+}
     try {
       await livestreamService.endSession(session._id);
     } catch (_) {
@@ -106,7 +108,9 @@ export default function LiveStreamPage() {
 
   // Fetch current session products
   const fetchSessionProducts = useCallback(async () => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     try {
       const res = await livestreamService.getSessionProducts(session._id);
       setLiveProducts(res?.data?.products || []);
@@ -125,7 +129,9 @@ export default function LiveStreamPage() {
 
   // Add products to session
   const handleAddProducts = async (productIds) => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     setAddingProducts(true);
     try {
       const res = await livestreamService.addProductsToSession(session._id, productIds);
@@ -141,7 +147,9 @@ export default function LiveStreamPage() {
 
   // Remove product from session
   const handleRemoveProduct = async (productId) => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     try {
       const res = await livestreamService.removeProductFromSession(session._id, productId);
       setLiveProducts(res?.data?.products || []);
@@ -155,7 +163,9 @@ export default function LiveStreamPage() {
 
   // Pin product to viewer overlay
   const handlePinProduct = async (productId) => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     try {
       const res = await livestreamService.pinProduct(session._id, productId);
       setLiveProducts(res?.data?.products || []);
@@ -166,8 +176,10 @@ export default function LiveStreamPage() {
   };
 
   // Unpin current product
-  const handleUnpinProduct = async (productId) => {
-    if (!session?._id) return;
+  const handleUnpinProduct = async (_productId) => {
+    if (!session?._id) {
+return;
+}
     try {
       const res = await livestreamService.unpinProduct(session._id);
       setLiveProducts(res?.data?.products || []);
@@ -179,7 +191,9 @@ export default function LiveStreamPage() {
 
   // Fetch current session vouchers
   const fetchSessionVouchers = useCallback(async () => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     try {
       const res = await livestreamService.getSessionVouchers(session._id);
       setLiveVouchers(res?.data?.vouchers || []);
@@ -197,7 +211,9 @@ export default function LiveStreamPage() {
 
   // Add vouchers to session
   const handleAddVouchers = async (voucherIds) => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     setAddingVouchers(true);
     try {
       const res = await livestreamService.addVouchersToSession(session._id, voucherIds);
@@ -212,7 +228,9 @@ export default function LiveStreamPage() {
 
   // Remove voucher from session
   const handleRemoveVoucher = async (voucherId) => {
-    if (!session?._id) return;
+    if (!session?._id) {
+return;
+}
     try {
       const res = await livestreamService.removeVoucherFromSession(session._id, voucherId);
       setLiveVouchers(res?.data?.vouchers || []);
@@ -273,7 +291,6 @@ export default function LiveStreamPage() {
           room={room}
           sessionId={session?._id}
           isLive={isLive}
-          form={form}
           liveProducts={liveProducts}
           onEditProducts={() => setShowProductSelector(true)}
           onRemoveProduct={handleRemoveProduct}

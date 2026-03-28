@@ -1,4 +1,6 @@
 // src/components/buyer/LiveChatMessage.jsx
+import PropTypes from 'prop-types';
+
 export default function LiveChatMessage({ sender, content, isSupport = false, isOwn = false }) {
   return (
     <div className="flex gap-2 items-start">
@@ -23,3 +25,10 @@ export default function LiveChatMessage({ sender, content, isSupport = false, is
     </div>
   );
 }
+
+LiveChatMessage.propTypes = {
+  sender: PropTypes.string,
+  content: PropTypes.string,
+  isSupport: PropTypes.bool,
+  isOwn: PropTypes.bool,
+};

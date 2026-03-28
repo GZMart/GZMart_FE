@@ -23,7 +23,9 @@ const backdropVariants = {
 
 // ── Same variant logic as ProductDetailsPage ─────────────────────────────────
 const findModel = (detail, tierIndex) => {
-  if (!detail?.models || !tierIndex?.length) return null;
+  if (!detail?.models || !tierIndex?.length) {
+return null;
+}
   return detail.models.find(
     (m) =>
       m.tierIndex &&
@@ -43,17 +45,27 @@ const getPriceRange = (detail) => {
 
 /** Fallback when live session payload has no unit price on the root */
 const resolveLiveUnitPrice = (live) => {
-  if (!live) return 0;
+  if (!live) {
+return 0;
+}
   const nested = live.productId && typeof live.productId === 'object' ? live.productId : null;
   const sale = live.price != null && !Number.isNaN(Number(live.price)) ? Number(live.price) : null;
   const orig = live.originalPrice != null && !Number.isNaN(Number(live.originalPrice)) ? Number(live.originalPrice) : null;
-  if (sale != null && sale > 0) return sale;
-  if (orig != null && orig > 0) return orig;
+  if (sale != null && sale > 0) {
+return sale;
+}
+  if (orig != null && orig > 0) {
+return orig;
+}
   if (nested) {
     const ns = nested.price != null && !Number.isNaN(Number(nested.price)) ? Number(nested.price) : null;
     const no = nested.originalPrice != null && !Number.isNaN(Number(nested.originalPrice)) ? Number(nested.originalPrice) : null;
-    if (ns != null && ns > 0) return ns;
-    if (no != null && no > 0) return no;
+    if (ns != null && ns > 0) {
+return ns;
+}
+    if (no != null && no > 0) {
+return no;
+}
   }
   return 0;
 };
@@ -61,10 +73,14 @@ const resolveLiveUnitPrice = (live) => {
 const deriveColorSize = (detail, selectedTierIndex) => {
   let color = 'Default';
   let size = 'Default';
-  if (!detail?.tier_variations?.length) return { color, size };
+  if (!detail?.tier_variations?.length) {
+return { color, size };
+}
   detail.tier_variations.forEach((tier, idx) => {
     const selectedOption = tier.options?.[selectedTierIndex[idx]];
-    if (selectedOption == null) return;
+    if (selectedOption == null) {
+return;
+}
     const tierNameLower = String(tier.name || '').toLowerCase();
     if (
       tierNameLower.includes('color') ||
@@ -116,7 +132,9 @@ const LiveQuickBuySheet = ({
 
   // Fetch full product (tiers, models, prices) when sheet opens
   useEffect(() => {
-    if (!show || !liveProduct?._id) return undefined;
+    if (!show || !liveProduct?._id) {
+return undefined;
+}
 
     let cancelled = false;
     setDetailLoading(true);
@@ -126,7 +144,9 @@ const LiveQuickBuySheet = ({
       .getById(liveProduct._id)
       .then((res) => {
         const raw = res?.data?.data || res?.data || res;
-        if (cancelled || !raw?._id) return;
+        if (cancelled || !raw?._id) {
+return;
+}
 
         const tiers = raw.tiers || [];
         const initialSelection = tiers.length > 0 ? tiers.map(() => 0) : [];
@@ -158,7 +178,9 @@ const LiveQuickBuySheet = ({
         }
       })
       .finally(() => {
-        if (!cancelled) setDetailLoading(false);
+        if (!cancelled) {
+setDetailLoading(false);
+}
       });
 
     return () => {
@@ -179,7 +201,9 @@ const LiveQuickBuySheet = ({
 
   // Fetch customer info on sheet open
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+return;
+}
     orderService
       .getCheckoutInfo()
       .then((res) => {
@@ -199,11 +223,15 @@ const LiveQuickBuySheet = ({
 
   const isOptionDisabled = useCallback(
     (tierLevel, optionIndex) => {
-      if (!detailProduct?.models) return false;
+      if (!detailProduct?.models) {
+return false;
+}
       const targetIndices = [...selectedTierIndex];
       targetIndices[tierLevel] = optionIndex;
       const matchingModel = findModel(detailProduct, targetIndices);
-      if (!matchingModel) return true;
+      if (!matchingModel) {
+return true;
+}
       return matchingModel.stock <= 0;
     },
     [detailProduct, selectedTierIndex],
@@ -211,7 +239,9 @@ const LiveQuickBuySheet = ({
 
   const handleTierChange = useCallback(
     (tierLevel, optionIndex) => {
-      if (!detailProduct || isOptionDisabled(tierLevel, optionIndex)) return;
+      if (!detailProduct || isOptionDisabled(tierLevel, optionIndex)) {
+return;
+}
       const newIndex = [...selectedTierIndex];
       newIndex[tierLevel] = optionIndex;
       setSelectedTierIndex(newIndex);
@@ -227,7 +257,9 @@ const LiveQuickBuySheet = ({
     }
     if (detailProduct) {
       const { min } = getPriceRange(detailProduct);
-      if (min > 0) return min;
+      if (min > 0) {
+return min;
+}
     }
     return resolveLiveUnitPrice(liveProduct);
   }, [activeModel, detailProduct, liveProduct]);
@@ -262,13 +294,19 @@ const LiveQuickBuySheet = ({
   );
 
   const maxStock = useMemo(() => {
-    if (activeModel != null) return Math.max(0, activeModel.stock || 0);
-    if (detailProduct?.stock != null) return Math.max(0, detailProduct.stock);
+    if (activeModel != null) {
+return Math.max(0, activeModel.stock || 0);
+}
+    if (detailProduct?.stock != null) {
+return Math.max(0, detailProduct.stock);
+}
     return 99;
   }, [activeModel, detailProduct]);
 
   useEffect(() => {
-    if (quantity > maxStock && maxStock > 0) setQuantity(maxStock);
+    if (quantity > maxStock && maxStock > 0) {
+setQuantity(maxStock);
+}
   }, [maxStock, quantity]);
 
   const computeLocalPreview = useCallback(() => {
@@ -323,7 +361,9 @@ const LiveQuickBuySheet = ({
       return;
     }
 
-    if (!liveProduct?._id) return;
+    if (!liveProduct?._id) {
+return;
+}
 
     if (detailProduct?.tier_variations?.length > 0) {
       if (!activeModel) {
@@ -415,7 +455,9 @@ const LiveQuickBuySheet = ({
     }
   };
 
-  if (!liveProduct) return null;
+  if (!liveProduct) {
+return null;
+}
 
   const displayName = detailProduct?.name || liveProduct.name;
 

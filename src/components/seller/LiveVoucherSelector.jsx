@@ -1,5 +1,6 @@
 // GZMart_FE/src/components/seller/LiveVoucherSelector.jsx
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import voucherService from '@services/api/voucherService';
 
 export default function LiveVoucherSelector({ isOpen, onClose, onAdd, loading, existingVoucherIds = [] }) {
@@ -9,7 +10,9 @@ export default function LiveVoucherSelector({ isOpen, onClose, onAdd, loading, e
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+return;
+}
     setLoadingVouchers(true);
     setSelected(new Set(existingVoucherIds.map((id) => String(id))));
     voucherService
@@ -30,25 +33,38 @@ export default function LiveVoucherSelector({ isOpen, onClose, onAdd, loading, e
   const toggleSelect = (id) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
       return next;
     });
   };
 
   const handleAdd = () => {
-    if (selected.size === 0) return;
+    if (selected.size === 0) {
+return;
+}
     onAdd(Array.from(selected));
   };
 
   const formatDiscount = (v) => {
-    if (v.discountType === 'percent') return `${v.discountValue}% OFF`;
-    if (v.discountType === 'amount') return `₫${Number(v.discountValue).toLocaleString()} OFF`;
-    if (v.discountType === 'coin') return `${v.discountValue} coins`;
+    if (v.discountType === 'percent') {
+return `${v.discountValue}% OFF`;
+}
+    if (v.discountType === 'amount') {
+return `₫${Number(v.discountValue).toLocaleString()} OFF`;
+}
+    if (v.discountType === 'coin') {
+return `${v.discountValue} coins`;
+}
     return `${v.discountValue}`;
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+return null;
+}
 
   return (
     <div
@@ -61,7 +77,11 @@ export default function LiveVoucherSelector({ isOpen, onClose, onAdd, loading, e
         justifyContent: 'center',
         zIndex: 9999,
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+ if (e.target === e.currentTarget) {
+onClose();
+} 
+}}
     >
       <div
         style={{
@@ -111,8 +131,12 @@ export default function LiveVoucherSelector({ isOpen, onClose, onAdd, loading, e
               outline: 'none',
               boxSizing: 'border-box',
             }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(177,60,54,0.4)'; }}
-            onBlur={(e) => { e.target.style.borderColor = '#e8e8e8'; }}
+            onFocus={(e) => {
+ e.target.style.borderColor = 'rgba(177,60,54,0.4)'; 
+}}
+            onBlur={(e) => {
+ e.target.style.borderColor = '#e8e8e8'; 
+}}
           />
         </div>
 
@@ -270,3 +294,11 @@ export default function LiveVoucherSelector({ isOpen, onClose, onAdd, loading, e
     </div>
   );
 }
+
+LiveVoucherSelector.propTypes = {
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  onAdd: PropTypes.func,
+  loading: PropTypes.bool,
+  existingVoucherIds: PropTypes.arrayOf(PropTypes.string),
+};

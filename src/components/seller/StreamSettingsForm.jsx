@@ -1,4 +1,5 @@
 import styles from '@pages/seller/LiveStreamPage.module.css';
+import PropTypes from 'prop-types';
 
 const PLATFORMS = [
   { id: 'facebook',  label: 'Facebook Live',  icon: 'bi-facebook' },
@@ -60,3 +61,11 @@ export default function StreamSettingsForm({ form, onChange }) {
     </div>
   );
 }
+
+StreamSettingsForm.propTypes = {
+  form: PropTypes.shape({
+    title: PropTypes.string,
+    platforms: PropTypes.arrayOf(PropTypes.string),
+  }),
+  onChange: PropTypes.func,
+};
