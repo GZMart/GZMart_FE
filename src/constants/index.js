@@ -132,6 +132,8 @@ export const SOCKET_EVENTS = {
   INVENTORY_UPDATED: 'inventory_updated',
   NEW_MESSAGE: 'new_message',
   NOTIFICATION: 'notification',
+  LIVESTREAM_CONFIG_UPDATE: 'livestream_config_update',
+  LIVESTREAM_ORDER_TRIGGERED: 'livestream_order_triggered',
 };
 
 // Local Storage Keys

@@ -7,7 +7,8 @@ import { toast } from 'react-toastify';
 import { Ticket } from 'lucide-react';
 import ProductCard from '../../components/common/ProductCard';
 import Pagination from '../../components/common/Pagination';
-import { productService, followService } from '../../services/api';
+import ShopInfoCard from '../../components/common/ShopInfoCard';
+import { productService, followService, livestreamService } from '../../services/api';
 import { MODULE_TYPES } from '../../services/api/shopDecorationService';
 import voucherService from '../../services/api/voucherService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
@@ -763,6 +764,7 @@ const ShopProfilePage = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const [topCategories, setTopCategories] = useState([]);
+  const [activeLive, setActiveLive] = useState(null);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -795,6 +797,20 @@ const ShopProfilePage = () => {
       fetchShopVouchers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchActive = () => {
+      livestreamService
+        .getActiveByShop(id)
+        // axiosClient interceptor returns response.data directly (session object or null)
+        .then((session) => setActiveLive(session || null))
+        .catch(() => setActiveLive(null));
+    };
+    fetchActive();
+    const interval = setInterval(fetchActive, 60_000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const checkFollowStatus = async () => {
@@ -1059,7 +1075,7 @@ return;
     <>
       <div className={styles.pageWrap}>
         <div className={styles.inner}>
-          {/* Hero: banner + overlay + avatar overlap */}
+          {/* Hero: banner only — avatar lives in ShopInfoCard below (avoids duplicate) */}
           <section className={styles.hero}>
             <img
               src={
@@ -1070,23 +1086,15 @@ return;
               className={styles.heroImg}
             />
             <div className={styles.heroOverlay} />
-            <div className={styles.heroProfile}>
-              <div className={styles.heroAvatarWrap}>
-                <div className={styles.heroAvatar}>
-                  <img
-                    src={
-                      seller.avatar ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.fullName || 'Shop')}&background=fae3e0&color=902421`
-                    }
-                    alt={seller.fullName || 'Shop'}
-                  />
-                </div>
-                <span className={styles.heroFavBadge}>
-                  {t('product_details.shop_badge_favorite', 'Yêu thích')}
-                </span>
-              </div>
-            </div>
           </section>
+
+          <ShopInfoCard
+            seller={seller}
+            showViewShop={false}
+            isFollowing={isFollowing}
+            onToggleFollow={handleToggleFollow}
+            activeLive={activeLive?._id ? activeLive : null}
+          />
 
           {/* Shop Info Strip */}
           <section className={styles.strip}>

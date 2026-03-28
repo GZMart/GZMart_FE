@@ -1,0 +1,439 @@
+/* Backdrop */
+.lqbs-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1050;
+  backdrop-filter: blur(2px);
+}
+
+/* Sheet */
+.lqbs-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1051;
+  background: #ffffff;
+  border-radius: 1.25rem 1.25rem 0 0;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+/* Drag handle */
+.lqbs-handle {
+  width: 2.5rem;
+  height: 3px;
+  background: #d0d0d0;
+  border-radius: 9999px;
+  margin: 0.625rem auto 0;
+  flex-shrink: 0;
+}
+
+/* Header */
+.lqbs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem 0.5rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.lqbs-header-title {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111;
+}
+.lqbs-close {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  color: #666;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lqbs-close:hover { background: #ebebeb; color: #333; }
+
+/* Product row */
+.lqbs-product-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  flex-shrink: 0;
+  background: #fafafa;
+}
+.lqbs-product-img {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.625rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.lqbs-product-info { flex: 1; min-width: 0; }
+.lqbs-product-name {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lqbs-product-price {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #B13C36;
+  margin-top: 0.2rem;
+}
+.lqbs-product-original {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: #aaa;
+  text-decoration: line-through;
+}
+
+/* Quantity stepper */
+.lqbs-qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.25rem;
+  flex-shrink: 0;
+}
+.lqbs-qty-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.lqbs-qty-btn:hover:not(:disabled) { background: #e8e8e8; }
+.lqbs-qty-btn:disabled { opacity: 0.4; cursor: default; }
+.lqbs-qty-val {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  min-width: 1.5rem;
+  text-align: center;
+  color: #111;
+}
+
+/* Scrollable body */
+.lqbs-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
+}
+.lqbs-body::-webkit-scrollbar { width: 4px; }
+.lqbs-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+
+/* Detail / variant errors */
+.lqbs-detail-error {
+  margin: 0 1.25rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  border-radius: 0.5rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #b02a37;
+}
+
+/* Tier / variant selection */
+.lqbs-tier-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.lqbs-tier-label {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #333;
+}
+.lqbs-tier-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.lqbs-tier-option {
+  padding: 0.35rem 0.65rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 0.5rem;
+  background: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lqbs-tier-option:hover:not(:disabled) {
+  border-color: #B13C36;
+  background: rgba(177, 60, 54, 0.04);
+}
+.lqbs-tier-option--active {
+  border-color: #B13C36;
+  background: rgba(177, 60, 54, 0.08);
+  color: #B13C36;
+}
+.lqbs-tier-option--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.lqbs-shipping-note {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.65rem;
+  color: #888;
+  line-height: 1.35;
+}
+
+/* Sections */
+.lqbs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.lqbs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Voucher list */
+.lqbs-voucher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.lqbs-voucher-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 0.625rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #fff;
+}
+.lqbs-voucher-chip:hover:not(.lqbs-voucher-chip--disabled) {
+  border-color: #B13C36;
+  background: rgba(177, 60, 54, 0.04);
+}
+.lqbs-voucher-chip--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.lqbs-voucher-chip-discount {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #B13C36;
+  white-space: nowrap;
+  background: rgba(177, 60, 54, 0.08);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.375rem;
+}
+.lqbs-voucher-chip-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lqbs-voucher-chip-hint {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.6rem;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+/* Applied voucher */
+.lqbs-applied-voucher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.75rem;
+  border: 1.5px solid #B13C36;
+  border-radius: 0.625rem;
+  background: rgba(177, 60, 54, 0.04);
+}
+.lqbs-applied-voucher-left {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+.lqbs-applied-voucher-tag {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #B13C36;
+  background: rgba(177, 60, 54, 0.1);
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.375rem;
+}
+.lqbs-applied-voucher-info { display: flex; flex-direction: column; gap: 0.1rem; }
+.lqbs-applied-voucher-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #333;
+}
+.lqbs-applied-voucher-code {
+  font-family: 'Inter', monospace;
+  font-size: 0.65rem;
+  color: #888;
+  letter-spacing: 0.05em;
+}
+.lqbs-voucher-remove {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #B13C36;
+  background: transparent;
+  border: 1px solid #B13C36;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lqbs-voucher-remove:hover { background: rgba(177, 60, 54, 0.08); }
+
+/* Form */
+.lqbs-form-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+.lqbs-form-row { display: flex; gap: 0.5rem; }
+.lqbs-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 0.625rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.8rem;
+  color: #111;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.lqbs-input:focus { border-color: #B13C36; }
+.lqbs-input::placeholder { color: #bbb; }
+
+/* Shipping options */
+.lqbs-shipping-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.lqbs-shipping-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 0.625rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #444;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lqbs-shipping-option--active {
+  border-color: #B13C36;
+  background: rgba(177, 60, 54, 0.04);
+  color: #B13C36;
+  font-weight: 600;
+}
+.lqbs-shipping-radio { accent-color: #B13C36; }
+
+/* Footer */
+.lqbs-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+.lqbs-totals { display: flex; flex-direction: column; gap: 0.25rem; }
+.lqbs-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: #666;
+}
+.lqbs-total-row--discount { color: #22c55e; }
+.lqbs-total-row--grand {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Buy button */
+.lqbs-buy-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background: #B13C36;
+  color: white;
+  border: none;
+  border-radius: 0.875rem;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 4px 0 #8a2e2a;
+}
+.lqbs-buy-btn:hover:not(:disabled) { background: #c94a44; }
+.lqbs-buy-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 2px 0 #8a2e2a; }
+.lqbs-buy-btn:disabled { opacity: 0.6; cursor: default; }
