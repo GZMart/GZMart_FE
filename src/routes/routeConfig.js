@@ -7,6 +7,7 @@ const CategoriesPage = lazy(() => import('@pages/buyer/CategoriesPage'));
 const ProductsPage = lazy(() => import('@pages/buyer/ProductsPage'));
 const FlashDealsPage = lazy(() => import('@pages/buyer/FlashDealsPage'));
 const ProductDetailsPage = lazy(() => import('@pages/buyer/ProductDetailsPage'));
+const ImageSearchResultsPage = lazy(() => import('@pages/buyer/ImageSearchResultsPage'));
 const CartPage = lazy(() => import('@pages/buyer/CartPage'));
 const CheckoutPage = lazy(() => import('@pages/buyer/CheckoutPage'));
 const LoginPage = lazy(() => import('@pages/auth/LoginPage'));
@@ -128,6 +129,12 @@ export const routeConfig = [
   {
     path: '/product/:id',
     element: ProductDetailsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/search/image',
+    element: ImageSearchResultsPage,
     public: true,
     layout: 'main',
   },
