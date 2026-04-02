@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Modal, Form, Button, Select, Input, DatePicker, Alert, message } from 'antd';
+import { Drawer, Form, Button, Select, Input, DatePicker, Alert, Space } from 'antd';
+import { toast } from 'react-toastify';
 import { SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { orderSellerService } from '../../../services/api/orderSellerService';
-import dayjs from 'dayjs';
 
 const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
   const [form] = Form.useForm();
@@ -11,15 +11,53 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
   const [error, setError] = useState(null);
   const [newStatus, setNewStatus] = useState(order?.status || '');
 
+  useEffect(() => {
+    setNewStatus(order?.status || '');
+  }, [order?.status, show]);
+
+  const formatStatusLabel = (status) => {
+    const normalizeLegacyStatus = (s) => {
+      const n = String(s || '')
+        .trim()
+        .toLowerCase();
+      if (!n) {
+return n;
+}
+      if (n === 'processing') {
+return 'confirmed';
+}
+      if (n === 'packing') {
+return 'packed';
+}
+      if (n === 'shipping') {
+return 'shipped';
+}
+      if (n === 'delivered_pending_confirmation') {
+return 'delivered';
+}
+      return n;
+    };
+
+    const normalized = normalizeLegacyStatus(status);
+    if (!normalized) {
+return 'Unknown';
+}
+    if (normalized === 'shipped') {
+return 'Shipping';
+}
+    return normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   // Get available status transitions based on current status
   const getAvailableStatuses = () => {
     const current = order?.status || '';
     const statusTransitions = {
-      pending: ['processing', 'cancelled'],
-      processing: ['shipped', 'cancelled'],
+      // Canonical: pending -> confirmed -> packed -> shipped -> delivered -> completed
+      pending: ['confirmed', 'cancelled'],
+      confirmed: ['packed', 'cancelled'],
+      packed: ['shipped', 'cancelled'],
       shipped: ['delivered'],
-      delivered: ['delivered_pending_confirmation', 'completed'],
-      delivered_pending_confirmation: ['completed', 'refund_pending'],
+      delivered: ['completed'],
       completed: [],
       cancelled: ['refund_pending'],
       refund_pending: ['refunded', 'under_investigation'],
@@ -58,10 +96,19 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
         statusData.reason = values.reason;
       }
 
-      const response = await orderSellerService.updateStatus(order._id, statusData);
+      const isShippingStatus = newStatus === 'shipped';
+      const canUseShippingTimer = ['confirmed', 'packed'].includes(order?.status);
+      const shouldUseShippingTimer = isShippingStatus && canUseShippingTimer;
+      const response = shouldUseShippingTimer
+        ? await orderSellerService.startShipping(order._id)
+        : await orderSellerService.updateStatus(order._id, statusData);
 
       if (response.success) {
-        message.success('Order status updated successfully');
+        toast.success(
+          shouldUseShippingTimer
+            ? 'Shipping started successfully. Delivery timer is now running.'
+            : 'Order status updated successfully'
+        );
         onSuccess();
       } else {
         setError(response.message || 'Failed to update order status');
@@ -82,26 +129,18 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
   };
 
   return (
-    <Modal
-      title={`Update Order Status - ${order?.orderNumber}`}
+    <Drawer
+      title={`Update Order Status - ${order?.orderNumber || ''}`}
       open={show}
-      onCancel={handleCancel}
-      footer={[
-        <Button key="cancel" onClick={handleCancel}>
-          Cancel
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={loading}
-          onClick={() => form.submit()}
-          disabled={!newStatus || availableStatuses.length === 0}
-          icon={<SaveOutlined />}
-        >
-          Update Status
-        </Button>,
-      ]}
-      width={600}
+      onClose={handleCancel}
+      placement="right"
+      width={560}
+      destroyOnClose
+      extra={
+        <Button icon={<CloseOutlined />} onClick={handleCancel}>
+          Close
+        </Button>
+      }
     >
       {error && <Alert message={error} type="error" showIcon style={{ marginBottom: '16px' }} />}
 
@@ -110,7 +149,7 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
           <label style={{ fontWeight: 600, marginBottom: '8px', display: 'block' }}>
             Current Status
           </label>
-          <Input value={order?.status?.replace(/_/g, ' ').toUpperCase() || ''} disabled />
+          <Input value={formatStatusLabel(order?.status)} disabled />
         </Form.Item>
 
         <Form.Item label="New Status *" required>
@@ -120,7 +159,7 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
             onChange={setNewStatus}
             disabled={availableStatuses.length === 0}
             options={availableStatuses.map((status) => ({
-              label: status.replace(/_/g, ' ').toUpperCase(),
+              label: formatStatusLabel(status),
               value: status,
             }))}
           />
@@ -137,7 +176,7 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
           </Form.Item>
         )}
 
-        {(newStatus === 'shipped' || newStatus === 'processing') && (
+        {newStatus === 'shipped' && (
           <Form.Item label="Estimated Delivery Date" name="estimatedDelivery">
             <DatePicker showTime format="DD/MM/YYYY HH:mm" />
           </Form.Item>
@@ -153,8 +192,33 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
         <Form.Item label="Additional Notes" name="notes">
           <Input.TextArea rows={3} placeholder="Any additional notes about this status update" />
         </Form.Item>
+
+        <Form.Item style={{ marginBottom: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              borderTop: '1px solid #f0f0f0',
+              paddingTop: 16,
+              marginTop: 8,
+            }}
+          >
+            <Space>
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button
+                type="primary"
+                loading={loading}
+                onClick={() => form.submit()}
+                disabled={!newStatus || availableStatuses.length === 0}
+                icon={<SaveOutlined />}
+              >
+                Update Status
+              </Button>
+            </Space>
+          </div>
+        </Form.Item>
       </Form>
-    </Modal>
+    </Drawer>
   );
 };
 

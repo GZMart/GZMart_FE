@@ -14,6 +14,7 @@ const ProductReviewSection = ({ product }) => {
   const [helpfulReviews, setHelpfulReviews] = useState(new Set());
   const [unhelpfulReviews, setUnhelpfulReviews] = useState(new Set());
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [previewMedia, setPreviewMedia] = useState({ isOpen: false, url: '', isVideo: false });
 
   const reviewsPerPage = 5;
 
@@ -354,14 +355,67 @@ const ProductReviewSection = ({ product }) => {
                     {/* Review Images */}
                     {review.images && review.images.length > 0 && (
                       <div className={styles.reviewImages}>
-                        {review.images.map((image, index) => (
-                          <img
-                            key={index}
-                            src={image}
-                            alt={`Review ${index + 1}`}
-                            className={styles.reviewImage}
-                          />
-                        ))}
+                        {review.images.map((mediaUrl, index) => {
+                          const isVideo =
+                            mediaUrl.match(/\.(mp4|webm|mov|avi|mkv)$/i) ||
+                            mediaUrl.includes('resource_type=video');
+
+                          return (
+                            <div
+                              key={index}
+                              style={{
+                                position: 'relative',
+                                display: 'inline-block',
+                                cursor: 'pointer',
+                                marginRight: '10px',
+                                marginBottom: '10px',
+                              }}
+                              // Bấm vào thì mở popup phóng to
+                              onClick={() =>
+                                setPreviewMedia({ isOpen: true, url: mediaUrl, isVideo })
+                              }
+                            >
+                              {isVideo ? (
+                                <>
+                                  <video
+                                    src={mediaUrl}
+                                    className={styles.reviewImage}
+                                    style={{ objectFit: 'cover', pointerEvents: 'none' }} // Tắt click trực tiếp vào video
+                                    preload="metadata"
+                                  />
+                                  {/* Icon Play phủ lên trên video */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '50%',
+                                      left: '50%',
+                                      transform: 'translate(-50%, -50%)',
+                                      backgroundColor: 'rgba(0,0,0,0.5)',
+                                      borderRadius: '50%',
+                                      width: '32px',
+                                      height: '32px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#fff',
+                                    }}
+                                  >
+                                    <i
+                                      className="bi bi-play-fill"
+                                      style={{ fontSize: '20px', marginLeft: '3px' }}
+                                    ></i>
+                                  </div>
+                                </>
+                              ) : (
+                                <img
+                                  src={mediaUrl}
+                                  alt={`Review media ${index + 1}`}
+                                  className={styles.reviewImage}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -399,6 +453,72 @@ const ProductReviewSection = ({ product }) => {
           </div>
         )}
       </div>
+
+      {/* Modal Phóng to Media */}
+      {previewMedia.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999, // Đảm bảo nổi lên trên tất cả
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          // Bấm ra ngoài rìa đen thì đóng popup
+          onClick={() => setPreviewMedia({ isOpen: false, url: '', isVideo: false })}
+        >
+          {/* Nút X để đóng */}
+          <button
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '30px',
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '40px',
+              cursor: 'pointer',
+              zIndex: 10000,
+            }}
+            onClick={() => setPreviewMedia({ isOpen: false, url: '', isVideo: false })}
+          >
+            &times;
+          </button>
+
+          {/* Nội dung Ảnh / Video */}
+          <div
+            style={{ maxWidth: '90%', maxHeight: '90%' }}
+            onClick={(e) => e.stopPropagation()} // Bấm vào ảnh/video không bị đóng
+          >
+            {previewMedia.isVideo ? (
+              <video
+                src={previewMedia.url}
+                controls // Lúc này mới hiện thanh tua video
+                autoPlay // Phóng to là tự chạy luôn
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '85vh',
+                  borderRadius: '8px',
+                  outline: 'none',
+                }}
+              />
+            ) : (
+              <img
+                src={previewMedia.url}
+                alt="Enlarged review"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '85vh',
+                  borderRadius: '8px',
+                  objectFit: 'contain',
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

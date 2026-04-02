@@ -7,6 +7,7 @@ import {
   Edit,
   Clock,
   CheckCircle,
+  Package,
   AlertCircle,
   AlertTriangle,
 } from 'lucide-react';
@@ -17,13 +18,14 @@ import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/OrderDetailsPage.module.css';
 import { toast } from 'react-toastify';
 import socketService from '../../services/socket/socketService';
-import { SOCKET_EVENTS } from '../../constants';
 import { useSelector } from 'react-redux';
 
 const OrderDetailsPage = () => {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
+
+  const normalizeId = (value) => String(value || '').trim();
 
   const [order, setOrder] = useState(null);
   const [history, setHistory] = useState([]);
@@ -97,20 +99,30 @@ const OrderDetailsPage = () => {
       });
     };
 
-    const statusEventName = `order:status:${orderId}`;
-    const arrivedEventName = `order:arrived:${orderId}`;
+    const trackedOrderIds = Array.from(
+      new Set([normalizeId(orderId), normalizeId(order?._id)].filter(Boolean))
+    );
 
-    const handleRoomOrderStatus = (data) => {
-      if (!data?.orderId || data.orderId !== orderId) {
-        return;
-      }
-
-      handleStatusUpdate(data);
+    const isTrackedOrder = (incomingOrderId) => {
+      const normalizedIncomingId = normalizeId(incomingOrderId);
+      return trackedOrderIds.includes(normalizedIncomingId);
     };
 
     const handleStatusUpdate = (data) => {
+      if (!data?.orderId || !isTrackedOrder(data.orderId)) {
+        return;
+      }
+
+      const normalizedIncomingId = normalizeId(data.orderId);
+
+      // Cập nhật state ngay lập tức, không cần refetch
       setOrder((prevOrder) => {
-        if (!prevOrder || prevOrder._id !== data.orderId) {
+        if (!prevOrder) {
+          return prevOrder;
+        }
+
+        const normalizedPrevId = normalizeId(prevOrder._id);
+        if (normalizedPrevId && normalizedPrevId !== normalizedIncomingId) {
           return prevOrder;
         }
 
@@ -122,24 +134,31 @@ const OrderDetailsPage = () => {
         };
       });
 
+      // Thêm vào history
       appendStatusHistory(
         data.status,
         data.updatedAt,
         data.notes || `Order status updated to ${data.status}`
       );
 
-      const orderNum = data.orderNumber || data.orderId?.slice(-6);
-      if (orderNum && data.status) {
-        toast.info(`Order #${orderNum} status: ${data.status}`);
-      }
-
-      // Keep all computed fields and timeline fully in sync with server source of truth.
-      fetchOrderDetails();
+      // Hiển thị toast handled by other seller components; skip duplicate toast here.
     };
 
     const handleArrivedUpdate = (data) => {
+      if (!data?.orderId || !isTrackedOrder(data.orderId)) {
+        return;
+      }
+
+      const normalizedIncomingId = normalizeId(data.orderId);
+
+      // Cập nhật state ngay lập tức
       setOrder((prevOrder) => {
-        if (!prevOrder || prevOrder._id !== data.orderId) {
+        if (!prevOrder) {
+          return prevOrder;
+        }
+
+        const normalizedPrevId = normalizeId(prevOrder._id);
+        if (normalizedPrevId && normalizedPrevId !== normalizedIncomingId) {
           return prevOrder;
         }
 
@@ -152,24 +171,23 @@ const OrderDetailsPage = () => {
 
       appendStatusHistory('delivered', data.arrivedAt, 'Order has arrived at customer address');
 
-      const orderNum = data.orderNumber || data.orderId?.slice(-6);
-      if (orderNum) {
-        toast.success(`Order #${orderNum} has been delivered`);
-      }
+      // Delivery notification handled elsewhere; avoid duplicate toast here.
 
+      // Refetch to get full server state so further status transitions work
       fetchOrderDetails();
     };
 
-    socketService.on(SOCKET_EVENTS.ORDER_STATUS_UPDATED, handleRoomOrderStatus);
-    socketService.on(statusEventName, handleStatusUpdate);
-    socketService.on(arrivedEventName, handleArrivedUpdate);
+    const statusEventNames = trackedOrderIds.map((id) => `order:status:${id}`);
+    const arrivedEventNames = trackedOrderIds.map((id) => `order:arrived:${id}`);
+
+    statusEventNames.forEach((eventName) => socketService.on(eventName, handleStatusUpdate));
+    arrivedEventNames.forEach((eventName) => socketService.on(eventName, handleArrivedUpdate));
 
     return () => {
-      socketService.off(SOCKET_EVENTS.ORDER_STATUS_UPDATED, handleRoomOrderStatus);
-      socketService.off(statusEventName, handleStatusUpdate);
-      socketService.off(arrivedEventName, handleArrivedUpdate);
+      statusEventNames.forEach((eventName) => socketService.off(eventName, handleStatusUpdate));
+      arrivedEventNames.forEach((eventName) => socketService.off(eventName, handleArrivedUpdate));
     };
-  }, [fetchOrderDetails, orderId, user?._id]);
+  }, [order?._id, orderId, user?._id, fetchOrderDetails]);
 
   const handleStatusUpdateSuccess = () => {
     setShowStatusModal(false);
@@ -219,17 +237,70 @@ const OrderDetailsPage = () => {
     }
   };
 
+  const formatStatusLabel = (status) => {
+    const normalizeLegacyStatus = (s) => {
+      const n = String(s || '')
+        .trim()
+        .toLowerCase();
+      if (!n) {
+return n;
+}
+      if (n === 'processing') {
+return 'confirmed';
+}
+      if (n === 'packing') {
+return 'packed';
+}
+      if (n === 'shipping') {
+return 'shipped';
+}
+      if (n === 'delivered_pending_confirmation') {
+return 'delivered';
+}
+      return n;
+    };
+
+    const normalized = normalizeLegacyStatus(status);
+    if (!normalized) {
+return 'Unknown';
+}
+    if (normalized === 'shipped') {
+return 'Shipping';
+}
+    return normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   const getStatusBadgeInfo = (status) => {
+    const normalizeLegacyStatus = (s) => {
+      const n = String(s || '')
+        .trim()
+        .toLowerCase();
+      if (!n) {
+return n;
+}
+      if (n === 'processing') {
+return 'confirmed';
+}
+      if (n === 'packing') {
+return 'packed';
+}
+      if (n === 'shipping') {
+return 'shipped';
+}
+      if (n === 'delivered_pending_confirmation') {
+return 'delivered';
+}
+      return n;
+    };
+
+    const key = normalizeLegacyStatus(status);
+
     const statusInfo = {
       pending: { bg: styles.statusPending, label: 'Pending', Icon: Clock },
-      processing: { bg: styles.statusProcessing, label: 'Processing', Icon: Clock },
-      shipped: { bg: styles.statusShipped, label: 'Shipped', Icon: CheckCircle },
+      confirmed: { bg: styles.statusProcessing, label: 'Confirmed', Icon: CheckCircle },
+      packed: { bg: styles.statusProcessing, label: 'Packed', Icon: Package },
+      shipped: { bg: styles.statusShipped, label: 'Shipping', Icon: CheckCircle },
       delivered: { bg: styles.statusDelivered, label: 'Delivered', Icon: CheckCircle },
-      delivered_pending_confirmation: {
-        bg: styles.statusPendingConfirmation,
-        label: 'Pending Confirmation',
-        Icon: AlertCircle,
-      },
       completed: { bg: styles.statusCompleted, label: 'Completed', Icon: CheckCircle },
       cancelled: { bg: styles.statusCancelled, label: 'Cancelled', Icon: AlertCircle },
       refunded: { bg: styles.statusRefunded, label: 'Refunded', Icon: AlertCircle },
@@ -240,7 +311,7 @@ const OrderDetailsPage = () => {
         Icon: AlertCircle,
       },
     };
-    return statusInfo[status] || statusInfo.pending;
+    return statusInfo[key] || statusInfo.pending;
   };
 
   const getPaymentStatusBadgeInfo = (status) => {
@@ -307,15 +378,15 @@ const OrderDetailsPage = () => {
   }
 
   const orderStatus = getStatusBadgeInfo(order.status);
-  const OrderStatusIcon = orderStatus.icon || Clock;
+  const OrderStatusIcon = orderStatus.Icon || Clock;
   const paymentStatus = getPaymentStatusBadgeInfo(order.paymentStatus);
-  const PaymentStatusIcon = paymentStatus.icon || Clock;
+  const PaymentStatusIcon = paymentStatus.Icon || Clock;
   const shippingMethodLabel =
     order.shippingMethod ||
     order.ghnOrderInfo?.service_type ||
     (order.shippingCost > 0 ? 'Standard Delivery' : 'Free Delivery');
 
-  const isTerminal = order.status === 'completed' || order.status === 'cancelled';
+  const isTerminal = ['completed', 'refunded'].includes(order.status);
 
   return (
     <div className={styles.container}>

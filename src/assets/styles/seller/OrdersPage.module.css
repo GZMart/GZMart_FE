@@ -4,22 +4,39 @@
    ============================================================ */
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.45; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
@@ -30,7 +47,12 @@
   padding: 32px;
   background: var(--sp-bg, #f8f9fa);
   min-height: 100vh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 /* ─── Header ─────────────────────────────────────────────────── */
@@ -58,12 +80,16 @@
   font-size: 13px;
 }
 
+.spinAnimation {
+  animation: spin 0.9s linear infinite;
+}
+
 /* ─── Filters Card ───────────────────────────────────────────── */
 .filtersCard {
   background: var(--sp-surface, #fff);
   border-radius: 10px;
   padding: 14px 18px;
-  box-shadow: var(--sp-shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--sp-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
   border: 1px solid var(--sp-border, #e8ecf0);
   margin-bottom: 20px;
   animation: fadeInUp 0.3s ease 0.05s both;
@@ -101,7 +127,9 @@
   font-size: 13px;
   color: var(--sp-text-primary, #111827);
   font-weight: 500;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%239CA3AF' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -167,15 +195,18 @@
   background: var(--sp-surface, #fff);
   border-radius: 10px;
   padding: 18px 20px;
-  box-shadow: var(--sp-shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--sp-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
   border: 1px solid var(--sp-border, #e8ecf0);
-  transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+  transition:
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s ease;
   cursor: pointer;
   animation: fadeInUp 0.35s ease both;
 }
 
 .orderCard:hover {
-  box-shadow: var(--sp-shadow-md, 0 4px 16px rgba(0,0,0,0.08));
+  box-shadow: var(--sp-shadow-md, 0 4px 16px rgba(0, 0, 0, 0.08));
   border-color: #c7d2fe;
   transform: translateY(-1px);
 }
@@ -236,17 +267,61 @@
   border: 1px solid transparent;
 }
 
-.statusPending         { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
-.statusProcessing      { background: var(--sp-active-bg, #eef2ff); color: var(--sp-primary, #1a56db); border-color: #c7d2fe; }
-.statusShipped         { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
-.statusDelivered       { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
-.statusCompleted       { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
-.statusCancelled       { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
-.statusRefunded        { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
-.statusRefundPending   { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
-.statusDeliveredPendingConfirmation { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
-.statusUnderInvestigation { background: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
-.statusDefault         { background: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
+.statusPending {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde68a;
+}
+.statusProcessing {
+  background: var(--sp-active-bg, #eef2ff);
+  color: var(--sp-primary, #1a56db);
+  border-color: #c7d2fe;
+}
+.statusShipped {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.statusDelivered {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.statusCompleted {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.statusCancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.statusRefunded {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.statusRefundPending {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+.statusDeliveredPendingConfirmation {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde68a;
+}
+.statusUnderInvestigation {
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #d1d5db;
+}
+.statusDefault {
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #d1d5db;
+}
 
 /* Payment badge (smaller, used inline with price) */
 .paymentBadge {
@@ -260,10 +335,26 @@
   border: 1px solid transparent;
 }
 
-.paymentPending  { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
-.paymentPaid     { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
-.paymentFailed   { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
-.paymentRefunded { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.paymentPending {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde68a;
+}
+.paymentPaid {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.paymentFailed {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.paymentRefunded {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
 
 /* ─── Total Price Block ──────────────────────────────────────── */
 .totalPriceItem {
@@ -433,7 +524,7 @@
 .actionButtonPrimary:hover:not(:disabled) {
   background: var(--sp-primary-dark, #0f3fa8);
   border-color: var(--sp-primary-dark, #0f3fa8);
-  box-shadow: var(--sp-primary-glow, 0 4px 14px rgba(26,86,219,0.28));
+  box-shadow: var(--sp-primary-glow, 0 4px 14px rgba(26, 86, 219, 0.28));
 }
 
 .actionButtonOutline {
@@ -575,15 +666,24 @@
 .skeletonLine {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--sp-border, #e8ecf0) 25%, var(--sp-surface-hover, #f4f6f9) 50%, var(--sp-border, #e8ecf0) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--sp-border, #e8ecf0) 25%,
+    var(--sp-surface-hover, #f4f6f9) 50%,
+    var(--sp-border, #e8ecf0) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   margin-bottom: 10px;
 }
 
 @keyframes shimmer {
-  0%   { background-position: 200% center; }
-  100% { background-position: -200% center; }
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
 }
 
 /* ─── Pagination ─────────────────────────────────────────────── */

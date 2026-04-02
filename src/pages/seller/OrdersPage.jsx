@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
@@ -17,49 +17,79 @@ import {
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import { orderSellerService } from '../../services/api/orderSellerService';
 import { chatService } from '../../services/api/chatService';
+import { socket } from '../../services/socket';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/OrdersPage.module.css';
 
-/* ─── CSS class name helpers ──────────────────────────────────── */
+/* ─── Configs ─────────────────────────────────────────────────── */
+const normalizeLegacyStatus = (s) => {
+  const n = String(s || '').trim();
+  if (!n) {
+return n;
+}
+  if (n === 'processing') {
+return 'confirmed';
+}
+  if (n === 'packing') {
+return 'packed';
+}
+  if (n === 'shipping') {
+return 'shipped';
+}
+  if (n === 'delivered_pending_confirmation') {
+return 'delivered';
+}
+  return n;
+};
+
 const STATUS_CONFIG = {
-  pending:                        { label: 'Pending',              Icon: Clock,         cls: 'statusPending' },
-  processing:                     { label: 'Processing',           Icon: Cog,           cls: 'statusProcessing' },
-  shipped:                        { label: 'Shipped',              Icon: Truck,         cls: 'statusShipped' },
-  delivered:                      { label: 'Delivered',            Icon: CheckCircle,   cls: 'statusDelivered' },
-  delivered_pending_confirmation: { label: 'Pending Confirm',      Icon: AlertCircle,   cls: 'statusDeliveredPendingConfirmation' },
-  completed:                      { label: 'Completed',            Icon: CheckCircle,   cls: 'statusCompleted' },
-  cancelled:                      { label: 'Cancelled',            Icon: XCircle,       cls: 'statusCancelled' },
-  refunded:                       { label: 'Refunded',             Icon: XCircle,       cls: 'statusRefunded' },
-  refund_pending:                 { label: 'Refund Pending',       Icon: RefreshCw,     cls: 'statusRefundPending' },
-  under_investigation:            { label: 'Under Investigation',  Icon: AlertCircle,   cls: 'statusUnderInvestigation' },
+  pending: { label: 'Pending', Icon: Clock, cls: 'statusPending' },
+  confirmed: { label: 'Confirmed', Icon: CheckCircle, cls: 'statusProcessing' },
+  packed: { label: 'Packed', Icon: Package, cls: 'statusProcessing' },
+  shipped: { label: 'Shipped', Icon: Truck, cls: 'statusShipped' },
+  delivered: { label: 'Delivered', Icon: CheckCircle, cls: 'statusDelivered' },
+  completed: { label: 'Completed', Icon: CheckCircle, cls: 'statusCompleted' },
+  cancelled: { label: 'Cancelled', Icon: XCircle, cls: 'statusCancelled' },
+  refunded: { label: 'Refunded', Icon: XCircle, cls: 'statusRefunded' },
+  refund_pending: { label: 'Refund Pending', Icon: RefreshCw, cls: 'statusRefundPending' },
+  under_investigation: {
+    label: 'Under Investigation',
+    Icon: AlertCircle,
+    cls: 'statusUnderInvestigation',
+  },
 };
 
 const PAYMENT_CONFIG = {
-  pending:        { label: 'Pending',    Icon: Clock,        cls: 'paymentPending' },
-  paid:           { label: 'Paid',       Icon: CheckCircle,  cls: 'paymentPaid' },
-  completed:      { label: 'Paid',       Icon: CheckCircle,  cls: 'paymentPaid' },
-  failed:         { label: 'Failed',     Icon: XCircle,      cls: 'paymentFailed' },
-  refunded:       { label: 'Refunded',   Icon: XCircle,      cls: 'paymentRefunded' },
-  refund_pending: { label: 'Refund Pend',Icon: RefreshCw,    cls: 'paymentPending' },
+  pending: { label: 'Pending', Icon: Clock, cls: 'paymentPending' },
+  paid: { label: 'Paid', Icon: CheckCircle, cls: 'paymentPaid' },
+  completed: { label: 'Paid', Icon: CheckCircle, cls: 'paymentPaid' },
+  failed: { label: 'Failed', Icon: XCircle, cls: 'paymentFailed' },
+  refunded: { label: 'Refunded', Icon: XCircle, cls: 'paymentRefunded' },
+  refund_pending: { label: 'Refund Pend', Icon: RefreshCw, cls: 'paymentPending' },
 };
 
 const STATUS_TABS = [
-  { value: 'all',                           label: 'All' },
-  { value: 'pending',                       label: 'Pending' },
-  { value: 'processing',                    label: 'Processing' },
-  { value: 'shipped',                       label: 'Shipped' },
-  { value: 'delivered',                     label: 'Delivered' },
-  { value: 'delivered_pending_confirmation',label: 'Confirm' },
-  { value: 'completed',                     label: 'Completed' },
-  { value: 'cancelled',                     label: 'Cancelled' },
-  { value: 'refund_pending',                label: 'Refund' },
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'packed', label: 'Packed' },
+  { value: 'shipped', label: 'Shipped' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'refund_pending', label: 'Refund' },
 ];
 
 const ITEMS_PER_PAGE = 10;
 
-/* ─── Helper ──────────────────────────────────────────────────── */
+/* ─── Helper Components ───────────────────────────────────────── */
 const StatusBadge = ({ status }) => {
-  const config = STATUS_CONFIG[status] || { label: status, Icon: AlertCircle, cls: 'statusDefault' };
+  const key = normalizeLegacyStatus(status);
+  const config = STATUS_CONFIG[key] || {
+    label: status,
+    Icon: AlertCircle,
+    cls: 'statusDefault',
+  };
   const { Icon, label, cls } = config;
   return (
     <span className={`${styles.statusBadge} ${styles[cls]}`}>
@@ -71,7 +101,11 @@ const StatusBadge = ({ status }) => {
 StatusBadge.propTypes = { status: PropTypes.string };
 
 const PaymentBadge = ({ status }) => {
-  const config = PAYMENT_CONFIG[status] || { label: status, Icon: AlertCircle, cls: 'paymentPending' };
+  const config = PAYMENT_CONFIG[status] || {
+    label: status,
+    Icon: AlertCircle,
+    cls: 'paymentPending',
+  };
   const { Icon, label, cls } = config;
   return (
     <span className={`${styles.paymentBadge} ${styles[cls]}`}>
@@ -87,87 +121,112 @@ const OrdersPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [orders, setOrders]               = useState([]);
-  const [currentPage, setCurrentPage]     = useState(1);
-  const [totalPages, setTotalPages]       = useState(1);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [messagingBuyer, setMessagingBuyer]   = useState(null);
+  const [messagingBuyer, setMessagingBuyer] = useState(null);
 
   const [filters, setFilters] = useState({
-    status:         searchParams.get('status') || 'all',
-    paymentMethod:  'all',
+    status: searchParams.get('status') || 'all',
+    paymentMethod: 'all',
     shippingMethod: 'all',
-    sortBy:         'newest-first',
+    sortBy: 'newest-first',
   });
 
-  /* ─── Fetch ────────────────────────────────────────────────── */
+  /* ─── Fetch Data ────────────────────────────────────────────── */
+  const fetchOrders = useCallback(
+    async (page, backgroundUpdate = false) => {
+      try {
+        if (!backgroundUpdate) {
+setLoading(true);
+} else {
+setIsRefetching(true);
+}
+
+        setError(null);
+
+        const params = { page, limit: ITEMS_PER_PAGE, sortBy: filters.sortBy };
+        if (filters.status !== 'all') {
+params.status = filters.status;
+}
+        if (filters.paymentMethod !== 'all') {
+params.paymentMethod = filters.paymentMethod;
+}
+        if (filters.shippingMethod !== 'all') {
+params.shippingMethod = filters.shippingMethod;
+}
+
+        const response = await orderSellerService.getAll(params);
+
+        if (response.success) {
+          setOrders(response.data || []);
+          setTotalPages(response.pages || 1);
+        } else {
+          setError('Failed to load orders');
+          setOrders([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch orders:', err);
+        setError(err.message || 'Failed to load orders');
+        setOrders([]);
+      } finally {
+        setLoading(false);
+        setIsRefetching(false);
+      }
+    },
+    [filters]
+  );
+
   useEffect(() => {
     fetchOrders(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, currentPage]);
+  }, [fetchOrders, currentPage]);
 
-  // Scroll to top when page changes
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
-  const fetchOrders = async (page) => {
-    try {
-      setLoading(true);
-      setError(null);
+  /* ─── Auto-Update (Socket.io) ───────────────────────────────── */
+  useEffect(() => {
+    const handleOrderChange = (data) => {
+      console.log('Order updated remotely:', data);
+      fetchOrders(currentPage, true);
+    };
 
-      const params = { page, limit: ITEMS_PER_PAGE, sortBy: filters.sortBy };
-      if (filters.status !== 'all') {
-        params.status = filters.status;
-      }
-      if (filters.paymentMethod !== 'all') {
-        params.paymentMethod = filters.paymentMethod;
-      }
-      if (filters.shippingMethod !== 'all') {
-        params.shippingMethod = filters.shippingMethod;
-      }
+    socket.on('order_updated', handleOrderChange);
+    socket.on('new_order', handleOrderChange);
+    socket.on('seller:new-order', handleOrderChange);
+    socket.on('order_status_updated', handleOrderChange);
 
-      const response = await orderSellerService.getAll(params);
+    return () => {
+      socket.off('order_updated', handleOrderChange);
+      socket.off('new_order', handleOrderChange);
+      socket.off('seller:new-order', handleOrderChange);
+      socket.off('order_status_updated', handleOrderChange);
+    };
+  }, [fetchOrders, currentPage]);
 
-      if (response.success) {
-        setOrders(response.data || []);
-        setTotalPages(response.pages || 1);
-      } else {
-        setError('Failed to load orders');
-        setOrders([]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch orders:', err);
-      setError(err.message || 'Failed to load orders');
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ─── Handlers ─────────────────────────────────────────────── */
+  /* ─── Handlers ──────────────────────────────────────────────── */
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
     setCurrentPage(1);
   };
 
-  const handleStatusTabClick = (value) => {
-    handleFilterChange('status', value);
-  };
+  const handleStatusTabClick = (value) => handleFilterChange('status', value);
 
-  const handleCardClick = (orderId) => {
-    navigate(`/seller/orders/${orderId}`);
-  };
+  const handleCardClick = (orderId) => navigate(`/seller/orders/${orderId}`);
 
   const handleMessageBuyer = async (e, order) => {
     e.stopPropagation();
     const buyerId = order._originalData?.userId?._id || order._originalData?.userId;
     if (!buyerId) {
-      return;
-    }
+return;
+}
+
     setMessagingBuyer(order._id);
     try {
       const res = await chatService.findOrCreateConversation(buyerId);
@@ -190,68 +249,76 @@ const OrdersPage = () => {
     setShowStatusModal(false);
     setSelectedOrder(null);
   };
+
   const handleStatusUpdateSuccess = () => {
     handleStatusModalClose();
-    fetchOrders(currentPage);
+    fetchOrders(currentPage, true);
   };
 
-  /* ─── Derived data ─────────────────────────────────────────── */
+  /* ─── Derived Data ──────────────────────────────────────────── */
   const formattedOrders = orders.map((order) => ({
-    key:            order._id,
-    _id:            order._id,
-    orderNumber:    order.orderNumber,
-    buyer:          order.userId?.fullName || 'Unknown',
-    buyerEmail:     order.userId?.email || '',
-    totalItems:     order.items?.length || 0,
-    totalPrice:     order.totalPrice,
-    status:         order.status,
-    paymentMethod:  order.paymentMethod,
-    paymentStatus:  order.paymentStatus,
-    shippingAddress:order.shippingAddress,
-    createdAt:      new Date(order.createdAt).toLocaleDateString('vi-VN'),
+    key: order._id,
+    _id: order._id,
+    orderNumber: order.orderNumber,
+    buyer: order.userId?.fullName || 'Unknown',
+    buyerEmail: order.userId?.email || '',
+    totalItems: order.items?.length || 0,
+    totalPrice: order.totalPrice,
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    shippingAddress: order.shippingAddress,
+    createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
     items: (order.items || []).map((item) => ({
-      _id:          item._id,
-      productName:  item.productId?.name || 'Unknown Product',
+      _id: item._id,
+      productName: item.productId?.name || 'Unknown Product',
       productImage: item.productId?.images?.[0] || null,
-      price:        item.price || 0,
-      quantity:     item.quantity || 1,
-      sku:          item.sku || '',
-      tierDetails:  item.tierDetails || {},
-      model:        item.tierSelections || {},
+      price: item.price || 0,
+      quantity: item.quantity || 1,
+      sku: item.sku || '',
+      tierDetails: item.tierDetails || {},
+      model: item.tierSelections || {},
     })),
     _originalData: order,
   }));
 
-  /* ─── Pagination helper ────────────────────────────────────── */
   const getPaginationPages = () => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     const pages = [1];
     if (currentPage > 3) {
-      pages.push('...');
-    }
-    for (let p = Math.max(2, currentPage - 1); p <= Math.min(totalPages - 1, currentPage + 1); p++) {
+pages.push('...');
+}
+    for (
+      let p = Math.max(2, currentPage - 1);
+      p <= Math.min(totalPages - 1, currentPage + 1);
+      p++
+    ) {
       pages.push(p);
     }
     if (currentPage < totalPages - 2) {
-      pages.push('...');
-    }
+pages.push('...');
+}
     pages.push(totalPages);
     return pages;
   };
 
-  /* ─── Render ───────────────────────────────────────────────── */
+  /* ─── Render ────────────────────────────────────────────────── */
   const renderHeader = () => (
     <div className={styles.header}>
       <div className={styles.headerLeft}>
-        <h1>Orders</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h1>Orders</h1>
+          {isRefetching && (
+            <RefreshCw size={18} className={styles.spinAnimation} style={{ color: '#888' }} />
+          )}
+        </div>
         <p>Manage and track orders from your customers.</p>
       </div>
     </div>
   );
 
-  /* Loading */
   if (loading && orders.length === 0) {
     return (
       <div className={styles.container}>
@@ -263,7 +330,6 @@ const OrdersPage = () => {
     );
   }
 
-  /* Error */
   if (error) {
     return (
       <div className={styles.container}>
@@ -288,7 +354,6 @@ const OrdersPage = () => {
     <div className={styles.container}>
       {renderHeader()}
 
-      {/* Status Tab Filters */}
       <div className={styles.statusTabs}>
         {STATUS_TABS.map((tab) => (
           <button
@@ -301,7 +366,6 @@ const OrdersPage = () => {
         ))}
       </div>
 
-      {/* Secondary Filters */}
       <div className={styles.filtersCard}>
         <div className={styles.filtersGrid}>
           <div className={styles.filterGroup}>
@@ -348,7 +412,6 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      {/* Orders List */}
       {formattedOrders.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyStateIconWrapper}>
@@ -377,7 +440,6 @@ const OrdersPage = () => {
                 }
               }}
             >
-              {/* Order Header */}
               <div className={styles.orderHeaderRow}>
                 <div className={styles.orderMeta}>
                   <div className={styles.metaItem}>
@@ -398,7 +460,6 @@ const OrdersPage = () => {
                   </div>
                 </div>
 
-                {/* Total + Payment */}
                 <div className={styles.totalPriceItem}>
                   <span className={styles.metaLabel}>Total</span>
                   <span className={`${styles.metaValue} ${styles.totalPriceValue}`}>
@@ -410,11 +471,9 @@ const OrdersPage = () => {
 
               <hr className={styles.headerDivider} />
 
-              {/* Order Items */}
               <div className={styles.orderItemsWrapper}>
                 {order.items.map((item, index) => (
                   <div key={`${order._id}-${index}`} className={styles.orderItem}>
-                    {/* Product Image */}
                     <div className={styles.productImage}>
                       {item.productImage ? (
                         <img src={item.productImage} alt={item.productName} loading="lazy" />
@@ -425,7 +484,6 @@ const OrdersPage = () => {
                       )}
                     </div>
 
-                    {/* Product Details */}
                     <div className={styles.productDetails}>
                       <h3 className={styles.productName}>{item.productName}</h3>
                       <div className={styles.productAttributesList}>
@@ -442,7 +500,6 @@ const OrdersPage = () => {
                       </div>
                     </div>
 
-                    {/* Actions — only on first item */}
                     {index === 0 && (
                       <div className={styles.orderActions}>
                         <button
@@ -464,7 +521,6 @@ const OrdersPage = () => {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className={styles.paginationContainer}>
           <button
@@ -478,7 +534,9 @@ const OrdersPage = () => {
 
           {getPaginationPages().map((page, idx) =>
             page === '...' ? (
-              <span key={`ellipsis-${idx}`} className={styles.paginationInfo}>…</span>
+              <span key={`ellipsis-${idx}`} className={styles.paginationInfo}>
+                …
+              </span>
             ) : (
               <button
                 key={page}
@@ -502,7 +560,6 @@ const OrdersPage = () => {
         </div>
       )}
 
-      {/* Status Update Modal */}
       {selectedOrder && (
         <OrderStatusModal
           show={showStatusModal}

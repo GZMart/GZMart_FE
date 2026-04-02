@@ -182,7 +182,7 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
             </span>
           )}
         </div>
-        <span>{t('notifications.title')}</span>
+        <span className="ms-1">{t('notifications.title')}</span>
       </div>
 
       {showDropdown && (

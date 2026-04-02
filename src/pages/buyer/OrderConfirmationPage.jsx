@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Spinner, Alert, Row, Col } from 'react-bootstrap';
 import { orderService } from '@services/api/orderService';
 import { paymentService } from '@services/api/paymentService';
-import { selectCartItems, fetchCart } from '@store/slices/cartSlice';
+import { fetchCart } from '@store/slices/cartSlice';
 import { useDispatch } from 'react-redux';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { formatCurrency } from '@utils/formatters';
@@ -12,32 +12,21 @@ const OrderConfirmationPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [searchParams] = useSearchParams();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
 
-  // Check if redirected from PayOS payment
-  const orderCode = searchParams.get('orderCode');
-  const paymentStatus = searchParams.get('status');
-
   useEffect(() => {
-    console.log('[CHECKOUT-DEBUG] 📄 OrderConfirmationPage mounted, orderId:', orderId);
-
     const fetchOrder = async () => {
       try {
-        console.log('[CHECKOUT-DEBUG] 📥 Fetching order details for:', orderId);
         const response = await orderService.getOrderById(orderId);
         if (response.success) {
-          console.log('[CHECKOUT-DEBUG] ✅ Order details fetched successfully');
           setOrder(response.data);
-          console.log('[CART-DEBUG] 🔄 Calling fetchCart() from OrderConfirmationPage');
           dispatch(fetchCart());
         }
       } catch (err) {
-        console.log('[CHECKOUT-DEBUG] ❌ Error fetching order:', err.message);
         setError(err.message || 'Failed to load order details');
       } finally {
         setLoading(false);
@@ -169,6 +158,12 @@ const OrderConfirmationPage = () => {
                 <span className="text-muted d-block mb-1">Shipping Address:</span>
                 <p className="mb-0">{order.shippingAddress}</p>
               </div>
+              {order.coinUsedAmount > 0 && (
+                <div className="d-flex justify-content-between mb-3">
+                  <span className="text-muted">GZCoin Used</span>
+                  <span className="fw-semibold">-{formatCurrency(order.coinUsedAmount)}</span>
+                </div>
+              )}
             </Card.Body>
           </Card>
 

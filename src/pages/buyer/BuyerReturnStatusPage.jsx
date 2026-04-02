@@ -371,7 +371,8 @@ const BuyerReturnStatusPage = () => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
-                    duration={60}
+                    duration={10}
+                    syncRoom={returnRequest._id}
                     onDeliveryComplete={() => setExchangeLegOneCompleted(true)}
                   />
 
@@ -397,7 +398,8 @@ const BuyerReturnStatusPage = () => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().buyer}
                     buyerCoords={getTrackingCoordinates().seller}
-                    duration={60}
+                    duration={10}
+                    syncRoom={returnRequest._id}
                     onDeliveryComplete={() => setExchangeLegTwoCompleted(true)}
                   />
                   {exchangeLegTwoCompleted && returnRequest.status !== 'completed' && (
@@ -460,7 +462,8 @@ const BuyerReturnStatusPage = () => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
-                    duration={60}
+                    duration={10}
+                    syncRoom={returnRequest._id}
                     onDeliveryComplete={() => setLegOneCompleted(true)}
                   />
 
@@ -486,7 +489,8 @@ const BuyerReturnStatusPage = () => {
                 <DeliveryTrackingMap
                   sellerCoords={getTrackingCoordinates().buyer}
                   buyerCoords={getTrackingCoordinates().seller}
-                  duration={60}
+                  duration={10}
+                  syncRoom={returnRequest._id}
                   onDeliveryComplete={() => setLegTwoCompleted(true)}
                 />
                 {legTwoCompleted &&

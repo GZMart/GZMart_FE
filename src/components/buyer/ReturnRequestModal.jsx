@@ -100,8 +100,6 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
 
       const response = await rmaService.createReturnRequest(requestData);
 
-      message.success('Return/Refund request submitted successfully!');
-
       if (onSuccess) {
         onSuccess(response.data);
       }

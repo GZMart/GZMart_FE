@@ -171,6 +171,11 @@ const DealsOfTheDay = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [nearestEndDate, setNearestEndDate] = useState(null);
 
+  // --- CAROUSEL STATES ---
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [itemsPerSlide, setItemsPerSlide] = useState(4);
+  const [isHovered, setIsHovered] = useState(false); // Used to pause autoplay
+
   useEffect(() => {
     const fetchDeals = async () => {
       try {
@@ -231,7 +236,7 @@ const DealsOfTheDay = () => {
           };
         });
 
-        // ── Parse active deals (special, daily_deal, etc.) ───────
+        // ── Parse active deals ───────────────────────────────────
         let dealsData = [];
         if (dealsRes.status === 'fulfilled') {
           const response = dealsRes.value;
@@ -292,34 +297,65 @@ const DealsOfTheDay = () => {
   // Update countdown every second
   useEffect(() => {
     if (!nearestEndDate) {
-      return;
-    }
+return;
+}
 
     const updateCountdown = () => {
       const time = formatCountdown(nearestEndDate);
       setCountdown(time);
     };
 
-    updateCountdown(); // Initial update
+    updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(interval);
   }, [nearestEndDate]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-      },
-    },
-  };
+  // --- CAROUSEL LOGIC ---
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-  };
+  // 1. Responsive check to adjust items per slide
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 576) {
+setItemsPerSlide(1);
+} // Mobile
+      else if (window.innerWidth < 768) {
+setItemsPerSlide(2);
+} // Tablet
+      else if (window.innerWidth < 992) {
+setItemsPerSlide(3);
+} // Small Laptop
+      else {
+setItemsPerSlide(4);
+} // Desktop
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const totalSlides = Math.ceil(deals.length / itemsPerSlide);
+
+  // 2. Prevent empty screen if resizing pushes currentSlide out of bounds
+  useEffect(() => {
+    if (currentSlide >= totalSlides && totalSlides > 0) {
+      setCurrentSlide(totalSlides - 1);
+    }
+  }, [totalSlides, currentSlide]);
+
+  // 3. Auto-navigation hook
+  useEffect(() => {
+    if (deals.length === 0 || isHovered) {
+return;
+} // Pause on hover
+
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    }, 4000); // Navigate every 4 seconds
+
+    return () => clearInterval(timer);
+  }, [deals.length, totalSlides, isHovered]);
 
   const titleParts = (() => {
     const words = "TODAY'S DEALS OF THE DAY".split(/\s+/);
@@ -333,6 +369,7 @@ const DealsOfTheDay = () => {
   return (
     <section className="py-5">
       <div className="container">
+        {/* Header Section */}
         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4">
           <h3 className="fw-bold mb-3 mb-md-0">
             <span className="text-dark">{titleParts.first}</span>{' '}
@@ -341,7 +378,6 @@ const DealsOfTheDay = () => {
 
           <div className="d-flex align-items-center gap-3">
             <span className="fs-6 text-dark text-nowrap">Deals ends in</span>
-
             <div
               className="d-flex align-items-center justify-content-center px-3 py-2 rounded fw-bold text-white bg-primary"
               style={{
@@ -372,7 +408,10 @@ const DealsOfTheDay = () => {
             </Link>
           </div>
         </div>
+
         <hr className="my-4 text-secondary opacity-25" />
+
+        {/* Content Section */}
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
@@ -384,23 +423,54 @@ const DealsOfTheDay = () => {
             <p className="text-muted fs-5">No deals available at the moment</p>
           </div>
         ) : (
-          <motion.div
-            className="row g-4"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+          <div
+            className="carousel-wrapper"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
-            {deals.map((product) => (
+            <div style={{ overflow: 'hidden', padding: '10px 0' }}>
               <motion.div
-                key={product.id}
-                className="col-12 col-sm-6 col-md-4 col-lg-3"
-                variants={itemVariants}
+                style={{ display: 'flex' }}
+                animate={{ x: `-${currentSlide * 100}%` }}
+                transition={{ type: 'tween', ease: 'easeInOut', duration: 0.5 }}
               >
-                <ProductCard product={product} />
+                {deals.map((product) => (
+                  <div
+                    key={product.id}
+                    style={{
+                      minWidth: `${100 / itemsPerSlide}%`,
+                      padding: '0 12px', // Simulates Bootstrap's standard gutter spacing
+                    }}
+                  >
+                    <ProductCard product={product} />
+                  </div>
+                ))}
               </motion.div>
-            ))}
-          </motion.div>
+            </div>
+
+            {/* Dots Navigation */}
+            {totalSlides > 1 && (
+              <div className="d-flex justify-content-center mt-4 gap-2">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    style={{
+                      width: currentSlide === index ? '24px' : '8px',
+                      height: '8px',
+                      borderRadius: '4px',
+                      backgroundColor: currentSlide === index ? 'var(--color-primary)' : '#ccc',
+                      border: 'none',
+                      padding: 0,
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer',
+                    }}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </section>
