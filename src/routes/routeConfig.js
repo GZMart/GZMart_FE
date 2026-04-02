@@ -8,8 +8,8 @@ const ProductsPage = lazy(() => import('@pages/buyer/ProductsPage'));
 const FlashDealsPage = lazy(() => import('@pages/buyer/FlashDealsPage'));
 const ProductDetailsPage = lazy(() => import('@pages/buyer/ProductDetailsPage'));
 const ImageSearchResultsPage = lazy(() => import('@pages/buyer/ImageSearchResultsPage'));
-const CartPage = lazy(() => import('@pages/buyer/CartPage'));
-const CheckoutPage = lazy(() => import('@pages/buyer/CheckoutPage'));
+const CartPage = lazy(() => import('@/pages/buyer/cart/CartPage'));
+const CheckoutPage = lazy(() => import('@/pages/buyer/cart/CheckoutPage'));
 const LoginPage = lazy(() => import('@pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@pages/auth/ForgotPasswordPage'));
@@ -19,9 +19,9 @@ const ChangePasswordPage = lazy(() => import('@pages/auth/ChangePasswordPage'));
 const ShopProfilePage = lazy(() => import('@pages/buyer/ShopProfilePage'));
 const LiveViewerPage = lazy(() => import('@pages/buyer/LiveViewerPage'));
 
-const OrderConfirmationPage = lazy(() => import('@pages/buyer/OrderConfirmationPage'));
-const PaymentSuccessPage = lazy(() => import('@pages/buyer/PaymentSuccessPage'));
-const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPage'));
+const OrderConfirmationPage = lazy(() => import('@/pages/buyer/order/OrderConfirmationPage'));
+const PaymentSuccessPage = lazy(() => import('@/pages/buyer/order/PaymentSuccessPage'));
+const PaymentCancelledPage = lazy(() => import('@/pages/buyer/order/PaymentCancelledPage'));
 
 // Buyer Pages
 // BuyerDashboard removed — buyer does not need a dashboard
@@ -29,21 +29,21 @@ const PaymentCancelledPage = lazy(() => import('@pages/buyer/PaymentCancelledPag
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
-const BuyerReturnStatusPage = lazy(() => import('@pages/buyer/BuyerReturnStatusPage'));
+const BuyerReturnStatusPage = lazy(() => import('@/pages/buyer/order/BuyerReturnStatusPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
-const TrackOrderPage = lazy(() => import('@pages/buyer/TrackOrderPage'));
-const TrackOrderDetailsPage = lazy(() => import('@pages/buyer/TrackOrderDetailsPage'));
+const TrackOrderPage = lazy(() => import('@/pages/buyer/order/TrackOrderPage'));
+const TrackOrderDetailsPage = lazy(() => import('@/pages/buyer/order/TrackOrderDetailsPage'));
 const MyDealsPage = lazy(() => import('@pages/buyer/MyDealsPage'));
 const DealDetailsPage = lazy(() => import('@pages/buyer/DealDetailsPage'));
 
 // ERP Pages (New Mini-ERP/Sourcing Module)
-const ERPDashboard = lazy(() => import('@pages/erp/ERPDashboard'));
-const SuppliersPage = lazy(() => import('@pages/erp/SuppliersPage'));
-const SupplierDetailPage = lazy(() => import('@pages/erp/SupplierDetailPage'));
-const PurchaseOrdersPage = lazy(() => import('@pages/erp/PurchaseOrdersPage'));
-const CreatePurchaseOrderPage = lazy(() => import('@pages/erp/CreatePurchaseOrderPage'));
-const PurchaseOrderDetailPage = lazy(() => import('@pages/erp/PurchaseOrderDetailPage'));
-const EditPurchaseOrderPage = lazy(() => import('@pages/erp/EditPurchaseOrderPage'));
+const ERPDashboard = lazy(() => import('@/pages/seller/erp/ERPDashboard'));
+const SuppliersPage = lazy(() => import('@/pages/seller/erp/SuppliersPage'));
+const SupplierDetailPage = lazy(() => import('@/pages/seller/erp/SupplierDetailPage'));
+const PurchaseOrdersPage = lazy(() => import('@/pages/seller/erp/PurchaseOrdersPage'));
+const CreatePurchaseOrderPage = lazy(() => import('@/pages/seller/erp/CreatePurchaseOrderPage'));
+const PurchaseOrderDetailPage = lazy(() => import('@/pages/seller/erp/PurchaseOrderDetailPage'));
+const EditPurchaseOrderPage = lazy(() => import('@/pages/seller/erp/EditPurchaseOrderPage'));
 
 // Seller Pages (ERP)
 const SellerDashboard = lazy(() => import('@pages/seller/SellerDashboard'));
@@ -54,7 +54,7 @@ const InventoryPage = lazy(() => import('@pages/seller/Inventory/InventoryPage')
 const LandedCostPage = lazy(() => import('@pages/seller/LandedCost/LandedCostPage'));
 const ListingsPage = lazy(() => import('@pages/seller/ListingsPage'));
 const ReturnsPage = lazy(() => import('@pages/seller/ReturnsPage'));
-const SellerOrdersPage = lazy(() => import('@pages/seller/OrdersPage'));
+const SellerOrdersPage = lazy(() => import('@/pages/seller/Order/OrdersPage'));
 const OrderDetailsPage = lazy(() => import('@pages/seller/OrderDetailsPage'));
 const FlashSalesPage = lazy(() => import('@pages/seller/FlashSalesPage'));
 const VoucherDashboard = lazy(() => import('@pages/seller/vouchers/VoucherDashboard'));
@@ -88,14 +88,14 @@ const UnauthorizedPage = lazy(() => import('@pages/errors/UnauthorizedPage'));
 const ForbiddenPage = lazy(() => import('@pages/errors/ForbiddenPage'));
 
 //Footer Pages
-const TermsOfServicePage = lazy(() => import('@pages/footerLink/TermsOfService'));
-const PrivacyPolicyPage = lazy(() => import('@pages/footerLink/PrivacyPolicy'));
-const RefundPolicyPage = lazy(() => import('@pages/footerLink/RefundPolicy'));
-const ShippingPolicyPage = lazy(() => import('@pages/footerLink/ShippingPolicy'));
+const TermsOfServicePage = lazy(() => import('@/pages/buyer/footerlink/TermsOfService'));
+const PrivacyPolicyPage = lazy(() => import('@/pages/buyer/footerlink/PrivacyPolicy'));
+const RefundPolicyPage = lazy(() => import('@/pages/buyer/footerlink/RefundPolicy'));
+const ShippingPolicyPage = lazy(() => import('@/pages/buyer/footerlink/ShippingPolicy'));
 const FrequentlyAskedQuestionsPage = lazy(
-  () => import('@pages/footerLink/FrequentlyAskedQuestions')
+  () => import('@/pages/buyer/footerlink/FrequentlyAskedQuestions')
 );
-const HowWeCanHelpYouPage = lazy(() => import('@pages/footerLink/HowWeCanHelpYou'));
+const HowWeCanHelpYouPage = lazy(() => import('@/pages/buyer/footerlink/HowWeCanHelpYou'));
 
 /**
  * Route Configuration

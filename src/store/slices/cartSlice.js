@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { cartService } from '@services/cart.service';
+import { cartService } from '@/services/api/cart.service';
 
 const initialState = {
   items: [],
@@ -74,7 +74,10 @@ export const removeFromCart = createAsyncThunk(
 
 export const addToCartFromLive = createAsyncThunk(
   'cart/addFromLive',
-  async ({ productId, quantity, price, color, size, image, name }, { dispatch, rejectWithValue }) => {
+  async (
+    { productId, quantity, price, color, size, image, name },
+    { dispatch, rejectWithValue }
+  ) => {
     try {
       await cartService.addToCart({ productId, quantity, color, size });
       dispatch(fetchCart());

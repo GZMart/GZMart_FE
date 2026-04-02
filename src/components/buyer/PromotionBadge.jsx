@@ -1,5 +1,5 @@
 import { formatCurrency } from '../../utils/formatters';
-import styles from '../../assets/styles/PromotionBadge.module.css';
+import styles from '@assets/styles/buyer/PromotionBadge.module.css';
 
 /**
  * Combo Promotion Banner

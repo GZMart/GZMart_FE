@@ -6,9 +6,16 @@ import { orderService } from '../../services/api/orderService';
 // Giả định import uploadService (bạn cần điều chỉnh đường dẫn nếu khác)
 // import { uploadService } from '../../services/api/uploadService';
 import { toast } from 'react-toastify';
-import styles from '../../assets/styles/ProfilePage/ReviewModal.module.css';
+import styles from '@assets/styles/buyer/ProfilePage/ReviewModal.module.css';
 
-const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber = '', isSubmitting = false, orderId }) => {
+const ReviewModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  orderNumber = '',
+  isSubmitting = false,
+  orderId,
+}) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -119,21 +126,24 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, orderNumber = '', isSubmitting
   }, [fetchOrderDetailsForProduct, isOpen, orderId]);
 
   // Cleanup object URLs when component unmounts or modal closes to prevent memory leaks
-  useEffect(() => () => {
+  useEffect(
+    () => () => {
       previewUrls.forEach((media) => {
         // Gọi media.url thay vì gọi thẳng media
         if (media && media.url && media.url.startsWith('blob:')) {
           URL.revokeObjectURL(media.url);
         }
       });
-    }, [previewUrls]);
+    },
+    [previewUrls]
+  );
 
   // --- XỬ LÝ CHỌN FILE ---
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) {
-return;
-}
+      return;
+    }
 
     // Optional: Kiểm tra số lượng file tối đa (ví dụ: 5 file)
     if (selectedFiles.length + files.length > 5) {
@@ -162,8 +172,8 @@ return;
 
     // Reset input value to allow selecting the same file again if removed
     if (fileInputRef.current) {
-fileInputRef.current.value = '';
-}
+      fileInputRef.current.value = '';
+    }
   };
 
   // --- XÓA FILE ĐÃ CHỌN ---

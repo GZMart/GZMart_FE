@@ -17,7 +17,7 @@ import { flashsaleService } from '../../services/api/flashsaleService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 import * as wishlistService from '../../services/api/wishlistService';
 import { formatCurrency } from '../../utils/formatters';
-import styles from '../../assets/styles/ProductDetailsPage.module.css';
+import styles from '@assets/styles/buyer/Product/ProductDetailsPage.module.css';
 
 const getShippingMethods = (t) => [
   {
@@ -827,8 +827,8 @@ const ProductDetailsPage = () => {
                         className={`${styles.tierOption} ${isSelected ? styles.active : ''} ${isDisabled ? styles.disabled : ''}`}
                         onClick={() => {
                           if (!isDisabled) {
-handleTierChange(tierIdx, optIdx);
-}
+                            handleTierChange(tierIdx, optIdx);
+                          }
                         }}
                         disabled={isDisabled}
                         title={isDisabled ? t('product_details.stat_status_inactive') : option}

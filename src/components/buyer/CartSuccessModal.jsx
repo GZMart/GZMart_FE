@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import styles from '../../assets/styles/CartSuccessModal.module.css';
+import styles from '@assets/styles/buyer/Cart/CartSuccessModal.module.css';
 
 const MODAL_DURATION = 2200; // ms before auto-close
 
@@ -14,8 +14,8 @@ const FlyingItem = ({ image, startRect, onDone }) => {
     const cartIcon = document.getElementById('header-cart-icon');
     const el = elRef.current;
     if (!cartIcon || !el) {
-return;
-}
+      return;
+    }
 
     const cartRect = cartIcon.getBoundingClientRect();
     const dx = cartRect.left + cartRect.width / 2 - (startRect.left + startRect.width / 2);
@@ -107,8 +107,8 @@ const CartSuccessModal = ({ show, onClose, productImage, productName }) => {
   }, [show]);
 
   if (!visible) {
-return null;
-}
+    return null;
+  }
 
   return createPortal(
     <>

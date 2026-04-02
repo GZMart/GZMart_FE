@@ -5,7 +5,7 @@ import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { Truck, Hand, Undo2, PackageCheck, PackagePlus, Handshake, RefreshCcw } from 'lucide-react';
 import rmaService from '@services/api/rmaService';
 import DeliveryTrackingMap from '@components/buyer/DeliveryTrackingMap';
-import trackingStyles from '@assets/styles/RmaTrackingSteps.module.css';
+import trackingStyles from '@assets/styles/buyer/Order/RmaTrackingSteps.module.css';
 
 const { TextArea } = Input;
 
@@ -262,8 +262,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
 
   const isVideoUrl = (url) => {
     if (!url || typeof url !== 'string') {
-return false;
-}
+      return false;
+    }
     return (
       /\.(mp4|webm|ogg|mov|mkv)(\?.*)?$/i.test(url) ||
       url.includes('video') ||
@@ -685,8 +685,8 @@ return false;
                             );
                             message.success('Exchange processed successfully');
                             if (onSuccess) {
-onSuccess(resp.data);
-}
+                              onSuccess(resp.data);
+                            }
                             onClose();
                           } catch (err) {
                             console.error('[ReturnDetailsModal] Error processing exchange:', err);

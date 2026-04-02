@@ -1,10 +1,10 @@
-import HeroBanner from '../../components/homepage/HeroBanner.jsx';
-import FeatureBar from '../../components/homepage/FeatureBar.jsx';
-import ShopByBrands from '../../components/homepage/ShopByBrands.jsx';
-import DealsOfTheDay from '../../components/homepage/DealsOfTheDay.jsx';
-import TopCategories from '../../components/homepage/TopCategories.jsx';
-import TopClothingBrand from '../../components/homepage/TopClothingBrand.jsx';
-import TodayRecommendations from '../../components/homepage/TodayRecommendations.jsx';
+import HeroBanner from '../../components/common/homepage/HeroBanner.jsx';
+import FeatureBar from '../../components/common/homepage/FeatureBar.jsx';
+import ShopByBrands from '../../components/common/homepage/ShopByBrands.jsx';
+import DealsOfTheDay from '../../components/common/homepage/DealsOfTheDay.jsx';
+import TopCategories from '../../components/common/homepage/TopCategories.jsx';
+import TopClothingBrand from '../../components/common/homepage/TopClothingBrand.jsx';
+import TodayRecommendations from '../../components/common/homepage/TodayRecommendations.jsx';
 
 const HomePage = () => (
   <>

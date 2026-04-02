@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { PUBLIC_ROUTES } from '@constants/routes';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
-import styles from '@assets/styles/ChangePasswordPage/ChangePasswordPage.module.css';
+import styles from '@assets/styles/common/ChangePasswordPage/ChangePasswordPage.module.css';
 import { changeUserPassword, selectUser, updateUser } from '@store/slices/authSlice';
 
 const ChangePasswordPage = () => {
@@ -280,8 +280,8 @@ const ChangePasswordPage = () => {
               {loading
                 ? t('change_password_page.submitting')
                 : hasPassword
-                ? t('change_password_page.submit_button')
-                : t('change_password_page.set_password_button')}
+                  ? t('change_password_page.submit_button')
+                  : t('change_password_page.set_password_button')}
             </button>
           </form>
         </div>

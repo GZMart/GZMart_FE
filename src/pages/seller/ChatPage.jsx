@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Container, Row, Col, ListGroup, Form, Button, Image, InputGroup } from 'react-bootstrap';
-import socketService from '../../services/socketService';
+import socketService from '@services/socket/socketService';
 import axios from 'axios';
 import AutoReplyModal from '../../components/seller/AutoReplyModal';
 import { getAuthToken } from '../../utils/storage';
-import './ChatPage.css';
+import '@assets/styles/common/ChatPage.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
@@ -50,7 +50,7 @@ const ChatPage = () => {
         socket.off('new_message_notification');
       };
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversations triggers on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConversations triggers on mount
   }, [user, activeConversation]);
 
   const fetchConversations = async () => {

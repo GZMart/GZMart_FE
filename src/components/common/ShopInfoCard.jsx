@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import styles from '../../assets/styles/ShopInfoCard.module.css';
+import styles from '../../assets/styles/seller/ShopInfoCard.module.css';
 
 const ShopInfoCard = ({
   seller,
@@ -21,8 +21,7 @@ const ShopInfoCard = ({
 
   const sellerId = seller._id || seller.id;
   const liveSessionId = activeLive?._id || activeLive?.id;
-  const liveHref =
-    sellerId && liveSessionId ? `/shop/${sellerId}/live/${liveSessionId}` : null;
+  const liveHref = sellerId && liveSessionId ? `/shop/${sellerId}/live/${liveSessionId}` : null;
 
   const handleChatClick = () => {
     if (!sellerId) {
@@ -58,7 +57,9 @@ const ShopInfoCard = ({
                 />
               </Link>
               {(seller.isPreferred || true) && (
-                <div className={styles.shopFavBadge}>{t('product_details.shop_badge_favorite')}</div>
+                <div className={styles.shopFavBadge}>
+                  {t('product_details.shop_badge_favorite')}
+                </div>
               )}
             </div>
           </div>

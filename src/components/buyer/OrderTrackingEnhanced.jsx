@@ -1,18 +1,16 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Card, Steps, Button, Modal, Rate, Input, message, Spin } from 'antd';
+import { Card, Steps, Button, Modal, Rate, Input, message } from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,
-  ShoppingOutlined,
   TruckOutlined,
-  DollarOutlined,
   InboxOutlined,
 } from '@ant-design/icons';
 import socketService from '@services/socket/socketService';
 import DeliveryTrackingMap from './DeliveryTrackingMap';
 import { orderService } from '@services/api/orderService';
-import '../../assets/styles/OrderTrackingEnhanced.module.css';
+import '../../assets/styles/buyer/Order/OrderTrackingEnhanced.module.css';
 
 const { TextArea } = Input;
 
@@ -24,7 +22,6 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
   const [loading, setLoading] = useState(false);
   const mapRef = useRef(null);
-  const markerRef = useRef(null);
   const hasInitializedMap = useRef(false);
   const onOrderUpdateRef = useRef(onOrderUpdate);
 
@@ -39,20 +36,20 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
       .trim()
       .toLowerCase();
     if (!s) {
-return 'pending';
-}
+      return 'pending';
+    }
     if (s === 'processing') {
-return 'confirmed';
-}
+      return 'confirmed';
+    }
     if (s === 'packing') {
-return 'packed';
-}
+      return 'packed';
+    }
     if (s === 'shipping') {
-return 'shipped';
-}
+      return 'shipped';
+    }
     if (s === 'delivered_pending_confirmation') {
-return 'delivered';
-}
+      return 'delivered';
+    }
     return s;
   };
 
@@ -89,7 +86,7 @@ return 'delivered';
     };
 
     // Listen for delivery arrival
-    const handleArrived = (data) => {
+    const handleArrived = (_data) => {
       setCurrentStatus('delivered');
       setShowMap(false);
       hasInitializedMap.current = false;
@@ -118,7 +115,7 @@ return 'delivered';
       setShowMap(false);
       hasInitializedMap.current = false;
     }
-  }, [order?.status]);
+  }, [order?.status, currentStatus]);
 
   // Initialize map when showing
   useEffect(() => {
@@ -222,8 +219,8 @@ return 'delivered';
   useEffect(() => {
     if (currentStatus === 'shipped') {
       if (hasInitializedMap.current) {
-return;
-}
+        return;
+      }
       hasInitializedMap.current = true;
 
       const coordinates = order?.trackingCoordinates || memoizedCoordinates;
@@ -251,7 +248,13 @@ return;
     } else {
       hasInitializedMap.current = false;
     }
-  }, [currentStatus]);
+  }, [
+    currentStatus,
+    memoizedCoordinates,
+    order?.trackingCoordinates,
+    order?.shippingEstimatedArrival,
+    order?.shippingStartedAt,
+  ]);
 
   // Define steps for the stepper (simplified)
   const steps = [

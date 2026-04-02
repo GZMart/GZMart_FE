@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
-import styles from '@assets/styles/ProductsPage.module.css';
+import styles from '@assets/styles/buyer/Product/ProductsPage.module.css';
 import Pagination from '@components/common/Pagination';
 import { productService, categoryService } from '../../services/api';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
@@ -594,22 +594,14 @@ const ProductsPage = () => {
                       return brand ? (
                         <span key={brandId} className={styles.filterTag}>
                           {brand.name}
-                          <i
-                            className="bi bi-x"
-                            onClick={() => toggleFilter('brand', brandId)}
-                          ></i>
+                          <i className="bi bi-x" onClick={() => toggleFilter('brand', brandId)}></i>
                         </span>
                       ) : null;
                     })}
                     {(priceRange.min > 0 || priceRange.max < 10000000) && (
                       <span className={styles.filterTag}>
-                        {priceRange.min > 0
-                          ? `₫${priceRange.min.toLocaleString()}`
-                          : '₫0'}{' '}
-                        —{' '}
-                        {priceRange.max < 10000000
-                          ? `₫${priceRange.max.toLocaleString()}`
-                          : '∞'}
+                        {priceRange.min > 0 ? `₫${priceRange.min.toLocaleString()}` : '₫0'} —{' '}
+                        {priceRange.max < 10000000 ? `₫${priceRange.max.toLocaleString()}` : '∞'}
                         <i className="bi bi-x" onClick={handleResetPriceFilter}></i>
                       </span>
                     )}

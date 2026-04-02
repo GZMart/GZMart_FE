@@ -16,8 +16,7 @@ import OrderStatusTimeline from '../../components/seller/orders/OrderStatusTimel
 import { orderSellerService } from '../../services/api/orderSellerService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/OrderDetailsPage.module.css';
-import { toast } from 'react-toastify';
-import socketService from '../../services/socket/socketService';
+import socketService from '@services/socket/socketService';
 import { useSelector } from 'react-redux';
 
 const OrderDetailsPage = () => {
@@ -243,30 +242,30 @@ const OrderDetailsPage = () => {
         .trim()
         .toLowerCase();
       if (!n) {
-return n;
-}
+        return n;
+      }
       if (n === 'processing') {
-return 'confirmed';
-}
+        return 'confirmed';
+      }
       if (n === 'packing') {
-return 'packed';
-}
+        return 'packed';
+      }
       if (n === 'shipping') {
-return 'shipped';
-}
+        return 'shipped';
+      }
       if (n === 'delivered_pending_confirmation') {
-return 'delivered';
-}
+        return 'delivered';
+      }
       return n;
     };
 
     const normalized = normalizeLegacyStatus(status);
     if (!normalized) {
-return 'Unknown';
-}
+      return 'Unknown';
+    }
     if (normalized === 'shipped') {
-return 'Shipping';
-}
+      return 'Shipping';
+    }
     return normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
@@ -276,20 +275,20 @@ return 'Shipping';
         .trim()
         .toLowerCase();
       if (!n) {
-return n;
-}
+        return n;
+      }
       if (n === 'processing') {
-return 'confirmed';
-}
+        return 'confirmed';
+      }
       if (n === 'packing') {
-return 'packed';
-}
+        return 'packed';
+      }
       if (n === 'shipping') {
-return 'shipped';
-}
+        return 'shipped';
+      }
       if (n === 'delivered_pending_confirmation') {
-return 'delivered';
-}
+        return 'delivered';
+      }
       return n;
     };
 

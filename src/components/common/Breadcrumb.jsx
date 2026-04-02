@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import styles from '@assets/styles/Breadcrumb.module.css';
+import styles from '@assets/styles/common/Breadcrumb.module.css';
 
 const Breadcrumb = ({ items }) => (
   <nav className={styles.breadcrumb} aria-label="breadcrumb">
