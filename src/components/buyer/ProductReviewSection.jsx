@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { reviewService } from '../../services/api';
 import Pagination from '../common/Pagination';
-import styles from '../../assets/styles/ProductReviewSection.module.css';
+import styles from '@assets/styles/seller/Product/ProductReviewSection.module.css';
 
 const ProductReviewSection = ({ product }) => {
   const [reviews, setReviews] = useState([]);

@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
 import { getProductImages } from '@utils/data/ProductsPage_MockData';
 import * as wishlistService from '@/services/api/wishlistService';
-import styles from '@assets/styles/ProductListItem.module.css';
+import styles from '@assets/styles/buyer/Product/ProductListItem.module.css';
 
 const ProductListItem = React.forwardRef(({ product }, ref) => {
   const navigate = useNavigate();

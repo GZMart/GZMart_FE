@@ -21,31 +21,35 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
         .trim()
         .toLowerCase();
       if (!n) {
-return n;
-}
+        return n;
+      }
       if (n === 'processing') {
-return 'confirmed';
-}
+        return 'confirmed';
+      }
       if (n === 'packing') {
-return 'packed';
-}
+        return 'packed';
+      }
       if (n === 'shipping') {
-return 'shipped';
-}
+        return 'shipped';
+      }
       if (n === 'delivered_pending_confirmation') {
-return 'delivered';
-}
+        return 'delivered';
+      }
       return n;
     };
 
     const normalized = normalizeLegacyStatus(status);
     if (!normalized) {
-return 'Unknown';
-}
+      return 'Unknown';
+    }
     if (normalized === 'shipped') {
-return 'Shipping';
-}
-    return normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+      return 'Shipping';
+    }
+
+    // Thay dấu gạch dưới thành khoảng trắng
+    const cleanStatus = normalized.replace(/_/g, ' ');
+    // Chữ cái đầu in hoa, toàn bộ phần còn lại in thường
+    return cleanStatus.charAt(0).toUpperCase() + cleanStatus.slice(1).toLowerCase();
   };
 
   // Get available status transitions based on current status
@@ -158,10 +162,19 @@ return 'Shipping';
             value={newStatus || undefined}
             onChange={setNewStatus}
             disabled={availableStatuses.length === 0}
-            options={availableStatuses.map((status) => ({
-              label: formatStatusLabel(status),
-              value: status,
-            }))}
+            options={[
+              // 1. Thêm trạng thái hiện tại vào (để Antd biết đường lấy label format ra hiển thị)
+              {
+                label: formatStatusLabel(order?.status),
+                value: order?.status,
+                disabled: true, // Ẩn đi không cho chọn lại trạng thái cũ
+              },
+              // 2. Chứa các trạng thái mới có thể chuyển đổi
+              ...availableStatuses.map((status) => ({
+                label: formatStatusLabel(status),
+                value: status,
+              })),
+            ]}
           />
           {availableStatuses.length === 0 && (
             <p style={{ color: '#999', fontSize: '12px', marginTop: '8px' }}>

@@ -30,6 +30,9 @@ export const livestreamService = {
     axiosClient.put(`${BASE}/session/${sessionId}`, data),
   getSessionConfig: (sessionId) =>
     axiosClient.get(`${BASE}/session/${sessionId}/config`),
+  // Get a fresh LiveKit token for the current session (used after F5 restore)
+  getSessionToken: (sessionId) =>
+    axiosClient.post(`${BASE}/session/${sessionId}/token`),
 };
 
 export default livestreamService;

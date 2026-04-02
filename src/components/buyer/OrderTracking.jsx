@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import { Card, Timeline, Tag, Empty } from 'antd';
 import {
@@ -9,7 +8,6 @@ import {
   HomeOutlined,
   CloseCircleOutlined,
   DollarOutlined,
-  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import './OrderTracking.css';
 

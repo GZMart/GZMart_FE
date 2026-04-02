@@ -6,13 +6,15 @@ import LiveChatPanel from '@components/seller/LiveChatPanel';
 import LiveActionBar from '@components/seller/LiveActionBar';
 import LiveProductSelector from '@components/seller/LiveProductSelector';
 import LiveVoucherSelector from '@components/seller/LiveVoucherSelector';
-import styles from './LiveStreamPage.module.css';
+import styles from '../../assets/styles/buyer/LiveStreamPage.module.css';
 
 const DEFAULT_FORM = {
   title: 'Live Stream: Giới thiệu sản phẩm mới',
   category: 'Fashion & Accessories',
   platforms: ['tiktok'],
 };
+
+const LS_SELLER_SESSION_KEY = 'gzmart_seller_live_session';
 
 export default function LiveStreamPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
@@ -34,6 +36,60 @@ export default function LiveStreamPage() {
   const [isCamOn, setIsCamOn] = useState(true);
   const [micLevel, setMicLevel] = useState(66);
 
+  // ── Session persistence ─────────────────────────────────────────────────────
+  // On mount, check if we have a live session in sessionStorage and try to restore it
+  useEffect(() => {
+    const saved = sessionStorage.getItem(LS_SELLER_SESSION_KEY);
+    if (!saved) {
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(saved);
+    } catch {
+      sessionStorage.removeItem(LS_SELLER_SESSION_KEY);
+      return;
+    }
+
+    const { sessionId } = parsed;
+    if (!sessionId) {
+      sessionStorage.removeItem(LS_SELLER_SESSION_KEY);
+      return;
+    }
+
+    livestreamService
+      .getSessionConfig(sessionId)
+      .then((res) => {
+        const cfg = res?.data;
+        if (!cfg || cfg.status === 'ended') {
+          sessionStorage.removeItem(LS_SELLER_SESSION_KEY);
+          return;
+        }
+
+        setSession({ _id: sessionId, ...cfg });
+        setIsLive(true);
+
+        // Restore token by fetching a fresh one
+        return livestreamService.getSessionToken(sessionId);
+      })
+      .then((tokenRes) => {
+        if (tokenRes?.data?.token) {
+          setToken(tokenRes.data.token);
+        }
+      })
+      .then(() => livestreamService.getSessionProducts(sessionId))
+      .then((prodRes) => {
+        setLiveProducts(prodRes?.data?.products || []);
+        setPinnedProductId(prodRes?.data?.pinnedProduct?._id || null);
+      })
+      .catch(() => {
+        sessionStorage.removeItem(LS_SELLER_SESSION_KEY);
+        setIsLive(false);
+        setSession(null);
+      });
+  }, []);
+
   const handleGoLive = useCallback(async () => {
     if (!form.title.trim()) {
       setError('Please enter a broadcast title.');
@@ -54,6 +110,12 @@ export default function LiveStreamPage() {
       setSession(startRes.session);
       setToken(startRes.token);
       setIsLive(true);
+
+      // Persist session so F5 won't lose the stream
+      sessionStorage.setItem(
+        LS_SELLER_SESSION_KEY,
+        JSON.stringify({ sessionId: startRes.session._id }),
+      );
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to start live stream.');
     } finally {
@@ -70,6 +132,7 @@ return;
     } catch (_) {
       // best-effort
     }
+    sessionStorage.removeItem(LS_SELLER_SESSION_KEY);
     setSession(null);
     setToken(null);
     setRoom(null);

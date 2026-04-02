@@ -69,41 +69,55 @@ export function parseOrderSyntax(message, prefix, productId = null, variantTiers
     };
   }
 
-  // Variant mode: first N tokens are variant options (one per configured tier),
-  // the last numeric token (if any) is the quantity.
-  // Remaining non-numeric tokens must equal the number of variant tiers.
+  // Variant mode: use greedy longest-match against known tier options
+  // to correctly handle multi-word values like "Xanh Đen".
 
-  const numTiers = variantTiers.length;
-  const variantTokens = tokens.slice(0, numTiers);    // candidate variant tokens
-  const restTokens   = tokens.slice(numTiers);       // after variant tokens
-
-  // Last token of the whole message → candidate qty
+  // 1. Separate trailing quantity (last token if it's a positive integer)
   let quantity = 1;
   const lastToken = tokens[tokens.length - 1];
-  if (/^\d+$/.test(lastToken) && Number(lastToken) > 0) {
+  const lastIsQty = /^\d+$/.test(lastToken) && Number(lastToken) > 0;
+  if (lastIsQty) {
     quantity = parseInt(lastToken, 10);
   }
 
-  // If there are more non-qty tokens than tiers, something is wrong → reject
-  // (but only if the last token was successfully parsed as a number)
-  const nonQtyTokenCount = /^\d+$/.test(lastToken) && Number(lastToken) > 0
-    ? tokens.length - 1
-    : tokens.length;
+  // 2. Join non-qty tokens into a single string for greedy matching
+  const variantTokens = lastIsQty ? tokens.slice(0, -1) : [...tokens];
+  let variantText = variantTokens.join(' ');
 
-  if (nonQtyTokenCount !== numTiers) {
-    // Try a looser heuristic: accept if all non-qty tokens fit within tier options
-    // Fall back to partial match (first N tokens as variants, ignore extras)
-    // This allows "#muangay vang XL" without a qty
-    if (nonQtyTokenCount > numTiers) {
-      // Take only the first N non-qty tokens
+  // 3. For each tier, greedily match the longest known option at the start
+  const variants = [];
+  for (let i = 0; i < variantTiers.length; i++) {
+    const tier = variantTiers[i];
+    const tierName = tier?.name ?? `tier_${i}`;
+
+    if (!variantText) {
+      // No more text left but still have tiers → take first single token fallback
+      variants.push({ tierName, value: '' });
+      continue;
+    }
+
+    // Sort options longest-first so we greedily match "Xanh Đen" before "Xanh"
+    const sortedOptions = [...(tier.options || [])].sort((a, b) => b.length - a.length);
+    const lowerText = variantText.toLowerCase();
+    const matched = sortedOptions.find((opt) => {
+      const lowerOpt = opt.toLowerCase();
+      // Must match at start and be followed by whitespace, end-of-string, or nothing
+      if (!lowerText.startsWith(lowerOpt)) return false;
+      const afterMatch = variantText[opt.length];
+      return afterMatch === undefined || /\s/.test(afterMatch);
+    });
+
+    if (matched) {
+      variants.push({ tierName, value: matched });
+      variantText = variantText.slice(matched.length).trimStart();
+    } else {
+      // Fallback: take the first whitespace-delimited token
+      const spaceIdx = variantText.indexOf(' ');
+      const token = spaceIdx === -1 ? variantText : variantText.slice(0, spaceIdx);
+      variants.push({ tierName, value: token });
+      variantText = spaceIdx === -1 ? '' : variantText.slice(spaceIdx + 1).trimStart();
     }
   }
-
-  // Build variant mapping: { tierName, value } for each configured tier
-  const variants = variantTokens.map((token, idx) => ({
-    tierName: variantTiers[idx]?.name ?? `tier_${idx}`,
-    value: token,
-  }));
 
   return {
     matched: true,

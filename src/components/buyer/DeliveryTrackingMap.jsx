@@ -1,18 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import goongjs from '@goongmaps/goong-js';
 import '@goongmaps/goong-js/dist/goong-js.css';
-import styles from '../../assets/styles/DeliveryTrackingMap.module.css';
+import styles from '../../assets/styles/buyer/Order/DeliveryTrackingMap.module.css';
 import addressService from '@services/api/addressService';
 import rmaService from '@services/api/rmaService';
 import socketService from '@services/socket/socketService';
 
-const defaultTruckIconUrl =
-  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjMTg5MGZmIj4KICA8cGF0aCBkPSJNMTggMThoLTJjMC0xLjEtLjktMi0yLTJzLTIgLjktMiAySDhjMC0xLjEtLjktMi0yLTJzLTIgLjktMiAySDJ2LTRoMTd2NGgtMXptMC04SDEyVjZoNWwzIDR2NGgtMnptLTEwIDRINFY2aDR2OHptMTAgNGMxLjEgMCAyLS45IDItMnMtLjktMi0yLTItMiAuOS0yIDIgLjkgMiAyIDJ6TTYgMThjMS4xIDAgMi0uOSAyLTJzLS45LTItMi0yLTIgLjktMiAyIC45IDIgMiAyeiIvPgo8L3N2Zz4=';
-const defaultStoreIconUrl =
-  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjNTJjNDFhIj4KICA8cGF0aCBkPSJNMTIgNS42OUw3IDE4aDEwbC01LTEyLjMxek0xMiAybDcgMTdjMCAuNTUtLjQ1IDEtMSAxSDZjLS41NSAwLTEtLjQ1LTEtMWw3LTE3em0wIDEwYzEuMSAwIDIgLjktMiAycy45IDItMiAyLTItLjktMi0yIC45LTIgMi0yeiIvPgo8L3N2Zz4=';
-const defaultHomeIconUrl =
-  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjZmY0ZDRmIj4KICA8cGF0aCBkPSJNMTAgMjB2LTZoNHY2aDVWMTJoM0wxMiAzbC0xMCA5aDNWMjB6Ii8+Cjwvc3ZnPg==';
+// Đã thay thế base64 bằng đường dẫn local gọn gàng
+const defaultTruckIconUrl = '/icons/delivery-bike.png';
+const defaultStoreIconUrl = '/icons/store-marker.png';
+const defaultHomeIconUrl = '/icons/home-marker.png';
 
 const createMarkerElement = (iconUrl, size) => {
   const el = document.createElement('div');
@@ -42,51 +40,175 @@ const DeliveryTrackingMap = ({
   const truckMarkerRef = useRef(null);
   const animationRef = useRef(null);
   const intervalRef = useRef(null);
-  const [loadingMsg, setLoadingMsg] = useState('Đang phân tích địa chỉ thực tế...');
 
   // Read both VITE_ and GOONG_ prefixes for backward compatibility.
   const MAPTILES_KEY =
     import.meta.env.VITE_GOONG_MAPTILES_KEY || import.meta.env.GOONG_MAPTILES_KEY || '';
   const REST_API_KEY = import.meta.env.VITE_GOONG_API_KEY || import.meta.env.GOONG_API_KEY || '';
-  const DELIVERY_VEHICLE_ICON_URL =
-    vehicleIconUrl ||
-    import.meta.env.VITE_DELIVERY_VEHICLE_ICON_URL ||
-    import.meta.env.DELIVERY_VEHICLE_ICON_URL ||
-    defaultTruckIconUrl;
-  const DELIVERY_SELLER_ICON_URL =
-    sellerIconUrl ||
-    import.meta.env.VITE_DELIVERY_SELLER_ICON_URL ||
-    import.meta.env.DELIVERY_SELLER_ICON_URL ||
-    defaultStoreIconUrl;
-  const DELIVERY_BUYER_ICON_URL =
-    buyerIconUrl ||
-    import.meta.env.VITE_DELIVERY_BUYER_ICON_URL ||
-    import.meta.env.DELIVERY_BUYER_ICON_URL ||
-    defaultHomeIconUrl;
+  const DELIVERY_VEHICLE_ICON_URL = vehicleIconUrl || defaultTruckIconUrl;
+  const DELIVERY_SELLER_ICON_URL = sellerIconUrl || defaultStoreIconUrl;
+  const DELIVERY_BUYER_ICON_URL = buyerIconUrl || defaultHomeIconUrl;
+
+  // Bóc tách biến nguyên thủy để tránh lỗi infinite loop khi bỏ vào array dependencies
+  const {
+    lat: sLat,
+    lng: sLng,
+    address: sAddress,
+    formattedAddress: sFormattedAddress,
+  } = sellerCoords || {};
+  const {
+    lat: bLat,
+    lng: bLng,
+    address: bAddress,
+    formattedAddress: bFormattedAddress,
+  } = buyerCoords || {};
 
   // 1. Hàm tìm tọa độ thật từ địa chỉ chuỗi (Geocoding)
-  const geocodeAddress = async (address) => {
-    if (!REST_API_KEY || !address) {
-return null;
-}
-
-    try {
-      const url = `https://rsapi.goong.io/geocode?address=${encodeURIComponent(address)}&api_key=${REST_API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data && data.results && data.results.length > 0) {
-        const { lat, lng } = data.results[0].geometry.location;
-        return [lng, lat]; // Goong dùng chuỗi [lng, lat]
+  const geocodeAddress = useCallback(
+    async (address) => {
+      if (!REST_API_KEY || !address) {
+        return null;
       }
-    } catch (error) {
-      console.error('Lỗi tìm địa chỉ:', error);
-    }
-    return null;
-  };
+
+      try {
+        const url = `https://rsapi.goong.io/geocode?address=${encodeURIComponent(address)}&api_key=${REST_API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && data.results && data.results.length > 0) {
+          const { lat, lng } = data.results[0].geometry.location;
+          return [lng, lat]; // Goong dùng chuỗi [lng, lat]
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Lỗi tìm địa chỉ:', error);
+      }
+      return null;
+    },
+    [REST_API_KEY]
+  );
+
+  // --- Logic Animation (bám theo start time từ server) ---
+  const startTruckAnimation = useCallback(
+    (routeCoords, durationSeconds = 10, startedAt = null) => {
+      if (!routeCoords || routeCoords.length === 0) {
+        return;
+      }
+
+      const durationMs = Math.max(1000, Number(durationSeconds || 10) * 1000);
+      const startedAtMs = startedAt ? new Date(startedAt).getTime() : Date.now();
+      let hasCompleted = false;
+
+      const animate = () => {
+        const elapsed = Math.max(0, Date.now() - startedAtMs);
+        const progress = Math.min(elapsed / durationMs, 1); // Tính % tiến độ
+
+        if (progress < 1) {
+          const targetIndex = Math.floor(progress * (routeCoords.length - 1));
+          const nextIndex = Math.min(targetIndex + 1, routeCoords.length - 1);
+          const segmentProgress = progress * (routeCoords.length - 1) - targetIndex;
+
+          const currentPoint = routeCoords[targetIndex];
+          const nextPoint = routeCoords[nextIndex];
+
+          const lng = currentPoint[0] + (nextPoint[0] - currentPoint[0]) * segmentProgress;
+          const lat = currentPoint[1] + (nextPoint[1] - currentPoint[1]) * segmentProgress;
+
+          if (truckMarkerRef.current) {
+            truckMarkerRef.current.setLngLat([lng, lat]);
+          }
+
+          animationRef.current = requestAnimationFrame(animate);
+        } else {
+          if (truckMarkerRef.current) {
+            truckMarkerRef.current.setLngLat(routeCoords[routeCoords.length - 1]);
+          }
+          if (onDeliveryComplete && !hasCompleted) {
+            hasCompleted = true;
+            onDeliveryComplete();
+
+            // emit completion to sync room
+            if (syncRoom) {
+              try {
+                socketService.emit('rma:delivery-sync', {
+                  room: syncRoom,
+                  action: 'complete',
+                  timestamp: new Date().toISOString(),
+                });
+              } catch (err) {
+                // eslint-disable-next-line no-console
+                console.warn('Failed to emit delivery-sync complete', err);
+              }
+            }
+          }
+        }
+      };
+      animationRef.current = requestAnimationFrame(animate);
+
+      // Also start a background interval to ensure completion when tab is inactive
+      try {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      } catch (e) {
+        /* silently ignore */
+      }
+      intervalRef.current = setInterval(() => {
+        const elapsed = Math.max(0, Date.now() - startedAtMs);
+        if (elapsed >= durationMs) {
+          // Force finish
+          try {
+            if (animationRef.current) {
+              cancelAnimationFrame(animationRef.current);
+            }
+          } catch (e) {
+            /* silently ignore */
+          }
+          if (truckMarkerRef.current) {
+            truckMarkerRef.current.setLngLat(routeCoords[routeCoords.length - 1]);
+          }
+          if (onDeliveryComplete && !hasCompleted) {
+            hasCompleted = true;
+            onDeliveryComplete();
+            if (syncRoom) {
+              try {
+                socketService.emit('rma:delivery-sync', {
+                  room: syncRoom,
+                  action: 'complete',
+                  timestamp: new Date().toISOString(),
+                });
+              } catch (err) {
+                // eslint-disable-next-line no-console
+                console.warn('Failed to emit delivery-sync complete', err);
+              }
+            }
+          }
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        } else {
+          // Optionally update marker position at coarse granularity in background
+          const progress = Math.min(elapsed / durationMs, 1);
+          const idx = Math.floor(progress * (routeCoords.length - 1));
+          const nextIdx = Math.min(idx + 1, routeCoords.length - 1);
+          const segmentProgress = progress * (routeCoords.length - 1) - idx;
+          const c = routeCoords[idx];
+          const n = routeCoords[nextIdx];
+          const lng = c[0] + (n[0] - c[0]) * segmentProgress;
+          const lat = c[1] + (n[1] - c[1]) * segmentProgress;
+          try {
+            if (truckMarkerRef.current) {
+              truckMarkerRef.current.setLngLat([lng, lat]);
+            }
+          } catch (e) {
+            /* silently ignore */
+          }
+        }
+      }, 1000);
+    },
+    [onDeliveryComplete, syncRoom]
+  );
 
   useEffect(() => {
     if (!MAPTILES_KEY || !REST_API_KEY) {
-      setLoadingMsg('Thiếu GOONG_MAPTILES_KEY hoặc GOONG_API_KEY trong file .env');
       return;
     }
 
@@ -95,54 +217,47 @@ return null;
     let fetchedStartTime = null;
 
     const initMapAndRoute = async () => {
-      // 2. Resolve coordinates: prefer saved lat/lng; fallback to backend geocode by formattedAddress; last resort local Goong geocode
-      const resolveCoords = async (coordsObj) => {
-        // If object already has lat/lng, use it
-        if (coordsObj && coordsObj.lat != null && coordsObj.lng != null) {
-          return [coordsObj.lng, coordsObj.lat];
+      // 2. Resolve coordinates
+      const resolveCoords = async (lat, lng, formattedAddress, address) => {
+        if (lat != null && lng != null) {
+          return [lng, lat];
         }
-
-        // If formattedAddress available, ask backend to geocode (uses server keys and rate limits)
-        if (coordsObj && (coordsObj.formattedAddress || coordsObj.address)) {
+        if (formattedAddress || address) {
           try {
-            const payload = { address: coordsObj.formattedAddress || coordsObj.address };
+            const payload = { address: formattedAddress || address };
             const resp = await addressService.geocodeString(payload);
             if (resp && resp.success && resp.data && resp.data.location) {
               return [resp.data.location.lng, resp.data.location.lat];
             }
           } catch (err) {
+            // eslint-disable-next-line no-console
             console.warn('Backend geocode-string failed, falling back to client geocode', err);
           }
         }
-
-        // Last resort: client-side Goong geocode using visible address string
-        if (coordsObj && coordsObj.address) {
-          const clientGeo = await geocodeAddress(coordsObj.address);
+        if (address) {
+          const clientGeo = await geocodeAddress(address);
           if (clientGeo) {
-return clientGeo;
-}
+            return clientGeo;
+          }
         }
-
         return null;
       };
 
-      let realSellerPos = await resolveCoords(sellerCoords);
-      let realBuyerPos = await resolveCoords(buyerCoords);
+      let realSellerPos = await resolveCoords(sLat, sLng, sFormattedAddress, sAddress);
+      let realBuyerPos = await resolveCoords(bLat, bLng, bFormattedAddress, bAddress);
 
       // Fallback nếu không tìm thấy địa chỉ thì dùng tọa độ truyền vào
       if (!realSellerPos) {
-realSellerPos = [sellerCoords.lng, sellerCoords.lat];
-}
+        realSellerPos = [sLng, sLat];
+      }
       if (!realBuyerPos) {
-realBuyerPos = [buyerCoords.lng, buyerCoords.lat];
-}
+        realBuyerPos = [bLng, bLat];
+      }
 
       const centerPos = [
         (realSellerPos[0] + realBuyerPos[0]) / 2,
         (realSellerPos[1] + realBuyerPos[1]) / 2,
       ];
-
-      setLoadingMsg('Đang tính toán tuyến đường...');
 
       // 3. Khởi tạo bản đồ Goong
       const map = new goongjs.Map({
@@ -193,9 +308,8 @@ realBuyerPos = [buyerCoords.lng, buyerCoords.lat];
           .addTo(map);
         truckMarkerRef.current = truckMarker;
 
-        setLoadingMsg(null); // Ẩn loading
         // Prefer explicit startTime prop, fallback to server-fetched start time
-        startTruckAnimation(routeCoordinates, duration, startTime || fetchedStartTime); // Bắt đầu chạy theo tiến độ server
+        startTruckAnimation(routeCoordinates, duration, startTime || fetchedStartTime);
       });
     };
 
@@ -207,19 +321,24 @@ realBuyerPos = [buyerCoords.lng, buyerCoords.lat];
     // Join sync room early so we don't miss in-flight 'complete' messages
     if (syncRoom) {
       try {
+        // eslint-disable-next-line no-console
         console.debug('[DeliveryTrackingMap] connecting to socket, room:', `rma_${syncRoom}`);
         socketService.connect();
         socketService.setUserId();
         socketService.joinRoom(`rma_${syncRoom}`);
-        console.debug(`[DeliveryTrackingMap] joined room rma_${  syncRoom}`);
+        // eslint-disable-next-line no-console
+        console.debug(`[DeliveryTrackingMap] joined room rma_${syncRoom}`);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.warn('[DeliveryTrackingMap] Socket join room failed', err);
       }
     }
-    // Prepare then initialize map (use async function so we can await rmaService)
+
+    // Prepare then initialize map
     const prepareAndInit = async () => {
       if (syncRoom && !startTime) {
         try {
+          // eslint-disable-next-line no-console
           console.debug('[DeliveryTrackingMap] fetching RMA for startTime, id=', syncRoom);
           const resp = await rmaService.getReturnRequestById(syncRoom);
           const rr = resp && resp.data;
@@ -229,8 +348,10 @@ realBuyerPos = [buyerCoords.lng, buyerCoords.lat];
             rr?.shippingStartedAt ||
             rr?.logistics?.shippingStartedAt ||
             null;
+          // eslint-disable-next-line no-console
           console.debug('[DeliveryTrackingMap] fetchedStartTime=', fetchedStartTime);
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.warn('[DeliveryTrackingMap] Failed to fetch RMA startTime', err);
           // ignore, fallback to local time
         }
@@ -243,165 +364,68 @@ realBuyerPos = [buyerCoords.lng, buyerCoords.lat];
 
     return () => {
       if (animationRef.current) {
-cancelAnimationFrame(animationRef.current);
-}
+        cancelAnimationFrame(animationRef.current);
+      }
       if (intervalRef.current) {
-clearInterval(intervalRef.current);
-}
+        clearInterval(intervalRef.current);
+      }
       if (mapRef.current) {
-mapRef.current.remove();
-}
+        mapRef.current.remove();
+      }
       mapRef.current = null;
     };
   }, [
     MAPTILES_KEY,
     REST_API_KEY,
-    sellerCoords.address,
-    sellerCoords.lat,
-    sellerCoords.lng,
-    buyerCoords.address,
-    buyerCoords.lat,
-    buyerCoords.lng,
+    sAddress,
+    sLat,
+    sLng,
+    sFormattedAddress,
+    bAddress,
+    bLat,
+    bLng,
+    bFormattedAddress,
     duration,
     startTime,
+    syncRoom,
+    geocodeAddress,
+    startTruckAnimation,
+    DELIVERY_VEHICLE_ICON_URL,
+    DELIVERY_SELLER_ICON_URL,
+    DELIVERY_BUYER_ICON_URL,
   ]);
-
-  // --- Logic Animation (bám theo start time từ server) ---
-  const startTruckAnimation = (routeCoords, durationSeconds = 10, startedAt = null) => {
-    if (!routeCoords || routeCoords.length === 0) {
-return;
-}
-
-    const durationMs = Math.max(1000, Number(durationSeconds || 10) * 1000);
-    const startedAtMs = startedAt ? new Date(startedAt).getTime() : Date.now();
-    let hasCompleted = false;
-
-    const animate = () => {
-      const elapsed = Math.max(0, Date.now() - startedAtMs);
-      const progress = Math.min(elapsed / durationMs, 1); // Tính % tiến độ
-
-      if (progress < 1) {
-        const targetIndex = Math.floor(progress * (routeCoords.length - 1));
-        const nextIndex = Math.min(targetIndex + 1, routeCoords.length - 1);
-        const segmentProgress = progress * (routeCoords.length - 1) - targetIndex;
-
-        const currentPoint = routeCoords[targetIndex];
-        const nextPoint = routeCoords[nextIndex];
-
-        const lng = currentPoint[0] + (nextPoint[0] - currentPoint[0]) * segmentProgress;
-        const lat = currentPoint[1] + (nextPoint[1] - currentPoint[1]) * segmentProgress;
-
-        if (truckMarkerRef.current) {
-truckMarkerRef.current.setLngLat([lng, lat]);
-}
-
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        if (truckMarkerRef.current) {
-truckMarkerRef.current.setLngLat(routeCoords[routeCoords.length - 1]);
-}
-        if (onDeliveryComplete && !hasCompleted) {
-          hasCompleted = true;
-          onDeliveryComplete();
-
-          // emit completion to sync room
-          if (syncRoom) {
-            try {
-              socketService.emit('rma:delivery-sync', {
-                room: syncRoom,
-                action: 'complete',
-                timestamp: new Date().toISOString(),
-              });
-            } catch (err) {
-              console.warn('Failed to emit delivery-sync complete', err);
-            }
-          }
-        }
-      }
-    };
-    animationRef.current = requestAnimationFrame(animate);
-
-    // Also start a background interval to ensure completion when tab is inactive
-    try {
-      if (intervalRef.current) {
-clearInterval(intervalRef.current);
-}
-    } catch (e) {}
-    intervalRef.current = setInterval(() => {
-      const elapsed = Math.max(0, Date.now() - startedAtMs);
-      if (elapsed >= durationMs) {
-        // Force finish
-        try {
-          if (animationRef.current) {
-cancelAnimationFrame(animationRef.current);
-}
-        } catch (e) {}
-        if (truckMarkerRef.current) {
-truckMarkerRef.current.setLngLat(routeCoords[routeCoords.length - 1]);
-}
-        if (onDeliveryComplete && !hasCompleted) {
-          hasCompleted = true;
-          onDeliveryComplete();
-          if (syncRoom) {
-            try {
-              socketService.emit('rma:delivery-sync', {
-                room: syncRoom,
-                action: 'complete',
-                timestamp: new Date().toISOString(),
-              });
-            } catch (err) {
-              console.warn('Failed to emit delivery-sync complete', err);
-            }
-          }
-        }
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      } else {
-        // Optionally update marker position at coarse granularity in background
-        const progress = Math.min(elapsed / durationMs, 1);
-        const idx = Math.floor(progress * (routeCoords.length - 1));
-        const nextIdx = Math.min(idx + 1, routeCoords.length - 1);
-        const segmentProgress = progress * (routeCoords.length - 1) - idx;
-        const c = routeCoords[idx];
-        const n = routeCoords[nextIdx];
-        const lng = c[0] + (n[0] - c[0]) * segmentProgress;
-        const lat = c[1] + (n[1] - c[1]) * segmentProgress;
-        try {
-          if (truckMarkerRef.current) {
-truckMarkerRef.current.setLngLat([lng, lat]);
-}
-        } catch (e) {}
-      }
-    }, 1000);
-  };
 
   // Socket listener effect: reacts to remote 'complete' for the same syncRoom
   useEffect(() => {
     if (!syncRoom) {
-return undefined;
-}
+      return undefined;
+    }
 
     const handler = (msg) => {
       try {
         if (!msg) {
-return;
-}
+          return;
+        }
         const roomMatches = msg.room === syncRoom || msg.room === `rma_${syncRoom}`;
         if (!roomMatches) {
-return;
-}
+          return;
+        }
         if (msg.action === 'complete') {
           try {
             if (animationRef.current) {
-cancelAnimationFrame(animationRef.current);
-}
-          } catch (e) {}
+              cancelAnimationFrame(animationRef.current);
+            }
+          } catch (e) {
+            /* silently ignore */
+          }
           try {
             if (intervalRef.current) {
               clearInterval(intervalRef.current);
               intervalRef.current = null;
             }
-          } catch (e) {}
+          } catch (e) {
+            /* silently ignore */
+          }
 
           // Try to set marker to last coordinate from route source
           try {
@@ -412,13 +436,16 @@ cancelAnimationFrame(animationRef.current);
             if (coords && coords.length && truckMarkerRef.current) {
               truckMarkerRef.current.setLngLat(coords[coords.length - 1]);
             }
-          } catch (e) {}
+          } catch (e) {
+            /* silently ignore */
+          }
 
           if (onDeliveryComplete) {
-onDeliveryComplete();
-}
+            onDeliveryComplete();
+          }
         }
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.warn('rma:delivery-sync handler error', e);
       }
     };

@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { DataPacket_Kind } from 'livekit-client';
 import livestreamService from '@services/api/livestreamService';
 import socketService from '@services/socket/socketService';
-import styles from '@pages/seller/LiveStreamPage.module.css';
+import styles from '../../assets/styles/buyer/LiveStreamPage.module.css';
 import OrderSyntaxPanel from './OrderSyntaxPanel';
 
 export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {
@@ -12,6 +12,7 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [chatStatus, setChatStatus] = useState('idle'); // idle | connecting | connected | error
+  const [chatHistoryLoading, setChatHistoryLoading] = useState(false);
   const chatEndRef = useRef(null);
   const user = useSelector((state) => state.auth?.user);
   const sellerIdRef = useRef(user?._id || 'seller_self');
@@ -23,32 +24,68 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
     displayNameRef.current = user?.fullName || 'Seller';
   }, [user]);
 
-  // ── Fetch chat history from REST API ────────────────────────────
-  useEffect(() => {
-    if (!isLive || !sessionId) {
-return;
-}
-
+  // ── Load chat history from server (REST API) ──────────────────────────────
+  const loadChatHistory = (merge = false) => {
+    if (!isLive || !sessionId) return;
+    setChatHistoryLoading(true);
     livestreamService
       .getSessionMessages(sessionId)
       .then((res) => {
         const list = Array.isArray(res?.data) ? res.data : res?.data?.data;
-        if (list?.length) {
-          setMessages(
-            list.map((m) => ({
-              id: m.id || m._id || String(Math.random()),
-              sender: m.displayName || m.userId || 'Viewer',
-              initials: (m.displayName || 'V').slice(0, 2).toUpperCase(),
-              colorClass: m.role === 'host' || m.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
-              text: m.content,
-              isLocal: false,
-            }))
-          );
+        if (!list?.length) {
+          setChatHistoryLoading(false);
+          return;
         }
+        setMessages((prev) => {
+          if (!merge) {
+            // Replace: deduplicate against existing socket-received messages
+            const existingIds = new Set((prev || []).map((m) => m.id).filter(Boolean));
+            const newMsgs = list
+              .filter((m) => !existingIds.has(m.id || m._id))
+              .map((m) => ({
+                id: m.id || m._id || String(Math.random()),
+                sender: m.displayName || m.userId || 'Viewer',
+                initials: (m.displayName || 'V').slice(0, 2).toUpperCase(),
+                colorClass: m.role === 'host' || m.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
+                text: m.content,
+                isLocal: false,
+                timestamp: m.timestamp,
+                senderId: m.senderId || m.userId,
+              }));
+            return newMsgs;
+          }
+          // Merge: append only genuinely new messages (for refresh)
+          const existingIds = new Set((prev || []).map((m) => m.id).filter(Boolean));
+          const genuinelyNew = list.filter((m) => !existingIds.has(m.id || m._id));
+          if (genuinelyNew.length === 0) return prev;
+          const newMsgs = genuinelyNew.map((m) => ({
+            id: m.id || m._id || String(Math.random()),
+            sender: m.displayName || m.userId || 'Viewer',
+            initials: (m.displayName || 'V').slice(0, 2).toUpperCase(),
+            colorClass: m.role === 'host' || m.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
+            text: m.content,
+            isLocal: false,
+            timestamp: m.timestamp,
+            senderId: m.senderId || m.userId,
+          }));
+          return [...prev, ...newMsgs];
+        });
       })
       .catch(() => {
         // Silently ignore — chat history is optional
+      })
+      .finally(() => {
+        setChatHistoryLoading(false);
       });
+  };
+
+  // Fetch on mount / session change
+  useEffect(() => {
+    if (isLive && sessionId) {
+      loadChatHistory(false);
+    } else {
+      setMessages([]);
+    }
   }, [isLive, sessionId]);
 
   // LiveKit room connected → enable chat input
@@ -233,6 +270,21 @@ return;
         {activeTab === 'interaction' && (
           <>
             <div className={styles.chatBody}>
+              <div className={styles.chatBodyHeader}>
+                <span className={styles.chatBodyTitle}>
+                  {isLive ? 'Live Chat' : 'Chat'}
+                </span>
+                <button
+                  type="button"
+                  className={`${styles.chatRefreshBtn} ${chatHistoryLoading ? styles.chatRefreshBtnLoading : ''}`}
+                  onClick={() => loadChatHistory(true)}
+                  disabled={chatHistoryLoading || !isLive}
+                  title="Reload chat history"
+                  aria-label="Refresh chat"
+                >
+                  <i className={`bi ${chatHistoryLoading ? 'bi-arrow-clockwise spinning' : 'bi-arrow-clockwise'}`} />
+                </button>
+              </div>
               {!isLive && messages.length === 0 ? (
                 <div className={styles.emptyChat}>
                   <i className={`bi bi-chat-left-text ${styles.emptyChatIcon}`} />
@@ -513,7 +565,7 @@ return;
         {/* Order Syntax tab — same scroll container as other tabs */}
         {activeTab === 'syntax' && (
           <div className={styles.chatBody}>
-            <OrderSyntaxPanel sessionId={sessionId} isLive={isLive} liveProducts={liveProducts} />
+            <OrderSyntaxPanel sessionId={sessionId} isLive={isLive} liveProducts={liveProducts} pinnedProductId={pinnedProductId} />
           </div>
         )}
         </div>

@@ -17,6 +17,8 @@ import Footer from '@components/common/Footer';
 import LiveQuickBuySheet from './LiveQuickBuySheet';
 import styles from '@assets/styles/buyer/LiveViewerPage.module.css';
 
+const LS_BUYER_CHAT_KEY = 'gzmart_buyer_chat';
+
 // ── Chat message normalizer ─────────────────────────────────────────────────
 const normalizeMessage = (m) => ({
   id: m.id || m._id || String(Math.random()),
@@ -128,6 +130,20 @@ const IconArrowRight = ({ size = 13 }) => (
   </Icon>
 );
 
+const IconMaximize = ({ size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+    <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+  </svg>
+);
+
+const IconMinimize = ({ size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" />
+    <line x1="10" y1="14" x2="3" y2="21" /><line x1="21" y1="3" x2="14" y2="10" />
+  </svg>
+);
+
 const IconX = () => (
   <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <line x1="1" y1="1" x2="9" y2="9" />
@@ -228,17 +244,158 @@ const syntaxTierOptionsResolved = (tier, product) => {
   return Array.isArray(fromProduct) ? fromProduct : [];
 };
 
+/**
+ * For a given tier (e.g. "color") and a product with models,
+ * returns a map: { optionValue → { inStock: bool, stock: number|null } }.
+ * Only models where ALL other tier positions match the current filter are considered.
+ *
+ * @param {object} product - product with tiers + models
+ * @param {number} tierPos - index of this tier in product.tiers
+ * @param {Array}  otherFilters - [{tierPos, optionIdx}] fixed selections for other tiers
+ * @returns {{ [optionValue]: { inStock: boolean, stock: number|null } }}
+ */
+const buildOptionStockMap = (product, tierPos, otherFilters = []) => {
+  const map = {};
+  const options = product.tiers[tierPos]?.options ?? [];
+  options.forEach((opt) => {
+    map[opt] = { inStock: false, stock: null };
+  });
+
+  if (!product.models?.length) {
+    return map;
+  }
+
+  product.models.forEach((model) => {
+    if (!model.tierIndex || model.tierIndex.length !== product.tiers.length) {
+      return;
+    }
+    // Check other filters match
+    const otherMatch = otherFilters.every(({ tierPos: fp, optionIdx }) => model.tierIndex[fp] === optionIdx);
+    if (!otherMatch) {
+      return;
+    }
+
+    const thisOptIdx = model.tierIndex[tierPos];
+    if (thisOptIdx == null || thisOptIdx < 0) {
+      return;
+    }
+    const optionValue = product.tiers[tierPos].options?.[thisOptIdx];
+    if (!optionValue) {
+      return;
+    }
+
+    const inStock = model.isActive !== false && (model.stock == null || model.stock > 0);
+    const prev = map[optionValue];
+    // Union: if ANY model with this option is in stock, treat as in stock
+    if (inStock) {
+      if (!prev.inStock) {
+        map[optionValue] = { inStock: true, stock: model.stock ?? null };
+      } else {
+        // Accumulate stock across multiple models
+        map[optionValue] = {
+          ...prev,
+          stock: (prev.stock ?? 0) + (model.stock ?? 0),
+        };
+      }
+    }
+  });
+
+  return map;
+};
+
+/** Compute per-tier stock maps cascading through tier order. */
+const buildCascadedStockMaps = (product, variantTiers) => {
+  if (!product?.tiers?.length || !product?.models?.length || !variantTiers?.length) {
+    return [];
+  }
+
+  const maps = [];
+  let currentFilters = [];
+
+  variantTiers.forEach((_, i) => {
+    const productTierPos = product.tiers.findIndex(
+      (pt) => pt.name.toLowerCase() === variantTiers[i].name.toLowerCase(),
+    );
+    if (productTierPos === -1) {
+      maps.push({});
+      return;
+    }
+    const map = buildOptionStockMap(product, productTierPos, currentFilters);
+    maps.push(map);
+
+    // Update filters for next tier: keep first i tiers fixed at their first IN-STOCK option
+    const nextFilters = [];
+    for (let j = 0; j <= i; j++) {
+      const ptPos = product.tiers.findIndex(
+        (pt) => pt.name.toLowerCase() === variantTiers[j].name.toLowerCase(),
+      );
+      if (ptPos === -1) {
+        continue;
+      }
+      const tierOpts = product.tiers[ptPos].options ?? [];
+      // The stock map for tier j is stored at maps[j]
+      const tierStockMap = maps[j] ?? {};
+      // Pick first in-stock option for this tier from its stock map
+      const inStockOpt = Object.keys(tierStockMap).find((k) => tierStockMap[k]?.inStock);
+      if (inStockOpt) {
+        const optIdx = tierOpts.indexOf(inStockOpt);
+        if (optIdx !== -1) {
+          nextFilters.push({ tierPos: ptPos, optionIdx: optIdx });
+        }
+      }
+    }
+    currentFilters = nextFilters;
+  });
+
+  return maps;
+};
+
 // ── Syntax Guide Card (pinned at top of chat) ───────────────────────────────
-const SyntaxGuideCard = ({ guide }) => {
+const SyntaxGuideCard = ({ guide, products = [] }) => {
   if (!guide) {
-return null;
-}
+    return null;
+  }
 
   const { prefix, product, variantTiers } = guide;
 
+  // Look up full product (with models) from the products list
+  const fullProduct = product?._id
+    ? products.find((p) => String(p._id) === String(product._id))
+    : null;
+
+  // Build cascaded stock maps for each tier
+  const stockMaps = buildCascadedStockMaps(fullProduct, variantTiers);
+
+  // Build list of out-of-stock combinations (full combination, not per-tier)
+  const oosCombos = (() => {
+    if (!fullProduct?.tiers?.length || !fullProduct?.models?.length || variantTiers.length === 0) {
+      return [];
+    }
+    return fullProduct.models
+      .filter((m) => m.isActive === false || (m.stock != null && m.stock <= 0))
+      .map((m) => {
+        if (!m.tierIndex) {
+          return null;
+        }
+        const label = m.tierIndex
+          .map((optIdx, tierPos) => fullProduct.tiers[tierPos]?.options?.[optIdx])
+          .filter(Boolean)
+          .join(' × ');
+        return label || null;
+      })
+      .filter(Boolean);
+  })();
+
   const exampleParts = [
     prefix,
-    ...variantTiers.map((t) => {
+    ...variantTiers.map((t, i) => {
+      // Pick first IN-STOCK option for the example
+      if (stockMaps[i]) {
+        const inStockOpt = Object.keys(stockMaps[i]).find((k) => stockMaps[i][k]?.inStock);
+        if (inStockOpt) {
+          return inStockOpt;
+        }
+      }
       const opts = syntaxTierOptionsResolved(t, product);
       return opts[0] ?? t.name;
     }),
@@ -263,8 +420,8 @@ return null;
               alt={product.name}
               className={styles['ls-syntax-guide-thumb']}
               onError={(e) => {
- e.target.style.display = 'none'; 
-}}
+                e.target.style.display = 'none';
+              }}
             />
           )}
           <span className={styles['ls-syntax-guide-product-name']}>{product.name}</span>
@@ -273,17 +430,41 @@ return null;
 
       {variantTiers.length > 0 && (
         <div className={styles['ls-syntax-guide-variants']}>
-          {variantTiers.map((tier) => (
-            <div key={tier.name} className={styles['ls-syntax-guide-tier']}>
-              <span className={styles['ls-syntax-guide-tier-name']}>{tier.name}:</span>
-              <div className={styles['ls-syntax-guide-tier-options']}>
-                {syntaxTierOptionsResolved(tier, product).map((opt) => (
-                  <span key={opt} className={styles['ls-syntax-guide-option-chip']}>
-                    {opt}
-                  </span>
-                ))}
+          {variantTiers.map((tier, tierIdx) => {
+            const opts = syntaxTierOptionsResolved(tier, product);
+            const stockMap = stockMaps[tierIdx] ?? {};
+
+            return (
+              <div key={tier.name} className={styles['ls-syntax-guide-tier']}>
+                <span className={styles['ls-syntax-guide-tier-name']}>{tier.name}:</span>
+                <div className={styles['ls-syntax-guide-tier-options']}>
+                  {opts.map((opt) => {
+                    const info = stockMap[opt];
+                    const isOOS = info ? !info.inStock : false;
+                    return (
+                      <span
+                        key={opt}
+                        className={`${styles['ls-syntax-guide-option-chip']}${isOOS ? ` ${styles['ls-syntax-guide-option-chip--oos']}` : ''}`}
+                        title={isOOS ? 'Tạm hết hàng' : info?.stock != null ? `Còn ${info.stock} vé` : 'Còn hàng'}
+                      >
+                        {opt}
+                        {isOOS && <span className={styles['ls-syntax-guide-oos-mark']}>✗</span>}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Out-of-stock full combinations */}
+      {oosCombos.length > 0 && (
+        <div className={styles['ls-syntax-guide-oos-list']}>
+          <span className={styles['ls-syntax-guide-oos-title']}>Hết hàng:</span>
+          {oosCombos.map((combo) => (
+            <span key={combo} className={styles['ls-syntax-guide-oos-combo']}>{combo}</span>
           ))}
         </div>
       )}
@@ -323,8 +504,8 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
               alt={item.name}
               className={styles['ls-live-cart-item-img']}
               onError={(e) => {
- e.target.src = '/placeholder.png'; 
-}}
+                e.target.src = '/placeholder.png';
+              }}
             />
             <div className={styles['ls-live-cart-item-info']}>
               <span className={styles['ls-live-cart-item-name']}>{item.name}</span>
@@ -425,7 +606,19 @@ export default function LiveViewerPage() {
   const user = useSelector((state) => state.auth?.user);
 
   const [token, setToken] = useState(null);
-  const [messages, setMessages] = useState([]);
+  // Restore chat from sessionStorage on mount (survives F5 refresh)
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(`${LS_BUYER_CHAT_KEY}_${sessionId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (_) { /* ignore */ }
+    return [];
+  });
   const [input, setInput] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -450,7 +643,22 @@ export default function LiveViewerPage() {
   const [showQuickBuy, setShowQuickBuy] = useState(false);
   const [selectedQuickBuyProduct, setSelectedQuickBuyProduct] = useState(null);
   const [liveCartItems, setLiveCartItems] = useState([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenVideoRef = useRef(null);
   const [showLiveCart, setShowLiveCart] = useState(false);
+
+  // ── Persist chat messages to sessionStorage (survives F5) ─────────────────
+  useEffect(() => {
+    if (!sessionId || messages.length === 0) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        `${LS_BUYER_CHAT_KEY}_${sessionId}`,
+        JSON.stringify(messages.slice(-100)), // keep last 100
+      );
+    } catch (_) { /* ignore quota errors */ }
+  }, [messages, sessionId]);
 
   const [orderSyntax, setOrderSyntax] = useState({ enabled: false, prefix: '', productId: null, variantTiers: null });
   const [syntaxGuide, setSyntaxGuide] = useState(null);  // Syntax guide card data
@@ -466,28 +674,28 @@ export default function LiveViewerPage() {
   const syntaxMatchedRef = useRef(null);
   const orderSyntaxRef = useRef(orderSyntax);
   useEffect(() => {
- orderSyntaxRef.current = orderSyntax; 
-}, [orderSyntax]);
+    orderSyntaxRef.current = orderSyntax;
+  }, [orderSyntax]);
 
   const productsRef = useRef(products);
   useEffect(() => {
- productsRef.current = products; 
-}, [products]);
+    productsRef.current = products;
+  }, [products]);
 
   const pinnedProductIdRef = useRef(pinnedProductId);
   useEffect(() => {
- pinnedProductIdRef.current = pinnedProductId; 
-}, [pinnedProductId]);
+    pinnedProductIdRef.current = pinnedProductId;
+  }, [pinnedProductId]);
 
   const pinnedProductRef = useRef(pinnedProduct);
   useEffect(() => {
- pinnedProductRef.current = pinnedProduct; 
-}, [pinnedProduct]);
+    pinnedProductRef.current = pinnedProduct;
+  }, [pinnedProduct]);
 
   const liveCartItemsRef = useRef([]);
   useEffect(() => {
- liveCartItemsRef.current = liveCartItems; 
-}, [liveCartItems]);
+    liveCartItemsRef.current = liveCartItems;
+  }, [liveCartItems]);
 
   // Initial products API sets pinnedProduct but not pinnedProductId — keep id in sync for order syntax fallback
   useEffect(() => {
@@ -502,34 +710,34 @@ export default function LiveViewerPage() {
   // Auto-show pinned overlay when seller changes pinned product
   useEffect(() => {
     if (pinnedProduct) {
-setShowPinnedOverlay(true);
-}
+      setShowPinnedOverlay(true);
+    }
   }, [pinnedProduct]);
 
   // ── Socket.IO: viewer count + chat relay ─
   useEffect(() => {
     if (!sessionId) {
-return;
-}
+      return;
+    }
 
     socketService.connect(user?._id);
 
     const handleViewerUpdate = ({ count }) => {
- setViewerCount(count); 
-};
+      setViewerCount(count);
+    };
 
     const handleSocketChat = (msg) => {
       if (!msg?.content || msg.sessionId !== sessionId) {
-return;
-}
+        return;
+      }
       if (String(msg.senderId) === String(user?._id)) {
-return;
-}
+        return;
+      }
 
       setMessages((prev) => {
         if (msg.id && prev.some((p) => p.id === msg.id)) {
-return prev;
-}
+          return prev;
+        }
         return [
           prev.slice(-49),
           { ...normalizeMessage(msg), isOwn: false },
@@ -547,21 +755,26 @@ return prev;
 
     const handlePinUpdate = ({ pinnedProduct: pp, products: prodList }) => {
       if (prodList) {
-setProducts(prodList);
-}
+        setProducts(prodList);
+      }
       setPinnedProduct(pp || null);
+      // Keep orderSyntax.productId in sync so the message parser works correctly
+      setOrderSyntax((prev) => ({
+        ...prev,
+        productId: pp ? String(pp._id) : null,
+      }));
     };
 
     const handleProductsUpdate = ({ products: prodList }) => {
       if (prodList) {
-setProducts(prodList);
-}
+        setProducts(prodList);
+      }
     };
 
     const handleVouchersUpdate = ({ vouchers: voucherList }) => {
       if (voucherList) {
-setVouchers(voucherList);
-}
+        setVouchers(voucherList);
+      }
     };
 
     // Remote join notifications — broadcast from backend when anyone joins the session
@@ -579,8 +792,8 @@ setVouchers(voucherList);
 
     const handleConfigUpdate = (config) => {
       if (!config?.sessionId || String(config.sessionId) !== String(sessionId)) {
-return;
-}
+        return;
+      }
       const os = config.orderSyntax;
       setOrderSyntax({
         enabled: os?.enabled ?? false,
@@ -605,8 +818,6 @@ return;
     socketService.on('livestream_vouchers_update', handleVouchersUpdate);
     socketService.on('livestream_join', handleRemoteJoin);
     socketService.on(SOCKET_EVENTS.LIVESTREAM_CONFIG_UPDATE, handleConfigUpdate);
-    socketService.on('livestream_syntax_guide', handleSyntaxGuide);
-    socketService.on('livestream_syntax_guide_clear', handleSyntaxGuideClear);
 
     return () => {
       socketService.off('livestream_viewer_update', handleViewerUpdate);
@@ -624,8 +835,8 @@ return;
   // ── Initial data fetch ──
   useEffect(() => {
     if (!sessionId || fetchedRef.current) {
-return;
-}
+      return;
+    }
     fetchedRef.current = true;
 
     Promise.all([
@@ -658,57 +869,66 @@ return;
 
         livestreamService.getSessionConfig(sessionId).then((res) => {
           const cfg = res?.data?.orderSyntax;
-          setOrderSyntax({
-            enabled: cfg?.enabled ?? false,
-            prefix: typeof cfg?.prefix === 'string' ? cfg.prefix : '',
-            productId: cfg?.productId != null && cfg.productId !== '' ? String(cfg.productId) : null,
-            variantTiers: Array.isArray(cfg?.variantTiers) ? cfg.variantTiers : null,
-          });
+          if (cfg) {
+            const pinnedProd = productsRes?.data?.pinnedProduct;
+            const pinnedProductId = pinnedProd ? String(pinnedProd._id) : null;
+            setOrderSyntax({
+              enabled: cfg.enabled ?? false,
+              prefix: typeof cfg.prefix === 'string' ? cfg.prefix : '',
+              productId: cfg.productId != null && cfg.productId !== '' ? String(cfg.productId) : pinnedProductId,
+              variantTiers: Array.isArray(cfg.variantTiers) ? cfg.variantTiers : null,
+            });
 
-          // Build guide client-side if syntax is enabled
-          if (cfg?.enabled && cfg?.prefix) {
-            let resolvedProduct = null;
-            if (cfg.productId) {
-              resolvedProduct = (productsRes?.data?.products || []).find(
-                (p) => String(p._id) === String(cfg.productId),
-              );
-            }
-            if (!resolvedProduct) {
-              resolvedProduct = productsRes?.data?.pinnedProduct || null;
-            }
-            if (!resolvedProduct && (productsRes?.data?.products || []).length > 0) {
-              resolvedProduct = productsRes.data.products[0];
-            }
+            // Build guide client-side if syntax is enabled
+            if (cfg?.enabled && cfg?.prefix) {
+              let resolvedProduct = null;
+              if (cfg.productId) {
+                resolvedProduct = (productsRes?.data?.products || []).find(
+                  (p) => String(p._id) === String(cfg.productId),
+                );
+              }
+              if (!resolvedProduct) {
+                resolvedProduct = productsRes?.data?.pinnedProduct || null;
+              }
+              if (!resolvedProduct && (productsRes?.data?.products || []).length > 0) {
+                resolvedProduct = productsRes.data.products[0];
+              }
 
-            if (resolvedProduct) {
-              setSyntaxGuide({
-                sessionId,
-                prefix: cfg.prefix,
-                variantTiers: cfg.variantTiers ?? [],
-                product: {
-                  _id: String(resolvedProduct._id),
-                  name: resolvedProduct.name,
-                  thumbnail: resolvedProduct.thumbnail ?? resolvedProduct.images?.[0] ?? null,
-                  tiers: (resolvedProduct.tiers ?? []).map((t) => ({
-                    name: t.name,
-                    options: t.options ?? [],
-                  })),
-                },
-              });
+              if (resolvedProduct) {
+                setSyntaxGuide({
+                  sessionId,
+                  prefix: cfg.prefix,
+                  variantTiers: cfg.variantTiers ?? [],
+                  product: {
+                    _id: String(resolvedProduct._id),
+                    name: resolvedProduct.name,
+                    thumbnail: resolvedProduct.thumbnail ?? resolvedProduct.images?.[0] ?? null,
+                    tiers: (resolvedProduct.tiers ?? []).map((t) => ({
+                      name: t.name,
+                      options: t.options ?? [],
+                    })),
+                  },
+                });
+              }
             }
           }
-        }).catch(() => {});
+        }).catch(() => { });
 
         livestreamService
-          .getSessionMessages(sessionId)
+          .getSessionMessages(sessionId, 50)
           .then((messagesRes) => {
             const msgList = Array.isArray(messagesRes?.data)
               ? messagesRes.data
               : messagesRes?.data?.data;
             if (msgList?.length) {
-              setMessages(
-                msgList.slice(-20).map(normalizeMessage)
-              );
+              setMessages((prev) => {
+                // Deduplicate: skip messages we already have (socket might have already added some)
+                const existingIds = new Set((prev || []).map((m) => m.id).filter(Boolean));
+                const newMsgs = msgList
+                  .filter((m) => !existingIds.has(m.id || m._id))
+                  .map(normalizeMessage);
+                return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
+              });
             }
           })
           .catch(() => { /* chat history is optional */ });
@@ -716,11 +936,12 @@ return;
         setLoading(false);
 
         // Emit join event — backend will broadcast to all viewers; toast shows & fades for everyone
-        if (user && !hasJoinedRef.current) {
+        // Allow anonymous users too so they receive pin/syntax updates in real-time
+        if (!hasJoinedRef.current) {
           hasJoinedRef.current = true;
           socketService.emit('livestream_join', {
             sessionId,
-            userId: user._id || 'anonymous',
+            userId: user?._id || 'anonymous',
             displayName: displayNameRef.current,
             role: 'buyer',
           });
@@ -736,7 +957,7 @@ return;
   useEffect(() => {
     const r = buyerRoomRef.current;
 
-    const onConnected = () => {};
+    const onConnected = () => { };
 
     const checkForRemoteTracks = () => {
       for (const [, participant] of r.remoteParticipants) {
@@ -752,17 +973,17 @@ return;
 
     const onTrackSubscribed = (track) => {
       if (track.kind === 'video' || track.kind === 'audio') {
-setHasRemoteTrack(true);
-}
+        setHasRemoteTrack(true);
+      }
     };
 
     const onTrackUnsubscribed = () => {
- checkForRemoteTracks(); 
-};
+      checkForRemoteTracks();
+    };
     const onParticipantDisconnected = () => {
- checkForRemoteTracks(); 
-};
-    const onParticipantConnected = () => {};
+      checkForRemoteTracks();
+    };
+    const onParticipantConnected = () => { };
 
     if (r.state === 'connected') {
       onConnected();
@@ -793,17 +1014,57 @@ setHasRemoteTrack(true);
     prevMsgLen.current = messages.length;
   }, [messages]);
 
+  // ── Fullscreen handler + browser sync ────────────────────────────────────
+  const handleToggleFullscreen = useCallback(() => {
+    const el = fullscreenVideoRef.current;
+    if (!el) {
+      return;
+    }
+
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  // ── Keyboard shortcuts ───────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          handleToggleFullscreen();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleToggleFullscreen]);
+
   // ── Emit leave event on unmount ─────────────────────────────────
   useEffect(() => () => {
-      if (sessionId && user) {
-        socketService.emit('livestream_leave', {
-          sessionId,
-          userId: user._id || 'anonymous',
-          displayName: displayNameRef.current,
-          role: 'buyer',
-        });
-      }
-    }, [sessionId, user]);
+    if (sessionId) {
+      socketService.emit('livestream_leave', {
+        sessionId,
+        userId: user?._id || 'anonymous',
+        displayName: displayNameRef.current,
+        role: 'buyer',
+      });
+    }
+  }, [sessionId, user]);
 
   // ── Order syntax: resolve a model by tierIndex ─────────────────────────────
   const resolveVariantFromTiers = useCallback((product, variants) => {
@@ -820,20 +1081,20 @@ setHasRemoteTrack(true);
         (t) => t.name.toLowerCase() === tierName.toLowerCase(),
       );
       if (tierIdx === -1) {
-return null;
-}
+        return null;
+      }
       const optionIdx = tiers[tierIdx].options?.findIndex(
         (o) => String(o).toLowerCase() === String(value).toLowerCase(),
       );
       if (optionIdx === -1) {
-return null;
-}
+        return null;
+      }
       tierIndex[tierIdx] = optionIdx;
     }
 
     if (tierIndex.some((v) => v === -1)) {
-return null;
-}
+      return null;
+    }
 
     return product.models.find(
       (m) =>
@@ -874,7 +1135,20 @@ return null;
 
     if (result.variants?.length > 0) {
       resolvedVariant = resolveVariantFromTiers(targetProduct, result.variants);
-      if (!resolvedVariant) {
+
+      if (resolvedVariant) {
+        // Check stock / active status of the resolved variant
+        if (resolvedVariant.isActive === false) {
+          const attempted = result.variants.map((v) => `${v.tierName}=${v.value}`).join(', ');
+          toast.error(`Biến thể (${attempted}) hiện không khả dụng.`);
+          return;
+        }
+        if (resolvedVariant.stock != null && resolvedVariant.stock <= 0) {
+          const attempted = result.variants.map((v) => `${v.tierName}=${v.value}`).join(', ');
+          toast.error(`Biến thể (${attempted}) đã hết hàng.`);
+          return;
+        }
+      } else {
         const attempted = result.variants.map((v) => `${v.tierName}=${v.value}`).join(', ');
         toast.error(`Không tìm thấy biến thể phù hợp (${attempted}) cho sản phẩm này.`);
         return;
@@ -889,8 +1163,8 @@ return null;
       tiers.forEach((tier, tierPos) => {
         const optIdx = variantTierIdx[tierPos];
         if (optIdx == null || optIdx < 0) {
-return;
-}
+          return;
+        }
         const label = tiers[tierPos].options?.[optIdx] ?? 'Default';
         const n = tier.name.toLowerCase();
         if (n.includes('color') || n.includes('màu') || n.includes('mau')) {
@@ -905,6 +1179,10 @@ return;
         || targetProduct.models?.[0];
       if (!fallback) {
         toast.error('Sản phẩm này không có biến thể hợp lệ.');
+        return;
+      }
+      if (fallback.stock != null && fallback.stock <= 0) {
+        toast.error('Sản phẩm này hiện đã hết hàng.');
         return;
       }
       price = Number(fallback.price) || price;
@@ -952,8 +1230,8 @@ return;
   const sendChat = () => {
     const text = input.trim();
     if (!text || !user) {
-return;
-}
+      return;
+    }
 
     setIsSending(true);
     const localMsg = {
@@ -998,8 +1276,8 @@ return;
 
   const handleLiveCartCheckout = useCallback(() => {
     if (liveCartItemsRef.current.length === 0) {
-return;
-}
+      return;
+    }
     navigate('/buyer/checkout', {
       state: {
         selectedItems: liveCartItemsRef.current.map(({ tempId, ...rest }) => ({
@@ -1014,8 +1292,8 @@ return;
   // ── Like via REST API ─
   const handleLike = () => {
     if (liked || !sessionId) {
-return;
-}
+      return;
+    }
 
     setLiked(true);
     setLikeCount((c) => c + 1);
@@ -1023,8 +1301,8 @@ return;
     livestreamService.likeSession(sessionId)
       .then((res) => {
         if (res?.data?.likeCount !== undefined) {
-setLikeCount(res.data.likeCount);
-}
+          setLikeCount(res.data.likeCount);
+        }
       })
       .catch(() => {
         setLiked(false);
@@ -1033,8 +1311,8 @@ setLikeCount(res.data.likeCount);
   };
 
   const handleFollow = () => {
- setIsFollowing((prev) => !prev); 
-};
+    setIsFollowing((prev) => !prev);
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -1060,8 +1338,8 @@ setLikeCount(res.data.likeCount);
   };
 
   const handleBack = () => {
- navigate(shopId ? `/shop/${shopId}` : '/'); 
-};
+    navigate(shopId ? `/shop/${shopId}` : '/');
+  };
 
   const handleQuickBuy = (product) => {
     setSelectedQuickBuyProduct(product);
@@ -1070,8 +1348,8 @@ setLikeCount(res.data.likeCount);
 
   const formatCount = (count) => {
     if (count >= 1000) {
-return `${(count / 1000).toFixed(1)}k`;
-}
+      return `${(count / 1000).toFixed(1)}k`;
+    }
     return String(count);
   };
 
@@ -1117,8 +1395,8 @@ return `${(count / 1000).toFixed(1)}k`;
   }
 
   return (
-    <div className={styles['ls-root']}>
-      <Header />
+    <div className={`${styles['ls-root']}${isFullscreen ? ` ${styles['ls-root--fullscreen']}` : ''}`}>
+      {!isFullscreen && <Header />}
 
       {/* ── Main Stage ────────────────────────────────────────────────── */}
       <div className={styles['ls-stage']}>
@@ -1130,7 +1408,12 @@ return `${(count / 1000).toFixed(1)}k`;
           <div className={styles['ls-grid-bg']} />
 
           {/* Video Layer */}
-          <div className={styles['ls-video-wrap']}>
+          <div
+            ref={fullscreenVideoRef}
+            className={styles['ls-video-wrap']}
+            onDoubleClick={handleToggleFullscreen}
+            style={{ cursor: 'pointer' }}
+          >
             {showLiveKit ? (
               <LiveKitRoom
                 serverUrl={import.meta.env.VITE_LIVEKIT_URL}
@@ -1182,8 +1465,8 @@ return `${(count / 1000).toFixed(1)}k`;
                     src={session?.shopId?.avatar || '/placeholder.png'}
                     alt={session?.shopId?.fullName || 'Shop'}
                     onError={(e) => {
- e.target.src = '/placeholder.png'; 
-}}
+                      e.target.src = '/placeholder.png';
+                    }}
                   />
                 </div>
                 <span className={styles['ls-shop-name']}>
@@ -1245,6 +1528,16 @@ return `${(count / 1000).toFixed(1)}k`;
             </div>
           </div>
 
+          {/* Fullscreen toggle — bottom-right like YouTube */}
+          <button
+            className={styles['ls-fs-btn']}
+            onClick={handleToggleFullscreen}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            title={isFullscreen ? 'Exit fullscreen (F or Escape)' : 'Fullscreen (F)'}
+          >
+            {isFullscreen ? <IconMinimize size={16} /> : <IconMaximize size={16} />}
+          </button>
+
           {/* ══ FEATURED PRODUCT CARD ══ */}
           {showPinnedOverlay && displayProduct && (
             <div className={`${styles['ls-feature-card']}${isPinned ? ` ${styles['ls-feature-card--pinned']}` : ''}`}>
@@ -1264,8 +1557,8 @@ return `${(count / 1000).toFixed(1)}k`;
                     src={displayProduct?.thumbnail || displayProduct?.images?.[0] || '/placeholder.png'}
                     alt={displayProduct?.name || 'Product'}
                     onError={(e) => {
- e.target.src = '/placeholder.png'; 
-}}
+                      e.target.src = '/placeholder.png';
+                    }}
                   />
                   {discount && (
                     <div className={styles['ls-discount-chip']}>-{discount}%</div>
@@ -1356,10 +1649,10 @@ return `${(count / 1000).toFixed(1)}k`;
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
- if (e.key === 'Enter') {
-handleQuickBuy(product);
-} 
-}}
+                            if (e.key === 'Enter') {
+                              handleQuickBuy(product);
+                            }
+                          }}
                         >
                           {/* Image */}
                           <div className={styles['ls-product-img-wrap']}>
@@ -1370,8 +1663,8 @@ handleQuickBuy(product);
                               loading="lazy"
                               decoding="async"
                               onError={(e) => {
- e.target.src = '/placeholder.png'; 
-}}
+                                e.target.src = '/placeholder.png';
+                              }}
                             />
                             {ip && (
                               <div className={styles['ls-product-pin-badge']}>Ghim</div>
@@ -1396,8 +1689,8 @@ handleQuickBuy(product);
                               className={styles['ls-product-buy-btn']}
                               type="button"
                               onClick={(e) => {
- e.stopPropagation(); handleQuickBuy(product); 
-}}
+                                e.stopPropagation(); handleQuickBuy(product);
+                              }}
                             >
                               Mua ngay
                             </button>
@@ -1509,6 +1802,7 @@ handleQuickBuy(product);
         </div>
 
         {/* ══ CHAT SIDEBAR ══ */}
+        {!isFullscreen && (
         <aside className={styles['ls-chat-sidebar']}>
           <div className={styles['ls-chat-inner']}>
 
@@ -1538,7 +1832,7 @@ handleQuickBuy(product);
             {/* Messages */}
             <div ref={chatRef} className={styles['ls-messages']}>
               {/* Syntax guide pinned at top */}
-              {syntaxGuide && <SyntaxGuideCard guide={syntaxGuide} />}
+              {syntaxGuide && <SyntaxGuideCard guide={syntaxGuide} products={products} />}
 
               {messages.length === 0 && (
                 <div className={styles['ls-empty-chat']}>
@@ -1620,10 +1914,10 @@ handleQuickBuy(product);
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
- if (e.key === 'Enter') {
-sendChat();
-} 
-}}
+                    if (e.key === 'Enter') {
+                      sendChat();
+                    }
+                  }}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
                   placeholder={user ? 'Say something' : 'Login to chat'}
@@ -1658,9 +1952,10 @@ sendChat();
             </div>
           </div>
         </aside>
+        )}
       </div>
 
-      <Footer />
+      {!isFullscreen && <Footer />}
 
       {/* Quick Buy Bottom Sheet */}
       <LiveQuickBuySheet
@@ -1730,11 +2025,14 @@ IconChevronUp.propTypes = { size: PropTypes.number };
 IconAlert.propTypes = { size: PropTypes.number };
 IconPlay.propTypes = { size: PropTypes.number };
 IconMessageSquare.propTypes = { size: PropTypes.number };
+IconMaximize.propTypes = { size: PropTypes.number };
+IconMinimize.propTypes = { size: PropTypes.number };
 
 SyntaxGuideCard.propTypes = {
   guide: PropTypes.shape({
     prefix: PropTypes.string,
     product: PropTypes.shape({
+      _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       thumbnail: PropTypes.string,
       name: PropTypes.string,
       tiers: PropTypes.arrayOf(PropTypes.object),
@@ -1743,6 +2041,7 @@ SyntaxGuideCard.propTypes = {
       PropTypes.shape({ name: PropTypes.string, options: PropTypes.array })
     ),
   }),
+  products: PropTypes.arrayOf(PropTypes.object),
 };
 
 LiveCartDrawer.propTypes = {

@@ -13,7 +13,7 @@ import { MODULE_TYPES } from '../../services/api/shopDecorationService';
 import voucherService from '../../services/api/voucherService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 import { formatCurrency } from '../../utils/formatters';
-import styles from '../../assets/styles/ShopProfilePage.module.css';
+import styles from '@assets/styles/buyer/ShopProfilePage.module.css';
 
 /* eslint-disable react/prop-types */
 
@@ -38,8 +38,8 @@ const normalizeProduct = (p) => {
 // ─── Link handler helper ────────────────────────────────────────────────────────
 const handleModuleLink = (link) => {
   if (!link) {
-return;
-}
+    return;
+  }
   if (link.startsWith('/')) {
     window.location.href = link;
   } else if (link.startsWith('http')) {
@@ -129,8 +129,8 @@ function BannerCarouselModule({ module }) {
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) {
-return;
-}
+      return;
+    }
     const distance = touchStart - touchEnd;
     if (distance > minSwipeDistance) {
       goNext();
@@ -143,8 +143,8 @@ return;
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
-return;
-}
+      return;
+    }
 
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowLeft') {
@@ -449,8 +449,8 @@ function FlashDealsModule({ module }) {
       .filter(Boolean)
       .map((d) => new Date(d).getTime());
     if (endDates.length === 0) {
-return;
-}
+      return;
+    }
 
     const tick = () => {
       const now = Date.now();
@@ -468,8 +468,8 @@ return;
   }, [props.products]);
 
   if (products.length === 0) {
-return null;
-}
+    return null;
+  }
 
   const pad = (n) => String(n).padStart(2, '0');
 
@@ -521,8 +521,8 @@ function FeaturedProductsModule({ module }) {
   const products = (props.products || []).map(normalizeProduct);
 
   if (products.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -550,8 +550,8 @@ function BestSellingModule({ module }) {
   const products = (props.products || []).map(normalizeProduct);
 
   if (products.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -582,8 +582,8 @@ function NewProductsModule({ module }) {
   const products = (props.products || []).map(normalizeProduct);
 
   if (products.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -611,8 +611,8 @@ function AddonDealsModule({ module }) {
   const products = (props.products || []).map(normalizeProduct);
 
   if (products.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -640,8 +640,8 @@ function ComboPromosModule({ module }) {
   const products = (props.products || []).map(normalizeProduct);
 
   if (products.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -669,8 +669,8 @@ function FeaturedCategoriesModule({ module, onCategoryClick }) {
   const categories = props.categories || [];
 
   if (categories.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -710,8 +710,8 @@ function CategoryListModule({ module, onCategoryClick }) {
   const categories = props.categories || [];
 
   if (categories.length === 0) {
-return null;
-}
+    return null;
+  }
 
   return (
     <div className={styles.decorationBlock}>
@@ -733,7 +733,10 @@ return null;
                 {c.image ? (
                   <img src={c.image} alt="" />
                 ) : (
-                  <i className="bi bi-grid-3x2-gap-fill" style={{ fontSize: 24, color: 'var(--shop-primary)' }} />
+                  <i
+                    className="bi bi-grid-3x2-gap-fill"
+                    style={{ fontSize: 24, color: 'var(--shop-primary)' }}
+                  />
                 )}
               </div>
               <span className={styles.categoryChipLabel}>{c.name}</span>
@@ -1052,8 +1055,8 @@ const ShopProfilePage = () => {
   const handleChatClick = () => {
     const sellerId = seller._id || seller.id;
     if (!sellerId) {
-return;
-}
+      return;
+    }
     window.dispatchEvent(
       new CustomEvent('openChatWithShop', { detail: { shopId: sellerId, productInfo: null } })
     );
@@ -1078,10 +1081,7 @@ return;
           {/* Hero: banner only — avatar lives in ShopInfoCard below (avoids duplicate) */}
           <section className={styles.hero}>
             <img
-              src={
-                seller.profileImage ||
-                'https://placehold.co/1200x240/fae3e0/8b716e?text=Banner'
-              }
+              src={seller.profileImage || 'https://placehold.co/1200x240/fae3e0/8b716e?text=Banner'}
               alt=""
               className={styles.heroImg}
             />
@@ -1333,8 +1333,8 @@ return;
             <div className={styles.decorationBlocks}>
               {liveModules.map((mod) => {
                 if (!mod.isEnabled) {
-return null;
-}
+                  return null;
+                }
                 const { type } = mod;
 
                 // Banner Single
@@ -1463,7 +1463,10 @@ return null;
                 }
                 if (
                   type === MODULE_TYPES.IMAGE_TEXT &&
-                  (mod.props?.images?.length > 0 || mod.props?.image || mod.props?.title || mod.props?.content)
+                  (mod.props?.images?.length > 0 ||
+                    mod.props?.image ||
+                    mod.props?.title ||
+                    mod.props?.content)
                 ) {
                   // Support both images array and single image string
                   const imageUrl = mod.props.images?.[0]?.url || mod.props.image;
@@ -1473,14 +1476,15 @@ return null;
                   const aspectRatioValue = `${ratioW} / ${ratioH}`;
                   return (
                     <div key={mod.id} className={styles.decorationBlock}>
-                      <div className={`${styles.decorationText} ${styles[`position${position.charAt(0).toUpperCase() + position.slice(1)}`]}`}>
+                      <div
+                        className={`${styles.decorationText} ${styles[`position${position.charAt(0).toUpperCase() + position.slice(1)}`]}`}
+                      >
                         {imageUrl && (
-                          <div className={styles.imageTextWrapper} style={{ aspectRatio: aspectRatioValue }}>
-                            <img
-                              src={imageUrl}
-                              alt=""
-                              className={styles.decorationInlineImg}
-                            />
+                          <div
+                            className={styles.imageTextWrapper}
+                            style={{ aspectRatio: aspectRatioValue }}
+                          >
+                            <img src={imageUrl} alt="" className={styles.decorationInlineImg} />
                           </div>
                         )}
                         <div className={styles.textContent}>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
-import styles from '@assets/styles/layouts/ERPLayout.module.css';
+import styles from '@assets/styles/common/Layouts/ERPLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
 
 const NAV_GROUPS = [
@@ -17,6 +17,7 @@ const NAV_GROUPS = [
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
       { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
+      { to: SELLER_ROUTES.LIVE_STREAM, icon: 'bi-broadcast', label: 'Live Stream' },
       { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
     ],
   },
@@ -155,7 +156,10 @@ const ERPLayout = ({ children }) => {
           <div className={styles.topbarRight}>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
-              <NotificationBell triggerClassName={styles.iconBtn} dropdownWidth="380px" />
+              <NotificationBell
+                triggerClassName="text-dark text-decoration-none"
+                dropdownWidth="380px"
+              />
             </div>
 
             {/* Profile dropdown */}

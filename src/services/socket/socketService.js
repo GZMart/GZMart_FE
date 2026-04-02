@@ -88,9 +88,7 @@ class SocketService {
 
     if (this.socket?.connected) {
       console.log('[SocketService] Already connected, socket.id:', this.socket.id);
-      if (this.userId) {
-        this.joinUserRoom(this.userId);
-      }
+      this.joinUserRoom(this.userId); // always call — userId may have updated (e.g. anonymous → logged-in)
       return this.socket;
     }
 
@@ -140,6 +138,7 @@ class SocketService {
 
     this.socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
       this.isConnected = false;
+      this.listenersBound = false;
       console.log('[SocketService] ❌ Disconnected, reason:', reason);
     });
 

@@ -108,7 +108,7 @@ const LiveQuickBuySheet = ({
   show,
   onHide,
   product: liveProduct,
-  liveVouchers = [],
+  liveVouchers,
   sessionId,
   user,
   onAddToLiveCart,
@@ -757,10 +757,6 @@ LiveQuickBuySheet.propTypes = {
   sessionId: PropTypes.string.isRequired,
   user: PropTypes.object,
   onAddToLiveCart: PropTypes.func,
-};
-
-LiveQuickBuySheet.defaultProps = {
-  onAddToLiveCart: null,
 };
 
 export default LiveQuickBuySheet;

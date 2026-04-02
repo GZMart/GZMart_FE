@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react';
-import {
-  Modal,
-  Spin,
-  Table,
-  Tag,
-  Space,
-  Typography,
-} from 'antd';
+import PropTypes from 'prop-types'; // Thêm dòng này
+import { Modal, Spin, Table, Tag, Space, Typography } from 'antd';
 import { ShoppingCart, Package, Clock, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '../../../../utils/formatters';
 import dashboardService from '../../../../services/api/dashboardService';
@@ -54,8 +48,8 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
 
   useEffect(() => {
     if (!open) {
-return;
-}
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setPage(1);
@@ -64,24 +58,24 @@ return;
       .getSellerRecentOrders({ limit: 20 })
       .then((res) => {
         if (cancelled) {
-return;
-}
+          return;
+        }
         setOrders(Array.isArray(res?.data) ? res.data : []);
       })
       .catch(() => {
         if (!cancelled) {
-setOrders([]);
-}
+          setOrders([]);
+        }
       })
       .finally(() => {
         if (!cancelled) {
-setLoading(false);
-}
+          setLoading(false);
+        }
       });
 
     return () => {
- cancelled = true; 
-};
+      cancelled = true;
+    };
   }, [open]);
 
   const ordersGrowth = comparison?.growth?.orders ?? 0;
@@ -96,19 +90,22 @@ setLoading(false);
       render: (v, record) => (
         <div
           onClick={() => {
- onClose(); navigate(`/seller/orders/${record._id}`); 
-}}
+            onClose();
+            navigate(`/seller/orders/${record._id}`);
+          }}
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            background: '#EFF6FF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              background: '#EFF6FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <ShoppingCart size={12} color="#3B82F6" />
           </div>
           <Text strong style={{ fontSize: 13, color: '#3B82F6' }}>
@@ -124,7 +121,9 @@ setLoading(false);
       width: 150,
       render: (v, record) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Text strong style={{ fontSize: 13 }}>{v}</Text>
+          <Text strong style={{ fontSize: 13 }}>
+            {v}
+          </Text>
           <Text style={{ fontSize: 11, color: '#94A3B8' }}>
             {record.phone || record.email || '—'}
           </Text>
@@ -150,17 +149,19 @@ setLoading(false);
       width: 80,
       align: 'center',
       render: (v) => (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          background: '#F8FAFC',
-          border: '1px solid #E2E8F0',
-          borderRadius: 6,
-          padding: '2px 8px',
-          fontSize: 12,
-          color: '#64748B',
-        }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: 6,
+            padding: '2px 8px',
+            fontSize: 12,
+            color: '#64748B',
+          }}
+        >
           <Package size={10} />
           {v} sp
         </div>
@@ -174,14 +175,16 @@ setLoading(false);
       render: (_, record) => {
         const cfg = STATUS_ICONS[record.status] || { bg: '#F8FAFC', color: '#64748B' };
         return (
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            background: cfg.bg,
-            borderRadius: 8,
-            padding: '4px 10px',
-          }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: cfg.bg,
+              borderRadius: 8,
+              padding: '4px 10px',
+            }}
+          >
             <Tag
               color={STATUS_COLORS[record.status] || 'default'}
               style={{ margin: 0, borderRadius: 4, fontSize: 11, fontWeight: 600 }}
@@ -210,15 +213,17 @@ setLoading(false);
     <Modal
       title={
         <Space style={{ fontSize: 15 }}>
-          <div style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: '#EFF6FF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              background: '#EFF6FF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <ShoppingCart size={15} color="#3B82F6" />
           </div>
           <span style={{ fontWeight: 600 }}>Chi tiết đơn hàng</span>
@@ -227,19 +232,20 @@ setLoading(false);
       open={open}
       onCancel={onClose}
       footer={
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}>
-          <Text style={{ fontSize: 12, color: '#94A3B8' }}>
-            {orders.length} đơn gần nhất
-          </Text>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <Text style={{ fontSize: 12, color: '#94A3B8' }}>{orders.length} đơn gần nhất</Text>
           <div
             onClick={() => {
- onClose(); navigate('/seller/orders'); 
-}}
+              onClose();
+              navigate('/seller/orders');
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -250,15 +256,15 @@ setLoading(false);
               cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.gap = '8px'}
-            onMouseLeave={(e) => e.currentTarget.style.gap = '4px'}
+            onMouseEnter={(e) => (e.currentTarget.style.gap = '8px')}
+            onMouseLeave={(e) => (e.currentTarget.style.gap = '4px')}
           >
             Xem tất cả đơn hàng <ArrowRight size={13} />
           </div>
         </div>
       }
       width={1000}
-      destroyOnHidden
+      destroyOnClose // Sử dụng destroyOnClose của Antd thay vì destroyOnHidden
     >
       <Spin spinning={loading} tip="Đang tải đơn hàng...">
         {/* Comparison summary */}
@@ -275,37 +281,68 @@ setLoading(false);
             }}
           >
             <div>
-              <Text style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 500 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: '#94A3B8',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  fontWeight: 500,
+                }}
+              >
                 Kỳ này
               </Text>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#10B981', marginTop: 4 }}>
                 {Number(comparison.currentPeriod?.orders || 0).toLocaleString('vi-VN')}
-                <Text style={{ fontSize: 13, fontWeight: 400, color: '#94A3B8', marginLeft: 4 }}>đơn</Text>
+                <Text style={{ fontSize: 13, fontWeight: 400, color: '#94A3B8', marginLeft: 4 }}>
+                  đơn
+                </Text>
               </div>
             </div>
             <div>
-              <Text style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 500 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: '#94A3B8',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  fontWeight: 500,
+                }}
+              >
                 Kỳ trước
               </Text>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#94A3B8', marginTop: 4 }}>
                 {Number(comparison.previousPeriod?.orders || 0).toLocaleString('vi-VN')}
-                <Text style={{ fontSize: 13, fontWeight: 400, color: '#CBD5E1', marginLeft: 4 }}>đơn</Text>
+                <Text style={{ fontSize: 13, fontWeight: 400, color: '#CBD5E1', marginLeft: 4 }}>
+                  đơn
+                </Text>
               </div>
             </div>
             <div>
-              <Text style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 500 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: '#94A3B8',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  fontWeight: 500,
+                }}
+              >
                 Tăng trưởng
               </Text>
-              <div style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: isPositive ? '#10B981' : '#EF4444',
-                marginTop: 4,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-              }}>
-                {isPositive ? '+' : ''}{ordersGrowth}%
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: isPositive ? '#10B981' : '#EF4444',
+                  marginTop: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                {isPositive ? '+' : ''}
+                {ordersGrowth}%
               </div>
             </div>
           </div>
@@ -329,3 +366,21 @@ setLoading(false);
     </Modal>
   );
 }
+
+// Khai báo PropTypes để fix lỗi ESLint
+OrdersDetailModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  _period: PropTypes.string,
+  comparison: PropTypes.shape({
+    growth: PropTypes.shape({
+      orders: PropTypes.number,
+    }),
+    currentPeriod: PropTypes.shape({
+      orders: PropTypes.number,
+    }),
+    previousPeriod: PropTypes.shape({
+      orders: PropTypes.number,
+    }),
+  }),
+};

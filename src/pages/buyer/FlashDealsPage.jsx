@@ -5,7 +5,7 @@ import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import LoadingSpinner from '@components/common/LoadingSpinner';
 import Pagination from '@components/common/Pagination';
-import styles from '@assets/styles/ProductsPage.module.css';
+import styles from '@assets/styles/buyer/Product/ProductsPage.module.css';
 import { dealService, flashsaleService } from '../../services/api';
 
 const dealTypes = [
@@ -631,9 +631,7 @@ const FlashDealsPage = () => {
                   <i className="bi bi-lightning"></i>
                 </div>
                 <h3>
-                  {products.length === 0
-                    ? 'Chưa có ưu đãi nào'
-                    : 'Không tìm thấy ưu đãi phù hợp'}
+                  {products.length === 0 ? 'Chưa có ưu đãi nào' : 'Không tìm thấy ưu đãi phù hợp'}
                 </h3>
                 <p>
                   {products.length === 0

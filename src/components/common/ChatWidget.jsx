@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Button, Badge, Form, InputGroup, Image } from 'react-bootstrap';
-import socketService from '../../services/socketService';
-import aiChatService from '../../services/aiChatService';
+import socketService from '@services/socket/socketService';
+import aiChatService from '../../services/ai/aiChatService';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getAuthToken } from '../../utils/storage';
@@ -359,9 +359,19 @@ const ChatWidget = () => {
 
   // --- AI Chat Logic ---
   const CLEAR_CHAT_PATTERNS = [
-    'làm mới', 'lam moi', 'clear', 'reset', 'xóa chat', 'xoa chat',
-    'bắt đầu lại', 'bat dau lai', 'new chat', 'chat mới', 'refresh',
-    'xóa hội thoại', 'xoa hoi thoai',
+    'làm mới',
+    'lam moi',
+    'clear',
+    'reset',
+    'xóa chat',
+    'xoa chat',
+    'bắt đầu lại',
+    'bat dau lai',
+    'new chat',
+    'chat mới',
+    'refresh',
+    'xóa hội thoại',
+    'xoa hoi thoai',
   ];
 
   const handleSendAiMessage = async (e, forcedContent = null) => {
@@ -464,50 +474,51 @@ const ChatWidget = () => {
     aiChatService.saveMessages([welcomeMsg]);
   };
 
-  const cleanProductText = (text) => text
-    .replace(/\[\[product:[^\]]*\]?\]?/gi, '')
-    .split('\n')
-    .filter((line) => {
-      const l = line.trim().toLowerCase().replace(/\*/g, '');
-      if (!l) {
- return true; 
-}
-      if (/^-?\s*(giá|price)\s*:/i.test(l)) {
- return false; 
-}
-      if (/^-?\s*(đánh giá|rating)\s*:/i.test(l)) {
- return false; 
-}
-      if (/^-?\s*(đã bán|lượt bán|sold)\s*:/i.test(l)) {
- return false; 
-}
-      if (/^-?\s*(danh mục|category)\s*:/i.test(l)) {
- return false; 
-}
-      if (/^-?\s*(thương hiệu|brand)\s*:/i.test(l)) {
- return false; 
-}
-      if (/^-?\s*(đánh giá)\s*:?\s*⭐/i.test(l)) {
- return false; 
-}
-      if (/^\d+[.,]\d+\s*(đ|₫|vnd)/i.test(l)) {
- return false; 
-}
-      if (/^⭐\s*\d/i.test(l)) {
- return false; 
-}
-      return true;
-    })
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\*\*/g, '')
-    .trim();
+  const cleanProductText = (text) =>
+    text
+      .replace(/\[\[product:[^\]]*\]?\]?/gi, '')
+      .split('\n')
+      .filter((line) => {
+        const l = line.trim().toLowerCase().replace(/\*/g, '');
+        if (!l) {
+          return true;
+        }
+        if (/^-?\s*(giá|price)\s*:/i.test(l)) {
+          return false;
+        }
+        if (/^-?\s*(đánh giá|rating)\s*:/i.test(l)) {
+          return false;
+        }
+        if (/^-?\s*(đã bán|lượt bán|sold)\s*:/i.test(l)) {
+          return false;
+        }
+        if (/^-?\s*(danh mục|category)\s*:/i.test(l)) {
+          return false;
+        }
+        if (/^-?\s*(thương hiệu|brand)\s*:/i.test(l)) {
+          return false;
+        }
+        if (/^-?\s*(đánh giá)\s*:?\s*⭐/i.test(l)) {
+          return false;
+        }
+        if (/^\d+[.,]\d+\s*(đ|₫|vnd)/i.test(l)) {
+          return false;
+        }
+        if (/^⭐\s*\d/i.test(l)) {
+          return false;
+        }
+        return true;
+      })
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\*\*/g, '')
+      .trim();
 
   const renderAiContent = (msg) => {
     const { content, isStreaming, products } = msg;
     if (!content) {
- return null; 
-}
+      return null;
+    }
 
     if (isStreaming) {
       const cleanText = content.replace(/\[\[product:[a-f0-9]{24}\]\]/gi, '');
@@ -522,8 +533,8 @@ const ChatWidget = () => {
       if (match) {
         const product = productMap[match[1]];
         if (!product) {
- return null; 
-}
+          return null;
+        }
         return (
           <div
             key={i}
@@ -533,9 +544,7 @@ const ChatWidget = () => {
             title="Xem chi tiết sản phẩm"
           >
             {product.dealLabel && (
-              <div className={styles['ai-product-deal-badge']}>
-                {product.dealLabel}
-              </div>
+              <div className={styles['ai-product-deal-badge']}>{product.dealLabel}</div>
             )}
             <img
               src={product.image || 'https://via.placeholder.com/80'}
@@ -553,7 +562,8 @@ const ChatWidget = () => {
                 )}
                 {product.maxPrice && (
                   <span className={styles['ai-product-price-max']}>
-                    {' '}– {product.maxPrice.toLocaleString('vi-VN')}₫
+                    {' '}
+                    – {product.maxPrice.toLocaleString('vi-VN')}₫
                   </span>
                 )}
               </div>
@@ -571,8 +581,8 @@ const ChatWidget = () => {
       }
       const cleaned = cleanProductText(part);
       if (!cleaned) {
- return null; 
-}
+        return null;
+      }
       return <span key={i}>{cleaned}</span>;
     });
 
@@ -896,30 +906,31 @@ const ChatWidget = () => {
                       {aiMessages
                         .filter((msg) => !(msg.isStreaming && !msg.content))
                         .map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`d-flex mb-3 ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
-                        >
-                          {msg.role === 'ai' && (
-                            <div className="me-2 d-flex align-items-end">
-                              <div
-                                className="rounded-circle bg-white text-primary shadow-sm d-flex align-items-center justify-content-center"
-                                style={{ width: 28, height: 28 }}
-                              >
-                                <i className="bi bi-robot" style={{ fontSize: '0.9rem' }}></i>
-                              </div>
-                            </div>
-                          )}
                           <div
-                            className={`${styles['message-bubble']} ${msg.role === 'user' ? styles['message-user'] : styles['message-other']}`}
+                            key={idx}
+                            className={`d-flex mb-3 ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
                           >
-                            {msg.role === 'ai'
-                              ? renderAiContent(msg)
-                              : <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
-                            }
+                            {msg.role === 'ai' && (
+                              <div className="me-2 d-flex align-items-end">
+                                <div
+                                  className="rounded-circle bg-white text-primary shadow-sm d-flex align-items-center justify-content-center"
+                                  style={{ width: 28, height: 28 }}
+                                >
+                                  <i className="bi bi-robot" style={{ fontSize: '0.9rem' }}></i>
+                                </div>
+                              </div>
+                            )}
+                            <div
+                              className={`${styles['message-bubble']} ${msg.role === 'user' ? styles['message-user'] : styles['message-other']}`}
+                            >
+                              {msg.role === 'ai' ? (
+                                renderAiContent(msg)
+                              ) : (
+                                <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                       {isAiTyping && !aiMessages.some((m) => m.isStreaming && m.content) && (
                         <div className="d-flex mb-3 justify-content-start">
                           <div className="me-2 d-flex align-items-end">
