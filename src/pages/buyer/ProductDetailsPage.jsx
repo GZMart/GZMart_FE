@@ -694,10 +694,7 @@ const ProductDetailsPage = () => {
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.ratingDivider}>|</span>
-            <span className={styles.reviewCount}>
-              ({product.reviewCount || 0} {t('product_details.reviews')})
-            </span>
-            <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
+            <span className={styles.soldCount} style={{ color: '#666' }}>
               {product.reviewCount
                 ? product.reviewCount >= 1000
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
@@ -880,23 +877,6 @@ handleTierChange(tierIdx, optIdx);
                 disabled={addingToCart || currentStock <= 0}
               >
                 {t('product_details.btn_buy_now')}
-              </button>
-              <button
-                className={`${styles.wishlistBtn} ${isWishlist ? styles.isWishlist : ''}`}
-                onClick={handleToggleWishlist}
-                disabled={wishlistLoading}
-                title={
-                  isWishlist
-                    ? t('product_details.toast_wishlist_remove')
-                    : t('product_details.toast_wishlist_add')
-                }
-              >
-                <i className={`bi ${isWishlist ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {wishlistLoading
-                  ? t('product_details.loading')
-                  : isWishlist
-                    ? t('product_details.toast_wishlist_remove')
-                    : t('product_details.favorite')}
               </button>
             </div>
             {currentStock <= 0 && (

@@ -32,7 +32,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
-  margin-top: 30px;
+  margin-top: 10px;
   margin-bottom: 50px;
   background-color: white;
   padding: 30px;
@@ -341,15 +341,15 @@
 .reviewCount {
   color: #666;
   font-size: 13px;
-  border-left: 1px solid #e0e0e0;
+  /* border-left: 1px solid #e0e0e0; */
   padding-left: 15px;
 }
 
 .soldCount {
   color: #666;
   font-size: 13px;
-  border-left: 1px solid #e0e0e0;
-  padding-left: 15px;
+  /* border-left: 1px solid #e0e0e0; */
+  /* padding-left: 15px; */
 }
 
 /* Flash Sale Section */

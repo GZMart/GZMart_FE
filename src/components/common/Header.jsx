@@ -1380,9 +1380,9 @@ const Header = () => {
                   Wanna become a seller?
                   <Link
                     to={BUYER_ROUTES.SELLER_APPLICATION}
-                    className="text-warning text-decoration-none fw-bold ms-1"
+                    className="text-danger text-decoration-none fw-bold ms-1"
                     style={{ transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => (e.target.style.color = '#ffc107')}
+                    onMouseEnter={(e) => (e.target.style.color = 'var(--color-danger)')}
                     onMouseLeave={(e) => (e.target.style.color = '')}
                   >
                     Sent application here
