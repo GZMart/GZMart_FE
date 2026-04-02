@@ -12,7 +12,7 @@ import RequireLoginModal from '../../components/common/RequireLoginModal';
 import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import CartSuccessModal from '../../components/buyer/CartSuccessModal';
 import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
-import { productService } from '../../services/api';
+import { productService, livestreamService } from '../../services/api';
 import { flashsaleService } from '../../services/api/flashsaleService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 import * as wishlistService from '../../services/api/wishlistService';
@@ -102,8 +102,31 @@ const ProductDetailsPage = () => {
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [activeLive, setActiveLive] = useState(null);
 
   const user = useSelector((state) => state.auth.user);
+
+  // TikTok-style LIVE ring on shop card when this seller is streaming
+  useEffect(() => {
+    const shopId = product?.sellerId?._id || product?.sellerId;
+    if (!shopId) {
+      setActiveLive(null);
+      return;
+    }
+    let cancelled = false;
+    livestreamService
+      .getActiveByShop(shopId)
+      .then((res) => {
+        const data = res?.data ?? res;
+        if (!cancelled) setActiveLive(data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveLive(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.sellerId]);
 
   // Fetch product details
   useEffect(() => {
@@ -671,10 +694,7 @@ const ProductDetailsPage = () => {
             </div>
             <span className={styles.ratingValue}>{product.rating || 0}</span>
             <span className={styles.ratingDivider}>|</span>
-            <span className={styles.reviewCount}>
-              ({product.reviewCount || 0} {t('product_details.reviews')})
-            </span>
-            <span className={styles.soldCount} style={{ marginLeft: 15, color: '#666' }}>
+            <span className={styles.soldCount} style={{ color: '#666' }}>
               {product.reviewCount
                 ? product.reviewCount >= 1000
                   ? `${(product.reviewCount / 1000).toFixed(1).replace('.0', '')}k`
@@ -858,23 +878,6 @@ handleTierChange(tierIdx, optIdx);
               >
                 {t('product_details.btn_buy_now')}
               </button>
-              <button
-                className={`${styles.wishlistBtn} ${isWishlist ? styles.isWishlist : ''}`}
-                onClick={handleToggleWishlist}
-                disabled={wishlistLoading}
-                title={
-                  isWishlist
-                    ? t('product_details.toast_wishlist_remove')
-                    : t('product_details.toast_wishlist_add')
-                }
-              >
-                <i className={`bi ${isWishlist ? 'bi-heart-fill' : 'bi-heart'}`}></i>
-                {wishlistLoading
-                  ? t('product_details.loading')
-                  : isWishlist
-                    ? t('product_details.toast_wishlist_remove')
-                    : t('product_details.favorite')}
-              </button>
             </div>
             {currentStock <= 0 && (
               <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
@@ -927,6 +930,7 @@ handleTierChange(tierIdx, optIdx);
           <ShopInfoCard
             seller={product.sellerId}
             showViewShop={true}
+            activeLive={activeLive?._id ? activeLive : null}
             productInfo={{
               productId: product._id,
               name: product.name,

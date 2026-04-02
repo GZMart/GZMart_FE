@@ -20,9 +20,11 @@ import {
   LayoutDashboard,
   Loader2,
   ChevronRight,
+  Camera,
 } from 'lucide-react';
 
 import NotificationBell from './NotificationBell';
+import ImageSearchModal from './ImageSearchModal';
 
 // Fashion categories data from Guangzhou market
 const FAKE_CATEGORIES_DATA = [
@@ -1101,6 +1103,7 @@ const Header = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showImageSearchModal, setShowImageSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState({
     products: [],
@@ -1746,9 +1749,9 @@ e.preventDefault();
                   Wanna become a seller?
                   <Link
                     to={BUYER_ROUTES.SELLER_APPLICATION}
-                    className="text-warning text-decoration-none fw-bold ms-1"
+                    className="text-danger text-decoration-none fw-bold ms-1"
                     style={{ transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => (e.target.style.color = '#ffc107')}
+                    onMouseEnter={(e) => (e.target.style.color = 'var(--color-danger)')}
                     onMouseLeave={(e) => (e.target.style.color = '')}
                   >
                     Sent application here
@@ -1930,7 +1933,15 @@ e.preventDefault();
                 <div className="position-relative flex-grow-1 w-100" ref={searchDropdownRef}>
                   <form onSubmit={handleSearchSubmit} className="input-group">
                     <span
-                      className="input-group-text border-0 pe-0 rounded-start"
+                      className="input-group-text border-0 pe-2 rounded-start"
+                      style={{ backgroundColor: '#F3F4F6', cursor: 'pointer' }}
+                      title={t('header.search_by_image') || 'Search by image'}
+                      onClick={() => setShowImageSearchModal(true)}
+                    >
+                      <Camera size={20} className="text-secondary" />
+                    </span>
+                    <span
+                      className="input-group-text border-0 pe-0 rounded-0"
                       style={{ backgroundColor: '#F3F4F6', cursor: 'pointer' }}
                       onClick={handleSearchIconClick}
                     >
@@ -2443,6 +2454,12 @@ e.preventDefault();
           </div>
         </>
       )}
+
+      {/* Image Search Modal */}
+      <ImageSearchModal 
+        isOpen={showImageSearchModal} 
+        onClose={() => setShowImageSearchModal(false)} 
+      />
     </header>
   );
 };

@@ -58,6 +58,16 @@ const searchService = {
     await axiosClient.get(`${BASE_URL}/filters`, {
       params: { q: query, ...currentFilters },
     }),
+
+  /**
+   * Search by image
+   * @param {FormData} formData - form data containing the image
+   * @returns {Promise} Search results
+   */
+  searchByImage: async (formData) =>
+    await axiosClient.post(`${BASE_URL}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 };
 
 export default searchService;

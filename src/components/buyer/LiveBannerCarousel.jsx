@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import styles from '../../assets/styles/ShopProfilePage.module.css';
 
 /** Cloudinary: request high-quality display for banner (width 1920, limit crop, best quality) */
@@ -89,3 +90,12 @@ return null;
     </div>
   );
 }
+
+LiveBannerCarousel.propTypes = {
+  images: PropTypes.arrayOf(
+    PropTypes.oneOfType([PropTypes.string, PropTypes.shape({ url: PropTypes.string, link: PropTypes.string })])
+  ),
+  autoplay: PropTypes.bool,
+  interval: PropTypes.number,
+  aspectRatio: PropTypes.string,
+};
