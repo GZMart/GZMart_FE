@@ -670,28 +670,6 @@ return [];
     </div>
   );
 
-  const totalOrders = profitLossData.reduce((sum, item) => sum + (item.orders || 0), 0);
-
-  // Format growth percentage for display
-  const formatGrowth = (value) => {
-    const num = Number(value) || 0;
-    const prefix = num > 0 ? '+' : '';
-    return `${prefix}${num}%`;
-  };
-
-  // Determine growth color class
-  const getGrowthClass = (value) => {
-    if (value > 0) return styles.growthPositive;
-    if (value < 0) return styles.growthNegative;
-    return '';
-  };
-
-  // Get current period label
-  const currentPeriodLabel = PERIOD_OPTIONS.find(p => p.value === period)?.label || 'This Month';
-  const displayPeriodLabel = period === 'custom' && customRange.startDate
-    ? `${new Date(customRange.startDate).toLocaleDateString()} - ${new Date(customRange.endDate).toLocaleDateString()}`
-    : currentPeriodLabel;
-
   return (
     <div className={styles.container}>
       <div className={styles.pageContent}>

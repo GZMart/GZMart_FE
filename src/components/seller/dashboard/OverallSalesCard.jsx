@@ -140,6 +140,6 @@ export function OverallSalesCard({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
