@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Card, Steps, Button, Modal, Rate, Input, message, Spin } from 'antd';
 import {
@@ -9,7 +9,7 @@ import {
   DollarOutlined,
   InboxOutlined,
 } from '@ant-design/icons';
-import { io } from 'socket.io-client';
+import socketService from '@services/socket/socketService';
 import DeliveryTrackingMap from './DeliveryTrackingMap';
 import { orderService } from '@services/api/orderService';
 import '../../assets/styles/OrderTrackingEnhanced.module.css';
@@ -23,92 +23,102 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewData, setReviewData] = useState({ rating: 5, comment: '' });
   const [loading, setLoading] = useState(false);
-  const socketRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const hasInitializedMap = useRef(false);
+  const onOrderUpdateRef = useRef(onOrderUpdate);
 
-  // Socket.io connection
+  // Keep onOrderUpdate ref up-to-date without triggering re-registration
+  useEffect(() => {
+    onOrderUpdateRef.current = onOrderUpdate;
+  }, [onOrderUpdate]);
+
+  // Normalize backend/legacy statuses to canonical workflow statuses
+  const normalizeStatus = (status) => {
+    const s = String(status || '')
+      .trim()
+      .toLowerCase();
+    if (!s) {
+return 'pending';
+}
+    if (s === 'processing') {
+return 'confirmed';
+}
+    if (s === 'packing') {
+return 'packed';
+}
+    if (s === 'shipping') {
+return 'shipped';
+}
+    if (s === 'delivered_pending_confirmation') {
+return 'delivered';
+}
+    return s;
+  };
+
+  // Socket event listeners using shared socketService (already connected by ProfilePage)
   useEffect(() => {
     if (!order?._id) {
       return;
     }
 
-    // FIX BUG 12: Connect to backend socket with reconnection handling
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
-    });
-
-    socketRef.current = socket;
-
-    // Connection event handlers
-    socket.on('connect', () => {
-      // Socket connected
-    });
-
-    socket.on('disconnect', (reason) => {
-      if (reason === 'io server disconnect') {
-        // Server disconnected, manually reconnect
-        socket.connect();
-      }
-    });
-
-    socket.on('reconnect', (attemptNumber) => {
-      // Reconnected
-    });
-
-    socket.on('reconnect_attempt', (attemptNumber) => {
-      // Reconnection attempt
-    });
-
-    socket.on('reconnect_error', (error) => {
-      console.error('[Socket] Reconnection error:', error);
-    });
-
-    socket.on('reconnect_failed', () => {
-      console.error('[Socket] Reconnection failed after all attempts');
-      message.error('Lost connection to server. Please refresh the page.');
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('[Socket] Connection error:', error);
-    });
+    const orderId = order._id;
 
     // Listen for order status changes
-    socket.on(`order:status:${order._id}`, (data) => {
-      setCurrentStatus(data.status);
-      if (onOrderUpdate) {
-        onOrderUpdate(data);
+    const handleStatusUpdate = (data) => {
+      const normalized = normalizeStatus(data.status);
+      setCurrentStatus(normalized);
+      if (normalized === 'delivered' || normalized === 'completed') {
+        setShowMap(false);
+        hasInitializedMap.current = false;
       }
-    });
+      if (onOrderUpdateRef.current) {
+        onOrderUpdateRef.current(data);
+      }
+    };
 
     // Listen for shipping started event
-    socket.on(`order:shipping:${order._id}`, (data) => {
-      setCurrentStatus('shipping');
+    const handleShippingStarted = (data) => {
+      setCurrentStatus('shipped');
       setShowMap(true);
 
       // Start map animation
       if (data.coordinates) {
-        startMapAnimation(data.coordinates, data.duration || 60);
+        startMapAnimation(data.coordinates, data.duration || 10, data.startTime);
       }
-    });
+    };
 
     // Listen for delivery arrival
-    socket.on(`order:arrived:${order._id}`, (data) => {
+    const handleArrived = (data) => {
       setCurrentStatus('delivered');
       setShowMap(false);
+      hasInitializedMap.current = false;
       message.success('Order has been delivered to your address!');
-    });
-
-    // Cleanup on unmount
-    return () => {
-      socket.disconnect();
     };
-  }, [order?._id, onOrderUpdate]);
+
+    socketService.on(`order:status:${orderId}`, handleStatusUpdate);
+    socketService.on(`order:shipping:${orderId}`, handleShippingStarted);
+    socketService.on(`order:arrived:${orderId}`, handleArrived);
+
+    // Cleanup listeners on unmount (without disconnecting shared socket)
+    return () => {
+      socketService.off(`order:status:${orderId}`, handleStatusUpdate);
+      socketService.off(`order:shipping:${orderId}`, handleShippingStarted);
+      socketService.off(`order:arrived:${orderId}`, handleArrived);
+    };
+  }, [order?._id]);
+
+  useEffect(() => {
+    if (order?.status && order.status !== currentStatus) {
+      setCurrentStatus(normalizeStatus(order.status));
+    }
+
+    const normalizedOrderStatus = normalizeStatus(order?.status);
+    if (normalizedOrderStatus === 'delivered' || normalizedOrderStatus === 'completed') {
+      setShowMap(false);
+      hasInitializedMap.current = false;
+    }
+  }, [order?.status]);
 
   // Initialize map when showing
   useEffect(() => {
@@ -117,41 +127,18 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     }
   }, [showMap, mapAnimation]);
 
-  // Start map animation (mock implementation)
-  const startMapAnimation = (coordinates, durationSeconds) => {
+  // Store animation metadata so map can resume based on server start time.
+  const startMapAnimation = (coordinates, durationSeconds = 10, startedAt = null) => {
     const { seller, buyer } = coordinates;
-
-    // Mock animation - in production, use actual map library
-    const startTime = Date.now();
-    const endTime = startTime + durationSeconds * 1000;
 
     const animationData = {
       start: seller,
       end: buyer,
-      startTime,
-      endTime,
+      startTime: startedAt ? new Date(startedAt).toISOString() : new Date().toISOString(),
       duration: durationSeconds,
     };
 
     setMapAnimation(animationData);
-
-    // Simulate vehicle movement
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const progress = (now - startTime) / (endTime - startTime);
-
-      if (progress >= 1) {
-        clearInterval(interval);
-        // Animation complete
-      } else {
-        // Update marker position (interpolate between start and end)
-        const lat = seller.lat + (buyer.lat - seller.lat) * progress;
-        const lng = seller.lng + (buyer.lng - seller.lng) * progress;
-        // Position updated
-      }
-    }, 1000); // Update every second
-
-    return () => clearInterval(interval);
   };
 
   // Handle confirm receipt
@@ -159,7 +146,6 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     try {
       setLoading(true);
       const response = await orderService.confirmReceipt(order._id);
-      message.success('Receipt confirmed successfully!');
       setCurrentStatus('completed');
       setShowReviewModal(true);
 
@@ -189,21 +175,10 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     }
   };
 
-  // Map old status to new status for consistent tracking
-  const normalizeStatus = (status) => {
-    const statusMap = {
-      processing: 'confirmed',
-      shipped: 'shipping',
-      delivered_pending_confirmation: 'delivered',
-    };
-    return statusMap[status] || status;
-  };
-
   const normalizedStatus = normalizeStatus(currentStatus);
 
-  // Get coordinates from order data (real GPS from user location or fallback to mock)
-  const getCoordinates = () => {
-    // Try to get real GPS from trackingCoordinates or populated user data
+  // Memoize coordinates to prevent re-triggering map initialization
+  const memoizedCoordinates = useMemo(() => {
     const hasSellerGPS =
       order?.trackingCoordinates?.seller?.lat && order?.trackingCoordinates?.seller?.lng;
     const hasBuyerGPS = order?.userId?.location?.lat && order?.userId?.location?.lng;
@@ -216,7 +191,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
             address: order.trackingCoordinates.seller.address || 'Seller Address',
           }
         : {
-            lat: 16.0471, // Da Nang - Hai Chau District (fallback)
+            lat: 16.0471,
             lng: 108.2062,
             address: 'Hai Chau District, Da Nang (Demo)',
           },
@@ -227,19 +202,42 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
             address: order.userId.location.address || order.shippingAddress || 'Buyer Address',
           }
         : {
-            lat: 16.0878, // Da Nang - Son Tra District (fallback)
+            lat: 16.0878,
             lng: 108.2429,
             address: order?.shippingAddress || 'Son Tra District, Da Nang (Demo)',
           },
       usingRealGPS: hasSellerGPS && hasBuyerGPS,
     };
-  };
+  }, [
+    order?.trackingCoordinates?.seller?.lat,
+    order?.trackingCoordinates?.seller?.lng,
+    order?.trackingCoordinates?.seller?.address,
+    order?.userId?.location?.lat,
+    order?.userId?.location?.lng,
+    order?.userId?.location?.address,
+    order?.shippingAddress,
+  ]);
 
-  // Check if map should be shown
+  // Check if map should be shown — guarded to run only once per shipping session
   useEffect(() => {
-    if (currentStatus === 'shipping' || currentStatus === 'shipped') {
-      // Priority: trackingCoordinates from order > real GPS from user location > mock data
-      const coordinates = order?.trackingCoordinates || getCoordinates();
+    if (currentStatus === 'shipped') {
+      if (hasInitializedMap.current) {
+return;
+}
+      hasInitializedMap.current = true;
+
+      const coordinates = order?.trackingCoordinates || memoizedCoordinates;
+      const durationFromEstimate =
+        order?.shippingStartedAt && order?.shippingEstimatedArrival
+          ? Math.max(
+              1,
+              Math.round(
+                (new Date(order.shippingEstimatedArrival).getTime() -
+                  new Date(order.shippingStartedAt).getTime()) /
+                  1000
+              )
+            )
+          : 10;
 
       setShowMap(true);
       startMapAnimation(
@@ -247,12 +245,15 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
           seller: coordinates.seller,
           buyer: coordinates.buyer,
         },
-        60
+        durationFromEstimate,
+        order?.shippingStartedAt || null
       );
+    } else {
+      hasInitializedMap.current = false;
     }
-  }, [currentStatus, order?.trackingCoordinates, order?.userId?.location]);
+  }, [currentStatus]);
 
-  // Define steps for the stepper
+  // Define steps for the stepper (simplified)
   const steps = [
     {
       title: 'Confirmed',
@@ -262,13 +263,13 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     },
     {
       title: 'Packed',
-      status: 'packing',
+      status: 'packed',
       icon: <InboxOutlined />,
       description: 'Ready to ship',
     },
     {
       title: 'Shipping',
-      status: 'shipping',
+      status: 'shipped',
       icon: <TruckOutlined />,
       description: 'On the way',
     },
@@ -278,20 +279,23 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
       icon: <CheckCircleOutlined />,
       description: 'Arrived at address',
     },
+    {
+      title: 'Completed',
+      status: 'completed',
+      icon: <CheckCircleOutlined />,
+      description: 'Order completed',
+    },
   ];
 
   // Get current step index
   const getCurrentStep = () => {
-    // Map status to step index
+    // Map status to step index (use normalized statuses)
     const statusMap = {
-      pending: -1, // Before first step
+      pending: -1, // Before first step (no step highlighted)
       confirmed: 0,
-      processing: 0, // Old status -> map to confirmed
-      packing: 1,
-      shipping: 2,
-      shipped: 2, // Old status -> map to shipping
+      packed: 1,
+      shipped: 2,
       delivered: 3,
-      delivered_pending_confirmation: 3, // Old status
       completed: 4, // After last step
     };
 
@@ -314,7 +318,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     <div className="order-tracking-enhanced">
       <Card className="tracking-card">
         {/* Show pending status notice if order is still pending */}
-        {(currentStatus === 'pending' || currentStatus === 'processing') && (
+        {currentStatus === 'pending' && (
           <div
             style={{
               padding: '16px',
@@ -370,32 +374,16 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
                 marginBottom: 12,
               }}
             >
-              {!order?.trackingCoordinates && !getCoordinates().usingRealGPS && <span></span>}
-              {!order?.trackingCoordinates && getCoordinates().usingRealGPS && <span></span>}
+              {!order?.trackingCoordinates && !memoizedCoordinates.usingRealGPS && <span></span>}
+              {!order?.trackingCoordinates && memoizedCoordinates.usingRealGPS && <span></span>}
             </div>
             <DeliveryTrackingMap
               sellerCoords={mapAnimation.start}
               buyerCoords={mapAnimation.end}
               duration={mapAnimation.duration}
+              startTime={mapAnimation.startTime}
               onDeliveryComplete={async () => {
-                // Call API to mark order as delivered
-                try {
-                  const response = await orderService.markAsDelivered(order._id);
-
-                  if (response.success) {
-                    message.success('Đơn hàng đã được giao thành công! 🎉');
-                    setCurrentStatus('delivered');
-
-                    // Notify parent component
-                    if (onOrderUpdate) {
-                      onOrderUpdate(response.data);
-                    }
-                  }
-                } catch (error) {
-                  console.error('Error marking order as delivered:', error);
-                  // Don't show error message to user as backend timer will handle it
-                  // Just log for debugging
-                }
+                // Server controls delivered status; map completion is visual only.
               }}
             />
           </Card>

@@ -1093,6 +1093,8 @@ const Header = () => {
   const user = useSelector(selectUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const cartTotalItems = useSelector(selectCartTotalItems);
+  // ---------------------------------------------
+
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [activeSubcategory, setActiveSubcategory] = useState(null);
   const [activeBrand, setActiveBrand] = useState(null);
@@ -1113,22 +1115,41 @@ const Header = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalType, setLoginModalType] = useState(''); // 'wishlist' or 'cart'
+
+  // --- REFS ---
   const dropdownRef = useRef(null);
   const searchDropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const megaMenuRef = useRef(null);
 
+  // Thêm Refs cho phiên bản Sticky Header
+  const stickyDropdownRef = useRef(null);
+  const stickySearchDropdownRef = useRef(null);
+
+  // --- STATE CUỘN TRANG ---
+  const [isScrolled, setIsScrolled] = useState(false);
+
   const hasAutocompleteResults =
     (searchSuggestions.products && searchSuggestions.products.length > 0) ||
     (searchSuggestions.categories && searchSuggestions.categories.length > 0) ||
     (searchSuggestions.brands && searchSuggestions.brands.length > 0);
 
+  // Lắng nghe sự kiện Scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hiện sticky header khi cuộn qua 150px
+      setIsScrolled(window.scrollY > 150);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const saveRecentSearch = (query) => {
     const trimmed = query.trim();
     if (!trimmed) {
-      return;
-    }
+return;
+}
 
     const normalized = trimmed.toLowerCase();
     const next = [
@@ -1151,13 +1172,23 @@ const Header = () => {
     setShowSearchDropdown(false);
   };
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outside (Đã cập nhật để hỗ trợ cả 2 Header)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        stickyDropdownRef.current &&
+        !stickyDropdownRef.current.contains(event.target)
+      ) {
         setShowProfileDropdown(false);
       }
-      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target)) {
+      if (
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(event.target) &&
+        stickySearchDropdownRef.current &&
+        !stickySearchDropdownRef.current.contains(event.target)
+      ) {
         setShowSearchDropdown(false);
       }
       if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target)) {
@@ -1171,17 +1202,15 @@ const Header = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Cleanup timeout on unmount
   useEffect(
     () => () => {
       if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
+clearTimeout(searchTimeoutRef.current);
+}
     },
     []
   );
@@ -1189,8 +1218,8 @@ const Header = () => {
   useEffect(() => {
     const raw = localStorage.getItem('gzm_recent_searches');
     if (!raw) {
-      return;
-    }
+return;
+}
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -1201,10 +1230,8 @@ const Header = () => {
     }
   }, []);
 
-  // Fetch cart data when user logs in (only when authentication state changes to true)
   const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
-    // Only fetch cart when user transitions from not authenticated to authenticated
     if (isAuthenticated && !prevAuthRef.current) {
       dispatch(fetchCart());
     }
@@ -1216,9 +1243,7 @@ const Header = () => {
       await dispatch(logoutUser()).unwrap();
       navigate(PUBLIC_ROUTES.HOME);
       setShowProfileDropdown(false);
-    } catch (error) {
-      // noop
-    }
+    } catch (error) {}
   };
 
   // Handle search input change with debounce
@@ -1226,12 +1251,10 @@ const Header = () => {
     const value = e.target.value;
     setSearchQuery(value);
 
-    // Clear previous timeout
     if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+clearTimeout(searchTimeoutRef.current);
+}
 
-    // Don't fetch suggestions for empty or very short queries
     if (value.trim().length < 2) {
       setSearchSuggestions({ products: [], categories: [], brands: [] });
       setSearchLoading(false);
@@ -1239,15 +1262,11 @@ const Header = () => {
       return;
     }
 
-    // Set loading state
     setSearchLoading(true);
 
-    // Debounce API call (wait 300ms after user stops typing)
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const response = await searchService.getAutocomplete(value.trim());
-
-        // Handle response - backend returns data directly or nested
         const suggestions = response.data?.data || response.data || {};
         const normalizedSuggestions = {
           products: Array.isArray(suggestions.products) ? suggestions.products : [],
@@ -1257,7 +1276,6 @@ const Header = () => {
 
         setSearchSuggestions(normalizedSuggestions);
 
-        // Show dropdown if we have any suggestions
         const hasResults =
           normalizedSuggestions.products.length > 0 ||
           normalizedSuggestions.categories.length > 0 ||
@@ -1273,27 +1291,23 @@ const Header = () => {
     }, 300);
   };
 
-  // Handle search submit (Enter key or Search button click)
   const handleSearchSubmit = (e) => {
     if (e) {
-      e.preventDefault();
-    }
+e.preventDefault();
+}
 
     const trimmedQuery = searchQuery.trim();
-    // Navigate to products page (with or without search query)
     if (trimmedQuery) {
       saveRecentSearch(trimmedQuery);
       navigate(`${PUBLIC_ROUTES.PRODUCTS}?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
-      // No query - show all products
       navigate(PUBLIC_ROUTES.PRODUCTS);
     }
     setShowSearchDropdown(false);
-    setSearchQuery(''); // Clear search input after submit
-    setSearchLoading(false); // Reset loading state
+    setSearchQuery('');
+    setSearchLoading(false);
   };
 
-  // Handle suggestion click
   const handleSuggestionClick = (suggestion) => {
     if (suggestion.type === 'product' && suggestion._id) {
       navigate(`${PUBLIC_ROUTES.PRODUCT_DETAILS.replace(':id', suggestion._id)}`);
@@ -1307,12 +1321,8 @@ const Header = () => {
     setShowSearchDropdown(false);
   };
 
-  // Handle search icon click
-  const handleSearchIconClick = () => {
-    handleSearchSubmit();
-  };
+  const handleSearchIconClick = () => handleSearchSubmit();
 
-  // Handle category click
   const handleCategoryClick = (category) => {
     if (activeCategory?.id === category.id) {
       setActiveCategory(null);
@@ -1325,7 +1335,6 @@ const Header = () => {
     setActiveBrand(null);
   };
 
-  // Handle wishlist click
   const handleWishlistClick = (e) => {
     if (!isAuthenticated) {
       e.preventDefault();
@@ -1334,7 +1343,6 @@ const Header = () => {
     }
   };
 
-  // Handle cart click
   const handleCartClick = (e) => {
     if (!isAuthenticated) {
       e.preventDefault();
@@ -1343,30 +1351,391 @@ const Header = () => {
     }
   };
 
-  // Handle login modal confirm
   const handleLoginModalConfirm = () => {
     setShowLoginModal(false);
     navigate(PUBLIC_ROUTES.LOGIN);
   };
 
-  // Handle login modal cancel
   const handleLoginModalCancel = () => {
     setShowLoginModal(false);
     setLoginModalType('');
   };
 
-  // Get user display name and avatar
   const userDisplayName = user?.fullName || user?.email?.split('@')[0] || 'User';
   const userAvatar =
     user?.avatar ||
     user?.profileImage ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(userDisplayName)}&background=random`;
 
-  // Get current category data
   const currentCategoryData = hoveredCategory || activeCategory;
+
+  // Render dùng chung cho Dropdown Kết quả tìm kiếm
+  const renderSearchDropdown = () => (
+    <div
+      className="position-absolute bg-white border rounded shadow-lg w-100"
+      style={{
+        top: '100%',
+        left: 0,
+        marginTop: '8px',
+        maxHeight: '400px',
+        overflowY: 'auto',
+        zIndex: 1000,
+      }}
+    >
+      {/* Recent Searches */}
+      {searchQuery.trim().length < 2 && recentSearches.length > 0 && (
+        <div className="py-2">
+          <div className="px-3 py-1 d-flex align-items-center justify-content-between">
+            <span className="text-muted small fw-bold">Recent searches</span>
+            <button
+              type="button"
+              className="btn btn-link p-0 small text-decoration-none"
+              onClick={clearRecentSearches}
+              style={{ color: '#B13C36' }}
+            >
+              Clear
+            </button>
+          </div>
+          {recentSearches.map((recentQuery) => (
+            <div
+              key={recentQuery}
+              className="px-3 py-2 d-flex align-items-center gap-2"
+              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onClick={() => handleRecentSearchClick(recentQuery)}
+            >
+              <Search size={14} className="text-secondary" />
+              <span className="text-dark small">{recentQuery}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Products Section */}
+      {searchSuggestions.products && searchSuggestions.products.length > 0 && (
+        <div className="py-2">
+          <div className="px-3 py-1 text-muted small fw-bold">
+            {t('header.search_results.products')}
+          </div>
+          {searchSuggestions.products.slice(0, 5).map((product) => (
+            <div
+              key={product._id}
+              className="px-3 py-2 d-flex align-items-center gap-3"
+              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onClick={() => handleSuggestionClick({ ...product, type: 'product' })}
+            >
+              {product.images && product.images[0] && (
+                <img
+                  src={product.images[0]}
+                  alt={product.name}
+                  style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
+                />
+              )}
+              <div className="flex-grow-1">
+                <div className="text-dark small">{product.name}</div>
+                {product.price && (
+                  <div className="text-primary small fw-bold">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                      product.price
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Categories Section */}
+      {searchSuggestions.categories && searchSuggestions.categories.length > 0 && (
+        <div className="py-2 border-top">
+          <div className="px-3 py-1 text-muted small fw-bold">
+            {t('header.search_results.categories')}
+          </div>
+          {searchSuggestions.categories.slice(0, 3).map((category) => (
+            <div
+              key={category._id}
+              className="px-3 py-2 d-flex align-items-center gap-2"
+              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onClick={() => handleSuggestionClick({ ...category, type: 'category' })}
+            >
+              <Tag size={16} className="text-secondary" />
+              <span className="text-dark small">{category.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Brands Section */}
+      {searchSuggestions.brands && searchSuggestions.brands.length > 0 && (
+        <div className="py-2 border-top">
+          <div className="px-3 py-1 text-muted small fw-bold">
+            {t('header.search_results.brands')}
+          </div>
+          {searchSuggestions.brands.slice(0, 3).map((brand) => (
+            <div
+              key={brand._id}
+              className="px-3 py-2 d-flex align-items-center gap-2"
+              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onClick={() => handleSuggestionClick({ ...brand, type: 'brand' })}
+            >
+              {brand.logo && (
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                />
+              )}
+              <span className="text-dark small">{brand.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // Render dùng chung cho Profile Dropdown
+  const renderProfileDropdown = (closeDropdownFn) => (
+    <div
+      className="position-absolute bg-white border rounded shadow-lg"
+      style={{
+        top: '100%',
+        right: 0,
+        marginTop: '8px',
+        minWidth: '200px',
+        zIndex: 1000,
+        padding: '8px 0',
+      }}
+    >
+      {user?.role !== USER_ROLES.BUYER && (
+        <>
+          <Link
+            to={user?.role === USER_ROLES.ADMIN ? ADMIN_ROUTES.DASHBOARD : SELLER_ROUTES.DASHBOARD}
+            className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+            style={{ transition: 'background-color 0.2s' }}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+            onClick={() => closeDropdownFn(false)}
+          >
+            <LayoutDashboard size={18} />
+            <span>{t('header.dashboard')}</span>
+          </Link>
+          <div className="border-top my-1"></div>
+        </>
+      )}
+
+      <Link
+        to={
+          user?.role === USER_ROLES.ADMIN
+            ? ADMIN_ROUTES.PROFILE
+            : user?.role === USER_ROLES.SELLER
+              ? SELLER_ROUTES.PROFILE
+              : BUYER_ROUTES.PROFILE
+        }
+        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+        style={{ transition: 'background-color 0.2s' }}
+        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+        onClick={() => closeDropdownFn(false)}
+      >
+        <UserCircle size={18} />
+        <span>{t('header.profile')}</span>
+      </Link>
+
+      <div className="border-top my-1"></div>
+
+      <Link
+        to="/change-password"
+        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
+        style={{ transition: 'background-color 0.2s' }}
+        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+        onClick={() => closeDropdownFn(false)}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>{t('header.change_password')}</span>
+      </Link>
+
+      <div className="border-top my-1"></div>
+
+      <button
+        onClick={handleLogout}
+        className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent w-100 px-3 py-2"
+        style={{ transition: 'background-color 0.2s', textAlign: 'left', cursor: 'pointer' }}
+        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
+        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+      >
+        <LogOut size={18} />
+        <span>{t('header.logout')}</span>
+      </button>
+    </div>
+  );
 
   return (
     <header>
+      {/* =========================================
+          VERSION 1: STICKY HEADER (Khi Scroll xuống)
+          ========================================= */}
+      <div
+        className="bg-white shadow-sm border-bottom position-fixed w-100 d-none d-lg-block"
+        style={{
+          top: 0,
+          left: 0,
+          zIndex: 1040,
+          transform: isScrolled ? 'translateY(0)' : 'translateY(-100%)',
+
+          // --- BẢO VỆ 2 LỚP: Ẩn tàng hình và Khóa click khi chưa scroll ---
+          opacity: isScrolled ? 1 : 0,
+          pointerEvents: isScrolled ? 'auto' : 'none',
+
+          transition: 'all 0.3s ease-in-out', // Sửa lại thành all cho mượt
+          height: '70px',
+        }}
+      >
+        <div className="container h-100 d-flex align-items-center justify-content-between gap-4">
+          {/* Trái: Logo + Search Bar */}
+          <div className="d-flex align-items-center gap-4 flex-grow-1" style={{ maxWidth: '60%' }}>
+            <Link
+              to={PUBLIC_ROUTES.HOME}
+              className="text-decoration-none text-dark d-flex align-items-center gap-2"
+            >
+              <img src="/logo.png" alt="GZMart" style={{ height: '40px', objectFit: 'contain' }} />
+              <h2 className="h4 fw-bolder mb-0 tracking-tight d-none d-xl-block">GZMart</h2>
+            </Link>
+
+            <div className="position-relative flex-grow-1" ref={stickySearchDropdownRef}>
+              <form onSubmit={handleSearchSubmit} className="input-group">
+                <span
+                  className="input-group-text border-0 pe-0 rounded-start"
+                  style={{ backgroundColor: '#F3F4F6', cursor: 'pointer' }}
+                  onClick={handleSearchIconClick}
+                >
+                  {searchLoading ? (
+                    <Loader2
+                      size={18}
+                      className="text-secondary"
+                      style={{ animation: 'spin 1s linear infinite' }}
+                    />
+                  ) : (
+                    <Search size={18} className="text-secondary" />
+                  )}
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-0 ps-3 text-dark py-2"
+                  style={{
+                    backgroundColor: '#F3F4F6',
+                    boxShadow: 'none',
+                    outline: 'none',
+                    fontSize: '0.9rem',
+                  }}
+                  placeholder={t('header.search_placeholder')}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => {
+                    if (searchQuery.trim().length >= 2) {
+                      setShowSearchDropdown(hasAutocompleteResults);
+                    } else if (recentSearches.length > 0) {
+                      setShowSearchDropdown(true);
+                    }
+                  }}
+                />
+              </form>
+              {showSearchDropdown && renderSearchDropdown()}
+            </div>
+          </div>
+
+          {/* Phải: Actions */}
+          <div className="d-flex align-items-center gap-4">
+            <div style={{ cursor: 'pointer' }}>
+              <NotificationBell />
+            </div>
+
+            <Link to={BUYER_ROUTES.WISHLIST} onClick={handleWishlistClick} className="text-dark">
+              <Heart size={22} />
+            </Link>
+
+            <Link
+              to={BUYER_ROUTES.CART}
+              onClick={handleCartClick}
+              className="text-dark position-relative"
+            >
+              <ShoppingCart size={22} />
+              {cartTotalItems > 0 && (
+                <span
+                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                  style={{ fontSize: '0.55rem', backgroundColor: '#b13c36', color: '#fff' }}
+                >
+                  {cartTotalItems}
+                </span>
+              )}
+            </Link>
+
+            <span className="text-secondary opacity-25">|</span>
+
+            {isAuthenticated && user ? (
+              <div className="position-relative" ref={stickyDropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="d-flex align-items-center gap-2 text-dark border-0 bg-transparent p-0"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <img
+                    src={userAvatar}
+                    alt={userDisplayName}
+                    style={{
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                  <span className="fw-medium small">{userDisplayName}</span>
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      transform: showProfileDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s',
+                    }}
+                  />
+                </button>
+                {showProfileDropdown && renderProfileDropdown(setShowProfileDropdown)}
+              </div>
+            ) : (
+              <Link
+                to={PUBLIC_ROUTES.LOGIN}
+                className="d-flex align-items-center gap-2 text-decoration-none text-dark"
+              >
+                <User size={18} />
+                <span className="fw-medium small">{t('header.login')}</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================
+          VERSION 2: NORMAL HEADER (UI Cũ)
+          ========================================= */}
       {/* Top Bar */}
       <div
         style={{ backgroundColor: '#191C1F' }}
@@ -1494,100 +1863,7 @@ const Header = () => {
                     />
                   </button>
 
-                  {showProfileDropdown && (
-                    <div
-                      className="position-absolute bg-white border rounded shadow-lg"
-                      style={{
-                        top: '100%',
-                        right: 0,
-                        marginTop: '8px',
-                        minWidth: '200px',
-                        zIndex: 1000,
-                        padding: '8px 0',
-                      }}
-                    >
-                      <Link
-                        to={
-                          user?.role === USER_ROLES.ADMIN
-                            ? ADMIN_ROUTES.DASHBOARD
-                            : user?.role === USER_ROLES.SELLER
-                              ? SELLER_ROUTES.DASHBOARD
-                              : BUYER_ROUTES.DASHBOARD
-                        }
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <LayoutDashboard size={18} />
-                        <span>{t('header.dashboard')}</span>
-                      </Link>
-                      <div className="border-top my-1"></div>
-                      <Link
-                        to={
-                          user?.role === USER_ROLES.ADMIN
-                            ? ADMIN_ROUTES.PROFILE
-                            : user?.role === USER_ROLES.SELLER
-                              ? SELLER_ROUTES.PROFILE
-                              : BUYER_ROUTES.PROFILE
-                        }
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <UserCircle size={18} />
-                        <span>{t('header.profile')}</span>
-                      </Link>
-                      <div className="border-top my-1"></div>
-                      <Link
-                        to="/change-password"
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                        onClick={() => setShowProfileDropdown(false)}
-                      >
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                        <span>{t('header.change_password')}</span>
-                      </Link>
-                      <div className="border-top my-1"></div>
-                      <button
-                        onClick={handleLogout}
-                        className="d-flex align-items-center gap-2 text-decoration-none text-dark border-0 bg-transparent w-100 px-3 py-2"
-                        style={{
-                          transition: 'background-color 0.2s',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                        }}
-                        onMouseEnter={(e) => (e.target.style.backgroundColor = '#f8f9fa')}
-                        onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-                      >
-                        <LogOut size={18} />
-                        <span>{t('header.logout')}</span>
-                      </button>
-                    </div>
-                  )}
+                  {showProfileDropdown && renderProfileDropdown(setShowProfileDropdown)}
                 </div>
               ) : (
                 <Link
@@ -1701,173 +1977,7 @@ const Header = () => {
                   </form>
 
                   {/* Search Suggestions Dropdown */}
-                  {showSearchDropdown && (
-                    <div
-                      className="position-absolute bg-white border rounded shadow-lg w-100"
-                      style={{
-                        top: '100%',
-                        left: 0,
-                        marginTop: '8px',
-                        maxHeight: '400px',
-                        overflowY: 'auto',
-                        zIndex: 1000,
-                      }}
-                    >
-                      {/* Recent Searches */}
-                      {searchQuery.trim().length < 2 && recentSearches.length > 0 && (
-                        <div className="py-2">
-                          <div className="px-3 py-1 d-flex align-items-center justify-content-between">
-                            <span className="text-muted small fw-bold">Recent searches</span>
-                            <button
-                              type="button"
-                              className="btn btn-link p-0 small text-decoration-none"
-                              onClick={clearRecentSearches}
-                              style={{ color: '#B13C36' }}
-                            >
-                              Clear
-                            </button>
-                          </div>
-                          {recentSearches.map((recentQuery) => (
-                            <div
-                              key={recentQuery}
-                              className="px-3 py-2 d-flex align-items-center gap-2"
-                              style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor = 'transparent')
-                              }
-                              onClick={() => handleRecentSearchClick(recentQuery)}
-                            >
-                              <Search size={14} className="text-secondary" />
-                              <span className="text-dark small">{recentQuery}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Products Section */}
-                      {searchSuggestions.products && searchSuggestions.products.length > 0 && (
-                        <div className="py-2">
-                          <div className="px-3 py-1 text-muted small fw-bold">
-                            {t('header.search_results.products')}
-                          </div>
-                          {searchSuggestions.products.slice(0, 5).map((product) => (
-                            <div
-                              key={product._id}
-                              className="px-3 py-2 d-flex align-items-center gap-3"
-                              style={{
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s',
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor = 'transparent')
-                              }
-                              onClick={() => handleSuggestionClick({ ...product, type: 'product' })}
-                            >
-                              {product.images && product.images[0] && (
-                                <img
-                                  src={product.images[0]}
-                                  alt={product.name}
-                                  style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    objectFit: 'cover',
-                                    borderRadius: '4px',
-                                  }}
-                                />
-                              )}
-                              <div className="flex-grow-1">
-                                <div className="text-dark small">{product.name}</div>
-                                {product.price && (
-                                  <div className="text-primary small fw-bold">
-                                    {new Intl.NumberFormat('vi-VN', {
-                                      style: 'currency',
-                                      currency: 'VND',
-                                    }).format(product.price)}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Categories Section */}
-                      {searchSuggestions.categories && searchSuggestions.categories.length > 0 && (
-                        <div className="py-2 border-top">
-                          <div className="px-3 py-1 text-muted small fw-bold">
-                            {t('header.search_results.categories')}
-                          </div>
-                          {searchSuggestions.categories.slice(0, 3).map((category) => (
-                            <div
-                              key={category._id}
-                              className="px-3 py-2 d-flex align-items-center gap-2"
-                              style={{
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s',
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor = 'transparent')
-                              }
-                              onClick={() =>
-                                handleSuggestionClick({ ...category, type: 'category' })
-                              }
-                            >
-                              <Tag size={16} className="text-secondary" />
-                              <span className="text-dark small">{category.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Brands Section */}
-                      {searchSuggestions.brands && searchSuggestions.brands.length > 0 && (
-                        <div className="py-2 border-top">
-                          <div className="px-3 py-1 text-muted small fw-bold">
-                            {t('header.search_results.brands')}
-                          </div>
-                          {searchSuggestions.brands.slice(0, 3).map((brand) => (
-                            <div
-                              key={brand._id}
-                              className="px-3 py-2 d-flex align-items-center gap-2"
-                              style={{
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s',
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor = '#f8f9fa')
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor = 'transparent')
-                              }
-                              onClick={() => handleSuggestionClick({ ...brand, type: 'brand' })}
-                            >
-                              {brand.logo && (
-                                <img
-                                  src={brand.logo}
-                                  alt={brand.name}
-                                  style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    objectFit: 'contain',
-                                  }}
-                                />
-                              )}
-                              <span className="text-dark small">{brand.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {showSearchDropdown && renderSearchDropdown()}
                 </div>
               </div>
             </div>
@@ -1946,12 +2056,10 @@ const Header = () => {
         {/* Mega Menu Dropdown */}
         {currentCategoryData &&
           (() => {
-            // Extract unique brands from selected subcategory
             const uniqueBrands = activeSubcategory?.products
               ? [...new Set(activeSubcategory.products.map((p) => p.brand).filter(Boolean))]
               : [];
 
-            // Filter products by selected brand
             const displayProducts = activeSubcategory?.products
               ? activeBrand
                 ? activeSubcategory.products.filter((p) => p.brand === activeBrand)
@@ -2001,7 +2109,7 @@ const Header = () => {
                           key={subcategory.id}
                           onClick={() => {
                             setActiveSubcategory(subcategory);
-                            setActiveBrand(null); // Reset brand when changing subcategory
+                            setActiveBrand(null);
                           }}
                           className={`d-flex align-items-center justify-content-between px-2 py-2 rounded ${
                             activeSubcategory?.id === subcategory.id
@@ -2033,7 +2141,7 @@ const Header = () => {
                     </div>
                   </div>
 
-                  {/* Column 2 - Brands (only show when subcategory is selected) */}
+                  {/* Column 2 - Brands */}
                   {activeSubcategory && uniqueBrands.length > 0 && (
                     <div
                       style={{
@@ -2280,14 +2388,11 @@ const Header = () => {
       {/* Login Required Modal */}
       {showLoginModal && (
         <>
-          {/* Backdrop */}
           <div
             className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
             style={{ zIndex: 9998 }}
             onClick={handleLoginModalCancel}
           />
-
-          {/* Modal */}
           <div
             className="position-fixed top-50 start-50 translate-middle bg-white rounded shadow-lg"
             style={{
@@ -2298,7 +2403,6 @@ const Header = () => {
             }}
           >
             <div className="p-4">
-              {/* Icon */}
               <div className="text-center mb-3">
                 <div
                   className="d-inline-flex align-items-center justify-content-center rounded-circle"
@@ -2315,13 +2419,9 @@ const Header = () => {
                   )}
                 </div>
               </div>
-
-              {/* Title */}
               <h5 className="text-center fw-bold mb-2">
                 {t('header.login_required_title') || 'Login Required'}
               </h5>
-
-              {/* Message */}
               <p className="text-center text-muted mb-4">
                 {loginModalType === 'wishlist'
                   ? t('header.login_required_wishlist_msg') ||
@@ -2329,16 +2429,11 @@ const Header = () => {
                   : t('header.login_required_cart_msg') ||
                     'Please login to access your cart and continue shopping.'}
               </p>
-
-              {/* Buttons */}
               <div className="d-flex gap-3">
                 <button
                   onClick={handleLoginModalCancel}
                   className="btn btn-outline-secondary flex-grow-1 py-2"
-                  style={{
-                    borderRadius: '8px',
-                    fontWeight: '500',
-                  }}
+                  style={{ borderRadius: '8px', fontWeight: '500' }}
                 >
                   {t('header.cancel') || 'Cancel'}
                 </button>

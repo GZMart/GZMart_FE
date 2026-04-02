@@ -30,7 +30,6 @@ const SellerProfilePage = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [showAddressDrawer, setShowAddressDrawer] = useState(false);
-  const [gettingLocation, setGettingLocation] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -44,8 +43,6 @@ const SellerProfilePage = () => {
     provinceName: '',
     wardCode: '',
     wardName: '',
-    lat: null,
-    lng: null,
   });
 
   const [provinces, setProvinces] = useState([]);
@@ -93,8 +90,7 @@ const SellerProfilePage = () => {
         provinceName: user.provinceName || '',
         wardCode: user.wardCode || '',
         wardName: user.wardName || '',
-        lat: user.location?.lat ?? null,
-        lng: user.location?.lng ?? null,
+        // location coordinates removed (GPS no longer required)
       });
       setAvatarPreview(user.avatar || null);
     }
@@ -132,47 +128,6 @@ const SellerProfilePage = () => {
 
   const handleAvatarClick = () => fileInputRef.current?.click();
 
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser');
-      return;
-    }
-
-    setGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setFormData((prev) => ({
-          ...prev,
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        }));
-        setHasChanges(true);
-        setGettingLocation(false);
-        toast.success(
-          `GPS coordinates obtained: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
-        );
-      },
-      (error) => {
-        setGettingLocation(false);
-        let errorMessage = 'Unable to retrieve your location';
-        if (error.code === 1) {
-          errorMessage =
-            'Location permission denied. Please enable location access in your browser settings.';
-        } else if (error.code === 2) {
-          errorMessage = 'Location information unavailable';
-        } else if (error.code === 3) {
-          errorMessage = 'Location request timed out';
-        }
-        toast.error(errorMessage);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
-  };
-
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) {
@@ -207,12 +162,7 @@ const SellerProfilePage = () => {
       submitData.append('provinceName', formData.provinceName);
       submitData.append('wardCode', formData.wardCode);
       submitData.append('wardName', formData.wardName);
-      if (formData.lat !== null && formData.lng !== null) {
-        submitData.append(
-          'location',
-          JSON.stringify({ lat: formData.lat, lng: formData.lng, address: formData.address || '' })
-        );
-      }
+      // GPS coordinates are no longer collected here
       if (avatarFile) {
         submitData.append('avatar', avatarFile);
       }
@@ -392,10 +342,7 @@ const SellerProfilePage = () => {
             <p className={styles.sectionHint}>
               Customize your shop page layout, banners, and modules.
             </p>
-            <a
-              href="/seller/shop-decoration"
-              className={styles.appearanceLink}
-            >
+            <a href="/seller/shop-decoration" className={styles.appearanceLink}>
               <div className={styles.appearanceLinkContent}>
                 <div className={styles.appearanceLinkIcon}>
                   <Palette size={28} />
@@ -425,17 +372,12 @@ const SellerProfilePage = () => {
                 {[formData.wardName, formData.provinceName].filter(Boolean).join(', ') ||
                   'No province/ward selected'}
               </p>
-              {formData.lat !== null && formData.lng !== null && (
-                <p className={styles.gpsSummaryText}>
-                  GPS: {Number(formData.lat).toFixed(6)}, {Number(formData.lng).toFixed(6)}
-                </p>
-              )}
               <button
                 type="button"
                 className={styles.openAddressDrawerBtn}
                 onClick={() => setShowAddressDrawer(true)}
               >
-                Edit Address in Drawer
+                Edit Address
               </button>
             </div>
           </section>
@@ -464,7 +406,7 @@ const SellerProfilePage = () => {
         className={styles.addressDrawer}
       >
         <div className={styles.drawerHeader}>
-          <h3 className={styles.drawerTitle}>Edit Address & GPS</h3>
+          <h3 className={styles.drawerTitle}>Edit Address</h3>
           <button
             type="button"
             className={styles.drawerCloseBtn}
@@ -520,35 +462,7 @@ const SellerProfilePage = () => {
             </select>
           </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.label}>GPS Location (Optional)</label>
-            <button
-              type="button"
-              onClick={handleGetCurrentLocation}
-              disabled={gettingLocation}
-              className={styles.geoButton}
-            >
-              {gettingLocation ? 'Getting location...' : 'Use My Current Location'}
-            </button>
-
-            {formData.lat !== null && formData.lng !== null && (
-              <div className={styles.geoPreview}>
-                <span>
-                  Lat: {Number(formData.lat).toFixed(6)}, Lng: {Number(formData.lng).toFixed(6)}
-                </span>
-                <button
-                  type="button"
-                  className={styles.geoRemoveBtn}
-                  onClick={() => {
-                    setFormData((prev) => ({ ...prev, lat: null, lng: null }));
-                    setHasChanges(true);
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-          </div>
+          {/* GPS Location removed: not required anymore */}
         </Offcanvas.Body>
 
         <div className={styles.drawerFooter}>

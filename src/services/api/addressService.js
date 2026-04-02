@@ -25,6 +25,10 @@ const addressService = {
     const response = await api.put(`/api/addresses/${id}/default`);
     return response;
   },
+  geocodeString: async (payload) => {
+    const response = await api.post('/api/addresses/geocode-string', payload);
+    return response;
+  },
 };
 
 export default addressService;

@@ -34,9 +34,10 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 export const ORDER_STATUS = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
-  PROCESSING: 'processing',
+  PACKED: 'packed',
   SHIPPED: 'shipped',
   DELIVERED: 'delivered',
+  COMPLETED: 'completed',
   CANCELLED: 'cancelled',
   REFUNDED: 'refunded',
 };
@@ -44,9 +45,10 @@ export const ORDER_STATUS = {
 export const ORDER_STATUS_LABELS = {
   [ORDER_STATUS.PENDING]: 'Pending',
   [ORDER_STATUS.CONFIRMED]: 'Confirmed',
-  [ORDER_STATUS.PROCESSING]: 'Processing',
+  [ORDER_STATUS.PACKED]: 'Packed',
   [ORDER_STATUS.SHIPPED]: 'Shipped',
   [ORDER_STATUS.DELIVERED]: 'Delivered',
+  [ORDER_STATUS.COMPLETED]: 'Completed',
   [ORDER_STATUS.CANCELLED]: 'Cancelled',
   [ORDER_STATUS.REFUNDED]: 'Refunded',
 };
@@ -54,9 +56,10 @@ export const ORDER_STATUS_LABELS = {
 export const ORDER_STATUS_COLORS = {
   [ORDER_STATUS.PENDING]: 'warning',
   [ORDER_STATUS.CONFIRMED]: 'info',
-  [ORDER_STATUS.PROCESSING]: 'primary',
+  [ORDER_STATUS.PACKED]: 'primary',
   [ORDER_STATUS.SHIPPED]: 'secondary',
   [ORDER_STATUS.DELIVERED]: 'success',
+  [ORDER_STATUS.COMPLETED]: 'success',
   [ORDER_STATUS.CANCELLED]: 'danger',
   [ORDER_STATUS.REFUNDED]: 'dark',
 };

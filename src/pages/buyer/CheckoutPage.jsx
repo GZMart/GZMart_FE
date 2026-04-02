@@ -334,6 +334,7 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('payos');
   const [shippingCompany, setShippingCompany] = useState('ghn');
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
+  const [includeCoin, setIncludeCoin] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -542,6 +543,7 @@ const CheckoutPage = () => {
           giftBoxFee: includeGiftBox ? 11000 : 0,
           voucherIds: getSelectedVoucherIds(),
           cartItemIds: realCartItemIds,
+          useCoin: includeCoin,
         });
         if (response.success) {
           // Stack live voucher discount on top of API totals
@@ -581,6 +583,7 @@ const CheckoutPage = () => {
     getSelectedVoucherIds,
     shippingCompany,
     includeGiftBox,
+    includeCoin,
     shippingCompanies,
     applicableVouchers,
     selectedShopVoucherId,
@@ -596,7 +599,9 @@ const CheckoutPage = () => {
   // Values for display (use selected shipping cost instead of backend)
   const { subtotal, tax, discount } = orderSummary;
   const giftBoxPrice = includeGiftBox ? 11000 : 0;
-  const finalTotal = subtotal + selectedShippingCost + tax - discount + giftBoxPrice;
+  const coinDeduction = includeCoin ? orderSummary.coinEstimate || 0 : 0;
+  const finalTotal =
+    subtotal + selectedShippingCost + tax - discount + giftBoxPrice - coinDeduction;
 
   // Handle step navigation
   const handleNext = () => {
@@ -642,6 +647,7 @@ const CheckoutPage = () => {
         notes: '',
         voucherIds: getSelectedVoucherIds(),
         cartItemIds: realCartItemIds,
+        useCoin: includeCoin,
         // Pass live items directly so BE can create order items without CartItem lookup
         liveItems: liveItems.map((item) => ({
           productId: item.productId,
@@ -1343,6 +1349,23 @@ const CheckoutPage = () => {
               onChange={(e) => setIncludeGiftBox(e.target.checked)}
             />
             {includeGiftBox && <small className="text-muted ms-4">+{formatCurrency(11000)}</small>}
+          </div>
+        )}
+
+        {currentStep < 3 && (
+          <div className="mb-3">
+            <Form.Check
+              type="checkbox"
+              id="useCoin"
+              label="Use GZCoin Available"
+              checked={includeCoin}
+              onChange={(e) => setIncludeCoin(e.target.checked)}
+            />
+            {includeCoin && orderSummary.coinEstimate > 0 && (
+              <small className="text-muted ms-4">
+                -{formatCurrency(orderSummary.coinEstimate)}
+              </small>
+            )}
           </div>
         )}
 

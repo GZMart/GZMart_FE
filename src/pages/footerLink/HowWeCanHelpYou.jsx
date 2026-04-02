@@ -1,6 +1,6 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import PropTypes from 'prop-types'; // <-- Thêm thư viện khai báo prop types
 import {
   ChevronLeft,
   Search,
@@ -70,6 +70,16 @@ const TopicCard = ({ item }) => (
   </motion.div>
 );
 
+// Khai báo Prop Types cho TopicCard
+TopicCard.propTypes = {
+  item: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    label: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    active: PropTypes.bool.isRequired,
+  }).isRequired,
+};
+
 const ContactCard = ({
   icon: Icon,
   iconColor,
@@ -105,6 +115,19 @@ const ContactCard = ({
   </motion.div>
 );
 
+// Khai báo Prop Types cho ContactCard
+ContactCard.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  iconColor: PropTypes.string.isRequired,
+  iconBg: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  desc: PropTypes.string.isRequired,
+  contact: PropTypes.string.isRequired,
+  btnText: PropTypes.string.isRequired,
+  btnColor: PropTypes.string.isRequired,
+  btnClass: PropTypes.string.isRequired,
+};
+
 const TopicList = ({ items }) => (
   <ul className="list-unstyled d-flex flex-column gap-3 text-secondary">
     {items.map((t, idx) => (
@@ -114,6 +137,16 @@ const TopicList = ({ items }) => (
     ))}
   </ul>
 );
+
+// Khai báo Prop Types cho TopicList
+TopicList.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      text: PropTypes.string.isRequired,
+      highlight: PropTypes.bool,
+    })
+  ).isRequired,
+};
 
 // --- Main Component ---
 

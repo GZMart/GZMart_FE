@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Modal, Button, Form, Alert, Image, Spin, message, Input, Steps } from 'antd';
+import { Drawer, Button, Form, Alert, Image, Spin, message, Input, Steps } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { Truck, Hand, Undo2, PackageCheck, PackagePlus, Handshake, RefreshCcw } from 'lucide-react';
 import rmaService from '@services/api/rmaService';
@@ -17,6 +17,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
   const [legTwoCompleted, setLegTwoCompleted] = useState(false);
   const [exchangeLegOneCompleted, setExchangeLegOneCompleted] = useState(false);
   const [exchangeLegTwoCompleted, setExchangeLegTwoCompleted] = useState(false);
+  const [receiptConfirmed, setReceiptConfirmed] = useState(false);
 
   if (!returnRequest) {
     return null;
@@ -77,8 +78,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
       if (onSuccess) {
         onSuccess(response.data);
       }
-
-      onClose();
+      // keep drawer open so seller can choose post-receipt actions
+      setReceiptConfirmed(true);
     } catch (err) {
       console.error('[ReturnDetailsModal] Error processing refund:', err);
       setError(err.response?.data?.message || 'Failed to process refund');
@@ -259,14 +260,19 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
     return { seller, buyer };
   };
 
+  const isVideoUrl = (url) => {
+    if (!url || typeof url !== 'string') {
+return false;
+}
+    return (
+      /\.(mp4|webm|ogg|mov|mkv)(\?.*)?$/i.test(url) ||
+      url.includes('video') ||
+      url.includes('blob:')
+    );
+  };
+
   return (
-    <Modal
-      title="Return Request Details"
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      width={800}
-    >
+    <Drawer title="Return Request Details" open={visible} onClose={onClose} width={800}>
       <Spin spinning={loading}>
         {error && (
           <Alert
@@ -341,23 +347,44 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
           </div>
         </div>
 
-        {/* Evidence Images */}
+        {/* Evidence (photos & videos) */}
         {returnRequest._original?.images?.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <strong>Evidence Photos:</strong>
+            <strong>Evidence:</strong>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-              <Image.PreviewGroup>
-                {returnRequest._original.images.map((url, index) => (
-                  <Image
-                    key={index}
-                    src={url}
-                    alt={`Evidence ${index + 1}`}
-                    width={100}
-                    height={100}
-                    style={{ objectFit: 'cover', borderRadius: 4 }}
-                  />
-                ))}
-              </Image.PreviewGroup>
+              {returnRequest._original.images.map((url, index) => {
+                if (isVideoUrl(url)) {
+                  return (
+                    <div key={index} style={{ width: 200, borderRadius: 6, overflow: 'hidden' }}>
+                      <video
+                        controls
+                        src={url}
+                        style={{
+                          width: '100%',
+                          height: 120,
+                          objectFit: 'cover',
+                          background: '#000',
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  );
+                }
+
+                // default: image
+                return (
+                  <Image.PreviewGroup key={index}>
+                    <Image
+                      src={url}
+                      alt={`Evidence ${index + 1}`}
+                      width={100}
+                      height={100}
+                      style={{ objectFit: 'cover', borderRadius: 4 }}
+                    />
+                  </Image.PreviewGroup>
+                );
+              })}
             </div>
           </div>
         )}
@@ -401,35 +428,22 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
             <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleRespond('approve', 'refund')}
+                icon={<Truck />}
+                onClick={() =>
+                  handleRespond(
+                    'approve',
+                    returnRequest._original?.type &&
+                      ['refund', 'exchange'].includes(returnRequest._original.type)
+                      ? returnRequest._original.type
+                      : 'refund'
+                  )
+                }
                 loading={loading}
                 block
               >
-                Refund
+                Receive Items Back
               </Button>
-              {canExchange && (
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => handleRespond('approve', 'exchange')}
-                  loading={loading}
-                  block
-                >
-                  Exchange
-                </Button>
-              )}
             </div>
-
-            {!canExchange && (
-              <Alert
-                type="warning"
-                message="Out of stock"
-                description="Exchange is unavailable for this request because stock is insufficient."
-                showIcon
-                style={{ marginTop: 12 }}
-              />
-            )}
 
             <div style={{ marginTop: 12 }}>
               <Button
@@ -493,7 +507,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
-                    duration={60}
+                    duration={10}
+                    syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                     onDeliveryComplete={() => setExchangeLegOneCompleted(true)}
                   />
                 </div>
@@ -511,7 +526,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().buyer}
                     buyerCoords={getTrackingCoordinates().seller}
-                    duration={60}
+                    duration={10}
+                    syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                     onDeliveryComplete={() => setExchangeLegTwoCompleted(true)}
                   />
                   {exchangeLegTwoCompleted && returnRequest.status !== 'completed' && (
@@ -570,7 +586,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                     <DeliveryTrackingMap
                       sellerCoords={getTrackingCoordinates().seller}
                       buyerCoords={getTrackingCoordinates().buyer}
-                      duration={60}
+                      duration={10}
+                      syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                       onDeliveryComplete={() => setLegOneCompleted(true)}
                     />
                     {legOneCompleted && (
@@ -596,7 +613,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().buyer}
                     buyerCoords={getTrackingCoordinates().seller}
-                    duration={60}
+                    duration={10}
+                    syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                     onDeliveryComplete={() => setLegTwoCompleted(true)}
                   />
                 </div>
@@ -631,7 +649,10 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
               </Form>
               <Button
                 type="primary"
-                onClick={handleConfirmReceipt}
+                onClick={async () => {
+                  await handleConfirmReceipt();
+                  setReceiptConfirmed(true);
+                }}
                 loading={loading}
                 disabled={
                   !canSellerConfirmReceived &&
@@ -645,6 +666,47 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                   ? 'Confirm Faulty Item Received & Complete Exchange'
                   : 'Confirm Faulty Item Received'}
               </Button>
+
+              {/* After receipt confirmed, show action choices */}
+              {receiptConfirmed && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button type="primary" onClick={handleProcessRefund} loading={loading} block>
+                      Refund
+                    </Button>
+                    {canExchange && (
+                      <Button
+                        type="default"
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            const resp = await rmaService.processExchange(
+                              returnRequest._original._id
+                            );
+                            message.success('Exchange processed successfully');
+                            if (onSuccess) {
+onSuccess(resp.data);
+}
+                            onClose();
+                          } catch (err) {
+                            console.error('[ReturnDetailsModal] Error processing exchange:', err);
+                            message.error('Failed to process exchange');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                        loading={loading}
+                        block
+                      >
+                        Exchange
+                      </Button>
+                    )}
+                    <Button danger onClick={() => handleRespond('reject')} loading={loading} block>
+                      Reject Request
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -664,7 +726,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
           </Button>
         )}
       </Spin>
-    </Modal>
+    </Drawer>
   );
 };
 

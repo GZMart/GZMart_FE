@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Card, Button, Badge, notification, message, Space, Tag } from 'antd';
+import { Card, Button, Badge, notification, Space, Tag } from 'antd';
+import { toast } from 'react-toastify';
 import {
   BellOutlined,
   CheckOutlined,
@@ -27,7 +28,6 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
 
     // Listen for new orders
     socket.on('seller:new-order', (data) => {
-      console.log('New order received:', data);
       setNewOrderCount((prev) => prev + 1);
 
       // Show notification
@@ -57,9 +57,9 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/notification-sound.mp3');
-      audio.play().catch((e) => console.log('Could not play sound:', e));
+      audio.play().catch(() => {});
     } catch (error) {
-      console.log('Notification sound not available');
+      // Notification sound not available
     }
   };
 
@@ -75,42 +75,44 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
       setLoading(true);
       const token = localStorage.getItem('token');
 
+      // Move to 'confirmed' (canonical). Backend will trigger GHN on 'confirmed' or 'processing' as configured.
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/seller/orders/${order._id}/confirm`,
+        `${import.meta.env.VITE_API_URL}/api/seller/orders/${order._id}/status`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({ newStatus: 'confirmed' }),
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to confirm order');
+        throw new Error('Failed to update order to processing');
       }
 
       const data = await response.json();
-      message.success('Đã xác nhận đơn hàng!');
+      toast.success('Đã xác nhận đơn hàng');
       setCurrentStatus('confirmed');
 
       if (onOrderUpdate) {
         onOrderUpdate(data.data);
       }
     } catch (error) {
-      console.error('Error confirming order:', error);
-      message.error('Không thể xác nhận đơn hàng. Vui lòng thử lại!');
+      toast.error('Không thể xác nhận đơn hàng. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }
   };
 
-  // Pack order (Confirmed -> Packing)
+  // Pack order (Confirmed -> Packed)
   const handlePackOrder = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
 
+      // Use the pack endpoint if available; expect backend to set canonical 'packed' status
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/seller/orders/${order._id}/pack`,
         {
@@ -127,15 +129,15 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
       }
 
       const data = await response.json();
-      message.success('Đã đánh dấu đã đóng gói hàng!');
-      setCurrentStatus('packing');
+      toast.success('Đã đánh dấu đã đóng gói hàng!');
+      // Set canonical 'packed' on success (backend should return canonical)
+      setCurrentStatus(data.data?.status || 'packed');
 
       if (onOrderUpdate) {
         onOrderUpdate(data.data);
       }
     } catch (error) {
-      console.error('Error packing order:', error);
-      message.error('Không thể đánh dấu đóng gói. Vui lòng thử lại!');
+      toast.error('Không thể đánh dấu đóng gói. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }
@@ -178,15 +180,14 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
       }
 
       const data = await response.json();
-      message.success('Đã bắt đầu vận chuyển! Đơn hàng sẽ tự động đến nơi sau 60 giây.');
+      toast.success('Đã bắt đầu vận chuyển! Đơn hàng sẽ tự động đến nơi sau 60 giây.');
       setCurrentStatus('shipping');
 
       if (onOrderUpdate) {
         onOrderUpdate(data.data);
       }
     } catch (error) {
-      console.error('Error starting shipping:', error);
-      message.error('Không thể bắt đầu vận chuyển. Vui lòng thử lại!');
+      toast.error('Không thể bắt đầu vận chuyển. Vui lòng thử lại!');
     } finally {
       setLoading(false);
     }
@@ -196,7 +197,6 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
   const renderActionButton = () => {
     switch (currentStatus) {
       case 'pending':
-      case 'processing': // Support old workflow
         return (
           <Button
             type="primary"
@@ -223,6 +223,7 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
           </Button>
         );
 
+      case 'packed':
       case 'packing':
         return (
           <Button
@@ -246,7 +247,6 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
         );
 
       case 'delivered':
-      case 'delivered_pending_confirmation': // Support old workflow
         return (
           <Tag color="success" style={{ fontSize: 16, padding: '8px 16px' }}>
             <CheckOutlined /> Đã giao hàng - Chờ người mua xác nhận
@@ -269,13 +269,10 @@ const SellerOrderActions = ({ order, onOrderUpdate }) => {
   const getStatusTag = () => {
     const statusMap = {
       pending: { color: 'warning', text: 'Chờ xác nhận' },
-      processing: { color: 'warning', text: 'Đang xử lý' },
       confirmed: { color: 'processing', text: 'Đã xác nhận' },
-      packing: { color: 'processing', text: 'Đã đóng gói' },
-      shipping: { color: 'processing', text: 'Đang giao hàng' },
+      packed: { color: 'processing', text: 'Đã đóng gói' },
       shipped: { color: 'processing', text: 'Đang giao hàng' },
       delivered: { color: 'success', text: 'Đã giao hàng' },
-      delivered_pending_confirmation: { color: 'success', text: 'Đã giao hàng' },
       completed: { color: 'success', text: 'Hoàn thành' },
       cancelled: { color: 'error', text: 'Đã hủy' },
     };
