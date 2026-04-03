@@ -6,7 +6,7 @@ import { aiService } from '../../../services/api/aiService';
 import { formatCurrency } from '../../../utils/formatters';
 import AiPriceDetailModal from './AiPriceDetailModal';
 import PoCostBreakdown from './PoCostBreakdown';
-import styles from './AiPriceSuggest.module.css';
+import styles from '@assets/styles/seller/AiPriceSuggest.module.css';
 
 const PANEL_WIDTH = 300;
 const PANEL_GAP = 8;

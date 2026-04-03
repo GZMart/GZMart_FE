@@ -367,6 +367,61 @@
   letter-spacing: -0.5px;
 }
 
+.coinValue {
+  color: #d97706;
+}
+
+.coinRowLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #92400e;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.coinIcon {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+/* Coin breakdown panel */
+.coinBreakdown {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 7px;
+}
+
+.coinBreakdownTitle {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.coinBreakdownRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.coinSource {
+  color: #78350f;
+  font-weight: 500;
+}
+
+.coinAmount {
+  color: #b45309;
+  font-weight: 600;
+}
+
 /* ---------- Actions Card ---------- */
 .actionsCard {
   background: var(--sp-surface, #fff);

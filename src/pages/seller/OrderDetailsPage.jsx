@@ -10,6 +10,7 @@ import {
   Package,
   AlertCircle,
   AlertTriangle,
+  Coins,
 } from 'lucide-react';
 import OrderStatusModal from '../../components/seller/orders/OrderStatusModal';
 import OrderStatusTimeline from '../../components/seller/orders/OrderStatusTimeline';
@@ -580,10 +581,44 @@ const OrderDetailsPage = () => {
 
             <div className={styles.totalDivider} />
 
+            {/* Amount before coin deduction */}
+            <div className={styles.totalRow}>
+              <span className={styles.totalLabel}>Amount Due</span>
+              <span className={styles.totalValue}>{formatCurrency(order.payableBeforeCoin || order.subtotal || 0)}</span>
+            </div>
+
+            {/* GZCoin deduction — highlighted in amber */}
+            {order.coinUsedAmount > 0 && (
+              <div className={styles.totalRow}>
+                <div className={styles.coinRowLabel}>
+                  <Coins size={13} className={styles.coinIcon} />
+                  <span>GZCoin Deducted</span>
+                </div>
+                <span className={`${styles.totalValue} ${styles.coinValue}`}>
+                  -{formatCurrency(order.coinUsedAmount)}
+                </span>
+              </div>
+            )}
+
+            <div className={styles.totalDivider} />
+
             <div className={styles.totalFinal}>
               <span className={styles.totalFinalLabel}>Total</span>
               <span className={styles.totalFinalValue}>{formatCurrency(order.totalPrice)}</span>
             </div>
+
+            {/* Coin usage breakdown tooltip */}
+            {order.coinUsedAmount > 0 && order.coinUsageDetails && order.coinUsageDetails.length > 0 && (
+              <div className={styles.coinBreakdown}>
+                <span className={styles.coinBreakdownTitle}>Coin Usage Breakdown</span>
+                {order.coinUsageDetails.map((detail, idx) => (
+                  <div key={idx} className={styles.coinBreakdownRow}>
+                    <span className={styles.coinSource}>{detail.source || 'GZCoin'}</span>
+                    <span className={styles.coinAmount}>-{formatCurrency(detail.amountUsed || 0)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Actions Card */}

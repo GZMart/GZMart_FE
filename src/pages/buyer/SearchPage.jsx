@@ -81,7 +81,11 @@ const SearchPage = () => {
       const transformed = productsData.map((product) => ({
         id: product._id,
         name: product.name,
-        image: product.images?.[0] || product.image || 'https://via.placeholder.com/300',
+        image:
+          (product.models?.find(m => m.isActive) || product.models?.[0])?.image ||
+          product.images?.[0] ||
+          product.image ||
+          'https://via.placeholder.com/300',
         price: product.price,
         originalPrice: product.originalPrice,
         discount: product.discount,

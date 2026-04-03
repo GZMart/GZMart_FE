@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { formatCurrency } from '../../../utils/formatters';
-import styles from './PoCostBreakdown.module.css';
+import styles from '@assets/styles/seller/PoCostBreakdown.module.css';
 
 function fmtVnd(n) {
   if (n == null || Number.isNaN(Number(n))) {
