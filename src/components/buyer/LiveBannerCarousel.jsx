@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import styles from '../../assets/styles/ShopProfilePage.module.css';
+import styles from '@assets/styles/buyer/ShopProfilePage.module.css';
 
 /** Cloudinary: request high-quality display for banner (width 1920, limit crop, best quality) */
 function bannerDisplayUrl(url) {

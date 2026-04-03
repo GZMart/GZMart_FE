@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import axiosClient from '../../services/axiosClient';
-import styles from '../../assets/styles/common/RichTextEditor.module.css';
+import styles from '@assets/styles/common/RichTextEditor.module.css';
 
 // Suppress react-quill's internal findDOMNode deprecation warning
 // (react-quill v2 uses legacy internal APIs; upgrade path exists in v3)

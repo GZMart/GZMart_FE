@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import livestreamService from '@services/api/livestreamService';
-import styles from '@pages/seller/LiveStreamPage.module.css';
+import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
 /**
  * OrderSyntaxPanel — seller UI for configuring the live chat order syntax.

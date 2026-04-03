@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
-import styles from '@assets/styles/ProductsPage.module.css';
+import styles from '@assets/styles/buyer/Product/ProductsPage.module.css';
 import { searchService } from '../../services/api';
 
 const breadcrumbItems = [

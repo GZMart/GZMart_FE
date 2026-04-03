@@ -6,7 +6,7 @@ import ReturnDetailsModal from '../../components/seller/returns/ReturnDetailsMod
 import rmaService from '@services/api/rmaService';
 import socketService from '@services/socket/socketService';
 import { useSelector } from 'react-redux';
-import styles from '../../assets/styles/seller/ListingsPage.module.css';
+import styles from '@assets/styles/seller/ListingsPage.module.css';
 
 /* ── Config ──────────────────────────────────────────────────────── */
 const STATUS_TABS = [

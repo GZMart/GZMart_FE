@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import styles from '../../assets/styles/common/Drawer.module.css';
+import styles from '@assets/styles/common/Drawer.module.css';
 
 /**
  * Reusable slide-in Drawer (from right)
