@@ -1,4 +1,4 @@
-import styles from '@pages/seller/LiveStreamPage.module.css';
+import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 import PropTypes from 'prop-types';
 
 export default function LiveActionBar({ onDiscard, onGoLive, isLive, isLoading }) {

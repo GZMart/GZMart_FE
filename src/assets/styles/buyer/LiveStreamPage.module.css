@@ -814,12 +814,15 @@
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .orderSyntaxChipOn {
-  border-color: var(--ls-primary);
-  background: var(--ls-primary-bg);
-  color: var(--ls-primary);
+  border-color: var(--ls-primary) !important;
+  background: rgba(183, 0, 72, 0.06) !important;
+  color: var(--ls-primary) !important;
   font-weight: 600;
 }
 
@@ -1785,4 +1788,153 @@
     font-size: 14px;
     padding: 12px 20px;
   }
+}
+
+/* ─── OrderSyntaxPanel stock chips ───────────────────────────────── */
+.orderSyntaxChip {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1.5px solid var(--ls-surface-container);
+  background: var(--ls-surface);
+  color: var(--ls-on-surface-variant);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.orderSyntaxChipLabel {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.orderSyntaxChipStock {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 4px;
+  padding: 0 4px;
+  min-width: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.orderSyntaxChipStockOos {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.orderSyntaxChipOos {
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  background: rgba(239, 68, 68, 0.04) !important;
+  color: rgba(239, 68, 68, 0.5) !important;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.orderSyntaxChipOos:hover {
+  opacity: 0.9;
+}
+
+.orderSyntaxChipOosIcon {
+  display: inline-flex;
+  align-items: center;
+  color: #ef4444;
+  opacity: 0.7;
+}
+
+.orderSyntaxChipOn {
+  border-color: var(--ls-primary) !important;
+  background: rgba(183, 0, 72, 0.06) !important;
+  color: var(--ls-primary) !important;
+}
+
+.orderSyntaxChipOn.orderSyntaxChipOos {
+  border-color: rgba(183, 0, 72, 0.3) !important;
+  background: rgba(183, 0, 72, 0.04) !important;
+  color: rgba(183, 0, 72, 0.6) !important;
+}
+
+/* Per-tier action buttons */
+.orderSyntaxTierActions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  align-items: center;
+}
+
+.orderSyntaxTierActionBtn {
+  background: none;
+  border: none;
+  color: var(--ls-primary);
+  font-size: 0.62rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: background 0.15s;
+}
+
+.orderSyntaxTierActionBtn:hover {
+  background: rgba(183, 0, 72, 0.06);
+}
+
+/* OOS banner */
+.orderSyntaxOosBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  color: #ca8a04;
+  font-weight: 500;
+}
+
+.orderSyntaxOosBannerBtn {
+  margin-left: auto;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 5px;
+  color: #ca8a04;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 8px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.orderSyntaxOosBannerBtn:hover {
+  background: rgba(234, 179, 8, 0.2);
+}
+
+/* Filter hint */
+.orderSyntaxFilterHint {
+  font-size: 0.65rem;
+  color: var(--ls-on-surface-variant);
+  background: rgba(183, 0, 72, 0.04);
+  border: 1px solid rgba(183, 0, 72, 0.1);
+  border-radius: 6px;
+  padding: 0.25rem 0.625rem;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+}
+
+/* ─── Refresh spin animation for seller chat ───────────────────── */
+@keyframes spinning {
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spinning 0.8s linear infinite;
 }

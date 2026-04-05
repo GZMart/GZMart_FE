@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { parseOrderSyntax } from '@utils/orderSyntax';
+import { parseOrderSyntax, normalizeVariantOptionKey } from '@utils/orderSyntax';
 import { SOCKET_EVENTS } from '@constants';
 import { toast } from 'react-toastify';
 import { LiveKitRoom, VideoTrack, RoomAudioRenderer, useTracks } from '@livekit/components-react';
@@ -26,6 +26,12 @@ const normalizeMessage = (m) => ({
   role: m.role || 'buyer',
   timestamp: m.timestamp || new Date().toISOString(),
 });
+
+/** Quick reactions for live chat (sent as plain text over the socket). */
+const LIVE_CHAT_EMOTES = [
+  '❤️', '🔥', '👍', '😂', '🎉', '😍', '👏', '🙌',
+  '😮', '🤣', '💯', '✨', '👀', '💪', '🙏', '🌟',
+];
 
 // ── Product price helpers ────────────────────────────────────────────────────
 const computePrice = (product) => {
@@ -166,12 +172,6 @@ const IconGift = ({ size = 15 }) => (
   </Icon>
 );
 
-const IconImage = ({ size = 15 }) => (
-  <Icon size={size} strokeWidth={2}>
-    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-  </Icon>
-);
-
 const IconCheck = ({ size = 11 }) => (
   <Icon size={size} strokeWidth={3}>
     <polyline points="20 6 9 17 4 12" />
@@ -230,21 +230,52 @@ const syntaxTierOptionsResolved = (tier, product) => {
 
 // ── Syntax Guide Card (pinned at top of chat) ───────────────────────────────
 const SyntaxGuideCard = ({ guide }) => {
-  if (!guide) {
-return null;
-}
+  const { prefix, product, variantTiers } = guide ?? { prefix: '', product: null, variantTiers: [] };
 
-  const { prefix, product, variantTiers } = guide;
+  const oosMap = useMemo(() => {
+    if (!guide) return {};
+    const map = {};
+    for (const tier of variantTiers) {
+      map[tier.name] = {};
+      for (const opt of syntaxTierOptionsResolved(tier, product)) {
+        map[tier.name][opt] = true;
+      }
+    }
+    if (product?.models?.length && variantTiers.length >= 2) {
+      const tiers = product.tiers;
+      const colorIdx = tiers.findIndex((t) => /color|màu|mau/i.test(t.name));
+      const sizeIdx = tiers.findIndex((t) => /size|kích|kich/i.test(t.name));
+      if (colorIdx >= 0 && sizeIdx >= 0) {
+        for (const model of product.models) {
+          if (!model.tierIndex) continue;
+          const colorOpt = tiers[colorIdx].options?.[model.tierIndex[colorIdx]];
+          const sizeOpt = tiers[sizeIdx].options?.[model.tierIndex[sizeIdx]];
+          if (colorOpt && sizeOpt) {
+            if (model.stock > 0) {
+              if (!map[variantTiers[colorIdx]?.name]) map[variantTiers[colorIdx]?.name] = {};
+              if (!map[variantTiers[sizeIdx]?.name]) map[variantTiers[sizeIdx]?.name] = {};
+              map[variantTiers[colorIdx]?.name][colorOpt] = false;
+              map[variantTiers[sizeIdx]?.name][sizeOpt] = false;
+            }
+          }
+        }
+      }
+    }
+    return map;
+  }, [guide, variantTiers, product]);
 
   const exampleParts = [
     prefix,
     ...variantTiers.map((t) => {
       const opts = syntaxTierOptionsResolved(t, product);
-      return opts[0] ?? t.name;
+      const firstInStock = opts.find((o) => !oosMap[t.name]?.[o]);
+      return firstInStock ?? opts[0] ?? t.name;
     }),
     '2',
   ];
   const example = `#${exampleParts.join(' ')}`;
+
+  if (!guide) return null;
 
   return (
     <div className={styles['ls-syntax-guide']}>
@@ -277,11 +308,23 @@ return null;
             <div key={tier.name} className={styles['ls-syntax-guide-tier']}>
               <span className={styles['ls-syntax-guide-tier-name']}>{tier.name}:</span>
               <div className={styles['ls-syntax-guide-tier-options']}>
-                {syntaxTierOptionsResolved(tier, product).map((opt) => (
-                  <span key={opt} className={styles['ls-syntax-guide-option-chip']}>
-                    {opt}
-                  </span>
-                ))}
+                {syntaxTierOptionsResolved(tier, product).map((opt) => {
+                  const isOOS = Boolean(oosMap[tier.name]?.[opt]);
+                  return (
+                    <span
+                      key={opt}
+                      className={`${styles['ls-syntax-guide-option-chip']}${isOOS ? ` ${styles['ls-syntax-chip-oos']}` : ''}`}
+                      title={isOOS ? 'Hết hàng' : 'Còn hàng'}
+                    >
+                      {opt}
+                      {isOOS && (
+                        <span className={styles['ls-syntax-chip-oos-badge']}>
+                          <IconX />
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -377,32 +420,52 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
 
   return (
     <motion.div
-      className={styles['ls-live-cart-drawer']}
-      initial={{ x: '100%' }}
-      animate={{ x: 0 }}
-      exit={{ x: '100%' }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className={styles['ls-live-cart-root']}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ls-live-cart-title"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* Header */}
-      <div className={styles['ls-live-cart-header']}>
-        <div className={styles['ls-live-cart-header-left']}>
-          <span className={styles['ls-live-cart-title']}>Giỏ hàng Live</span>
-          {items.length > 0 && (
-            <span className={styles['ls-live-cart-count']}>{items.length}</span>
-          )}
+      <button
+        type="button"
+        className={styles['ls-live-cart-backdrop']}
+        aria-label="Đóng giỏ hàng live"
+        onClick={onHide}
+      />
+      <motion.div
+        className={styles['ls-live-cart-drawer']}
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles['ls-live-cart-header']}>
+          <div className={styles['ls-live-cart-header-left']}>
+            <span id="ls-live-cart-title" className={styles['ls-live-cart-title']}>
+              Giỏ hàng Live
+            </span>
+            {items.length > 0 && (
+              <span className={styles['ls-live-cart-count']}>{items.length}</span>
+            )}
+          </div>
+          <button type="button" className={styles['ls-live-cart-close']} onClick={onHide} aria-label="Đóng">
+            <IconX />
+          </button>
         </div>
-        <button className={styles['ls-live-cart-close']} onClick={onHide}>
-          <IconX />
-        </button>
-      </div>
 
-      {/* Body */}
-      <div className={styles['ls-live-cart-body']}>
-        {drawerContent}
-      </div>
+        <div className={styles['ls-live-cart-body']}>
+          {drawerContent}
+        </div>
+      </motion.div>
     </motion.div>
   );
 };
+
+// ── Stock helpers for SyntaxGuideCard OOS chips ──────────────────────────
 
 // ── Live Cart Helpers ─────────────────────────────────────────────────────
 const generateTempId = () =>
@@ -433,7 +496,7 @@ export default function LiveViewerPage() {
   const [session, setSession] = useState(null);
   const [products, setProducts] = useState([]);
   const [pinnedProduct, setPinnedProduct] = useState(null);
-  const [pinnedProductId, setPinnedProductId] = useState(null);
+  const [, /* setPinnedProductId not exposed — use pinnedProductIdRef */] = useState(null);
   const [showProductsDrawer, setShowProductsDrawer] = useState(false);
   const [showVouchersDrawer, setShowVouchersDrawer] = useState(false);
   const [vouchers, setVouchers] = useState([]);
@@ -445,12 +508,21 @@ export default function LiveViewerPage() {
   const [hasRemoteTrack, setHasRemoteTrack] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [emotePickerOpen, setEmotePickerOpen] = useState(false);
+  const emotePickerRef = useRef(null);
   const [systemMessages, setSystemMessages] = useState([]);
   const hasJoinedRef = useRef(false);
   const [showQuickBuy, setShowQuickBuy] = useState(false);
   const [selectedQuickBuyProduct, setSelectedQuickBuyProduct] = useState(null);
   const [liveCartItems, setLiveCartItems] = useState([]);
   const [showLiveCart, setShowLiveCart] = useState(false);
+
+  const [floatingHearts, setFloatingHearts] = useState([]);
+  const heartIdRef = useRef(0);
+  const heartLayerRef = useRef(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenVideoRef = useRef(null);
 
   const [orderSyntax, setOrderSyntax] = useState({ enabled: false, prefix: '', productId: null, variantTiers: null });
   const [syntaxGuide, setSyntaxGuide] = useState(null);  // Syntax guide card data
@@ -474,14 +546,11 @@ export default function LiveViewerPage() {
  productsRef.current = products; 
 }, [products]);
 
-  const pinnedProductIdRef = useRef(pinnedProductId);
-  useEffect(() => {
- pinnedProductIdRef.current = pinnedProductId; 
-}, [pinnedProductId]);
-
+  const pinnedProductIdRef = useRef(pinnedProduct?._id ?? null);
   const pinnedProductRef = useRef(pinnedProduct);
   useEffect(() => {
  pinnedProductRef.current = pinnedProduct; 
+  pinnedProductIdRef.current = pinnedProduct?._id ?? null;
 }, [pinnedProduct]);
 
   const liveCartItemsRef = useRef([]);
@@ -489,10 +558,77 @@ export default function LiveViewerPage() {
  liveCartItemsRef.current = liveCartItems; 
 }, [liveCartItems]);
 
-  // Initial products API sets pinnedProduct but not pinnedProductId — keep id in sync for order syntax fallback
+  // ── Floating Hearts ─────────────────────────────────────────────────
+  const HEART_COLORS = ['#FF6B6B', '#FF8E8E', '#FFB4B4', '#B13C36', '#FF5252', '#FF7043'];
+  const MAX_HEARTS = 20;
+
+  const spawnHeart = useCallback(() => {
+    if (heartLayerRef.current && floatingHearts.length < MAX_HEARTS) {
+      const container = heartLayerRef.current;
+      const rect = container.getBoundingClientRect();
+      const x = Math.random() * (rect.width * 0.7) + rect.width * 0.1;
+      const y = rect.height * 0.6;
+      const color = HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)];
+      const scale = 0.7 + Math.random() * 0.6;
+      const dur = 1.8 + Math.random() * 1.4;
+      const id = ++heartIdRef.current;
+      const offsetX = (Math.random() - 0.5) * 60;
+      setFloatingHearts((prev) => [...prev, { id, x, y, color, scale, dur, offsetX }]);
+      setTimeout(() => {
+        setFloatingHearts((prev) => prev.filter((h) => h.id !== id));
+      }, dur * 1000 + 200);
+    }
+  }, [floatingHearts.length]);
+
+  // ── Fullscreen toggle ───────────────────────────────────────────────
+  const handleToggleFullscreen = useCallback(() => {
+    const el = fullscreenVideoRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  // ── Sync fullscreen state when browser fires fullscreenchange ────────
   useEffect(() => {
-    setPinnedProductId(pinnedProduct?._id ?? null);
-  }, [pinnedProduct]);
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'f' || e.key === 'F') {
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          handleToggleFullscreen();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleToggleFullscreen]);
+
+  useEffect(() => {
+    if (!emotePickerOpen) return;
+    const onPointerDown = (e) => {
+      if (emotePickerRef.current?.contains(e.target)) return;
+      setEmotePickerOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setEmotePickerOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [emotePickerOpen]);
 
   // Keep displayNameRef in sync
   useEffect(() => {
@@ -598,6 +734,11 @@ return;
       setSyntaxGuide(null);
     };
 
+    const handleRemoteLike = () => {
+      setLikeCount((c) => c + 1);
+      spawnHeart();
+    };
+
     socketService.on('livestream_viewer_update', handleViewerUpdate);
     socketService.on('livestream_chat_message', handleSocketChat);
     socketService.on('livestream_pin_update', handlePinUpdate);
@@ -607,6 +748,7 @@ return;
     socketService.on(SOCKET_EVENTS.LIVESTREAM_CONFIG_UPDATE, handleConfigUpdate);
     socketService.on('livestream_syntax_guide', handleSyntaxGuide);
     socketService.on('livestream_syntax_guide_clear', handleSyntaxGuideClear);
+    socketService.on('livestream_like', handleRemoteLike);
 
     return () => {
       socketService.off('livestream_viewer_update', handleViewerUpdate);
@@ -618,6 +760,7 @@ return;
       socketService.off(SOCKET_EVENTS.LIVESTREAM_CONFIG_UPDATE, handleConfigUpdate);
       socketService.off('livestream_syntax_guide', handleSyntaxGuide);
       socketService.off('livestream_syntax_guide_clear', handleSyntaxGuideClear);
+      socketService.off('livestream_like', handleRemoteLike);
     };
   }, [sessionId, user]);
 
@@ -715,12 +858,13 @@ return;
 
         setLoading(false);
 
-        // Emit join event — backend will broadcast to all viewers; toast shows & fades for everyone
-        if (user && !hasJoinedRef.current) {
+        // Emit join event — backend will broadcast to all viewers; toast shows & fades for everyone.
+        // Always emit so anonymous viewers also join the socket room and receive pin/syntax updates.
+        if (!hasJoinedRef.current) {
           hasJoinedRef.current = true;
           socketService.emit('livestream_join', {
             sessionId,
-            userId: user._id || 'anonymous',
+            userId: user?._id || 'anonymous',
             displayName: displayNameRef.current,
             role: 'buyer',
           });
@@ -793,17 +937,46 @@ setHasRemoteTrack(true);
     prevMsgLen.current = messages.length;
   }, [messages]);
 
+  // ── Session persistence: restore buyer chat after F5 ─────────────────
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(`gzmart_buyer_chat_${sessionId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const deduped = parsed.filter(
+            (m, i, arr) => arr.findIndex((p) => p.id === m.id) === i,
+          );
+          setMessages(deduped.slice(-100));
+        }
+      }
+    } catch {
+      /* non-critical */
+    }
+  }, [sessionId]);
+
+  // ── Persist chat messages ───────────────────────────────────────────
+  useEffect(() => {
+    if (messages.length > 0 && sessionId) {
+      try {
+        sessionStorage.setItem(`gzmart_buyer_chat_${sessionId}`, JSON.stringify(messages.slice(-100)));
+      } catch {
+        /* non-critical */
+      }
+    }
+  }, [messages, sessionId]);
+
   // ── Emit leave event on unmount ─────────────────────────────────
   useEffect(() => () => {
-      if (sessionId && user) {
+      if (sessionId) {
         socketService.emit('livestream_leave', {
           sessionId,
-          userId: user._id || 'anonymous',
+          userId: user?._id || 'anonymous',
           displayName: displayNameRef.current,
           role: 'buyer',
         });
       }
-    }, [sessionId, user]);
+    }, [sessionId]);
 
   // ── Order syntax: resolve a model by tierIndex ─────────────────────────────
   const resolveVariantFromTiers = useCallback((product, variants) => {
@@ -822,8 +995,9 @@ setHasRemoteTrack(true);
       if (tierIdx === -1) {
 return null;
 }
+      const want = normalizeVariantOptionKey(value);
       const optionIdx = tiers[tierIdx].options?.findIndex(
-        (o) => String(o).toLowerCase() === String(value).toLowerCase(),
+        (o) => normalizeVariantOptionKey(o) === want,
       );
       if (optionIdx === -1) {
 return null;
@@ -949,38 +1123,53 @@ return;
   }, [handleSyntaxMatched]);
 
   // ── Send chat via Socket.IO ─
+  const sendChatContent = useCallback(
+    (rawText, { runOrderSyntax = true } = {}) => {
+      const text = typeof rawText === 'string' ? rawText.trim() : '';
+      if (!text || !user) return false;
+
+      setIsSending(true);
+      const localMsg = {
+        ...normalizeMessage({ id: `local_${Date.now()}`, content: text, userId: user?._id }),
+        displayName: displayNameRef.current,
+        isOwn: true,
+      };
+      setMessages((prev) => [...prev.slice(-49), localMsg]);
+
+      if (runOrderSyntax) {
+        const os = orderSyntaxRef.current;
+        if (os.enabled && os.prefix) {
+          const result = parseOrderSyntax(text, os.prefix, os.productId, os.variantTiers);
+          if (result.matched) {
+            syntaxMatchedRef.current(result, displayNameRef.current);
+          }
+        }
+      }
+
+      socketService.emit('livestream_chat', {
+        sessionId,
+        content: text,
+        displayName: displayNameRef.current,
+        userId: user?._id || 'anonymous',
+        role: 'buyer',
+      });
+
+      setTimeout(() => setIsSending(false), 600);
+      return true;
+    },
+    [user, sessionId],
+  );
+
   const sendChat = () => {
     const text = input.trim();
-    if (!text || !user) {
-return;
-}
-
-    setIsSending(true);
-    const localMsg = {
-      ...normalizeMessage({ id: `local_${Date.now()}`, content: text, userId: user?._id }),
-      displayName: displayNameRef.current,
-      isOwn: true,
-    };
-    setMessages((prev) => [...prev.slice(-49), localMsg]);
+    if (!sendChatContent(text, { runOrderSyntax: true })) return;
     setInput('');
+  };
 
-    const os = orderSyntaxRef.current;
-    if (os.enabled && os.prefix) {
-      const result = parseOrderSyntax(text, os.prefix, os.productId, os.variantTiers);
-      if (result.matched) {
-        syntaxMatchedRef.current(result, displayNameRef.current);
-      }
-    }
-
-    socketService.emit('livestream_chat', {
-      sessionId,
-      content: text,
-      displayName: displayNameRef.current,
-      userId: user?._id || 'anonymous',
-      role: 'buyer',
-    });
-
-    setTimeout(() => setIsSending(false), 600);
+  const sendEmote = (emoji) => {
+    if (!user) return;
+    sendChatContent(emoji, { runOrderSyntax: false });
+    setEmotePickerOpen(false);
   };
 
   // ── Live cart handlers ──────────────────────────────────────────────────
@@ -1011,25 +1200,23 @@ return;
     });
   }, [sessionId, navigate]);
 
-  // ── Like via REST API ─
+  // ── Like via REST API ──────────────────────────────────────────────
   const handleLike = () => {
-    if (liked || !sessionId) {
-return;
-}
+    if (!sessionId) return;
 
-    setLiked(true);
+    spawnHeart();
     setLikeCount((c) => c + 1);
+    setLiked(true);
 
     livestreamService.likeSession(sessionId)
       .then((res) => {
-        if (res?.data?.likeCount !== undefined) {
-setLikeCount(res.data.likeCount);
-}
+        if (res?.data?.likeCount !== undefined) setLikeCount(res.data.likeCount);
       })
       .catch(() => {
-        setLiked(false);
         setLikeCount((c) => Math.max(0, c - 1));
       });
+
+    setTimeout(() => setLiked(false), 600);
   };
 
   const handleFollow = () => {
@@ -1117,20 +1304,25 @@ return `${(count / 1000).toFixed(1)}k`;
   }
 
   return (
-    <div className={styles['ls-root']}>
-      <Header />
+    <div className={`${styles['ls-root']}${isFullscreen ? ` ${styles['ls-root--fullscreen']}` : ''}`}>
+      {!isFullscreen && <Header />}
 
       {/* ── Main Stage ────────────────────────────────────────────────── */}
       <div className={styles['ls-stage']}>
 
         {/* ══ VIDEO COLUMN ══ */}
-        <div className={styles['ls-video-col']}>
+        <div className={`${styles['ls-video-col']}${isFullscreen ? ` ${styles['ls-video-col--fullscreen']}` : ''}`}>
 
           {/* Ambient grid */}
           <div className={styles['ls-grid-bg']} />
 
           {/* Video Layer */}
-          <div className={styles['ls-video-wrap']}>
+          <div
+            ref={fullscreenVideoRef}
+            className={styles['ls-video-wrap']}
+            onDoubleClick={handleToggleFullscreen}
+            style={{ cursor: 'pointer' }}
+          >
             {showLiveKit ? (
               <LiveKitRoom
                 serverUrl={import.meta.env.VITE_LIVEKIT_URL}
@@ -1150,6 +1342,46 @@ return `${(count / 1000).toFixed(1)}k`;
                 <span className={styles['ls-preview-label']}>Stream preview</span>
               </div>
             )}
+          </div>
+
+          {/* Floating exit fullscreen button */}
+          <AnimatePresence>
+            {isFullscreen && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                className={styles['ls-fs-exit-btn']}
+                onClick={handleToggleFullscreen}
+                aria-label="Exit fullscreen"
+                title="Exit fullscreen (F or Escape)"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" />
+                  <line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {/* Hearts animation layer */}
+          <div ref={heartLayerRef} className={styles['ls-hearts-layer']}>
+            <AnimatePresence>
+              {floatingHearts.map((h) => (
+                <motion.div
+                  key={h.id}
+                  className={styles['ls-heart-particle']}
+                  initial={{ opacity: 0, y: 0, x: 0, scale: 0 }}
+                  animate={{ opacity: [0, 1, 1, 0], y: -180, x: h.offsetX, scale: h.scale }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: h.dur, ease: 'easeOut' }}
+                  style={{ left: h.x, bottom: h.y, color: h.color }}
+                >
+                  <IconHeart size={20} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
 
           {/* ══ TOP OVERLAY ══ */}
@@ -1195,9 +1427,20 @@ return `${(count / 1000).toFixed(1)}k`;
             {/* Right cluster */}
             <div className={styles['ls-top-right']}>
               <button
+                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${isFullscreen ? ` ${styles['ls-glass-btn--active']}` : ''}`}
+                onClick={handleToggleFullscreen}
+                aria-label="Toggle fullscreen"
+                title="Fullscreen (F)"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+                  <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+              </button>
+
+              <button
                 className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${liked ? ` ${styles['ls-glass-btn--liked']}` : ''}`}
                 onClick={handleLike}
-                disabled={liked}
                 aria-label="Like"
               >
                 <IconHeart size={16} filled={liked} animated={liked} />
@@ -1311,16 +1554,16 @@ return `${(count / 1000).toFixed(1)}k`;
 
           {/* ══ PRODUCTS DRAWER ══ */}
           {showProductsDrawer && (
-            <div className={styles['ls-products-drawer']}>
+            <div className={`${styles['ls-products-drawer']} ${styles['ls-products-drawer--dark']}`}>
               {/* Drawer Header */}
-              <div className={styles['ls-drawer-header']}>
+              <div className={`${styles['ls-drawer-header']} ${styles['ls-drawer-header--glass']}`}>
                 <div className={styles['ls-drawer-header-left']}>
-                  <div className={styles['ls-drawer-icon']}>
+                  <div className={`${styles['ls-drawer-icon']} ${styles['ls-drawer-icon--glass']}`}>
                     <IconShoppingBag size={13} />
                   </div>
                   <div>
-                    <div className={styles['ls-drawer-title']}>San pham dang live</div>
-                    <div className={styles['ls-drawer-subtitle']}>{products.length} san pham</div>
+                    <div className={`${styles['ls-drawer-title']} ${styles['ls-drawer-title--glass']}`}>San pham dang live</div>
+                    <div className={`${styles['ls-drawer-subtitle']} ${styles['ls-drawer-subtitle--glass']}`}>{products.length} san pham</div>
                   </div>
                 </div>
                 <button
@@ -1333,9 +1576,9 @@ return `${(count / 1000).toFixed(1)}k`;
               </div>
 
               {/* Product Scroll */}
-              <div className={styles['ls-drawer-scroll']}>
+              <div className={`${styles['ls-drawer-scroll']} ${styles['ls-drawer-scroll--dark']}`}>
                 {products.length === 0 ? (
-                  <div className={styles['ls-empty-products']}>
+                  <div className={`${styles['ls-empty-products']} ${styles['ls-empty-products--dark']}`}>
                     <div className={styles['ls-empty-icon']}>
                       <IconShoppingBag size={32} />
                     </div>
@@ -1343,7 +1586,7 @@ return `${(count / 1000).toFixed(1)}k`;
                     <div className={styles['ls-empty-sub']}>Seller se them san pham som nhat</div>
                   </div>
                 ) : (
-                  <div className={styles['ls-products-track']}>
+                  <div className={styles['ls-products-grid']}>
                     {products.map((product, idx) => {
                       const { original: op, current: mp, discount: disc } = computePrice(product);
                       const ip = product._id === pinnedProduct?._id;
@@ -1351,49 +1594,51 @@ return `${(count / 1000).toFixed(1)}k`;
                       return (
                         <div
                           key={product._id != null ? String(product._id) : `cart-${idx}`}
-                          className={`${styles['ls-product-card']}${ip ? ` ${styles['ls-product-card--pinned']}` : ''}`}
+                          className={`${styles['ls-product-card']} ${styles['ls-product-card--enhanced']}${ip ? ` ${styles['ls-product-card--pinned']}` : ''}`}
                           onClick={() => handleQuickBuy(product)}
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
- if (e.key === 'Enter') {
-handleQuickBuy(product);
-} 
+ if (e.key === 'Enter') handleQuickBuy(product);
 }}
                         >
                           {/* Image */}
-                          <div className={styles['ls-product-img-wrap']}>
+                          <div className={`${styles['ls-product-img-wrap']} ${styles['ls-product-img-wrap--enhanced']}`}>
                             <img
                               src={product.thumbnail || product.images?.[0] || '/placeholder.png'}
                               alt={product.name || 'San pham'}
-                              className={styles['ls-product-img']}
+                              className={`${styles['ls-product-img']} ${styles['ls-product-img--enhanced']}`}
                               loading="lazy"
                               decoding="async"
                               onError={(e) => {
  e.target.src = '/placeholder.png'; 
 }}
                             />
-                            {ip && (
-                              <div className={styles['ls-product-pin-badge']}>Ghim</div>
-                            )}
-                            {disc && (
-                              <div className={styles['ls-product-disc-badge']}>-{disc}%</div>
-                            )}
+                            <div className={styles['ls-product-badge-stack']}>
+                              {ip && (
+                                <span className={`${styles['ls-product-pin-badge']} ${styles['ls-product-pin-badge--new']}`}>Ghim</span>
+                              )}
+                              {disc && (
+                                <span className={`${styles['ls-product-disc-badge']} ${styles['ls-product-disc-badge--new']}`}>-{disc}%</span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Info */}
-                          <div className={styles['ls-product-info']}>
-                            <span className={styles['ls-product-name']}>{product.name}</span>
-                            <span className={styles['ls-product-price']}>
-                              {formatVND(mp)}
-                            </span>
-                            {disc && op && (
-                              <span className={styles['ls-product-price-orig']}>
-                                {formatVND(op)}
+                          <div className={`${styles['ls-product-info']} ${styles['ls-product-info--enhanced']}`}>
+                            <span className={`${styles['ls-product-name']} ${styles['ls-product-name--new']}`}>{product.name}</span>
+                            <div className={styles['ls-product-price-row']}>
+                              <span className={`${styles['ls-product-price']} ${styles['ls-product-price--new']}`}>
+                                {formatVND(mp)}
                               </span>
-                            )}
+                              {disc && op && (
+                                <span className={`${styles['ls-product-price-orig']} ${styles['ls-product-price-orig--new']}`}>
+                                  {formatVND(op)}
+                                </span>
+                              )}
+                            </div>
                             <button
-                              className={styles['ls-product-buy-btn']}
+                              className={`${styles['ls-product-buy-btn']} ${styles['ls-product-buy-btn--new']}`}
                               type="button"
                               onClick={(e) => {
  e.stopPropagation(); handleQuickBuy(product); 
@@ -1413,15 +1658,15 @@ handleQuickBuy(product);
 
           {/* ══ VOUCHERS DRAWER ══ */}
           {showVouchersDrawer && (
-            <div className={styles['ls-products-drawer']}>
-              <div className={styles['ls-drawer-header']}>
+            <div className={`${styles['ls-products-drawer']} ${styles['ls-products-drawer--dark']}`}>
+              <div className={`${styles['ls-drawer-header']} ${styles['ls-drawer-header--glass']}`}>
                 <div className={styles['ls-drawer-header-left']}>
-                  <div className={styles['ls-drawer-icon']}>
+                  <div className={`${styles['ls-drawer-icon']} ${styles['ls-drawer-icon--glass']}`}>
                     <IconGift size={13} />
                   </div>
                   <div>
-                    <div className={styles['ls-drawer-title']}>Voucher khuyen mai</div>
-                    <div className={styles['ls-drawer-subtitle']}>{vouchers.length} voucher</div>
+                    <div className={`${styles['ls-drawer-title']} ${styles['ls-drawer-title--glass']}`}>Voucher khuyen mai</div>
+                    <div className={`${styles['ls-drawer-subtitle']} ${styles['ls-drawer-subtitle--glass']}`}>{vouchers.length} voucher</div>
                   </div>
                 </div>
                 <button
@@ -1509,7 +1754,8 @@ handleQuickBuy(product);
         </div>
 
         {/* ══ CHAT SIDEBAR ══ */}
-        <aside className={styles['ls-chat-sidebar']}>
+        {!isFullscreen && (
+          <aside className={styles['ls-chat-sidebar']}>
           <div className={styles['ls-chat-inner']}>
 
             {/* Chat Header */}
@@ -1600,15 +1846,41 @@ handleQuickBuy(product);
             <div className={styles['ls-input-area']}>
               {/* Action icons */}
               <div className={styles['ls-input-actions']}>
-                <button className={styles['ls-input-icon-btn']} title="Emoji" aria-label="Emoji">
-                  <IconSmile size={15} />
-                </button>
-                <button className={styles['ls-input-icon-btn']} title="Gift" aria-label="Gift">
-                  <IconGift size={15} />
-                </button>
-                <button className={styles['ls-input-icon-btn']} title="Image" aria-label="Image">
-                  <IconImage size={15} />
-                </button>
+                <div className={styles['ls-emote-picker-wrap']} ref={emotePickerRef}>
+                  <button
+                    type="button"
+                    className={`${styles['ls-input-icon-btn']}${emotePickerOpen ? ` ${styles['ls-input-icon-btn--active']}` : ''}`}
+                    title="Emote"
+                    aria-label="Open emote picker"
+                    aria-expanded={emotePickerOpen}
+                    aria-haspopup="dialog"
+                    disabled={!user}
+                    onClick={() => setEmotePickerOpen((o) => !o)}
+                  >
+                    <IconSmile size={15} />
+                  </button>
+                  {emotePickerOpen && user && (
+                    <div
+                      className={styles['ls-emote-picker']}
+                      role="dialog"
+                      aria-label="Choose an emote"
+                    >
+                      <div className={styles['ls-emote-picker-grid']}>
+                        {LIVE_CHAT_EMOTES.map((em) => (
+                          <button
+                            key={em}
+                            type="button"
+                            className={styles['ls-emote-cell']}
+                            onClick={() => sendEmote(em)}
+                            aria-label={`Send ${em}`}
+                          >
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className={styles['ls-input-actions-spacer']} />
                 <span className={styles['ls-input-brand']}>GZMart</span>
               </div>
@@ -1658,9 +1930,10 @@ sendChat();
             </div>
           </div>
         </aside>
+        )}
       </div>
 
-      <Footer />
+      {!isFullscreen && <Footer />}
 
       {/* Quick Buy Bottom Sheet */}
       <LiveQuickBuySheet
@@ -1723,7 +1996,6 @@ IconLoader.propTypes = { size: PropTypes.number };
 IconEye.propTypes = { size: PropTypes.number };
 IconSmile.propTypes = { size: PropTypes.number };
 IconGift.propTypes = { size: PropTypes.number };
-IconImage.propTypes = { size: PropTypes.number };
 IconCheck.propTypes = { size: PropTypes.number };
 IconPlus.propTypes = { size: PropTypes.number };
 IconChevronUp.propTypes = { size: PropTypes.number };
