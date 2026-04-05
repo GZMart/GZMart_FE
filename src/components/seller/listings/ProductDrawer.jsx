@@ -579,11 +579,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         newErrors.models = `${invalidModels.length} variant(s) have invalid price${!isEditMode ? ' or stock' : ''}`;
       }
 
-      // Every SKU must have an image (unless saving as draft)
-      if (forcedStatus !== 'draft') {
-        const noImageCount = models.filter((m) => !m.imageFile && !m.image).length;
-        if (noImageCount > 0) {
-          newErrors.modelImages = `${noImageCount} SKU${noImageCount !== 1 ? 's are' : ' is'} missing an image. Add an image to every variant before publishing.`;
+      // Every Tier 1 option must have an image (unless saving as draft)
+      if (forcedStatus !== 'draft' && tiers.length > 0) {
+        const tier0Options = tiers[0]?.options || [];
+        const missingTier0Images = tier0Options.filter((_, t0Idx) => 
+          // Check if any model with this tier0Index has an image
+           !models.some(
+            (m) => m.tierIndex[0] === t0Idx && (m.imageFile || m.image)
+          )
+        );
+        if (missingTier0Images.length > 0) {
+          const missingNames = missingTier0Images.map((opt) => opt.value || '?').join(', ');
+          newErrors.modelImages = `Missing image for: ${missingNames}. Add an image to every ${tiers[0]?.name || 'variant group'} before publishing.`;
         }
       }
     }
@@ -733,16 +740,17 @@ e.preventDefault();
         );
         formDataToSend.append('models', JSON.stringify(modelsData));
 
-        // Append variant images with tierIndex mapping
+        // Append variant images — one per tier-0 option (not per SKU)
         if (hasVariantImages) {
+          const uploadedTier0 = new Set();
           models.forEach((model) => {
-            if (model.imageFile) {
-              // Use field name: variantImages[tierIndex]
-              const tierIndexKey = model.tierIndex.join('-');
+            const t0Idx = model.tierIndex[0];
+            if (model.imageFile && !uploadedTier0.has(t0Idx)) {
+              uploadedTier0.add(t0Idx);
               formDataToSend.append(
-                `variantImages[${tierIndexKey}]`,
+                `variantImages[${t0Idx}]`,
                 model.imageFile,
-                `variant-${tierIndexKey}.${model.imageFile.name.split('.').pop()}`
+                `variant-${t0Idx}.${model.imageFile.name.split('.').pop()}`
               );
             }
           });
@@ -758,6 +766,13 @@ e.preventDefault();
           images.forEach((image) => {
             formDataToSend.append('images', image);
           });
+        }
+
+        // Always send imagePreviews in edit mode so removed images are tracked
+        if (isEditMode) {
+          // Filter out blob URLs (new uploads are sent as files separately)
+          const existingUrls = imagePreviews.filter((url) => !url.startsWith('blob:'));
+          formDataToSend.append('existingImages', JSON.stringify(existingUrls));
         }
         
         if (forcedStatus) {
@@ -792,6 +807,10 @@ e.preventDefault();
                 }))
               : [],
           models: productModels,
+          // In edit mode, send remaining existing image URLs (blob URLs are excluded)
+          ...(isEditMode && {
+            images: imagePreviews.filter((url) => !url.startsWith('blob:')),
+          }),
           ...(forcedStatus && { status: forcedStatus }),
         };
 

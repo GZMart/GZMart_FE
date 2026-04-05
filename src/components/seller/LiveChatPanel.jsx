@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { DataPacket_Kind } from 'livekit-client';
 import livestreamService from '@services/api/livestreamService';
 import socketService from '@services/socket/socketService';
-import styles from '@pages/seller/LiveStreamPage.module.css';
+import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 import OrderSyntaxPanel from './OrderSyntaxPanel';
 
 export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {

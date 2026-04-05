@@ -527,5 +527,517 @@
       "wallet": "Cập Nhật Ví",
       "system": "Cập Nhật Shopee"
     }
+  },
+  "common": {
+    "changeLanguage": "Đổi ngôn ngữ",
+    "languageVietnamese": "Tiếng Việt",
+    "languageEnglish": "English"
+  },
+  "sellerDashboard": {
+    "title": "Dashboard",
+    "greeting": {
+      "morning": "Chào buổi sáng",
+      "afternoon": "Chào buổi chiều",
+      "evening": "Chào buổi tối"
+    },
+    "exchangeRate": {
+      "label": "Tỷ giá CNY / VND",
+      "vndUnit": "VND",
+      "updated": "Cập nhật: {{time}}"
+    },
+    "actionCenter": {
+      "title": "Việc cần làm hôm nay",
+      "pending": "Đơn chờ xác nhận",
+      "pendingSub": "Cần xác nhận trước khi xử lý",
+      "toShip": "Chờ đóng gói / giao ĐVVC",
+      "toShipSub": "Cần đóng gói và bàn giao",
+      "cancelOrReturn": "Yêu cầu hủy / hoàn trả",
+      "cancelOrReturnSub": "Cần phản hồi trong 24h",
+      "unreadMessages": "Tin nhắn chưa đọc",
+      "unreadMessagesSub": "Phản hồi khách hàng"
+    },
+    "stats": {
+      "revenue": "Doanh thu kỳ này",
+      "orders": "Đơn hàng kỳ này",
+      "aov": "Giá trị TB / đơn",
+      "profit": "Tổng lợi nhuận",
+      "vsPeriod": "so với kỳ trước"
+    },
+    "period": {
+      "daily": "30 ngày gần nhất",
+      "weekly": "13 tuần gần nhất",
+      "monthly": "12 tháng gần nhất",
+      "quarterly": "4 quý gần nhất",
+      "yearly": "5 năm gần nhất"
+    },
+    "periodCompare": {
+      "daily": "so với 30 ngày trước",
+      "weekly": "so với 13 tuần trước",
+      "monthly": "so với 12 tháng trước",
+      "quarterly": "so với 4 quý trước",
+      "yearly": "so với 5 năm trước"
+    },
+    "periodShort": {
+      "daily": "30 Ngày",
+      "weekly": "13 Tuần",
+      "monthly": "12 Tháng",
+      "quarterly": "4 Quý",
+      "yearly": "5 Năm"
+    },
+    "lowStock": {
+      "title": "Cảnh báo sắp hết hàng",
+      "danger": "Nguy hiểm",
+      "createPO": "Tạo PO mới",
+      "createPOBtn": "Lên PO",
+      "stockLeft": "{{current}} / {{safety}} sản phẩm",
+      "allStockOk": "Tất cả sản phẩm đều có đủ hàng trong kho",
+      "uncategorized": "Không phân loại"
+    },
+    "expense": {
+      "title": "Phân tích chi phí",
+      "noData": "Không có dữ liệu chi phí",
+      "source": "Nguồn: {{count}} PO đã hoàn thành",
+      "types": {
+        "goodsValuePo": "Giá trị hàng (PO)",
+        "buyingServiceFee": "Phí dịch vụ mua hàng",
+        "intlFreightCnVn": "Vận chuyển quốc tế (TQ → VN)",
+        "importTax": "Thuế nhập khẩu",
+        "cnDomesticShipping": "Vận chuyển nội địa Trung Quốc",
+        "packagingInsurance": "Đóng gói / Bảo hiểm",
+        "vnLastMilePoWarehouse": "Chặng cuối VN (PO → Kho)",
+        "otherCosts": "Chi phí khác",
+        "lastMileDeliveryOrder": "Giao hàng chặng cuối (Đơn)"
+      }
+    },
+    "topProducts": {
+      "title": "Top sản phẩm lợi nhuận cao",
+      "viewAll": "Xem tất cả",
+      "product": "Sản phẩm",
+      "sold": "Đã bán",
+      "revenue": "Doanh thu",
+      "profit": "Lợi nhuận",
+      "margin": "Margin"
+    },
+    "category": {
+      "title": "Phân tích sản phẩm theo danh mục",
+      "noData": "Không có dữ liệu phân tích theo danh mục",
+      "source": "Nguồn: doanh thu theo danh mục — {{count}} danh mục trong kỳ",
+      "legendTooltip": "{{name}} — {{percent}}% doanh thu kỳ"
+    },
+    "segmented": {
+      "week": "Tuần",
+      "month": "Tháng",
+      "quarter": "Quý",
+      "year": "Năm"
+    },
+    "overallSales": {
+      "title": "Doanh thu theo thời gian",
+      "vsPrevious": "So với kỳ trước",
+      "loading": "Đang tải dữ liệu...",
+      "noData": "Không có dữ liệu"
+    },
+    "revenueDetail": {
+      "title": "Chi tiết doanh thu",
+      "thisPeriod": "Kỳ này",
+      "prevPeriod": "Kỳ trước",
+      "growth": "Tăng trưởng",
+      "ordersUnit": "đơn",
+      "itemsUnit": "sản phẩm",
+      "ordersGrowth": "% đơn hàng",
+      "chartTitle": "Doanh thu theo thời gian",
+      "dataPoints": "{{count}} điểm dữ liệu",
+      "topRevenueProducts": "Top sản phẩm doanh thu cao",
+      "loading": "Đang tải dữ liệu...",
+      "noRevenueData": "Không có dữ liệu doanh thu",
+      "noProductData": "Không có dữ liệu sản phẩm"
+    },
+    "ordersDetail": {
+      "title": "Chi tiết đơn hàng",
+      "thisPeriod": "Kỳ này",
+      "prevPeriod": "Kỳ trước",
+      "growth": "Tăng trưởng",
+      "ordersUnit": "đơn",
+      "orderCode": "Mã đơn",
+      "customer": "Khách hàng",
+      "value": "Giá trị",
+      "items": "Sản phẩm",
+      "itemsUnit": "sp",
+      "status": "Trạng thái",
+      "createdAt": "Ngày tạo",
+      "loading": "Đang tải đơn hàng...",
+      "recentOrders": "đơn gần nhất",
+      "viewAllOrders": "Xem tất cả đơn hàng",
+      "noOrders": "Không có đơn hàng nào"
+    },
+    "aovDetail": {
+      "title": "Chi tiết giá trị trung bình / đơn",
+      "aovThisPeriod": "AOV kỳ này",
+      "aovPrevPeriod": "AOV kỳ trước",
+      "aovGrowth": "Tăng trưởng AOV",
+      "distributionTitle": "Phân bố giá trị đơn hàng",
+      "recentOrders": "đơn gần nhất",
+      "topHighestValue": "Đơn giá trị cao nhất",
+      "orderCode": "Mã đơn",
+      "customer": "Khách hàng",
+      "orderValue": "Giá trị đơn",
+      "date": "Ngày",
+      "loading": "Đang tải dữ liệu...",
+      "noDistribution": "Không có dữ liệu phân bố",
+      "noOrders": "Không có đơn hàng"
+    },
+    "profitDetail": {
+      "title": "Chi tiết lợi nhuận",
+      "totalRevenue": "Tổng doanh thu",
+      "totalCost": "Tổng chi phí",
+      "netProfit": "Lợi nhuận ròng",
+      "profitThisPeriod": "Lợi nhuận kỳ này",
+      "profitPrevPeriod": "Kỳ trước",
+      "growth": "Tăng trưởng",
+      "chartTitle": "Doanh thu & Chi phí theo kỳ",
+      "revenue": "Doanh thu",
+      "cost": "Chi phí",
+      "topProfitProducts": "Top sản phẩm lợi nhuận cao nhất",
+      "loading": "Đang tải dữ liệu...",
+      "noPLData": "Không có dữ liệu P&L",
+      "noProductData": "Không có dữ liệu sản phẩm"
+    },
+    "topProfitProducts": {
+      "title": "Top sản phẩm lợi nhuận cao",
+      "chartTitle": "Biểu đồ doanh thu & lợi nhuận — Top 10",
+      "productList": "Danh sách sản phẩm lợi nhuận cao",
+      "totalProducts": "sản phẩm",
+      "totalRevenue": "Tổng doanh thu",
+      "totalProfit": "Tổng lợi nhuận",
+      "avgMargin": "Margin TB",
+      "loading": "Đang tải dữ liệu…",
+      "noData": "Không có dữ liệu sản phẩm"
+    }
+  },
+  "sellerOrders": {
+    "title": "Đơn hàng",
+    "subtitle": "Quản lý và theo dõi đơn hàng từ khách hàng.",
+    "header": {
+      "title": "Đơn hàng",
+      "subtitle": "Quản lý và theo dõi đơn hàng từ khách hàng."
+    },
+    "loading": "Đang tải đơn hàng...",
+    "errorLoading": "Lỗi khi tải đơn hàng",
+    "retryButton": "Thử lại",
+    "empty": {
+      "title": "Không tìm thấy đơn hàng",
+      "default": "Bạn chưa có đơn hàng nào.",
+      "byStatus": "Chưa có đơn hàng \"{{status}}\" nào."
+    },
+    "filters": {
+      "payment": "Thanh toán",
+      "sortBy": "Sắp xếp",
+      "shipping": "Vận chuyển",
+      "paymentOptions": {
+        "all": "Tất cả phương thức",
+        "cash_on_delivery": "Thanh toán khi nhận hàng",
+        "credit_card": "Thẻ tín dụng",
+        "bank_transfer": "Chuyển khoản",
+        "wallet": "Ví điện tử"
+      },
+      "sortOptions": {
+        "newest_first": "Mới nhất trước",
+        "oldest_first": "Cũ nhất trước",
+        "highest_total": "Giá cao nhất",
+        "lowest_total": "Giá thấp nhất"
+      },
+      "shippingOptions": {
+        "all": "Tất cả",
+        "standard": "Tiêu chuẩn",
+        "express": "Hỏa tốc"
+      }
+    },
+    "order": {
+      "orderId": "Mã đơn",
+      "date": "Ngày",
+      "customer": "Khách hàng",
+      "product": "Sản phẩm không xác định",
+      "status": "Trạng thái",
+      "total": "Tổng",
+      "qty": "SL:",
+      "message": "Nhắn tin",
+      "opening": "Đang mở…"
+    },
+    "paymentStatus": {
+      "pending": "Chờ",
+      "paid": "Đã thanh toán",
+      "failed": "Thất bại",
+      "refunded": "Đã hoàn tiền",
+      "refund_pending": "Chờ hoàn"
+    },
+    "status": {
+      "all": "Tất cả",
+      "pending": "Chờ xử lý",
+      "confirmed": "Đã xác nhận",
+      "packed": "Đã đóng gói",
+      "shipped": "Đã giao",
+      "delivered": "Đã nhận",
+      "completed": "Hoàn thành",
+      "cancelled": "Đã hủy",
+      "refund_pending": "Hoàn tiền",
+      "refunded": "Đã hoàn tiền",
+      "under_investigation": "Đang xác minh"
+    },
+    "pagination": {
+      "previous": "Trang trước",
+      "next": "Trang sau"
+    }
+  },
+  "shopDecoration": {
+    "moduleLibrary": {
+      "title": "Thư viện Module",
+      "subtitle": "Kéo thả hoặc nhấn để thêm module"
+    },
+    "topBar": {
+      "preview": "Xem trước",
+      "save": "Lưu",
+      "saving": "Đang lưu...",
+      "publish": "Xuất bản",
+      "publishing": "Đang xuất bản...",
+      "notSaved": "Chưa lưu",
+      "lastSaved": "Lưu lần cuối: {{time}}"
+    },
+    "rightPanel": {
+      "moduleConfig": "Cấu hình Module",
+      "moduleConfigTitle": "Cấu hình Module",
+      "selectModuleHint": "Chọn một module để cấu hình",
+      "selectModuleHint2": "Hoặc nhấn vào ảnh bìa phía trên để đổi ảnh bìa shop",
+      "mandatoryNotice": "Đây là module bắt buộc, luôn xuất hiện đầu tiên và không thể xóa hoặc chỉnh sửa.",
+      "autoWidgetNote": "Nội dung được tự động lấy từ hệ thống. Chỉ cần cấu hình hiển thị.",
+      "manualWidgetNote": "Thiết lập nội dung cho module này.",
+      "showOnHomepage": "Hiển thị trên trang chủ",
+      "removeModule": "Xóa module"
+    },
+    "coverPhoto": {
+      "title": "Ảnh bìa Shop",
+      "subtitle": "Cập nhật ảnh bìa hero cho shop của bạn",
+      "currentCover": "Ảnh bìa hiện tại",
+      "uploadCover": "Tải lên ảnh bìa"
+    },
+    "imageSpecs": {
+      "title": "Thông số hình ảnh",
+      "imageDesc": "≤2MB, tối đa 2000×2000px. Định dạng: JPG, JPEG, PNG, GIF.",
+      "videoDesc": "≤30MB, tối đa 1280×1280px, 10–60 giây. Định dạng: MP4.",
+      "quantityDesc": "Tối đa {{count}} ảnh/video.",
+      "coverSize": "Kích thước khuyến nghị: 1200×300px (4:1) hoặc rộng hơn.",
+      "coverFile": "≤2MB (JPG, JPEG, PNG).",
+      "coverNote": "Hiển thị ở đầu trang hồ sơ shop trên mọi thiết bị."
+    },
+    "moduleLabels": {
+      "voucherSource": "Nguồn voucher",
+      "auto": "Tự động",
+      "manual": "Thủ công",
+      "systemAutoNote": "Hệ thống tự động hiển thị voucher đang hoạt động của shop.",
+      "maxVouchers": "Số voucher tối đa hiển thị",
+      "manualNote": "Chọn voucher đang hoạt động từ Kênh Marketing. Tối đa 5 voucher.",
+      "selectedVouchers": "Voucher đã chọn ({{count}}/5)",
+      "selectVouchers": "Chọn voucher",
+      "noHotspots": "Chưa có khu vực hotspot nào. Nhấn nút bên dưới để mở trình chỉnh sửa.",
+      "hotspots": "Khu vực Hotspot — {{count}}/10",
+      "noLink": "⚠ Không có liên kết",
+      "uploadBg": "Tải lên ảnh nền",
+      "editHotspot": "Sửa Hotspot",
+      "createHotspot": "Tạo Hotspot",
+      "uploadBgFirst": "Vui lòng tải lên ảnh nền trước"
+    },
+    "autoRotate": "Tự động xoay ảnh",
+    "interval": "Khoảng thời gian: {{seconds}} giây",
+    "showTitle": "Hiển thị tiêu đề",
+    "title": "Tiêu đề",
+    "content": "Nội dung",
+    "enterTitle": "Nhập tiêu đề...",
+    "enterContent": "Nhập nội dung...",
+    "aspectRatio": "Tỷ lệ khung hình",
+    "numberOfColumns": "Số cột",
+    "uploadImage": "Tải lên ảnh",
+    "addImageVideo": "Thêm ảnh/video ({{current}}/{{max}})",
+    "addImage": "Thêm ảnh ({{current}}/{{max}})",
+    "edit": "Sửa",
+    "crop": "Cắt ảnh",
+    "changeImage": "Đổi ảnh",
+    "delete": "Xóa",
+    "moveUp": "Di chuyển lên",
+    "moveDown": "Di chuyển xuống",
+    "selectItem": "Chọn mục...",
+    "enterUrl": "Nhập URL (ví dụ: /category/shirt)",
+    "maxImages": "Tối đa {{max}} ảnh.",
+    "selectItem": "Chọn mục..."
+  },
+  "toast": {
+    "moduleCannotRemove": "Module này không thể xóa.",
+    "moduleDeleted": "Module đã xóa.",
+    "moduleRemoved": "Module đã xóa.",
+    "draftSaved": "Lưu nháp thành công.",
+    "saveFailed": "Lưu nháp thất bại.",
+    "published": "Xuất bản thành công!",
+    "publishFailed": "Xuất bản thất bại.",
+    "shopNotFound": "Không tìm thấy thông tin shop."
+  },
+  "voucherPicker": {
+    "title": "Chọn voucher",
+    "count": "{{selected}}/{{max}}",
+    "tabs": {
+      "active": "Đang hoạt động",
+      "upcoming": "Sắp tới",
+      "expired": "Hết hạn"
+    },
+    "loading": "Đang tải...",
+    "empty": "Không có voucher nào",
+    "cancel": "Hủy",
+    "apply": "Áp dụng ({{count}})"
+  },
+  "productPicker": {
+    "title": "Chọn sản phẩm",
+    "loading": "Đang tải...",
+    "empty": "Không có sản phẩm nào",
+    "noPrice": "Không có giá"
+  },
+  "categoryPicker": {
+    "title": "Chọn danh mục",
+    "loading": "Đang tải...",
+    "empty": "Không có danh mục nào"
+  },
+  "comboPicker": {
+    "title": "Chọn Combo",
+    "loading": "Đang tải...",
+    "empty": "Không có combo nào"
+  },
+  "addonPicker": {
+    "title": "Chọn Add-on Deal",
+    "loading": "Đang tải...",
+    "empty": "Không có add-on deal nào"
+  },
+  "validation": {
+    "placeholderImages": "Module \"{{name}}\" đang sử dụng ảnh placeholder. Vui lòng tải lên ảnh thực trước khi xuất bản.",
+    "placeholderInList": "Module \"{{name}}\" có ảnh placeholder trong danh sách. Vui lòng thay bằng ảnh thực."
+  },
+  "sellerReturns": {
+    "title": "Đổi / Trả",
+    "subtitle": "Quản lý yêu cầu đổi trả và hoàn tiền của khách hàng",
+    "stats": {
+      "total": "Tổng",
+      "pending": "Chờ xử lý",
+      "approved": "Đã chấp nhận",
+      "refunded": "Đã hoàn tiền"
+    },
+    "searchPlaceholder": "Tìm kiếm mã đổi trả, khách hàng, sản phẩm…",
+    "loading": "Đang tải yêu cầu đổi trả...",
+    "errorLoading": "Không thể tải yêu cầu đổi trả",
+    "retry": "Thử lại",
+    "empty": {
+      "noResults": "Không có kết quả cho \"{{search}}\"",
+      "noRequests": "Không có yêu cầu đổi trả nào"
+    },
+    "table": {
+      "returnId": "Mã đổi trả",
+      "order": "Đơn hàng",
+      "product": "Sản phẩm",
+      "customer": "Khách hàng",
+      "reason": "Lý do",
+      "refund": "Hoàn tiền",
+      "date": "Ngày",
+      "status": "Trạng thái",
+      "actions": ""
+    },
+    "status": {
+      "all": "Tất cả",
+      "pending": "Chờ xử lý",
+      "approved": "Đã chấp nhận",
+      "rejected": "Đã từ chối",
+      "items_returned": "Đã gửi hàng về",
+      "processing": "Đang xử lý",
+      "completed": "Hoàn thành",
+      "pending_review": "Chờ xem xét"
+    },
+    "type": {
+      "refund": "Hoàn tiền",
+      "exchange": "Đổi hàng"
+    },
+    "reason": {
+      "wrong_size": "Size không vừa",
+      "defective": "Sản phẩm lỗi",
+      "wrong_item": "Gửi sai hàng",
+      "not_as_described": "Không đúng mô tả",
+      "damaged_in_shipping": "Hư hỏng khi vận chuyển",
+      "change_of_mind": "Đổi ý",
+      "other": "Khác"
+    },
+    "actions": {
+      "viewDetails": "Xem chi tiết",
+      "reject": "Từ chối",
+      "approve": "Chấp nhận"
+    },
+    "tableFooter": {
+      "returnsFound": "{{count}} yêu cầu được tìm thấy"
+    },
+    "quickAction": {
+      "successApprove": "Đã chấp nhận yêu cầu đổi trả!",
+      "successReject": "Đã từ chối yêu cầu đổi trả!",
+      "errorApprove": "Không thể chấp nhận yêu cầu đổi trả",
+      "errorReject": "Không thể từ chối yêu cầu đổi trả"
+    },
+    "management": {
+      "pageTitle": "Quản Lý Yêu Cầu Đổi Trả",
+      "emptyRequests": "Không có yêu cầu nào.",
+      "loadingRequests": "Đang tải...",
+      "columns": {
+        "code": "Mã",
+        "order": "Đơn hàng",
+        "customer": "Khách hàng",
+        "type": "Loại",
+        "reason": "Lý do",
+        "status": "Trạng thái",
+        "amount": "Số tiền",
+        "createdAt": "Ngày tạo",
+        "actions": "Thao tác"
+      },
+      "modal": {
+        "responseTitle": "Phản Hồi Yêu Cầu Đổi Trả",
+        "requestCode": "Mã yêu cầu",
+        "type": "Loại",
+        "reason": "Lý do",
+        "description": "Mô tả",
+        "decision": "Quyết định",
+        "approve": "Chấp nhận yêu cầu",
+        "reject": "Từ chối yêu cầu",
+        "notes": "Ghi chú",
+        "notesPlaceholderReject": "Vui lòng nhập lý do từ chối...",
+        "notesPlaceholderOptional": "Ghi chú thêm (không bắt buộc)...",
+        "notesRequired": "Ghi chú bắt buộc khi từ chối",
+        "cancel": "Hủy",
+        "submit": "Gửi phản hồi",
+        "submitting": "Đang xử lý..."
+      },
+      "buttons": {
+        "respond": "Phản hồi",
+        "refund": "Hoàn tiền",
+        "exchange": "Đổi hàng"
+      },
+      "confirmRefund": "Xác nhận hoàn tiền cho khách hàng?",
+      "confirmExchange": "Xác nhận tạo đơn hàng đổi hàng mới?",
+      "successApprove": "Đã chấp nhận yêu cầu",
+      "successReject": "Đã từ chối yêu cầu",
+      "successRefund": "Đã hoàn tiền thành công",
+      "successExchange": "Đã tạo đơn đổi hàng",
+      "errorProcess": "Không thể xử lý yêu cầu",
+      "alert": {
+        "title": "Lưu ý quan trọng",
+        "points": {
+          "respondWithin": "Bạn có 3 ngày để phản hồi yêu cầu đổi trả",
+          "autoApprove": "Sau 3 ngày không phản hồi, yêu cầu sẽ tự động được chấp nhận",
+          "sellerFault": "Nếu sản phẩm lỗi/sai hàng: Seller chịu phí ship hoàn trả",
+          "customerFault": "Nếu khách đổi ý: Khách hàng chịu phí ship hoàn trả",
+          "refundAsCoin": "Hoàn tiền sẽ được chuyển thành coin vào ví của khách hàng"
+        }
+      },
+      "errors": {
+        "cannotLoad": "Không thể tải danh sách yêu cầu",
+        "enterRejectReason": "Vui lòng nhập lý do từ chối"
+      }
+    }
   }
 }

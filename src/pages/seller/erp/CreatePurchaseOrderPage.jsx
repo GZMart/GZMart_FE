@@ -873,7 +873,15 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
   const removeTier = (i) => updateTiers(tiers.filter((_, idx) => idx !== i));
 
   const updateVariant = (vi, field, value) => {
-    const newVariants = variants.map((v, idx) => (idx === vi ? { ...v, [field]: value } : v));
+    if (value === '' || value == null) {
+      const newVariants = variants.map((v, idx) => (idx === vi ? { ...v, [field]: '' } : v));
+      onUpdate({ ...group, variants: newVariants });
+      return;
+    }
+    const parsed = field === 'quantity'
+      ? Math.max(1, parseInt(value, 10) || 1)
+      : parseFloat(value);
+    const newVariants = variants.map((v, idx) => (idx === vi ? { ...v, [field]: parsed } : v));
     onUpdate({ ...group, variants: newVariants });
   };
 
@@ -999,7 +1007,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
               <input
                 type="number"
                 min="0"
-                step="0.5"
+                step="0.01"
                 placeholder="¥ Price"
                 className={styles.bulkInput}
                 value={bulkPrice}
@@ -1068,7 +1076,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                         <input
                           type="number"
                           min="0"
-                          step="0.5"
+                          step="0.01"
                           className={styles.numInput}
                           value={v.unitPriceCny}
                           onChange={(e) => updateVariant(vi, 'unitPriceCny', e.target.value)}

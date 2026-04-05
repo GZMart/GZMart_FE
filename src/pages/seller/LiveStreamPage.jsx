@@ -6,7 +6,7 @@ import LiveChatPanel from '@components/seller/LiveChatPanel';
 import LiveActionBar from '@components/seller/LiveActionBar';
 import LiveProductSelector from '@components/seller/LiveProductSelector';
 import LiveVoucherSelector from '@components/seller/LiveVoucherSelector';
-import styles from './LiveStreamPage.module.css';
+import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
 const DEFAULT_FORM = {
   title: 'Live Stream: Giới thiệu sản phẩm mới',

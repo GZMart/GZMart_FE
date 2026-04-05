@@ -55,7 +55,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { categoryService } from '../../services/api/categoryService';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 import axiosClient from '../../services/axiosClient';
-import styles from '../../assets/styles/admin/CategoriesPage.module.css';
+import styles from '@assets/styles/admin/CategoriesPage.module.css';
 
 const { TextArea } = Input;
 

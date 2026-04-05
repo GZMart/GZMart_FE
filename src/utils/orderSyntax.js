@@ -18,7 +18,9 @@
  *             variants?: Array<{ tierName: string, value: string }> }}
  */
 export function parseOrderSyntax(message, prefix, productId = null, variantTiers = null) {
-  if (!message || !prefix) return { matched: false };
+  if (!message || !prefix) {
+return { matched: false };
+}
 
   const trimmed = message.trim();
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -29,7 +31,9 @@ export function parseOrderSyntax(message, prefix, productId = null, variantTiers
   // so we use \s* after the anchor to allow: "# muangay 2" or "Hi #muangay 2"
   const prefixPattern = new RegExp(`^#\\s*${escaped}(?:\\s+|$)`, 'i');
   const prefixMatch = trimmed.match(prefixPattern);
-  if (!prefixMatch) return { matched: false };
+  if (!prefixMatch) {
+return { matched: false };
+}
 
   // Everything after the matched "#prefix" token (must use numeric index — slice(string) coerces to 0 and breaks parsing)
   const prefixEnd = prefixMatch.index + prefixMatch[0].length;

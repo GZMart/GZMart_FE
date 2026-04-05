@@ -527,5 +527,517 @@
       "wallet": "Wallet Updates",
       "system": "System Updates"
     }
+  },
+  "common": {
+    "changeLanguage": "Change Language",
+    "languageVietnamese": "Tiếng Việt",
+    "languageEnglish": "English"
+  },
+  "sellerDashboard": {
+    "title": "Dashboard",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "exchangeRate": {
+      "label": "CNY / VND Rate",
+      "vndUnit": "VND",
+      "updated": "Updated: {{time}}"
+    },
+    "actionCenter": {
+      "title": "Tasks to do today",
+      "pending": "Pending Orders",
+      "pendingSub": "Needs confirmation before processing",
+      "toShip": "Awaiting Packing / Delivery",
+      "toShipSub": "Needs packaging and handoff",
+      "cancelOrReturn": "Cancellation / Return Requests",
+      "cancelOrReturnSub": "Needs response within 24h",
+      "unreadMessages": "Unread Messages",
+      "unreadMessagesSub": "Customer support needed"
+    },
+    "stats": {
+      "revenue": "Revenue This Period",
+      "orders": "Orders This Period",
+      "aov": "Avg. Order Value",
+      "profit": "Total Profit",
+      "vsPeriod": "vs. previous period"
+    },
+    "period": {
+      "daily": "Last 30 days",
+      "weekly": "Last 13 weeks",
+      "monthly": "Last 12 months",
+      "quarterly": "Last 4 quarters",
+      "yearly": "Last 5 years"
+    },
+    "periodCompare": {
+      "daily": "vs. 30 days ago",
+      "weekly": "vs. 13 weeks ago",
+      "monthly": "vs. 12 months ago",
+      "quarterly": "vs. 4 quarters ago",
+      "yearly": "vs. 5 years ago"
+    },
+    "periodShort": {
+      "daily": "30 Days",
+      "weekly": "13 Weeks",
+      "monthly": "12 Months",
+      "quarterly": "4 Quarters",
+      "yearly": "5 Years"
+    },
+    "lowStock": {
+      "title": "Low Stock Alerts",
+      "danger": "Critical",
+      "createPO": "Create PO",
+      "createPOBtn": "Create PO",
+      "stockLeft": "{{current}} / {{safety}} items",
+      "allStockOk": "All products are well-stocked",
+      "uncategorized": "Uncategorized"
+    },
+    "expense": {
+      "title": "Cost Analysis",
+      "noData": "No cost data available",
+      "source": "Source: {{count}} completed POs",
+      "types": {
+        "goodsValuePo": "Goods Value (PO)",
+        "buyingServiceFee": "Buying Service Fee",
+        "intlFreightCnVn": "Intl Freight (CN→VN)",
+        "importTax": "Import Tax",
+        "cnDomesticShipping": "CN Domestic Shipping",
+        "packagingInsurance": "Packaging / Insurance",
+        "vnLastMilePoWarehouse": "VN Last-Mile (PO→Warehouse)",
+        "otherCosts": "Other Costs",
+        "lastMileDeliveryOrder": "Last-Mile Delivery (Order)"
+      }
+    },
+    "topProducts": {
+      "title": "Top Profitable Products",
+      "viewAll": "View all",
+      "product": "Product",
+      "sold": "Sold",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "margin": "Margin"
+    },
+    "category": {
+      "title": "Product Analytics by Category",
+      "noData": "No category analytics data",
+      "source": "Source: revenue by category — {{count}} categories in period",
+      "legendTooltip": "{{name}} — {{percent}}% period revenue"
+    },
+    "segmented": {
+      "week": "Week",
+      "month": "Month",
+      "quarter": "Quarter",
+      "year": "Year"
+    },
+    "overallSales": {
+      "title": "Revenue Over Time",
+      "vsPrevious": "vs. previous period",
+      "loading": "Loading data...",
+      "noData": "No data available"
+    },
+    "revenueDetail": {
+      "title": "Revenue Details",
+      "thisPeriod": "This Period",
+      "prevPeriod": "Prev Period",
+      "growth": "Growth",
+      "ordersUnit": "orders",
+      "itemsUnit": "items",
+      "ordersGrowth": "% orders",
+      "chartTitle": "Revenue Over Time",
+      "dataPoints": "{{count}} data points",
+      "topRevenueProducts": "Top Revenue Products",
+      "loading": "Loading data...",
+      "noRevenueData": "No revenue data",
+      "noProductData": "No product data"
+    },
+    "ordersDetail": {
+      "title": "Order Details",
+      "thisPeriod": "This Period",
+      "prevPeriod": "Prev Period",
+      "growth": "Growth",
+      "ordersUnit": "orders",
+      "orderCode": "Order ID",
+      "customer": "Customer",
+      "value": "Value",
+      "items": "Items",
+      "itemsUnit": "items",
+      "status": "Status",
+      "createdAt": "Created Date",
+      "loading": "Loading orders...",
+      "recentOrders": "recent orders",
+      "viewAllOrders": "View all orders",
+      "noOrders": "No orders found"
+    },
+    "aovDetail": {
+      "title": "Average Order Value Details",
+      "aovThisPeriod": "AOV This Period",
+      "aovPrevPeriod": "AOV Prev Period",
+      "aovGrowth": "AOV Growth",
+      "distributionTitle": "Order Value Distribution",
+      "recentOrders": "recent orders",
+      "topHighestValue": "Highest-Value Orders",
+      "orderCode": "Order ID",
+      "customer": "Customer",
+      "orderValue": "Order Value",
+      "date": "Date",
+      "loading": "Loading data...",
+      "noDistribution": "No distribution data",
+      "noOrders": "No orders"
+    },
+    "profitDetail": {
+      "title": "Profit Details",
+      "totalRevenue": "Total Revenue",
+      "totalCost": "Total Cost",
+      "netProfit": "Net Profit",
+      "profitThisPeriod": "Profit This Period",
+      "profitPrevPeriod": "Prev Period",
+      "growth": "Growth",
+      "chartTitle": "Revenue & Cost by Period",
+      "revenue": "Revenue",
+      "cost": "Cost",
+      "topProfitProducts": "Top Profitable Products",
+      "loading": "Loading data...",
+      "noPLData": "No P&L data",
+      "noProductData": "No product data"
+    },
+    "topProfitProducts": {
+      "title": "Top Profitable Products",
+      "chartTitle": "Revenue & Profit Chart — Top 10",
+      "productList": "High-Profit Product List",
+      "totalProducts": "products",
+      "totalRevenue": "Total Revenue",
+      "totalProfit": "Total Profit",
+      "avgMargin": "Avg. Margin",
+      "loading": "Loading data…",
+      "noData": "No product data"
+    }
+  },
+  "sellerOrders": {
+    "title": "Orders",
+    "subtitle": "Manage and track orders from your customers.",
+    "header": {
+      "title": "Orders",
+      "subtitle": "Manage and track orders from your customers."
+    },
+    "loading": "Loading orders...",
+    "errorLoading": "Error Loading Orders",
+    "retryButton": "Try Again",
+    "empty": {
+      "title": "No Orders Found",
+      "default": "You don't have any orders yet.",
+      "byStatus": "No \"{{status}}\" orders yet."
+    },
+    "filters": {
+      "payment": "Payment",
+      "sortBy": "Sort By",
+      "shipping": "Shipping",
+      "paymentOptions": {
+        "all": "All Methods",
+        "cash_on_delivery": "Cash on Delivery",
+        "credit_card": "Credit Card",
+        "bank_transfer": "Bank Transfer",
+        "wallet": "E-Wallet"
+      },
+      "sortOptions": {
+        "newest_first": "Newest First",
+        "oldest_first": "Oldest First",
+        "highest_total": "Highest Total",
+        "lowest_total": "Lowest Total"
+      },
+      "shippingOptions": {
+        "all": "All Methods",
+        "standard": "Standard",
+        "express": "Express"
+      }
+    },
+    "order": {
+      "orderId": "Order ID",
+      "date": "Date",
+      "customer": "Customer",
+      "product": "Unknown Product",
+      "status": "Status",
+      "total": "Total",
+      "qty": "Qty:",
+      "message": "Message",
+      "opening": "Opening…"
+    },
+    "paymentStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "refund_pending": "Refund Pend"
+    },
+    "status": {
+      "all": "All",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refund_pending": "Refund",
+      "refunded": "Refunded",
+      "under_investigation": "Under Investigation"
+    },
+    "pagination": {
+      "previous": "Previous page",
+      "next": "Next page"
+    }
+  },
+  "shopDecoration": {
+    "moduleLibrary": {
+      "title": "Module Library",
+      "subtitle": "Drag to canvas or click to add module"
+    },
+    "topBar": {
+      "preview": "Preview",
+      "save": "Save",
+      "saving": "Saving...",
+      "publish": "Publish",
+      "publishing": "Publishing...",
+      "notSaved": "Not saved",
+      "lastSaved": "Last saved: {{time}}"
+    },
+    "rightPanel": {
+      "moduleConfig": "Module Configuration",
+      "moduleConfigTitle": "Module Configuration",
+      "selectModuleHint": "Select a module to configure",
+      "selectModuleHint2": "Or click on the cover photo above to change shop cover",
+      "mandatoryNotice": "This is a mandatory module that always appears first and cannot be removed or modified.",
+      "autoWidgetNote": "Content is automatically fetched from the system. Just configure the display settings.",
+      "manualWidgetNote": "Set up content for this module.",
+      "showOnHomepage": "Show on homepage",
+      "removeModule": "Remove module"
+    },
+    "coverPhoto": {
+      "title": "Shop Cover Photo",
+      "subtitle": "Update your shop's hero banner",
+      "currentCover": "Current Cover Photo",
+      "uploadCover": "Upload Cover"
+    },
+    "imageSpecs": {
+      "title": "Image specifications",
+      "imageDesc": "≤2MB, maximum 2000×2000px. Formats: JPG, JPEG, PNG, GIF.",
+      "videoDesc": "≤30MB, maximum 1280×1280px, 10–60 seconds. Format: MP4.",
+      "quantityDesc": "Maximum {{count}} images/videos.",
+      "coverSize": "Recommended 1200×300px (4:1) or wider.",
+      "coverFile": "≤2MB (JPG, JPEG, PNG).",
+      "coverNote": "Shows at the top of your shop profile across all devices."
+    },
+    "moduleLabels": {
+      "voucherSource": "Voucher source",
+      "auto": "Auto",
+      "manual": "Manual",
+      "systemAutoNote": "System automatically displays active vouchers for the shop.",
+      "maxVouchers": "Maximum vouchers to display",
+      "manualNote": "Select active vouchers from Marketing Channel. Maximum 5 vouchers.",
+      "selectedVouchers": "Selected vouchers ({{count}}/5)",
+      "selectVouchers": "Select vouchers",
+      "noHotspots": "No hotspot areas yet. Click the button below to open the editor.",
+      "hotspots": "Hotspot areas — {{count}}/10",
+      "noLink": "⚠ No link",
+      "uploadBg": "Upload background image",
+      "editHotspot": "Edit Hotspot",
+      "createHotspot": "Create Hotspot",
+      "uploadBgFirst": "Please upload background image first"
+    },
+    "autoRotate": "Auto rotate images",
+    "interval": "Interval: {{seconds}} seconds",
+    "showTitle": "Show title",
+    "title": "Title",
+    "content": "Content",
+    "enterTitle": "Enter title...",
+    "enterContent": "Enter content...",
+    "aspectRatio": "Aspect ratio",
+    "numberOfColumns": "Number of columns",
+    "uploadImage": "Upload image",
+    "addImageVideo": "Add image/video ({{current}}/{{max}})",
+    "addImage": "Add image ({{current}}/{{max}})",
+    "edit": "Edit",
+    "crop": "Crop image",
+    "changeImage": "Change image",
+    "delete": "Delete",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "selectItem": "Select item...",
+    "enterUrl": "Enter URL (e.g., /category/shirt)",
+    "maxImages": "Maximum {{max}} images.",
+    "selectItem": "Select item..."
+  },
+  "toast": {
+    "moduleCannotRemove": "This module cannot be removed.",
+    "moduleDeleted": "Module deleted.",
+    "moduleRemoved": "Module removed.",
+    "draftSaved": "Draft saved successfully.",
+    "saveFailed": "Failed to save draft.",
+    "published": "Published successfully!",
+    "publishFailed": "Failed to publish.",
+    "shopNotFound": "Shop information not found."
+  },
+  "voucherPicker": {
+    "title": "Select vouchers",
+    "count": "{{selected}}/{{max}}",
+    "tabs": {
+      "active": "Active",
+      "upcoming": "Upcoming",
+      "expired": "Expired"
+    },
+    "loading": "Loading...",
+    "empty": "No vouchers available",
+    "cancel": "Cancel",
+    "apply": "Apply ({{count}})"
+  },
+  "productPicker": {
+    "title": "Select Product",
+    "loading": "Loading...",
+    "empty": "No products available",
+    "noPrice": "No price"
+  },
+  "categoryPicker": {
+    "title": "Select Category",
+    "loading": "Loading...",
+    "empty": "No categories available"
+  },
+  "comboPicker": {
+    "title": "Select Combo",
+    "loading": "Loading...",
+    "empty": "No combos available"
+  },
+  "addonPicker": {
+    "title": "Select Add-on Deal",
+    "loading": "Loading...",
+    "empty": "No add-on deals available"
+  },
+  "validation": {
+    "placeholderImages": "Module \"{{name}}\" is still using placeholder images. Please upload real images before publishing.",
+    "placeholderInList": "Module \"{{name}}\" has placeholder images in the list. Please replace with real images."
+  },
+  "sellerReturns": {
+    "title": "Returns",
+    "subtitle": "Manage customer return and refund requests",
+    "stats": {
+      "total": "Total",
+      "pending": "Pending",
+      "approved": "Approved",
+      "refunded": "Refunded"
+    },
+    "searchPlaceholder": "Search return ID, customer, product…",
+    "loading": "Loading return requests...",
+    "errorLoading": "Failed to load return requests",
+    "retry": "Retry",
+    "empty": {
+      "noResults": "No results for \"{{search}}\"",
+      "noRequests": "No return requests"
+    },
+    "table": {
+      "returnId": "Return ID",
+      "order": "Order",
+      "product": "Product",
+      "customer": "Customer",
+      "reason": "Reason",
+      "refund": "Refund",
+      "date": "Date",
+      "status": "Status",
+      "actions": ""
+    },
+    "status": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "items_returned": "Items Returned",
+      "processing": "Processing",
+      "completed": "Completed",
+      "pending_review": "Pending Review"
+    },
+    "type": {
+      "refund": "Refund",
+      "exchange": "Exchange"
+    },
+    "reason": {
+      "wrong_size": "Wrong size",
+      "defective": "Defective product",
+      "wrong_item": "Wrong item sent",
+      "not_as_described": "Not as described",
+      "damaged_in_shipping": "Damaged in shipping",
+      "change_of_mind": "Change of mind",
+      "other": "Other"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "reject": "Reject",
+      "approve": "Approve"
+    },
+    "tableFooter": {
+      "returnsFound": "{{count}} return{{count !== 1 ? 's' : ''}} found"
+    },
+    "quickAction": {
+      "successApprove": "Return request approved successfully!",
+      "successReject": "Return request rejected successfully!",
+      "errorApprove": "Failed to approve return request",
+      "errorReject": "Failed to reject return request"
+    },
+    "management": {
+      "pageTitle": "Return Request Management",
+      "emptyRequests": "No requests found.",
+      "loadingRequests": "Loading...",
+      "columns": {
+        "code": "Code",
+        "order": "Order",
+        "customer": "Customer",
+        "type": "Type",
+        "reason": "Reason",
+        "status": "Status",
+        "amount": "Amount",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "modal": {
+        "responseTitle": "Respond to Return Request",
+        "requestCode": "Request Code",
+        "type": "Type",
+        "reason": "Reason",
+        "description": "Description",
+        "decision": "Decision",
+        "approve": "Approve request",
+        "reject": "Reject request",
+        "notes": "Notes",
+        "notesPlaceholderReject": "Please enter rejection reason...",
+        "notesPlaceholderOptional": "Additional notes (optional)...",
+        "notesRequired": "Notes are required when rejecting",
+        "cancel": "Cancel",
+        "submit": "Submit Response",
+        "submitting": "Processing..."
+      },
+      "buttons": {
+        "respond": "Respond",
+        "refund": "Refund",
+        "exchange": "Exchange"
+      },
+      "confirmRefund": "Confirm refund to customer?",
+      "confirmExchange": "Confirm create exchange order?",
+      "successApprove": "Request approved",
+      "successReject": "Request rejected",
+      "successRefund": "Refund processed successfully",
+      "successExchange": "Exchange order created",
+      "errorProcess": "Failed to process request",
+      "alert": {
+        "title": "Important Notice",
+        "points": {
+          "respondWithin": "You have 3 days to respond to return requests",
+          "autoApprove": "After 3 days without response, requests will be auto-approved",
+          "sellerFault": "If product is defective/wrong: Seller pays return shipping",
+          "customerFault": "If customer changes mind: Customer pays return shipping",
+          "refundAsCoin": "Refunds will be converted to coins in customer's wallet"
+        }
+      },
+      "errors": {
+        "cannotLoad": "Cannot load request list",
+        "enterRejectReason": "Please enter rejection reason"
+      }
+    }
   }
 }

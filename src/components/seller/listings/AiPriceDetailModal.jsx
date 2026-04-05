@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { formatCurrency } from '../../../utils/formatters';
 import PoCostBreakdown from './PoCostBreakdown';
-import styles from './AiPriceDetailModal.module.css';
+import styles from '@assets/styles/seller/AiPriceDetailModal.module.css';
 
 const SORT_FIELDS = [
   { key: 'name',       label: 'Tên sản phẩm',   numeric: false },

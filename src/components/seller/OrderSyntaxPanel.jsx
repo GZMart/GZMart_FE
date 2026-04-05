@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import livestreamService from '@services/api/livestreamService';
-import styles from '@pages/seller/LiveStreamPage.module.css';
+import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
 /**
  * OrderSyntaxPanel — seller UI for configuring the live chat order syntax.
@@ -26,7 +26,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [] 
 
   // ── Load config from session ────────────────────────────────────────────────
   useEffect(() => {
-    if (!isLive || !sessionId) return;
+    if (!isLive || !sessionId) {
+return;
+}
     livestreamService
       .getSessionConfig(sessionId)
       .then((res) => {
@@ -68,7 +70,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [] 
     setVariantTiers((prev) => {
       if (checked) {
         // Add tier if not already present
-        if (prev.some((t) => t.name === tierName)) return prev;
+        if (prev.some((t) => t.name === tierName)) {
+return prev;
+}
         const product = resolvedProduct;
         const tier = product?.tiers?.find((t) => t.name === tierName);
         return [...prev, { name: tierName, options: [...(tier?.options ?? [])] }];
@@ -90,7 +94,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [] 
   const toggleOption = useCallback((tierName, option, checked) => {
     setVariantTiers((prev) =>
       prev.map((t) => {
-        if (t.name !== tierName) return t;
+        if (t.name !== tierName) {
+return t;
+}
         const opts = checked
           ? [...t.options, option]
           : t.options.filter((o) => o !== option);
@@ -101,7 +107,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [] 
 
   // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+return;
+}
     setSaving(true);
     try {
       await livestreamService.updateSession(sessionId, {
