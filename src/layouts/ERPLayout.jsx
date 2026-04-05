@@ -17,6 +17,7 @@ const NAV_GROUPS = [
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
       { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
+      { to: SELLER_ROUTES.LIVE, icon: 'bi-broadcast', label: 'Live' },
       { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
     ],
   },
