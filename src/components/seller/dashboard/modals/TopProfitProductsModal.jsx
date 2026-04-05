@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Spin,
@@ -11,7 +12,6 @@ import {
   Empty,
   Row,
   Col,
-  Segmented,
 } from 'antd';
 import {
   BarChart,
@@ -28,14 +28,6 @@ import { formatCurrency } from '../../../../utils/formatters';
 import dashboardService from '../../../../services/api/dashboardService';
 
 const { Text } = Typography;
-
-const PERIOD_LABELS = {
-  daily: '30 Ngày',
-  weekly: '13 Tuần',
-  monthly: '12 Tháng',
-  quarterly: '4 Quý',
-  yearly: '5 Năm',
-};
 
 const CHART_COLORS = {
   profit: '#10B981',
@@ -59,6 +51,7 @@ const periodBtnStyle = (active) => ({
 });
 
 export function TopProfitProductsModal({ open, onClose }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -82,8 +75,8 @@ export function TopProfitProductsModal({ open, onClose }) {
       .getTopSellingProductsWithProfit({ limit: 20, period: selectedPeriod })
       .then((res) => {
         if (cancelled) {
-          return;
-        }
+ return; 
+}
         const arr = Array.isArray(res?.data) ? res.data : [];
         setProducts(arr);
 
@@ -98,31 +91,38 @@ export function TopProfitProductsModal({ open, onClose }) {
       })
       .catch(() => {
         if (!cancelled) {
-          setProducts([]);
-          setChartData([]);
-        }
+ setProducts([]); setChartData([]); 
+}
       })
       .finally(() => {
         if (!cancelled) {
-          setLoading(false);
-        }
+ setLoading(false); 
+}
       });
 
     return () => {
-      cancelled = true;
-    };
+ cancelled = true; 
+};
   }, [open, selectedPeriod]);
+
+  const periodShortLabels = {
+    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
+    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
+    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
+    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
+    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+  };
 
   const columns = [
     {
-      title: 'Sản phẩm',
+      title: t('sellerDashboard.topProducts.product', 'Sản phẩm'),
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
       render: (v) => <Text strong style={{ fontSize: 13 }}>{v || '—'}</Text>,
     },
     {
-      title: 'Đã bán',
+      title: t('sellerDashboard.topProducts.sold', 'Đã bán'),
       dataIndex: 'totalQuantity',
       key: 'totalQuantity',
       width: 90,
@@ -134,7 +134,7 @@ export function TopProfitProductsModal({ open, onClose }) {
       ),
     },
     {
-      title: 'Doanh thu',
+      title: t('sellerDashboard.topProducts.revenue', 'Doanh thu'),
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
       width: 130,
@@ -146,7 +146,7 @@ export function TopProfitProductsModal({ open, onClose }) {
       ),
     },
     {
-      title: 'Chi phí',
+      title: t('sellerDashboard.profitDetail.cost', 'Chi phí'),
       dataIndex: 'cost',
       key: 'cost',
       width: 130,
@@ -158,7 +158,7 @@ export function TopProfitProductsModal({ open, onClose }) {
       ),
     },
     {
-      title: 'Lợi nhuận',
+      title: t('sellerDashboard.topProducts.profit', 'Lợi nhuận'),
       dataIndex: 'profit',
       key: 'profit',
       width: 130,
@@ -179,7 +179,7 @@ export function TopProfitProductsModal({ open, onClose }) {
       },
     },
     {
-      title: 'Margin',
+      title: t('sellerDashboard.topProducts.margin', 'Margin'),
       dataIndex: 'profitMargin',
       key: 'profitMargin',
       width: 90,
@@ -192,9 +192,7 @@ export function TopProfitProductsModal({ open, onClose }) {
           >
             {v.toFixed(1)}%
           </Tag>
-        ) : (
-          '—'
-        ),
+        ) : '—',
     },
   ];
 
@@ -215,7 +213,7 @@ export function TopProfitProductsModal({ open, onClose }) {
           >
             <TrendingUp size={15} color="#10B981" />
           </div>
-          <span style={{ fontWeight: 600 }}>Top sản phẩm lợi nhuận cao</span>
+          <span style={{ fontWeight: 600 }}>{t('sellerDashboard.topProfitProducts.title', 'Top sản phẩm lợi nhuận cao')}</span>
         </Space>
       }
       open={open}
@@ -224,7 +222,7 @@ export function TopProfitProductsModal({ open, onClose }) {
       width={900}
       destroyOnHidden
     >
-      <Spin spinning={loading} tip="Đang tải dữ liệu…">
+      <Spin spinning={loading} tip={t('sellerDashboard.topProfitProducts.loading', 'Đang tải dữ liệu…')}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
           {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
             <button
@@ -244,7 +242,7 @@ export function TopProfitProductsModal({ open, onClose }) {
                 }
               }}
             >
-              {PERIOD_LABELS[p]}
+              {periodShortLabels[p]}
             </button>
           ))}
         </div>
@@ -254,7 +252,7 @@ export function TopProfitProductsModal({ open, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <BarChart size={14} color={CHART_COLORS.profit} />
           <Text strong style={{ fontSize: 13, color: '#334155' }}>
-            Biểu đồ doanh thu & lợi nhuận — Top 10
+            {t('sellerDashboard.topProfitProducts.chartTitle', 'Biểu đồ doanh thu & lợi nhuận — Top 10')}
           </Text>
         </div>
         <div style={{ height: 220, marginBottom: 24 }}>
@@ -280,9 +278,9 @@ export function TopProfitProductsModal({ open, onClose }) {
                 <Tooltip
                   formatter={(value, name) => {
                     if (name === 'revenue') {
-                      return [formatCurrency(value), 'Doanh thu'];
+                      return [formatCurrency(value), t('sellerDashboard.topProducts.revenue', 'Doanh thu')];
                     }
-                    return [formatCurrency(value), 'Lợi nhuận'];
+                    return [formatCurrency(value), t('sellerDashboard.topProducts.profit', 'Lợi nhuận')];
                   }}
                   contentStyle={{
                     borderRadius: 10,
@@ -294,14 +292,14 @@ export function TopProfitProductsModal({ open, onClose }) {
                 />
                 <Legend
                   wrapperStyle={{ fontSize: 12, color: '#94A3B8' }}
-                  formatter={(value) => (value === 'revenue' ? 'Doanh thu' : 'Lợi nhuận')}
+                  formatter={(value) => (value === 'revenue' ? t('sellerDashboard.topProducts.revenue', 'Doanh thu') : t('sellerDashboard.topProducts.profit', 'Lợi nhuận'))}
                 />
                 <Bar dataKey="revenue" fill={CHART_COLORS.revenue} radius={[4, 4, 0, 0]} maxBarSize={40} />
                 <Bar dataKey="profit" fill={CHART_COLORS.profit} radius={[4, 4, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <Empty description="Không có dữ liệu sản phẩm" style={{ paddingTop: 40 }} />
+            <Empty description={t('sellerDashboard.topProfitProducts.noData', 'Không có dữ liệu sản phẩm')} style={{ paddingTop: 40 }} />
           )}
         </div>
 
@@ -310,10 +308,10 @@ export function TopProfitProductsModal({ open, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <Package size={14} color={CHART_COLORS.profit} />
           <Text strong style={{ fontSize: 13, color: '#334155' }}>
-            Danh sách sản phẩm lợi nhuận cao
+            {t('sellerDashboard.topProfitProducts.productList', 'Danh sách sản phẩm lợi nhuận cao')}
           </Text>
           <Text style={{ fontSize: 12, color: '#94A3B8', marginLeft: 4 }}>
-            ({products.length} sản phẩm)
+            ({products.length} {t('sellerDashboard.topProfitProducts.totalProducts', 'sản phẩm')})
           </Text>
         </div>
 
@@ -336,7 +334,7 @@ export function TopProfitProductsModal({ open, onClose }) {
                   letterSpacing: 0.5,
                 }}
               >
-                Tổng doanh thu
+                {t('sellerDashboard.topProfitProducts.totalRevenue', 'Tổng doanh thu')}
               </Text>
               <div style={{ fontSize: 16, fontWeight: 700, color: CHART_COLORS.revenue, lineHeight: 1.3, marginTop: 4 }}>
                 {formatCurrency(
@@ -363,7 +361,7 @@ export function TopProfitProductsModal({ open, onClose }) {
                   letterSpacing: 0.5,
                 }}
               >
-                Tổng lợi nhuận
+                {t('sellerDashboard.topProfitProducts.totalProfit', 'Tổng lợi nhuận')}
               </Text>
               <div style={{ fontSize: 16, fontWeight: 700, color: CHART_COLORS.profit, lineHeight: 1.3, marginTop: 4 }}>
                 {formatCurrency(products.reduce((s, p) => s + (p?.profit ?? 0), 0))}
@@ -388,13 +386,13 @@ export function TopProfitProductsModal({ open, onClose }) {
                   letterSpacing: 0.5,
                 }}
               >
-                Margin TB
+                {t('sellerDashboard.topProfitProducts.avgMargin', 'Margin TB')}
               </Text>
               <div style={{ fontSize: 16, fontWeight: 700, color: CHART_COLORS.profit, lineHeight: 1.3, marginTop: 4 }}>
                 {(() => {
-                  const totalRevenue = products.reduce((s, p) => s + (p?.totalRevenue ?? p?.revenue ?? 0), 0);
-                  const totalProfit = products.reduce((s, p) => s + (p?.profit ?? 0), 0);
-                  return totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}%` : '—';
+                  const totalRev = products.reduce((s, p) => s + (p?.totalRevenue ?? p?.revenue ?? 0), 0);
+                  const totalProf = products.reduce((s, p) => s + (p?.profit ?? 0), 0);
+                  return totalRev > 0 ? `${((totalProf / totalRev) * 100).toFixed(1)}%` : '—';
                 })()}
               </div>
             </div>
@@ -407,7 +405,7 @@ export function TopProfitProductsModal({ open, onClose }) {
           pagination={{ pageSize: 8, size: 'small' }}
           size="small"
           scroll={{ x: 720 }}
-          locale={{ emptyText: 'Không có dữ liệu sản phẩm' }}
+          locale={{ emptyText: t('sellerDashboard.topProfitProducts.noData', 'Không có dữ liệu sản phẩm') }}
         />
       </Spin>
     </Modal>

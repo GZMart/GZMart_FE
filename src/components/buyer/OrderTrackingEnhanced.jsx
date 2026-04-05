@@ -10,7 +10,7 @@ import {
 import socketService from '@services/socket/socketService';
 import DeliveryTrackingMap from './DeliveryTrackingMap';
 import { orderService } from '@services/api/orderService';
-import '../../assets/styles/buyer/Order/OrderTrackingEnhanced.module.css';
+import styles from '@assets/styles/buyer/Order/OrderTrackingEnhanced.module.css';
 
 const { TextArea } = Input;
 

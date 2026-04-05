@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { PUBLIC_ROUTES } from '@constants/routes';
-import styles from '@assets/styles/LoginPage/LoginPage.module.css';
+import styles from '@assets/styles/common/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
 import authService from '@services/api/authService';

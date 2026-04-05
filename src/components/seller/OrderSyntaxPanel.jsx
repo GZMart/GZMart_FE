@@ -78,7 +78,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [],
 
   // ── Load config from session (syntax always targets the pinned product) ─
   useEffect(() => {
-    if (!isLive || !sessionId) return;
+    if (!isLive || !sessionId) {
+return;
+}
     livestreamService
       .getSessionConfig(sessionId)
       .then((res) => {
@@ -207,7 +209,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [],
   }, [productTiers]);
 
   const handleSave = async () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+return;
+}
     setSaving(true);
     try {
       await livestreamService.updateSession(sessionId, {

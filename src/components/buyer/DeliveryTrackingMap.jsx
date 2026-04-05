@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import goongjs from '@goongmaps/goong-js';
 import '@goongmaps/goong-js/dist/goong-js.css';
-import styles from '../../assets/styles/buyer/Order/DeliveryTrackingMap.module.css';
+import styles from '@assets/styles/buyer/Order/DeliveryTrackingMap.module.css';
 import addressService from '@services/api/addressService';
 import rmaService from '@services/api/rmaService';
 import socketService from '@services/socket/socketService';

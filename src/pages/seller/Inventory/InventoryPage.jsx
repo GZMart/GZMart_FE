@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -30,7 +31,6 @@ import inventoryService from '../../../services/api/inventoryService';
 import {
   adjustStockItem,
   selectInventoryAdjusting,
-  selectInventoryError,
   clearError,
 } from '../../../store/slices/inventorySlice';
 import { selectUser } from '../../../store/slices/authSlice';
@@ -66,7 +66,7 @@ const getStockStatus = (stock, threshold) => {
 const loadStoredThresholds = () => {
   try {
     return JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
-  } catch {
+  } catch { // eslint-disable-line no-empty
     return {};
   }
 };
@@ -74,7 +74,8 @@ const loadStoredThresholds = () => {
 const persistThresholds = (map) => {
   try {
     localStorage.setItem(THRESHOLD_KEY, JSON.stringify(map));
-  } catch {}
+  } catch { // eslint-disable-line no-empty
+  }
 };
 
 const formatVariantLabel = (model) => {
@@ -233,6 +234,11 @@ setLoading(false);
   );
 };
 
+LotBreakdownRow.propTypes = {
+  sku: PropTypes.string.isRequired,
+  colCount: PropTypes.number.isRequired,
+};
+
 // ─── Sortable Column Header ───────────────────────────────────────
 const SortableHeader = ({ label, colKey, sortKey, sortDir, onSort, align = 'left' }) => {
   const active = sortKey === colKey;
@@ -264,6 +270,15 @@ const SortableHeader = ({ label, colKey, sortKey, sortDir, onSort, align = 'left
       </span>
     </th>
   );
+};
+
+SortableHeader.propTypes = {
+  label: PropTypes.string.isRequired,
+  colKey: PropTypes.string.isRequired,
+  sortKey: PropTypes.string.isRequired,
+  sortDir: PropTypes.string.isRequired,
+  onSort: PropTypes.func.isRequired,
+  align: PropTypes.string,
 };
 
 // ─── Transaction History Drawer ───────────────────────────────────
@@ -383,6 +398,15 @@ return null;
       </div>
     </>
   );
+};
+
+TransactionHistoryDrawer.propTypes = {
+  item: PropTypes.shape({
+    sku: PropTypes.string,
+    productName: PropTypes.string,
+    variantLabel: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
 };
 
 // ─── Adjust Modal ─────────────────────────────────────────────────
@@ -582,6 +606,21 @@ const AdjustModal = ({ item, onClose, onSave, saving }) => {
   );
 };
 
+AdjustModal.propTypes = {
+  item: PropTypes.shape({
+    stock: PropTypes.number,
+    threshold: PropTypes.number,
+    costPrice: PropTypes.number,
+    costSource: PropTypes.string,
+    productName: PropTypes.string,
+    variantLabel: PropTypes.string,
+    sku: PropTypes.string,
+  }).isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  saving: PropTypes.bool,
+};
+
 // ─── Demand Forecast Block ────────────────────────────────────
 const DemandForecastBlock = () => {
   const user = useSelector(selectUser);
@@ -592,22 +631,30 @@ const DemandForecastBlock = () => {
   const [forecastTab, setForecastTab] = useState('restock');
 
   const loadForecast = useCallback(async () => {
-    if (!sellerId) return;
+    if (!sellerId) {
+return;
+}
     setLoading(true);
     try {
       const res = await inventoryService.getDemandForecast({ days: periodDays });
       setData(res.data);
     } catch (err) {
       const status = err?.response?.status;
-      if (status === 401 || status === 403) setData(null);
+      if (status === 401 || status === 403) {
+setData(null);
+}
     } finally {
       setLoading(false);
     }
   }, [sellerId, periodDays]);
 
-  useEffect(() => { loadForecast(); }, [loadForecast]);
+  useEffect(() => {
+ loadForecast(); 
+}, [loadForecast]);
 
-  if (!data && !loading) return null;
+  if (!data && !loading) {
+return null;
+}
 
   const urgentCount = data?.summary?.urgentRestock || 0;
   const moderateCount = data?.summary?.moderateRestock || 0;
@@ -797,7 +844,6 @@ const DemandForecastBlock = () => {
 const InventoryPage = () => {
   const dispatch = useDispatch();
   const adjusting = useSelector(selectInventoryAdjusting);
-  const adjustError = useSelector(selectInventoryError);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);

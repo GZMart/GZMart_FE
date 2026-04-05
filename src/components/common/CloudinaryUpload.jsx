@@ -10,7 +10,7 @@ const IconCrop = () => (
     <circle cx="10" cy="15" r="2"/>
   </svg>
 );
-import styles from '../../assets/styles/common/CloudinaryUpload.module.css';
+import styles from '@assets/styles/common/CloudinaryUpload.module.css';
 
 /**
  * CloudinaryUpload

@@ -6,6 +6,7 @@ import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/common/Layouts/ERPLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
+import LanguageSwitcher from '@components/common/LanguageSwitcher';
 
 const NAV_GROUPS = [
   {
@@ -154,6 +155,9 @@ const ERPLayout = ({ children }) => {
           </div>
 
           <div className={styles.topbarRight}>
+            <div className={styles.topbarAction}>
+              <LanguageSwitcher />
+            </div>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
               <NotificationBell

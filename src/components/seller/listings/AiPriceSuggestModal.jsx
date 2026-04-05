@@ -4,14 +4,51 @@ import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
 import { formatCurrency } from '../../../utils/formatters';
-import styles from './AiPriceSuggestModal.module.css';
+import styles from '@assets/styles/seller/AiPriceSuggestModal.module.css';
+
+/** Đồng bộ với `riskFromSuggestedVsMarket` trên BE — mô tả rủi ro đầy đủ khi đổi chiến lược (không chỉ Cao/TB). */
+function riskFromSuggestedVsMarket(suggested, refAvg, variantFloor, costData) {
+  const discountPct = refAvg > 0 ? ((refAvg - suggested) / refAvg) * 100 : 0;
+  let riskLevel = 'safe';
+  let warning = null;
+  let warningMessage = null;
+  if (suggested === variantFloor && suggested > 0 && costData?.hasCostData) {
+    warning = 'floor_price_landed';
+    warningMessage = `Giá đề xuất không thể thấp hơn giá vốn landed (${variantFloor.toLocaleString('vi-VN')}₫).`;
+  } else if (suggested === variantFloor && suggested > 0) {
+    warning = 'floor_price';
+    warningMessage = `Giá đề xuất không thể thấp hơn giá hiện tại (${variantFloor.toLocaleString('vi-VN')}₫).`;
+  } else if (discountPct > 30) {
+    riskLevel = 'high';
+    warning = 'high_discount_risk';
+    warningMessage = 'Giá đề xuất thấp hơn 30% so với trung bình thị trường. Có nguy cơ lỗ vốn.';
+  } else if (discountPct > 15) {
+    riskLevel = 'moderate';
+    warning = 'moderate_discount';
+    warningMessage = `Giá đề xuất thấp hơn ${Math.round(discountPct)}% so với trung bình thị trường.`;
+  } else if (refAvg > 0) {
+    if (discountPct > 0) {
+      warningMessage = `Giá tham khảo thấp hơn TB thị trường khoảng ${Math.round(discountPct)}% — trong ngưỡng an toàn (≤15%).`;
+    } else {
+      warningMessage = 'Giá tham khảo bằng hoặc cao hơn TB thị trường — không có rủi ro giảm giá sâu.';
+    }
+  } else {
+    warningMessage = 'Không đủ dữ liệu TB thị trường để đánh giá mức giảm giá.';
+  }
+  return {
+    riskLevel,
+    warning,
+    warningMessage,
+    discountPct: Math.round(discountPct * 10) / 10,
+  };
+}
 
 /**
  * AiPriceSuggestModal — Full-screen modal for AI price suggestion across ALL variants.
  *
  * UX flow:
  *  1. Open modal → loading state (fetch batch suggestions)
- *  2. Show variant list with: current price, AI suggested price, diff %, risk badge
+ *  2. Show variant list with: current price, AI suggested price, diff %, risk (mô tả đầy đủ)
  *  3. Seller selects rows (checkbox) → clicks "Apply selected"
  *  4. Calls onApply({ modelId, suggestedPrice }[]) for parent to batch-update
  *
@@ -99,19 +136,25 @@ suggested = floorPrice;
       if (suggested > 0 && suggested < variantFloor) {
 suggested = variantFloor;
 }
-      const variantDiscountPct = refAvgForCalc > 0 ? ((refAvgForCalc - suggested) / refAvgForCalc) * 100 : 0;
+      const suggestedRounded = Math.round(suggested);
+      const rowRisk = riskFromSuggestedVsMarket(
+        suggestedRounded,
+        refAvgForCalc,
+        variantFloor,
+        data.costData,
+      );
       const suggestedMarginPct = data.costData?.hasCostData && data.costData.landedCostPerUnit > 0
-        ? ((suggested - data.costData.landedCostPerUnit) / data.costData.landedCostPerUnit) * 100
+        ? ((suggestedRounded - data.costData.landedCostPerUnit) / data.costData.landedCostPerUnit) * 100
         : 0;
 
       return {
         ...r,
-        suggestedPrice: Math.round(suggested),
+        suggestedPrice: suggestedRounded,
         reasoning: strat.reasoning || '',
-        discountPct: Math.round(variantDiscountPct * 10) / 10,
-        riskLevel: strat.riskLevel || 'safe',
-        warning: strat.warning || null,
-        warningMessage: strat.warningMessage || null,
+        discountPct: rowRisk.discountPct,
+        riskLevel: rowRisk.riskLevel,
+        warning: rowRisk.warning,
+        warningMessage: rowRisk.warningMessage,
         strategy,
         suggestedMarginPct: Math.round(suggestedMarginPct * 10) / 10,
       };
@@ -250,24 +293,14 @@ return styles.diffDown;
     return styles.diffNeutral;
   };
 
-  const riskClass = (level) => {
+  const riskNoteClass = (level) => {
     if (level === 'high') {
-return `${styles.riskBadge} ${styles.riskHigh}`;
+return `${styles.riskNote} ${styles.riskNoteHigh}`;
 }
     if (level === 'moderate') {
-return `${styles.riskBadge} ${styles.riskModerate}`;
+return `${styles.riskNote} ${styles.riskNoteModerate}`;
 }
-    return `${styles.riskBadge} ${styles.riskSafe}`;
-  };
-
-  const riskLabel = (level) => {
-    if (level === 'high') {
-return 'Cao';
-}
-    if (level === 'moderate') {
-return 'TB';
-}
-    return 'OK';
+    return `${styles.riskNote} ${styles.riskNoteSafe}`;
   };
 
   if (!show) {
@@ -412,7 +445,7 @@ return null;
                     <th className={styles.thCurrent}>Giá hiện tại</th>
                     <th className={styles.thSuggested}>Mức giá tham khảo</th>
                     <th className={styles.thDiff}>Chênh lệch</th>
-                    <th className={styles.thRisk}>Rủi ro</th>
+                    <th className={styles.thRisk}>Rủi ro — mô tả</th>
                     <th className={styles.thAction}></th>
                   </tr>
                 </thead>
@@ -485,10 +518,10 @@ return null;
                               ({diff >= 0 ? '+' : ''}{diffPct}%)
                             </span>
                           </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <span className={riskClass(result.riskLevel)}>
-                              {riskLabel(result.riskLevel)}
-                            </span>
+                          <td className={styles.riskCell}>
+                            <div className={riskNoteClass(result.riskLevel)}>
+                              {result.warningMessage}
+                            </div>
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <button
@@ -508,19 +541,6 @@ return null;
                             </button>
                           </td>
                         </tr>
-                        {/* Warning row */}
-                        {result.warningMessage && (
-                          <tr key={`warn-${result.modelId}`} className={styles.warningRow}>
-                            <td colSpan={7}>
-                              <div className={styles.warningMsg}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                                </svg>
-                                {result.warningMessage}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </Fragment>
                     );
                   })}

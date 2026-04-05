@@ -153,8 +153,8 @@ const ProductsPage = () => {
             id: product._id,
             name: product.name,
             image:
-              product.images?.[0] ||
               activeModel.image ||
+              product.images?.[0] ||
               'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
             price: activeModel.price || product.price || 0,
             originalPrice: activeModel.originalPrice || product.originalPrice || 0,

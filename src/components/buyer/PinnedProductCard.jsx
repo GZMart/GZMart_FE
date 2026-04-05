@@ -5,7 +5,9 @@ export default function PinnedProductCard({ product }) {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    if (product?._id) navigate(`/product/${product._id}`);
+    if (product?._id) {
+navigate(`/product/${product._id}`);
+}
   };
 
   const cardStyle = {
@@ -77,8 +79,12 @@ export default function PinnedProductCard({ product }) {
     <div
       style={cardStyle}
       onClick={handleClick}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.35)'; }}
+      onMouseEnter={(e) => {
+ e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; 
+}}
+      onMouseLeave={(e) => {
+ e.currentTarget.style.background = 'rgba(0,0,0,0.35)'; 
+}}
     >
       <div style={thumbStyle}>
         <img
@@ -95,8 +101,12 @@ export default function PinnedProductCard({ product }) {
       <i
         className="bi bi-chevron-right"
         style={chevronStyle}
-        onMouseEnter={(e) => { e.target.style.color = 'white'; }}
-        onMouseLeave={(e) => { e.target.style.color = 'rgba(255,255,255,0.4)'; }}
+        onMouseEnter={(e) => {
+ e.target.style.color = 'white'; 
+}}
+        onMouseLeave={(e) => {
+ e.target.style.color = 'rgba(255,255,255,0.4)'; 
+}}
       />
     </div>
   );

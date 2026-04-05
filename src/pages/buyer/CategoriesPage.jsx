@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import CategoryCard from '@components/common/CategoryCard';
 import CategoryListItem from '@components/common/CategoryListItem';
-import styles from '@assets/styles/CategoriesPage.module.css';
+import styles from '@assets/styles/common/CategoriesPage.module.css';
 import { categoryService } from '../../services/api';
 
 const breadcrumbItems = [
