@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import styles from '../../assets/styles/seller/ShopInfoCard.module.css';
+import styles from '@assets/styles/seller/ShopInfoCard.module.css';
 
 const ShopInfoCard = ({
   seller,

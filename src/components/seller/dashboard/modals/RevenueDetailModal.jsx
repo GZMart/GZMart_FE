@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Spin,
@@ -25,14 +26,6 @@ import { formatCurrency } from '../../../../utils/formatters';
 import dashboardService from '../../../../services/api/dashboardService';
 
 const { Text } = Typography;
-
-const PERIOD_LABELS = {
-  daily: '30 Ngày',
-  weekly: '13 Tuần',
-  monthly: '12 Tháng',
-  quarterly: '4 Quý',
-  yearly: '5 Năm',
-};
 
 const CHART_COLORS = {
   primary: '#3B82F6',
@@ -100,6 +93,7 @@ function SummaryCard({ label, value, sub, icon: Icon, iconBg, iconColor, valueCo
 }
 
 export function RevenueDetailModal({ open, onClose, period, comparison }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [trendData, setTrendData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
@@ -107,14 +101,14 @@ export function RevenueDetailModal({ open, onClose, period, comparison }) {
 
   useEffect(() => {
     if (open) {
-setSelectedPeriod(period || 'monthly');
-}
+      setSelectedPeriod(period || 'monthly');
+    }
   }, [open, period]);
 
   useEffect(() => {
     if (!open) {
-return;
-}
+      return;
+    }
     let cancelled = false;
     setLoading(true);
 
@@ -124,7 +118,7 @@ return;
     ])
       .then(([trendRes, productsRes]) => {
         if (cancelled) {
-return;
+ return; 
 }
         setTrendData(Array.isArray(trendRes?.data) ? trendRes.data : []);
         setTopProducts(Array.isArray(productsRes?.data) ? productsRes.data : []);
@@ -136,7 +130,7 @@ return;
       })
       .finally(() => {
         if (!cancelled) {
-setLoading(false);
+ setLoading(false); 
 }
       });
 
@@ -148,16 +142,24 @@ setLoading(false);
   const growthVal = comparison?.growth?.revenue ?? 0;
   const isPositive = growthVal >= 0;
 
+  const periodShortLabels = {
+    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
+    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
+    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
+    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
+    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+  };
+
   const productColumns = [
     {
-      title: 'Sản phẩm',
+      title: t('sellerDashboard.topProducts.product', 'Sản phẩm'),
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
       render: (v) => <Text strong style={{ fontSize: 13 }}>{v || '—'}</Text>,
     },
     {
-      title: 'Đã bán',
+      title: t('sellerDashboard.topProducts.sold', 'Đã bán'),
       dataIndex: 'totalQuantity',
       key: 'totalQuantity',
       width: 90,
@@ -165,7 +167,7 @@ setLoading(false);
       render: (v) => <Text style={{ color: '#64748B' }}>{Number(v || 0).toLocaleString('vi-VN')}</Text>,
     },
     {
-      title: 'Doanh thu',
+      title: t('sellerDashboard.topProducts.revenue', 'Doanh thu'),
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
       width: 130,
@@ -173,7 +175,7 @@ setLoading(false);
       render: (v) => <Text strong style={{ color: CHART_COLORS.primary }}>{formatCurrency(v || 0)}</Text>,
     },
     {
-      title: 'Lợi nhuận',
+      title: t('sellerDashboard.topProducts.profit', 'Lợi nhuận'),
       dataIndex: 'profit',
       key: 'profit',
       width: 130,
@@ -190,7 +192,7 @@ setLoading(false);
       },
     },
     {
-      title: 'Margin',
+      title: t('sellerDashboard.topProducts.margin', 'Margin'),
       dataIndex: 'profitMargin',
       key: 'profitMargin',
       width: 80,
@@ -222,7 +224,7 @@ setLoading(false);
           }}>
             <TrendingUp size={15} color={CHART_COLORS.primary} />
           </div>
-          <span style={{ fontWeight: 600 }}>Chi tiết doanh thu</span>
+          <span style={{ fontWeight: 600 }}>{t('sellerDashboard.revenueDetail.title', 'Chi tiết doanh thu')}</span>
         </Space>
       }
       open={open}
@@ -231,7 +233,7 @@ setLoading(false);
       width={960}
       destroyOnHidden
     >
-      <Spin spinning={loading} tip="Đang tải dữ liệu...">
+      <Spin spinning={loading} tip={t('sellerDashboard.revenueDetail.loading', 'Đang tải dữ liệu...')}>
         {/* Period selector */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
           {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
@@ -252,7 +254,7 @@ setLoading(false);
                 }
               }}
             >
-              {PERIOD_LABELS[p]}
+              {periodShortLabels[p]}
             </button>
           ))}
         </div>
@@ -262,9 +264,9 @@ setLoading(false);
           <Row gutter={12} style={{ marginBottom: 20 }}>
             <Col span={8}>
               <SummaryCard
-                label="Kỳ này"
+                label={t('sellerDashboard.revenueDetail.thisPeriod', 'Kỳ này')}
                 value={formatCurrency(comparison.currentPeriod?.revenue || 0)}
-                sub={`${comparison.currentPeriod?.orders || 0} đơn · ${Number(comparison.currentPeriod?.quantity || 0).toLocaleString('vi-VN')} sản phẩm`}
+                sub={`${comparison.currentPeriod?.orders || 0} ${t('sellerDashboard.revenueDetail.ordersUnit', 'đơn')} · ${Number(comparison.currentPeriod?.quantity || 0).toLocaleString('vi-VN')} ${t('sellerDashboard.revenueDetail.itemsUnit', 'sản phẩm')}`}
                 icon={ChevronUp}
                 iconBg="#DCFCE7"
                 iconColor={CHART_COLORS.positive}
@@ -273,9 +275,9 @@ setLoading(false);
             </Col>
             <Col span={8}>
               <SummaryCard
-                label="Kỳ trước"
+                label={t('sellerDashboard.revenueDetail.prevPeriod', 'Kỳ trước')}
                 value={formatCurrency(comparison.previousPeriod?.revenue || 0)}
-                sub={`${comparison.previousPeriod?.orders || 0} đơn`}
+                sub={`${comparison.previousPeriod?.orders || 0} ${t('sellerDashboard.revenueDetail.ordersUnit', 'đơn')}`}
                 icon={ChevronDown}
                 iconBg="#FEE2E2"
                 iconColor={CHART_COLORS.negative}
@@ -284,9 +286,9 @@ setLoading(false);
             </Col>
             <Col span={8}>
               <SummaryCard
-                label="Tăng trưởng"
+                label={t('sellerDashboard.revenueDetail.growth', 'Tăng trưởng')}
                 value={`${isPositive ? '+' : ''}${growthVal}%`}
-                sub={`${isPositive ? '+' : ''}${comparison.growth?.orders || 0}% đơn hàng`}
+                sub={`${isPositive ? '+' : ''}${comparison.growth?.orders || 0}% ${t('sellerDashboard.revenueDetail.ordersGrowth', '% đơn hàng')}`}
                 icon={isPositive ? TrendingUp : TrendingUp}
                 iconBg="#EFF6FF"
                 iconColor={CHART_COLORS.primary}
@@ -304,10 +306,10 @@ setLoading(false);
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BarChart2 size={14} color={CHART_COLORS.primary} />
-            <Text strong style={{ fontSize: 13, color: '#334155' }}>Doanh thu theo thời gian</Text>
+            <Text strong style={{ fontSize: 13, color: '#334155' }}>{t('sellerDashboard.revenueDetail.chartTitle', 'Doanh thu theo thời gian')}</Text>
           </div>
           <Text style={{ fontSize: 11, color: '#94A3B8' }}>
-            {trendData.length} điểm dữ liệu
+            {t('sellerDashboard.revenueDetail.dataPoints', '{{count}} điểm dữ liệu', { count: trendData.length })}
           </Text>
         </div>
         <div style={{ height: 220, marginBottom: 24 }}>
@@ -328,16 +330,16 @@ setLoading(false);
                   tickLine={false}
                   tickFormatter={(v) => {
                     if (v >= 1_000_000) {
-return `${(v / 1_000_000).toFixed(1)}M`;
+ return `${(v / 1_000_000).toFixed(1)}M`; 
 }
                     if (v >= 1_000) {
-return `${(v / 1_000).toFixed(0)}K`;
+ return `${(v / 1_000).toFixed(0)}K`; 
 }
                     return v;
                   }}
                 />
                 <Tooltip
-                  formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                  formatter={(value) => [formatCurrency(value), t('sellerDashboard.topProducts.revenue', 'Doanh thu')]}
                   contentStyle={{
                     borderRadius: 10,
                     border: '1px solid #E2E8F0',
@@ -358,7 +360,7 @@ return `${(v / 1_000).toFixed(0)}K`;
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <Empty description="Không có dữ liệu doanh thu" style={{ paddingTop: 60 }} />
+            <Empty description={t('sellerDashboard.revenueDetail.noRevenueData', 'Không có dữ liệu doanh thu')} style={{ paddingTop: 60 }} />
           )}
         </div>
 
@@ -367,7 +369,7 @@ return `${(v / 1_000).toFixed(0)}K`;
         {/* Top products */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <Package size={14} color={CHART_COLORS.primary} />
-          <Text strong style={{ fontSize: 13, color: '#334155' }}>Top sản phẩm doanh thu cao</Text>
+          <Text strong style={{ fontSize: 13, color: '#334155' }}>{t('sellerDashboard.revenueDetail.topRevenueProducts', 'Top sản phẩm doanh thu cao')}</Text>
         </div>
         <Table
           columns={productColumns}
@@ -375,7 +377,7 @@ return `${(v / 1_000).toFixed(0)}K`;
           pagination={{ pageSize: 6, size: 'small' }}
           size="small"
           scroll={{ x: 560 }}
-          locale={{ emptyText: 'Không có dữ liệu sản phẩm' }}
+          locale={{ emptyText: t('sellerDashboard.revenueDetail.noProductData', 'Không có dữ liệu sản phẩm') }}
           style={{ borderRadius: 10, overflow: 'hidden' }}
         />
       </Spin>

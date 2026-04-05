@@ -101,8 +101,8 @@ const FlashDealsPage = () => {
             name: product.name,
             description: product.description,
             image:
-              product.images?.[0] ||
               variantModel.image ||
+              product.images?.[0] ||
               'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
             images: product.images || [],
             price: priceMin,
@@ -166,6 +166,7 @@ const FlashDealsPage = () => {
               name: product.name,
               description: product.description,
               image:
+                (product.models?.find(m => m.isActive) || product.models?.[0])?.image ||
                 product.images?.[0] ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               images: product.images || [],

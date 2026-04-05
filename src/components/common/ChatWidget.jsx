@@ -9,7 +9,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getAuthToken } from '../../utils/storage';
 import { formatCurrency } from '../../utils/formatters';
-import styles from '../../assets/styles/common/ChatWidget.module.css';
+import styles from '@assets/styles/common/ChatWidget.module.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 

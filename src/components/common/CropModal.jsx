@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Modal } from 'antd';
-import styles from '../../assets/styles/common/CropModal.module.css';
+import styles from '@assets/styles/common/CropModal.module.css';
 
 // Inline SVG icons — avoids missing @ant-design/icons exports
 const IconCrop = () => (

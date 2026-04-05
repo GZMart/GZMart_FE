@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
-import { getProductImages } from '@utils/data/ProductsPage_MockData';
 import * as wishlistService from '@/services/api/wishlistService';
 import styles from '@assets/styles/buyer/Product/ProductListItem.module.css';
 
@@ -14,13 +13,7 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
   const [isFav, setIsFav] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
 
-  const productImage = (() => {
-    if (product.tier_variations && product.tier_variations.length > 0) {
-      const images = getProductImages(product);
-      return images.length > 0 ? images[0] : product.image;
-    }
-    return product.image;
-  })();
+  const productImage = product.image || '';
 
   // Flash sale countdown timer
   const [timeLeft, setTimeLeft] = useState('');

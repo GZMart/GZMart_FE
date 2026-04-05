@@ -20,7 +20,9 @@ const randomDeliveryWindow = (minDays, maxDays) => {
 
 /** API `eligible` can omit min-order checks; enforce minBasketPrice against cart subtotal in UI. */
 function voucherEligibleForCartSubtotal(voucher, cartSubtotal) {
-  if (!voucher) return false;
+  if (!voucher) {
+return false;
+}
   const min = Number(voucher.minBasketPrice);
   if (!Number.isNaN(min) && min > 0 && cartSubtotal < min) {
     return false;
@@ -483,14 +485,20 @@ const CheckoutPage = () => {
 
   // Drop shop/product selection if cart no longer meets min order (or API eligibility changed)
   useEffect(() => {
-    if (!applicableVouchers.length) return;
+    if (!applicableVouchers.length) {
+return;
+}
     setSelectedShopVoucherId((id) => {
-      if (!id) return id;
+      if (!id) {
+return id;
+}
       const v = applicableVouchers.find((x) => x._id === id);
       return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
     });
     setSelectedProductVoucherId((id) => {
-      if (!id) return id;
+      if (!id) {
+return id;
+}
       const v = applicableVouchers.find((x) => x._id === id);
       return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
     });
@@ -505,7 +513,9 @@ const CheckoutPage = () => {
 
       // Helper: compute discount from a single voucher against a subtotal
       const calcDiscount = (voucher, sub) => {
-        if (!voucher) return 0;
+        if (!voucher) {
+return 0;
+}
         if (voucher.discountType === 'percent') {
           return Math.min(sub * (Number(voucher.discountValue) / 100), Number(voucher.maxDiscount) || Infinity);
         }

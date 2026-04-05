@@ -1,5 +1,5 @@
 
-import styles from '../../../assets/styles/seller/ListingsPage.module.css';
+import styles from '@assets/styles/seller/ListingsPage.module.css';
 
 const ListingsPagination = ({ currentPage, totalPages, onPageChange }) => {
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);

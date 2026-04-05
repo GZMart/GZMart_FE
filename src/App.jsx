@@ -16,6 +16,7 @@ import PrivateRoute from '@routes/PrivateRoute';
 import PublicRoute from '@routes/PublicRoute';
 import routeConfig from '@routes/routeConfig';
 import LoadingSpinner from '@components/common/LoadingSpinner';
+import ScrollToTop from '@components/common/ScrollToTop';
 
 /**
  * Get layout component based on layout type
@@ -46,6 +47,7 @@ function App() {
             v7_relativeSplatPath: true,
           }}
         >
+          <ScrollToTop />
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {routeConfig.map((route, index) => {
