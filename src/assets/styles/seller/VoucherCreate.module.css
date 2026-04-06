@@ -1,9 +1,9 @@
 /* VoucherCreate.module.css */
 
-/* Variables */
+/* Variables — use ERP seller primary */
 :root {
-  --primary-blue: #1890ff;
-  --primary-blue-hover: #40a9ff;
+  --primary-blue: var(--sp-primary, #1a56db);
+  --primary-blue-hover: var(--sp-primary-dark, #0f3fa8);
   --bg-blue-light: #f0f5ff;
   --text-primary: #262626;
   --text-secondary: #595959;
@@ -193,7 +193,7 @@
 
 .mockVoucherLeft {
   width: 98px;
-  background: linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--sp-blue-bg, #dbeafe) 0%, #ffffff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,7 +230,7 @@
   font-weight: 500;
   margin-top: auto;
   align-self: flex-end;
-  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+  box-shadow: 0 2px 4px rgba(26, 86, 219, 0.2);
 }
 
 /* Footer Actions - Sticky & Merged */
@@ -320,7 +320,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #ff6b35;
+  background: var(--sp-primary);
   color: white;
   display: flex;
   align-items: center;

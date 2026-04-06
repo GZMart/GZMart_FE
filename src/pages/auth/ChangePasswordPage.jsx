@@ -4,17 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { PUBLIC_ROUTES } from '@constants/routes';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
-import styles from '@assets/styles/ChangePasswordPage/ChangePasswordPage.module.css';
-import { changeUserPassword } from '@store/slices/authSlice';
+import styles from '@assets/styles/common/ChangePasswordPage/ChangePasswordPage.module.css';
+import { changeUserPassword, selectUser, updateUser } from '@store/slices/authSlice';
 
 const ChangePasswordPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { t } = useTranslation();
+  const user = useSelector(selectUser);
+  const hasPassword = user?.hasPassword !== false; // Default to true if not present
 
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -28,9 +30,9 @@ const ChangePasswordPage = () => {
       confirmPassword: '',
     },
     validationSchema: Yup.object({
-      currentPassword: Yup.string().required(
-        t('change_password_page.validation.required_current_password')
-      ),
+      currentPassword: hasPassword
+        ? Yup.string().required(t('change_password_page.validation.required_current_password'))
+        : Yup.string(),
       password: Yup.string()
         .required(t('change_password_page.validation.required_password'))
         .min(8, t('change_password_page.validation.min_password'))
@@ -47,13 +49,15 @@ const ChangePasswordPage = () => {
       try {
         const resultAction = await dispatch(
           changeUserPassword({
-            currentPassword: values.currentPassword,
+            currentPassword: hasPassword ? values.currentPassword : undefined,
             newPassword: values.password,
           })
         );
 
         if (changeUserPassword.fulfilled.match(resultAction)) {
           toast.success(t('change_password_page.success_message'));
+          // Update local user state
+          dispatch(updateUser({ hasPassword: true }));
           // Navigate to home
           navigate('/');
         } else {
@@ -88,67 +92,77 @@ const ChangePasswordPage = () => {
           }}
         >
           <div>
-            <h1 className={styles.title}>{t('change_password_page.title')}</h1>
-            <p className={styles.subtitle}>{t('change_password_page.subtitle')}</p>
+            <h1 className={styles.title}>
+              {hasPassword
+                ? t('change_password_page.title')
+                : t('change_password_page.set_password_title')}
+            </h1>
+            <p className={styles.subtitle}>
+              {hasPassword
+                ? t('change_password_page.subtitle')
+                : t('change_password_page.set_password_subtitle')}
+            </p>
           </div>
 
           <form onSubmit={formik.handleSubmit} className={styles.formWrapper}>
             {/* Current Password */}
-            <div className={styles.formGroup}>
-              <div className={styles.passwordWrapper}>
-                <input
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  name="currentPassword"
-                  className={`${styles.input} ${
-                    formik.touched.currentPassword && formik.errors.currentPassword
-                      ? styles['is-invalid']
-                      : ''
-                  }`}
-                  placeholder={t('change_password_page.current_password_placeholder')}
-                  value={formik.values.currentPassword}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                <button
-                  type="button"
-                  className={styles.togglePassword}
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                >
-                  {showCurrentPassword ? (
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </svg>
-                  ) : (
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  )}
-                </button>
+            {hasPassword && (
+              <div className={styles.formGroup}>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    name="currentPassword"
+                    className={`${styles.input} ${
+                      formik.touched.currentPassword && formik.errors.currentPassword
+                        ? styles['is-invalid']
+                        : ''
+                    }`}
+                    placeholder={t('change_password_page.current_password_placeholder')}
+                    value={formik.values.currentPassword}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  <button
+                    type="button"
+                    className={styles.togglePassword}
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {formik.touched.currentPassword && formik.errors.currentPassword && (
+                  <div className={styles.errorMessage}>{formik.errors.currentPassword}</div>
+                )}
               </div>
-              {formik.touched.currentPassword && formik.errors.currentPassword && (
-                <div className={styles.errorMessage}>{formik.errors.currentPassword}</div>
-              )}
-            </div>
+            )}
 
             {/* Password */}
             <div className={styles.formGroup}>
@@ -265,7 +279,9 @@ const ChangePasswordPage = () => {
             <button type="submit" className={styles.submitButton} disabled={loading}>
               {loading
                 ? t('change_password_page.submitting')
-                : t('change_password_page.submit_button')}
+                : hasPassword
+                  ? t('change_password_page.submit_button')
+                  : t('change_password_page.set_password_button')}
             </button>
           </form>
         </div>

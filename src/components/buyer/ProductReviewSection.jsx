@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { reviewService } from '../../services/api';
 import Pagination from '../common/Pagination';
-import styles from '../../assets/styles/ProductReviewSection.module.css';
+import styles from '@assets/styles/seller/Product/ProductReviewSection.module.css';
 
 const ProductReviewSection = ({ product }) => {
   const [reviews, setReviews] = useState([]);
@@ -13,6 +14,7 @@ const ProductReviewSection = ({ product }) => {
   const [helpfulReviews, setHelpfulReviews] = useState(new Set());
   const [unhelpfulReviews, setUnhelpfulReviews] = useState(new Set());
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [previewMedia, setPreviewMedia] = useState({ isOpen: false, url: '', isVideo: false });
 
   const reviewsPerPage = 5;
 
@@ -21,14 +23,11 @@ const ProductReviewSection = ({ product }) => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        console.log('Fetching reviews for product:', product?._id);
         const reviewsResponse = await reviewService.getProductReviews(product._id, {
           page: 1,
           limit: 100,
           sortBy,
         });
-
-        console.log('Reviews API Response:', reviewsResponse);
 
         let reviewsData = [];
         if (Array.isArray(reviewsResponse)) {
@@ -39,11 +38,24 @@ const ProductReviewSection = ({ product }) => {
           reviewsData = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [];
         }
 
-        console.log('Processed reviews:', reviewsData);
         setReviews(reviewsData);
+
+        // Hydrate button states from server-provided userReaction
+        const helpfulSet = new Set();
+        const unhelpfulSet = new Set();
+        reviewsData.forEach((review) => {
+          if (review.userReaction === 'helpful') {
+            helpfulSet.add(review._id);
+          } else if (review.userReaction === 'unhelpful') {
+            unhelpfulSet.add(review._id);
+          }
+        });
+        setHelpfulReviews(helpfulSet);
+        setUnhelpfulReviews(unhelpfulSet);
       } catch (error) {
-        console.error('Error fetching reviews:', error);
         setReviews([]);
+        setHelpfulReviews(new Set());
+        setUnhelpfulReviews(new Set());
       } finally {
         setLoading(false);
       }
@@ -58,14 +70,12 @@ const ProductReviewSection = ({ product }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && product?._id) {
-        console.log('🔄 Tab became visible, refetching reviews...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
 
     const handleFocus = () => {
       if (product?._id) {
-        console.log('🔄 Window focused, refetching reviews...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -73,7 +83,6 @@ const ProductReviewSection = ({ product }) => {
     // Listen for custom review submitted event
     const handleReviewSubmitted = (event) => {
       if (event.detail?.productId === product?._id) {
-        console.log('🔄 Review submitted for this product, refetching...');
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -146,46 +155,76 @@ const ProductReviewSection = ({ product }) => {
   };
 
   const handleMarkHelpful = async (reviewId) => {
+    const wasHelpful = helpfulReviews.has(reviewId);
     try {
-      if (helpfulReviews.has(reviewId)) {
-        setHelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
-      } else {
-        await reviewService.markHelpful(reviewId);
-        setHelpfulReviews((prev) => new Set(prev).add(reviewId));
-        setUnhelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
+      const response = await reviewService.markHelpful(reviewId);
+      const updatedReview = response?.data || response;
+
+      if (updatedReview?._id) {
+        setReviews((prev) =>
+          prev.map((r) =>
+            r._id === updatedReview._id
+              ? { ...r, helpful: updatedReview.helpful, unhelpful: updatedReview.unhelpful }
+              : r
+          )
+        );
+
+        if (wasHelpful) {
+          // Toggle off
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        } else {
+          // Toggle on, remove from unhelpful
+          setHelpfulReviews((prev) => new Set(prev).add(reviewId));
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        }
       }
     } catch (error) {
-      console.error('Error marking review as helpful:', error);
+      // noop
     }
   };
 
   const handleMarkUnhelpful = async (reviewId) => {
+    const wasUnhelpful = unhelpfulReviews.has(reviewId);
     try {
-      if (unhelpfulReviews.has(reviewId)) {
-        setUnhelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
-      } else {
-        await reviewService.markUnhelpful(reviewId);
-        setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
-        setHelpfulReviews((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(reviewId);
-          return newSet;
-        });
+      const response = await reviewService.markUnhelpful(reviewId);
+      const updatedReview = response?.data || response;
+
+      if (updatedReview?._id) {
+        setReviews((prev) =>
+          prev.map((r) =>
+            r._id === updatedReview._id
+              ? { ...r, helpful: updatedReview.helpful, unhelpful: updatedReview.unhelpful }
+              : r
+          )
+        );
+
+        if (wasUnhelpful) {
+          // Toggle off
+          setUnhelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        } else {
+          // Toggle on, remove from helpful
+          setUnhelpfulReviews((prev) => new Set(prev).add(reviewId));
+          setHelpfulReviews((prev) => {
+            const next = new Set(prev);
+            next.delete(reviewId);
+            return next;
+          });
+        }
       }
     } catch (error) {
-      console.error('Error marking review as unhelpful:', error);
+      // noop
     }
   };
 
@@ -316,14 +355,67 @@ const ProductReviewSection = ({ product }) => {
                     {/* Review Images */}
                     {review.images && review.images.length > 0 && (
                       <div className={styles.reviewImages}>
-                        {review.images.map((image, index) => (
-                          <img
-                            key={index}
-                            src={image}
-                            alt={`Review ${index + 1}`}
-                            className={styles.reviewImage}
-                          />
-                        ))}
+                        {review.images.map((mediaUrl, index) => {
+                          const isVideo =
+                            mediaUrl.match(/\.(mp4|webm|mov|avi|mkv)$/i) ||
+                            mediaUrl.includes('resource_type=video');
+
+                          return (
+                            <div
+                              key={index}
+                              style={{
+                                position: 'relative',
+                                display: 'inline-block',
+                                cursor: 'pointer',
+                                marginRight: '10px',
+                                marginBottom: '10px',
+                              }}
+                              // Bấm vào thì mở popup phóng to
+                              onClick={() =>
+                                setPreviewMedia({ isOpen: true, url: mediaUrl, isVideo })
+                              }
+                            >
+                              {isVideo ? (
+                                <>
+                                  <video
+                                    src={mediaUrl}
+                                    className={styles.reviewImage}
+                                    style={{ objectFit: 'cover', pointerEvents: 'none' }} // Tắt click trực tiếp vào video
+                                    preload="metadata"
+                                  />
+                                  {/* Icon Play phủ lên trên video */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '50%',
+                                      left: '50%',
+                                      transform: 'translate(-50%, -50%)',
+                                      backgroundColor: 'rgba(0,0,0,0.5)',
+                                      borderRadius: '50%',
+                                      width: '32px',
+                                      height: '32px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#fff',
+                                    }}
+                                  >
+                                    <i
+                                      className="bi bi-play-fill"
+                                      style={{ fontSize: '20px', marginLeft: '3px' }}
+                                    ></i>
+                                  </div>
+                                </>
+                              ) : (
+                                <img
+                                  src={mediaUrl}
+                                  alt={`Review media ${index + 1}`}
+                                  className={styles.reviewImage}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -332,29 +424,23 @@ const ProductReviewSection = ({ product }) => {
                 {/* Helpful Actions */}
                 <div className={styles.reviewActions}>
                   <button
-                    className={styles.helpfulButton}
+                    className={`${styles.helpfulButton} ${helpfulReviews.has(review._id) ? styles.active : ''}`}
                     onClick={() => handleMarkHelpful(review._id)}
                     title="Helpful"
-                    style={{
-                      backgroundColor: helpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: helpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
-                      color: helpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
-                    }}
                   >
-                    <i className="bi bi-hand-thumbs-up"></i>
+                    <i
+                      className={`bi ${helpfulReviews.has(review._id) ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'}`}
+                    ></i>
                     {review.helpful || 0}
                   </button>
                   <button
-                    className={styles.unhelpfulButton}
+                    className={`${styles.unhelpfulButton} ${unhelpfulReviews.has(review._id) ? styles.active : ''}`}
                     onClick={() => handleMarkUnhelpful(review._id)}
                     title="Not Helpful"
-                    style={{
-                      backgroundColor: unhelpfulReviews.has(review._id) ? '#f5f5f5' : 'transparent',
-                      borderColor: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#e0e0e0',
-                      color: unhelpfulReviews.has(review._id) ? '#ee4d2d' : '#666',
-                    }}
                   >
-                    <i className="bi bi-hand-thumbs-down"></i>
+                    <i
+                      className={`bi ${unhelpfulReviews.has(review._id) ? 'bi-hand-thumbs-down-fill' : 'bi-hand-thumbs-down'}`}
+                    ></i>
                     {review.unhelpful || 0}
                   </button>
                 </div>
@@ -367,6 +453,72 @@ const ProductReviewSection = ({ product }) => {
           </div>
         )}
       </div>
+
+      {/* Modal Phóng to Media */}
+      {previewMedia.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999, // Đảm bảo nổi lên trên tất cả
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          // Bấm ra ngoài rìa đen thì đóng popup
+          onClick={() => setPreviewMedia({ isOpen: false, url: '', isVideo: false })}
+        >
+          {/* Nút X để đóng */}
+          <button
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '30px',
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '40px',
+              cursor: 'pointer',
+              zIndex: 10000,
+            }}
+            onClick={() => setPreviewMedia({ isOpen: false, url: '', isVideo: false })}
+          >
+            &times;
+          </button>
+
+          {/* Nội dung Ảnh / Video */}
+          <div
+            style={{ maxWidth: '90%', maxHeight: '90%' }}
+            onClick={(e) => e.stopPropagation()} // Bấm vào ảnh/video không bị đóng
+          >
+            {previewMedia.isVideo ? (
+              <video
+                src={previewMedia.url}
+                controls // Lúc này mới hiện thanh tua video
+                autoPlay // Phóng to là tự chạy luôn
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '85vh',
+                  borderRadius: '8px',
+                  outline: 'none',
+                }}
+              />
+            ) : (
+              <img
+                src={previewMedia.url}
+                alt="Enlarged review"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '85vh',
+                  borderRadius: '8px',
+                  objectFit: 'contain',
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -383,3 +535,9 @@ const ProductReviewSection = ({ product }) => {
 };
 
 export default ProductReviewSection;
+
+ProductReviewSection.propTypes = {
+  product: PropTypes.shape({
+    _id: PropTypes.string,
+  }),
+};

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import styles from '@assets/styles/CategoryCard.module.css';
+import styles from '@assets/styles/common/CategoryCard.module.css';
 
-const CategoryCard = ({ category, image, link, isActive }) => (
+const CategoryCard = ({ category, image, link, isActive = false }) => (
   <Link to={link} className={`${styles.categoryCard} ${isActive ? styles.active : ''}`}>
     <div className={styles.imageWrapper}>
       <img src={image} alt={category} className={styles.categoryImage} />
@@ -18,8 +18,6 @@ CategoryCard.propTypes = {
   isActive: PropTypes.bool,
 };
 
-CategoryCard.defaultProps = {
-  isActive: false,
-};
+// Use JS default parameters instead of defaultProps for function components
 
 export default CategoryCard;

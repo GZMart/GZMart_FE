@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styles from '../../../assets/styles/seller/VariantsTable.module.css';
 
-const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }) => {
+const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, showShippingColumns = false }) => {
   const [bulkEdit, setBulkEdit] = useState({ price: '', costPrice: '', stock: '' });
   const [selectedRows, setSelectedRows] = useState(new Set());
 
@@ -11,13 +11,57 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
 
   const getTierName = (tierIdx) => tiers[tierIdx]?.name || `Tier ${tierIdx + 1}`;
 
+  const hasTier1 = tiers.length >= 1;
+  const hasMultipleTiers = tiers.length >= 2;
+
+  /**
+   * Group models by their tier-0 index.
+   * Returns an array of { tier0Index, tier0Label, models: [{model, originalIndex}] }
+   */
+  const tier0Groups = useMemo(() => {
+    if (!hasTier1 || models.length === 0) {
+return [];
+}
+
+    const groupMap = new Map();
+    models.forEach((model, originalIndex) => {
+      const t0Idx = model.tierIndex[0] ?? 0;
+      if (!groupMap.has(t0Idx)) {
+        groupMap.set(t0Idx, {
+          tier0Index: t0Idx,
+          tier0Label: tiers[0]?.options[t0Idx]?.value || `Option ${t0Idx + 1}`,
+          models: [],
+        });
+      }
+      groupMap.get(t0Idx).models.push({ model, originalIndex });
+    });
+
+    return Array.from(groupMap.values()).sort((a, b) => a.tier0Index - b.tier0Index);
+  }, [tiers, models, hasTier1]);
+
+  /**
+   * Get the display image for a tier-0 group.
+   * Priority: imagePreview (local upload) > image (server URL) from any model in group.
+   */
+  const getTier0Image = (group) => {
+    for (const { model } of group.models) {
+      if (model.imagePreview) {
+return model.imagePreview;
+}
+      if (model.image) {
+return model.image;
+}
+    }
+    return null;
+  };
+
   const stockClass = (qty) => {
     if (!qty || qty === 0) {
-      return styles.stockEmpty;
-    }
+return styles.stockEmpty;
+}
     if (qty < 5) {
-      return styles.stockLow;
-    }
+return styles.stockLow;
+}
     return styles.stockOk;
   };
 
@@ -28,32 +72,50 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
     onChange(updated);
   };
 
-  const handleImageUpload = (index, e) => {
+  /**
+   * Upload image for an entire tier-0 group.
+   * Propagate imageFile + imagePreview to ALL models sharing tier0Index.
+   */
+  const handleGroupImageUpload = (tier0Index, e) => {
     const file = e.target.files[0];
     if (!file) {
-      return;
-    }
+return;
+}
     if (!file.type.startsWith('image/')) {
-      return alert('Please select an image file.');
-    }
+return alert('Please select an image file.');
+}
     if (file.size > 5 * 1024 * 1024) {
-      return alert('Image must be under 5 MB.');
-    }
-    const updated = [...models];
-    updated[index] = {
-      ...updated[index],
-      imageFile: file,
-      imagePreview: URL.createObjectURL(file),
-    };
+return alert('Image must be under 5 MB.');
+}
+
+    const preview = URL.createObjectURL(file);
+    const updated = models.map((model) => {
+      if (model.tierIndex[0] === tier0Index) {
+        return { ...model, imageFile: file, imagePreview: preview };
+      }
+      return model;
+    });
     onChange(updated);
   };
 
-  const handleRemoveImage = (index) => {
-    const updated = [...models];
-    if (updated[index].imagePreview) {
-      URL.revokeObjectURL(updated[index].imagePreview);
+  /**
+   * Remove image for an entire tier-0 group.
+   */
+  const handleGroupRemoveImage = (tier0Index) => {
+    // Revoke the preview URL once
+    const firstWithPreview = models.find(
+      (m) => m.tierIndex[0] === tier0Index && m.imagePreview
+    );
+    if (firstWithPreview?.imagePreview) {
+      URL.revokeObjectURL(firstWithPreview.imagePreview);
     }
-    updated[index] = { ...updated[index], imageFile: null, imagePreview: null, image: null };
+
+    const updated = models.map((model) => {
+      if (model.tierIndex[0] === tier0Index) {
+        return { ...model, imageFile: null, imagePreview: null, image: null };
+      }
+      return model;
+    });
     onChange(updated);
   };
 
@@ -71,12 +133,12 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
 
   const handleBulkApply = () => {
     if (selectedRows.size === 0) {
-      return;
-    }
+return;
+}
     const updated = models.map((model, index) => {
       if (!selectedRows.has(index)) {
-        return model;
-      }
+return model;
+}
       return {
         ...model,
         ...(bulkEdit.price && { price: parseFloat(bulkEdit.price) }),
@@ -131,6 +193,81 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
       </div>
     );
   }
+
+  /* ── Render helper: Tier-0 group image cell (rowSpan) ────── */
+  const renderTier0GroupCell = (group) => {
+    const img = getTier0Image(group);
+    const rowSpan = group.models.length;
+
+    return (
+      <td
+        className={styles.tier0GroupCell}
+        rowSpan={rowSpan}
+      >
+        <div className={styles.tier0Label}>{group.tier0Label}</div>
+        {img ? (
+          <div className={styles.imgThumb}>
+            <img
+              src={img}
+              alt={group.tier0Label}
+              className={styles.imgThumbImg}
+            />
+            <button
+              type="button"
+              className={styles.imgRemoveBtn}
+              onClick={() => handleGroupRemoveImage(group.tier0Index)}
+              disabled={disabled}
+              aria-label="Remove image"
+            >
+              <svg width="8" height="8" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M12 4L4 12M4 4l8 8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <label
+            className={`${styles.imgUploadZone} ${disabled ? styles.imgUploadDisabled : ''}`}
+          >
+            <input
+              type="file"
+              accept="image/*"
+              className={styles.fileHidden}
+              onChange={(e) => handleGroupImageUpload(group.tier0Index, e)}
+              disabled={disabled}
+            />
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#94a3b8"
+              strokeWidth="1.5"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          </label>
+        )}
+      </td>
+    );
+  };
+
+  /* ── Render helper: second-tier label for multi-tier ────── */
+  const getSecondaryLabel = (model) => {
+    if (!hasMultipleTiers) {
+return null;
+}
+    return model.tierIndex
+      .slice(1)
+      .map((idx, i) => tiers[i + 1]?.options[idx]?.value || '?')
+      .join(' / ');
+  };
 
   /* ── Render ───────────────────────────────────────────────── */
   return (
@@ -210,8 +347,23 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
                     onChange={handleSelectAll}
                   />
                 </th>
-                <th className={styles.colImg}>Image</th>
-                <th className={styles.colVar}>Variant</th>
+                {/* Tier 1 grouped column: label + image */}
+                <th className={styles.colTier0}>
+                  {hasTier1 ? (
+                    <>
+                      <span style={{ color: '#ef4444' }}>● </span>
+                      {getTierName(0)}
+                    </>
+                  ) : (
+                    'Image'
+                  )}
+                </th>
+                {/* Show secondary tier column(s) only when multiple tiers */}
+                {hasMultipleTiers && (
+                  <th className={styles.colVar}>
+                    {tiers.slice(1).map((t) => t.name).join(' / ')}
+                  </th>
+                )}
                 <th className={styles.colPrice}>
                   Price (₫) <span style={{ color: '#ef4444' }}>*</span>
                 </th>
@@ -232,180 +384,189 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
                   )}
                 </th>
                 <th className={styles.colSku}>SKU</th>
+                {showShippingColumns && (
+                  <>
+                    <th>Weight (gr)</th>
+                    <th>R×D×C (cm)</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
-              {models.map((model, index) => (
-                <tr key={index} className={selectedRows.has(index) ? styles.rowSelected : ''}>
-                  {/* Checkbox */}
-                  <td className={styles.checkCell}>
-                    <input
-                      type="checkbox"
-                      className={styles.checkbox}
-                      checked={selectedRows.has(index)}
-                      onChange={() => handleSelectRow(index)}
-                    />
-                  </td>
+              {tier0Groups.map((group) =>
+                group.models.map(({ model, originalIndex }, rowIdxInGroup) => (
+                  <tr
+                    key={originalIndex}
+                    className={`${selectedRows.has(originalIndex) ? styles.rowSelected : ''} ${
+                      rowIdxInGroup === 0 ? styles.tier0GroupFirstRow : ''
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <td className={styles.checkCell}>
+                      <input
+                        type="checkbox"
+                        className={styles.checkbox}
+                        checked={selectedRows.has(originalIndex)}
+                        onChange={() => handleSelectRow(originalIndex)}
+                      />
+                    </td>
 
-                  {/* Image */}
-                  <td className={styles.imgCell}>
-                    {model.imagePreview || model.image ? (
-                      <div className={styles.imgThumb}>
-                        <img
-                          src={model.imagePreview || model.image}
-                          alt={getVariantLabel(model)}
-                          className={styles.imgThumbImg}
-                        />
-                        <button
-                          type="button"
-                          className={styles.imgRemoveBtn}
-                          onClick={() => handleRemoveImage(index)}
-                          disabled={disabled}
-                          aria-label="Remove image"
+                    {/* Tier-0 group cell — only rendered on first row of group */}
+                    {rowIdxInGroup === 0 && renderTier0GroupCell(group)}
+
+                    {/* Secondary tier label (Size, etc.) — only when multi-tier */}
+                    {hasMultipleTiers && (
+                      <td>
+                        <div className={styles.varLabel}>{getSecondaryLabel(model)}</div>
+                      </td>
+                    )}
+
+                    {/* Price */}
+                    <td>
+                      <input
+                        type="number"
+                        className={styles.compactInput}
+                        value={model.price || ''}
+                        onChange={(e) =>
+                          handleModelChange(originalIndex, 'price', parseFloat(e.target.value))
+                        }
+                        placeholder="150000"
+                        min="0"
+                        disabled={disabled}
+                      />
+                    </td>
+
+                    {/* Cost */}
+                    <td style={{ textAlign: 'center' }}>
+                      {isEditMode ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
                         >
-                          <svg width="8" height="8" viewBox="0 0 16 16" fill="none">
-                            <path
-                              d="M12 4L4 12M4 4l8 8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <label
-                        className={`${styles.imgUploadZone} ${disabled ? styles.imgUploadDisabled : ''}`}
-                      >
+                          <span className={`${styles.stockBadge} ${styles.stockOk}`}>
+                            {model.costPrice ? model.costPrice.toLocaleString('vi-VN') : '—'}
+                          </span>
+                          {model.costSource === 'po' && model.costSourcePoId ? (
+                            <a
+                              href={`/seller/erp/purchase-orders`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Last updated by Purchase Order`}
+                              style={{
+                                fontSize: '0.62rem',
+                                color: '#2563eb',
+                                textDecoration: 'none',
+                                fontWeight: 600,
+                              }}
+                            >
+                              via PO ↗
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Manual</span>
+                          )}
+                        </div>
+                      ) : (
                         <input
-                          type="file"
-                          accept="image/*"
-                          className={styles.fileHidden}
-                          onChange={(e) => handleImageUpload(index, e)}
+                          type="number"
+                          className={styles.compactInput}
+                          value={model.costPrice || ''}
+                          onChange={(e) =>
+                            handleModelChange(originalIndex, 'costPrice', parseFloat(e.target.value))
+                          }
+                          placeholder="80000"
+                          min="0"
                           disabled={disabled}
                         />
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#94a3b8"
-                          strokeWidth="1.5"
-                        >
-                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                          <circle cx="8.5" cy="8.5" r="1.5" />
-                          <polyline points="21 15 16 10 5 21" />
-                        </svg>
-                      </label>
-                    )}
-                  </td>
+                      )}
+                    </td>
 
-                  {/* Variant label — e.g. "Đen / S" */}
-                  <td>
-                    <div className={styles.varLabel}>{getVariantLabel(model)}</div>
-                    <div className={styles.varTierNames}>
-                      {model.tierIndex.map((_, i) => getTierName(i)).join(' · ')}
-                    </div>
-                  </td>
-
-                  {/* Price */}
-                  <td>
-                    <input
-                      type="number"
-                      className={styles.compactInput}
-                      value={model.price || ''}
-                      onChange={(e) =>
-                        handleModelChange(index, 'price', parseFloat(e.target.value))
-                      }
-                      placeholder="150000"
-                      min="0"
-                      disabled={disabled}
-                    />
-                  </td>
-
-                  {/* Cost */}
-                  <td style={{ textAlign: 'center' }}>
-                    {isEditMode ? (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '3px',
-                        }}
-                      >
-                        <span className={`${styles.stockBadge} ${styles.stockOk}`}>
-                          {model.costPrice ? model.costPrice.toLocaleString('vi-VN') : '—'}
+                    {/* Stock */}
+                    <td style={{ textAlign: 'center' }}>
+                      {isEditMode ? (
+                        <span className={`${styles.stockBadge} ${stockClass(model.stock)}`}>
+                          {model.stock ?? 0}
                         </span>
-                        {model.costSource === 'po' && model.costSourcePoId ? (
-                          <a
-                            href={`/seller/erp/purchase-orders`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={`Last updated by Purchase Order`}
-                            style={{
-                              fontSize: '0.62rem',
-                              color: '#2563eb',
-                              textDecoration: 'none',
-                              fontWeight: 600,
-                            }}
-                          >
-                            via PO ↗
-                          </a>
-                        ) : (
-                          <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Manual</span>
-                        )}
-                      </div>
-                    ) : (
-                      <input
-                        type="number"
-                        className={styles.compactInput}
-                        value={model.costPrice || ''}
-                        onChange={(e) =>
-                          handleModelChange(index, 'costPrice', parseFloat(e.target.value))
-                        }
-                        placeholder="80000"
-                        min="0"
-                        disabled={disabled}
-                      />
-                    )}
-                  </td>
+                      ) : (
+                        <input
+                          type="number"
+                          className={styles.compactInput}
+                          value={model.stock || ''}
+                          onChange={(e) =>
+                            handleModelChange(originalIndex, 'stock', parseInt(e.target.value))
+                          }
+                          placeholder="50"
+                          min="0"
+                          disabled={disabled}
+                        />
+                      )}
+                    </td>
 
-                  {/* Stock */}
-                  <td style={{ textAlign: 'center' }}>
-                    {isEditMode ? (
-                      <span className={`${styles.stockBadge} ${stockClass(model.stock)}`}>
-                        {model.stock ?? 0}
-                      </span>
-                    ) : (
+                    {/* SKU */}
+                    <td>
                       <input
-                        type="number"
+                        type="text"
                         className={styles.compactInput}
-                        value={model.stock || ''}
-                        onChange={(e) =>
-                          handleModelChange(index, 'stock', parseInt(e.target.value))
-                        }
-                        placeholder="50"
-                        min="0"
+                        value={model.sku || ''}
+                        onChange={(e) => handleModelChange(originalIndex, 'sku', e.target.value)}
+                        placeholder="Auto-generated"
                         disabled={disabled}
+                        style={{ fontFamily: 'monospace', fontSize: 11 }}
                       />
+                    </td>
+                    {showShippingColumns && (
+                      <>
+                        <td>
+                          <input
+                            type="number"
+                            className={styles.compactInput}
+                            value={model.weight ?? ''}
+                            onChange={(e) => handleModelChange(originalIndex, 'weight', parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            min="0"
+                            disabled={disabled}
+                            style={{ width: 70 }}
+                          />
+                        </td>
+                        <td>
+                          <div className={styles.dimRow}>
+                            <input
+                              type="number"
+                              className={styles.dimInput}
+                              value={model.dimLength ?? ''}
+                              onChange={(e) => handleModelChange(originalIndex, 'dimLength', parseFloat(e.target.value) || 0)}
+                              placeholder="R"
+                              min="0"
+                              disabled={disabled}
+                            />
+                            <input
+                              type="number"
+                              className={styles.dimInput}
+                              value={model.dimWidth ?? ''}
+                              onChange={(e) => handleModelChange(originalIndex, 'dimWidth', parseFloat(e.target.value) || 0)}
+                              placeholder="D"
+                              min="0"
+                              disabled={disabled}
+                            />
+                            <input
+                              type="number"
+                              className={styles.dimInput}
+                              value={model.dimHeight ?? ''}
+                              onChange={(e) => handleModelChange(originalIndex, 'dimHeight', parseFloat(e.target.value) || 0)}
+                              placeholder="C"
+                              min="0"
+                              disabled={disabled}
+                            />
+                          </div>
+                        </td>
+                      </>
                     )}
-                  </td>
-
-                  {/* SKU */}
-                  <td>
-                    <input
-                      type="text"
-                      className={styles.compactInput}
-                      value={model.sku || ''}
-                      onChange={(e) => handleModelChange(index, 'sku', e.target.value)}
-                      placeholder="Auto-generated"
-                      disabled={disabled}
-                      style={{ fontFamily: 'monospace', fontSize: 11 }}
-                    />
-                  </td>
-                </tr>
-              ))}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -427,7 +588,8 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false }
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <span>
-          Upload variant images to show product colors/styles. Select rows and use the
+          Upload one image per <strong>{hasTier1 ? getTierName(0).toLowerCase() : 'variant'}</strong> — it
+          will apply to all sizes/options within that group. Select rows and use the
           <strong> bulk edit bar</strong> to set price/cost for multiple variants at once.
           {isEditMode && (
             <>

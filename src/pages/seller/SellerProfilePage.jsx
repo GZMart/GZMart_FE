@@ -12,10 +12,11 @@ import {
   Phone,
   Calendar,
   Shield,
-  Store,
   ImagePlus,
   X,
+  Palette,
 } from 'lucide-react';
+import { Offcanvas } from 'react-bootstrap';
 import locationService from '@services/api/locationService';
 import styles from '@assets/styles/seller/SellerProfilePage.module.css';
 
@@ -23,14 +24,12 @@ const SellerProfilePage = () => {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const fileInputRef = useRef(null);
-  const bannerInputRef = useRef(null);
 
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [bannerFile, setBannerFile] = useState(null);
-  const [bannerPreview, setBannerPreview] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showAddressDrawer, setShowAddressDrawer] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -91,9 +90,9 @@ const SellerProfilePage = () => {
         provinceName: user.provinceName || '',
         wardCode: user.wardCode || '',
         wardName: user.wardName || '',
+        // location coordinates removed (GPS no longer required)
       });
       setAvatarPreview(user.avatar || null);
-      setBannerPreview(user.profileImage || null);
     }
   }, [user]);
 
@@ -128,7 +127,6 @@ const SellerProfilePage = () => {
   };
 
   const handleAvatarClick = () => fileInputRef.current?.click();
-  const handleBannerClick = () => bannerInputRef.current?.click();
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -144,28 +142,6 @@ const SellerProfilePage = () => {
     const reader = new FileReader();
     reader.onloadend = () => setAvatarPreview(reader.result);
     reader.readAsDataURL(file);
-  };
-
-  const handleBannerChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Banner must be less than 10MB');
-      return;
-    }
-    setBannerFile(file);
-    setHasChanges(true);
-    const reader = new FileReader();
-    reader.onloadend = () => setBannerPreview(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveBanner = () => {
-    setBannerFile(null);
-    setBannerPreview(null);
-    setHasChanges(true);
   };
 
   const handleSave = async () => {
@@ -186,18 +162,15 @@ const SellerProfilePage = () => {
       submitData.append('provinceName', formData.provinceName);
       submitData.append('wardCode', formData.wardCode);
       submitData.append('wardName', formData.wardName);
+      // GPS coordinates are no longer collected here
       if (avatarFile) {
         submitData.append('avatar', avatarFile);
-      }
-      if (bannerFile) {
-        submitData.append('profileImage', bannerFile);
       }
 
       const result = await dispatch(updateUserProfile({ formData: submitData }));
       if (updateUserProfile.fulfilled.match(result)) {
         toast.success('Profile updated successfully!');
         setAvatarFile(null);
-        setBannerFile(null);
         setHasChanges(false);
       } else {
         toast.error(result.payload || 'Failed to update profile');
@@ -363,61 +336,26 @@ const SellerProfilePage = () => {
           {/* Shop Appearance */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <Store size={20} />
+              <Palette size={20} />
               <h2 className={styles.cardTitle}>Shop Appearance</h2>
             </div>
             <p className={styles.sectionHint}>
-              This banner and description will be displayed when buyers visit your shop page.
+              Customize your shop page layout, banners, and modules.
             </p>
-
-            <div className={styles.bannerUpload}>
-              {bannerPreview ? (
-                <div className={styles.bannerPreviewWrapper}>
-                  <img src={bannerPreview} alt="Shop banner" className={styles.bannerPreviewImg} />
-                  <div className={styles.bannerActions}>
-                    <button
-                      type="button"
-                      className={styles.bannerChangeBtn}
-                      onClick={handleBannerClick}
-                    >
-                      <Camera size={16} /> Change
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.bannerRemoveBtn}
-                      onClick={handleRemoveBanner}
-                    >
-                      <X size={16} /> Remove
-                    </button>
-                  </div>
+            <a href="/seller/shop-decoration" className={styles.appearanceLink}>
+              <div className={styles.appearanceLinkContent}>
+                <div className={styles.appearanceLinkIcon}>
+                  <Palette size={28} />
                 </div>
-              ) : (
-                <div className={styles.bannerPlaceholder} onClick={handleBannerClick}>
-                  <ImagePlus size={32} />
-                  <span>Upload Shop Banner</span>
-                  <small>Recommended: 1200×300px, max 10MB</small>
+                <div className={styles.appearanceLinkText}>
+                  <span className={styles.appearanceLinkTitle}>Customize Shop Design</span>
+                  <span className={styles.appearanceLinkDesc}>
+                    Go to Shop Decoration to manage your shop homepage layout
+                  </span>
                 </div>
-              )}
-              <input
-                ref={bannerInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleBannerChange}
-                className={styles.hiddenInput}
-              />
-            </div>
-
-            <div className={`${styles.formGroup} ${styles.fullWidth}`} style={{ marginTop: 20 }}>
-              <label className={styles.label}>Shop Description</label>
-              <textarea
-                name="aboutMe"
-                value={formData.aboutMe}
-                onChange={handleChange}
-                className={styles.textarea}
-                rows={3}
-                placeholder="Describe your shop, what you sell, your specialties..."
-              />
-            </div>
+              </div>
+              <i className="bi bi-arrow-right" />
+            </a>
           </section>
 
           {/* Address & Location */}
@@ -426,49 +364,21 @@ const SellerProfilePage = () => {
               <MapPin size={20} />
               <h2 className={styles.cardTitle}>Address & Location</h2>
             </div>
-            <div className={styles.formGrid}>
-              <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label className={styles.label}>Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="Street address, building, etc."
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Province / City</label>
-                <select
-                  value={formData.provinceCode}
-                  onChange={handleProvinceChange}
-                  className={styles.input}
-                >
-                  <option value="">Select province</option>
-                  {provinces.map((p) => (
-                    <option key={p.code} value={p.code}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Ward / Commune</label>
-                <select
-                  value={formData.wardCode}
-                  onChange={handleWardChange}
-                  className={styles.input}
-                  disabled={!formData.provinceCode}
-                >
-                  <option value="">Select ward</option>
-                  {wards.map((w) => (
-                    <option key={w.code} value={w.code}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className={styles.addressSummaryBlock}>
+              <p className={styles.addressSummaryText}>
+                {formData.address || 'No street address added yet'}
+              </p>
+              <p className={styles.addressSummarySubtext}>
+                {[formData.wardName, formData.provinceName].filter(Boolean).join(', ') ||
+                  'No province/ward selected'}
+              </p>
+              <button
+                type="button"
+                className={styles.openAddressDrawerBtn}
+                onClick={() => setShowAddressDrawer(true)}
+              >
+                Edit Address
+              </button>
             </div>
           </section>
 
@@ -488,6 +398,83 @@ const SellerProfilePage = () => {
           </div>
         </main>
       </div>
+
+      <Offcanvas
+        show={showAddressDrawer}
+        onHide={() => setShowAddressDrawer(false)}
+        placement="end"
+        className={styles.addressDrawer}
+      >
+        <div className={styles.drawerHeader}>
+          <h3 className={styles.drawerTitle}>Edit Address</h3>
+          <button
+            type="button"
+            className={styles.drawerCloseBtn}
+            onClick={() => setShowAddressDrawer(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <Offcanvas.Body className={styles.drawerBody}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Address</label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="Street address, building, etc."
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Province / City</label>
+            <select
+              value={formData.provinceCode}
+              onChange={handleProvinceChange}
+              className={styles.input}
+            >
+              <option value="">Select province</option>
+              {provinces.map((p) => (
+                <option key={p.code} value={p.code}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Ward / Commune</label>
+            <select
+              value={formData.wardCode}
+              onChange={handleWardChange}
+              className={styles.input}
+              disabled={!formData.provinceCode}
+            >
+              <option value="">Select ward</option>
+              {wards.map((w) => (
+                <option key={w.code} value={w.code}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* GPS Location removed: not required anymore */}
+        </Offcanvas.Body>
+
+        <div className={styles.drawerFooter}>
+          <button
+            type="button"
+            className={styles.drawerSecondaryBtn}
+            onClick={() => setShowAddressDrawer(false)}
+          >
+            Done
+          </button>
+        </div>
+      </Offcanvas>
     </div>
   );
 };

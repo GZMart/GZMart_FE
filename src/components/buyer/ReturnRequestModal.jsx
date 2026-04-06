@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Modal, Form, Button, Alert, Upload, message } from 'antd';
 import { PictureOutlined, CloseOutlined } from '@ant-design/icons';
@@ -10,25 +10,16 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
-  const [requestType, setRequestType] = useState('refund');
   const [images, setImages] = useState([]);
   const [eligibility, setEligibility] = useState(null);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
 
   // Check eligibility when modal opens
-  React.useEffect(() => {
-    if (show && order?._id) {
-      checkEligibility();
-    } else {
-      // Reset state when modal closes
-      setEligibility(null);
-      setError(null);
-      form.resetFields();
-      setImages([]);
+  const checkEligibility = useCallback(async () => {
+    if (!order?._id) {
+      return;
     }
-  }, [show, order]);
 
-  const checkEligibility = async () => {
     setCheckingEligibility(true);
     setError(null);
 
@@ -40,23 +31,26 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
         setError(response.data.reason || 'Order is not eligible for return/exchange');
       }
     } catch (err) {
-      console.error('[ReturnRequestModal] Error checking eligibility:', err);
       setError(err.response?.data?.message || 'Failed to check eligibility');
       setEligibility({ isEligible: false });
     } finally {
       setCheckingEligibility(false);
     }
-  };
+  }, [order?._id]);
+
+  useEffect(() => {
+    if (show && order?._id) {
+      checkEligibility();
+    } else {
+      // Reset state when modal closes
+      setEligibility(null);
+      setError(null);
+      form.resetFields();
+      setImages([]);
+    }
+  }, [checkEligibility, form, order?._id, show]);
 
   const handleImageUpload = (info) => {
-    console.log('🔵 [ReturnRequestModal] Upload status:', {
-      status: info.file.status,
-      fileName: info.file.name,
-      response: info.file.response,
-      error: info.file.error,
-      timestamp: new Date().toISOString(),
-    });
-
     // Track uploading state
     if (info.file.status === 'uploading') {
       setUploading(true);
@@ -67,25 +61,14 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
 
       // Backend returns { success, message, data: { url } }
       const url = info.file.response?.data?.url || info.file.response?.url;
-      console.log('✅ [ReturnRequestModal] Upload done, extracting URL:', {
-        fullResponse: info.file.response,
-        extractedUrl: url,
-      });
-
       if (url) {
         setImages((prev) => [...prev, url]);
         message.success(`Image uploaded successfully! (${images.length + 1}/5)`);
       } else {
-        console.error('❌ [ReturnRequestModal] Upload response missing URL:', info.file.response);
         message.error('Upload succeeded but URL not found in response');
       }
     } else if (info.file.status === 'error') {
       setUploading(false);
-
-      console.error('❌ [ReturnRequestModal] Upload error:', {
-        error: info.file.error,
-        response: info.file.response,
-      });
       message.error(`Upload failed: ${info.file.error?.message || 'Unknown error'}`);
     }
   };
@@ -106,7 +89,6 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
     try {
       const requestData = {
         orderId: order._id,
-        type: requestType,
         reason: values.reason,
         description: values.description,
         images,
@@ -116,24 +98,7 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
         })),
       };
 
-      console.log('🔵 [ReturnRequestModal] Submitting return/refund request:', {
-        requestData,
-        orderNumber: order.orderNumber,
-        imageCount: images.length,
-        timestamp: new Date().toISOString(),
-      });
-
       const response = await rmaService.createReturnRequest(requestData);
-
-      console.log(
-        '✅ [ReturnRequestModal] Return/refund request submitted successfully:',
-        response
-      );
-      message.success(
-        requestType === 'refund'
-          ? 'Refund request submitted successfully!'
-          : 'Exchange request submitted successfully!'
-      );
 
       if (onSuccess) {
         onSuccess(response.data);
@@ -141,13 +106,6 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
 
       onHide();
     } catch (err) {
-      console.error('❌ [ReturnRequestModal] Error creating return request:', {
-        error: err,
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        timestamp: new Date().toISOString(),
-      });
       setError(err.response?.data?.message || 'Failed to create return request');
     } finally {
       setLoading(false);
@@ -207,35 +165,11 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
                     7 - eligibility.daysSinceDelivery
                   } day(s) remaining.`
                 : 'Request within the return period.'
-            } ${
-              requestType === 'refund'
-                ? 'Refund will be credited to your GZMart wallet.'
-                : 'A new order will be created for the exchange.'
-            }`}
+            } Seller will review and decide Refund or Exchange based on stock condition.`}
             type="success"
             showIcon
             style={{ marginBottom: 20 }}
           />
-
-          {/* Request Type */}
-          <Form.Item label="Request Type" required>
-            <div className="btn-group w-100" role="group">
-              <button
-                type="button"
-                className={`btn ${requestType === 'refund' ? 'btn-primary' : 'btn-outline-primary'}`}
-                onClick={() => setRequestType('refund')}
-              >
-                Refund (Get money back)
-              </button>
-              <button
-                type="button"
-                className={`btn ${requestType === 'exchange' ? 'btn-primary' : 'btn-outline-primary'}`}
-                onClick={() => setRequestType('exchange')}
-              >
-                Exchange (Replace item)
-              </button>
-            </div>
-          </Form.Item>
 
           {/* Reason */}
           <Form.Item
@@ -271,9 +205,9 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
 
           {/* Image Upload */}
           <Form.Item
-            label="Evidence Photos"
+            label="Evidence Photos / Video"
             required
-            help={`Upload up to 5 images as evidence. Supported formats: JPG, PNG, GIF (max 10MB each)`}
+            help={`Upload up to 5 files as evidence. Supported formats: JPG, PNG, GIF, WEBP, MP4, MOV (max 50MB/video, 10MB/image).`}
           >
             <Upload
               action={`${API_BASE_URL}/api/upload/single`}
@@ -283,25 +217,26 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
               }}
               onChange={handleImageUpload}
               showUploadList={false}
-              accept="image/jpeg,image/png,image/gif,image/webp"
+              accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
               maxCount={5}
               beforeUpload={(file) => {
                 const isImage = file.type.startsWith('image/');
-                if (!isImage) {
-                  message.error('You can only upload image files!');
+                const isVideo = file.type.startsWith('video/');
+                if (!isImage && !isVideo) {
+                  message.error('You can only upload image or video files!');
                   return Upload.LIST_IGNORE;
                 }
-                const isLt10M = file.size / 1024 / 1024 < 10;
-                if (!isLt10M) {
-                  message.error('Image must be smaller than 10MB!');
+
+                const fileSizeMb = file.size / 1024 / 1024;
+                const maxSize = isVideo ? 50 : 10;
+                if (fileSizeMb >= maxSize) {
+                  message.error(
+                    isVideo
+                      ? 'Video must be smaller than 50MB!'
+                      : 'Image must be smaller than 10MB!'
+                  );
                   return Upload.LIST_IGNORE;
                 }
-                console.log('🔵 [Upload] Starting upload:', {
-                  name: file.name,
-                  size: `${(file.size / 1024).toFixed(2)} KB`,
-                  type: file.type,
-                  uploadUrl: `${API_BASE_URL}/api/upload/single`,
-                });
                 return true;
               }}
             >
@@ -333,11 +268,19 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
                       overflow: 'hidden',
                     }}
                   >
-                    <img
-                      src={url}
-                      alt={`Evidence ${index + 1}`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
+                    {/(\.mp4|\.mov)(\?|$)/i.test(url) ? (
+                      <video
+                        src={url}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        muted
+                      />
+                    ) : (
+                      <img
+                        src={url}
+                        alt={`Evidence ${index + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    )}
                     <Button
                       type="text"
                       danger
@@ -357,7 +300,10 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
               </div>
             )}
 
-            <small className="text-muted">At least 1 image required. Max 5 images.</small>
+            <small className="text-muted">
+              At least 1 file required. Max 5 files. Important: please record your packing process
+              as evidence to protect your rights.
+            </small>
           </Form.Item>
 
           {/* Items Info */}
@@ -383,7 +329,7 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
               Cancel
             </Button>
             <Button type="primary" htmlType="submit" loading={loading} block>
-              Submit {requestType === 'refund' ? 'Refund' : 'Exchange'} Request
+              Submit Request
             </Button>
           </div>
         </Form>

@@ -39,7 +39,7 @@ import {
 } from '@ant-design/icons';
 import {
   DndContext,
-  closestCenter,
+  rectIntersection,
   PointerSensor,
   useSensor,
   useSensors,
@@ -55,7 +55,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { categoryService } from '../../services/api/categoryService';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 import axiosClient from '../../services/axiosClient';
-import styles from '../../assets/styles/admin/CategoriesPage.module.css';
+import styles from '@assets/styles/admin/CategoriesPage.module.css';
 
 const { TextArea } = Input;
 
@@ -733,7 +733,7 @@ const CategoriesPage = () => {
         <RootIdsContext.Provider value={isDragDisabled ? new Set() : rootIdsSet}>
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={rectIntersection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
@@ -818,7 +818,7 @@ const CategoriesPage = () => {
         cancelText="Cancel"
         confirmLoading={submitting}
         width={760}
-        destroyOnClose
+        destroyOnHidden
         className={styles.categoryModal}
       >
         <Form form={form} layout="vertical" className={styles.form}>

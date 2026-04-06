@@ -1,0 +1,40 @@
+/* RichTextEditor — Product description editor (Shopee-style) */
+
+.wrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.wrapper :global(.ql-toolbar) {
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 8px 12px;
+}
+
+.wrapper :global(.ql-container) {
+  border: none;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.wrapper :global(.ql-editor) {
+  min-height: 180px;
+  padding: 12px 16px;
+}
+
+.wrapper :global(.ql-editor.ql-blank::before) {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+/* Image in content */
+.wrapper :global(.ql-editor img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+  margin: 8px 0;
+}

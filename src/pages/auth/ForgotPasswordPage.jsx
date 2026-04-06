@@ -8,7 +8,7 @@ import { useDispatch } from 'react-redux';
 import { PUBLIC_ROUTES } from '@constants/routes';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
-import styles from '@assets/styles/ForgotPasswordPage/ForgotPasswordPage.module.css';
+import styles from '@assets/styles/common/ForgotPasswordPage/ForgotPasswordPage.module.css';
 import { forgotPassword } from '@store/slices/authSlice';
 
 const ForgotPasswordPage = () => {

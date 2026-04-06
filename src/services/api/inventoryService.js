@@ -57,6 +57,40 @@ const inventoryService = {
    * params: { startDate?, endDate?, productId? }
    */
   getStats: async (params = {}) => axiosClient.get(`${BASE}/stats`, { params }),
+
+  /**
+   * Get FIFO lot breakdown for a single SKU
+   * GET /api/inventory/lots/:sku
+   * Returns remaining stock per import batch (transaction "in")
+   */
+  getLotBreakdown: async (sku, warehouseId = null) => {
+    const params = warehouseId ? { warehouseId } : {};
+    return axiosClient.get(`${BASE}/lots/${encodeURIComponent(sku)}`, { params });
+  },
+
+  /**
+   * Get demand forecast and restock alerts for seller
+   * GET /api/inventory/demand-forecast
+   * params: { days?: number } (default 90 days)
+   */
+  getDemandForecast: async (params = {}) =>
+    axiosClient.get(`${BASE}/demand-forecast`, { params }),
+
+  /**
+   * Get detailed product performance with weekly breakdown
+   * GET /api/inventory/product-performance/:productId
+   * params: { weeks?: number } (default 12 weeks)
+   */
+  getProductPerformance: async (productId, params = {}) =>
+    axiosClient.get(`${BASE}/product-performance/${productId}`, { params }),
+
+  /**
+   * Get rich demand analysis details for a single product (chart data + web insights)
+   * GET /api/inventory/demand-forecast/:productId/details
+   * params: { days?: number } (default 30 days)
+   */
+  getProductDemandDetails: async (productId, params = {}) =>
+    axiosClient.get(`${BASE}/demand-forecast/${productId}/details`, { params }),
 };
 
 export default inventoryService;

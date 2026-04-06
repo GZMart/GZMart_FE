@@ -176,19 +176,19 @@ const VoucherPreview = ({ voucherType, formData }) => (
           <div className={styles.previewBody}>
             {/* Mock Shop Header */}
             <div className="d-flex align-items-center mb-3 p-3 bg-white rounded shadow-sm">
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: '#ff6b35',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                }}
-              >
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: 'var(--sp-primary)',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                    }}
+                  >
                 GZ
               </div>
               <div className="ms-2">
@@ -218,7 +218,7 @@ const VoucherPreview = ({ voucherType, formData }) => (
                       width: '100%',
                       height: '100%',
                       borderRadius: '50%',
-                      background: '#1890ff',
+                      background: 'var(--sp-primary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -229,7 +229,7 @@ const VoucherPreview = ({ voucherType, formData }) => (
                     GZ
                   </div>
                 </div>
-                <div style={{ fontSize: '9px', color: '#1890ff', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '9px', color: 'var(--sp-primary)', fontWeight: 'bold' }}>
                   {voucherType === 'product'
                     ? 'Product'
                     : voucherType === 'private'

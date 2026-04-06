@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import styles from '../../assets/styles/ShopInfoCard.module.css';
+import styles from '@assets/styles/seller/ShopInfoCard.module.css';
 
 const ShopInfoCard = ({
   seller,
@@ -9,6 +9,8 @@ const ShopInfoCard = ({
   isFollowing = false,
   onToggleFollow,
   productInfo = null,
+  /** When set, shows TikTok-style LIVE ring on avatar; name links to the stream */
+  activeLive = null,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -18,6 +20,8 @@ const ShopInfoCard = ({
   }
 
   const sellerId = seller._id || seller.id;
+  const liveSessionId = activeLive?._id || activeLive?.id;
+  const liveHref = sellerId && liveSessionId ? `/shop/${sellerId}/live/${liveSessionId}` : null;
 
   const handleChatClick = () => {
     if (!sellerId) {
@@ -41,18 +45,44 @@ const ShopInfoCard = ({
     <div className={styles.shopInfoCard}>
       {/* Left Side: Avatar, Name, Buttons */}
       <div className={styles.shopProfileLeft}>
-        <div className={styles.shopAvatarContainer}>
-          <img
-            src={seller.avatar || 'https://ui-avatars.com/api/?name=Shop&background=random'}
-            alt={seller.fullName || 'Shop'}
-            className={styles.shopAvatarImg}
-          />
-          {(seller.isPreferred || true) && (
-            <div className={styles.shopFavBadge}>{t('product_details.shop_badge_favorite')}</div>
-          )}
-        </div>
+        {liveHref ? (
+          <div className={`${styles.liveAvatarWrap} ${styles.liveAvatarRing}`}>
+            <span className={styles.liveBadge}>LIVE</span>
+            <div className={styles.shopAvatarContainer}>
+              <Link to={liveHref} className={styles.liveAvatarLink} aria-label="Watch live">
+                <img
+                  src={seller.avatar || 'https://ui-avatars.com/api/?name=Shop&background=random'}
+                  alt={seller.fullName || 'Shop'}
+                  className={styles.shopAvatarImg}
+                />
+              </Link>
+              {(seller.isPreferred || true) && (
+                <div className={styles.shopFavBadge}>
+                  {t('product_details.shop_badge_favorite')}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.shopAvatarContainer}>
+            <img
+              src={seller.avatar || 'https://ui-avatars.com/api/?name=Shop&background=random'}
+              alt={seller.fullName || 'Shop'}
+              className={styles.shopAvatarImg}
+            />
+            {(seller.isPreferred || true) && (
+              <div className={styles.shopFavBadge}>{t('product_details.shop_badge_favorite')}</div>
+            )}
+          </div>
+        )}
         <div className={styles.shopProfileInfo}>
-          <div className={styles.shopName}>{seller.fullName || 'Shop'}</div>
+          {liveHref ? (
+            <Link to={liveHref} className={styles.liveNameLink}>
+              <div className={styles.shopName}>{seller.fullName || 'Shop'}</div>
+            </Link>
+          ) : (
+            <div className={styles.shopName}>{seller.fullName || 'Shop'}</div>
+          )}
           {seller.aboutMe && <div className={styles.shopDescription}>{seller.aboutMe}</div>}
           <div className={styles.shopOnlineStatus}>
             {seller.createdAt

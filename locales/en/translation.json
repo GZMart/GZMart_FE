@@ -1,0 +1,1043 @@
+{
+  "require_login": {
+    "title": "Login Required",
+    "description": "Please login to continue with this action.",
+    "cancel": "Cancel",
+    "go_to_login": "Go to Login"
+  },
+  "header": {
+    "welcome_msg": "Direct Wholesale & Retail Guangzhou Fashion!",
+    "deliver_to": "Deliver to",
+    "track_order": "Track your order",
+    "all_offers": "All Offers",
+    "search_placeholder": "Search trending styles, dresses, coats...",
+    "wishlist": "Wishlist",
+    "cart": "Cart",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "change_password": "Change Password",
+    "logout": "Logout",
+    "language": "Language",
+    "login_required_title": "Login Required",
+    "login_required_wishlist_msg": "Please login to access your wishlist",
+    "login_required_cart_msg": "Please login to access your cart",
+    "cancel": "Cancel",
+    "go_to_login": "Go to Login",
+    "search_results": {
+      "products": "PRODUCTS",
+      "categories": "CATEGORIES",
+      "brands": "BRANDS"
+    }
+  },
+  "footer": {
+    "customer_supports": "Customer Supports:",
+    "phone": "(+84) 905-363636",
+    "address": "Khu đô thị FPT City, P. Hòa Hải, Q. Ngũ Hành Sơn, TP. Đà Nẵng",
+    "email": "gzmart@gmail.com",
+    "top_categories": "Top Categories",
+    "computer_laptop": "Computer & Laptop",
+    "smartphone": "SmartPhone",
+    "accessories": "Accessories",
+    "headphone": "Headphone",
+    "camera_photo": "Camera & Photo",
+    "tv_homes": "TV & Homes",
+    "browse_all_product": "Browse All Product",
+    "quick_links": "Quick Links",
+    "shop_product": "Shop Product",
+    "shopping_cart": "Shopping Cart",
+    "wishlist": "Wishlist",
+    "refund_policy": "Refund Policy",
+    "shipping_policy": "Shipping Policy",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "faq": "FAQ",
+    "how_we_can_help": "How We Can Help You",
+    "download_app": "Download App",
+    "get_it_now": "Get it now",
+    "google_play": "Google Play",
+    "app_store": "App Store",
+    "popular_tag": "Popular Tag",
+    "tags": {
+      "game": "Game",
+      "iphone": "iPhone",
+      "tv": "TV",
+      "asus_laptops": "Asus Laptops",
+      "macbook": "Macbook",
+      "ssd": "SSD",
+      "graphics_card": "Graphics Card",
+      "power_bank": "Power Bank",
+      "smart_tv": "Smart TV",
+      "speaker": "Speaker",
+      "tablet": "Tablet",
+      "microwave": "Microwave",
+      "samsung": "Samsung"
+    }
+  },
+  "categories": {
+    "new_arrivals": "New Arrivals",
+    "womens_fashion": "Women's Fashion",
+    "mens_fashion": "Men's Fashion",
+    "dresses_gowns": "Dresses & Gowns",
+    "coord_sets": "Co-ord Sets",
+    "coats_blazers": "Coats & Blazers",
+    "bags_accessories": "Bags & Accessories",
+    "footwear": "Footwear"
+  },
+  "auth": {
+    "login_failed": "Login failed",
+    "google_login_failed": "Google login failed",
+    "facebook_login_failed": "Facebook login failed",
+    "register_failed": "Registration failed",
+    "refresh_token_failed": "Refresh token failed",
+    "get_user_failed": "Failed to get user info",
+    "update_profile_failed": "Update profile failed",
+    "change_password_failed": "Change password failed",
+    "set_password_failed": "Set password failed",
+    "forgot_password_failed": "Send reset password email failed",
+    "reset_password_failed": "Reset password failed",
+    "verify_email_failed": "Verify email failed",
+    "resend_verification_failed": "Resend verification email failed"
+  },
+  "login_page": {
+    "welcome_title": "Welcome Back",
+    "welcome_subtitle": "Login to your account",
+    "email_placeholder": "Enter your email address",
+    "password_placeholder": "Enter your password",
+    "remember_me": "Remember me",
+    "forgot_password": "Forgot Password?",
+    "login_button": "Login",
+    "logging_in": "Logging in...",
+    "or_divider": "Or",
+    "login_google": "Login with Google",
+    "login_facebook": "Login with Facebook",
+    "first_time_question": "First time here?",
+    "signup_link": "Signup",
+    "back_button": "Back",
+    "success_login": "Login successful!",
+    "validation": {
+      "invalid_email": "Invalid email",
+      "required_email": "Email is required",
+      "required_password": "Password is required"
+    },
+    "errors": {
+      "default_login_failed": "Login failed. Please check your email and password.",
+      "google_no_email": "Cannot get email from Google",
+      "facebook_no_email": "Cannot get email from Facebook",
+      "google_login_error": "Google login error",
+      "facebook_login_error": "Facebook login error"
+    }
+  },
+  "forgot_password_page": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your email to reset your password",
+    "email_placeholder": "Enter your email address",
+    "submit_button": "Send Reset Password Link",
+    "submitting": "Sending...",
+    "back_to_login": "Back to Login",
+    "success_title": "Check your email",
+    "success_message": "We have sent a password reset link to {{email}}.",
+    "error_message": "Failed to send reset link. Please try again.",
+    "validation": {
+      "invalid_email": "Invalid email",
+      "required_email": "Email is required"
+    }
+  },
+  "reset_password_page": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password below",
+    "password_placeholder": "New Password",
+    "confirm_password_placeholder": "Confirm New Password",
+    "submit_button": "Reset Password",
+    "submitting": "Resetting...",
+    "success_message": "Password has been reset successfully. Please login.",
+    "errors": {
+      "user_not_found": "Email address not found.",
+      "missing_token": "Reset token is missing.",
+      "default": "Failed to reset password. Token may be invalid or expired."
+    },
+    "validation": {
+      "password_min": "Password must be at least 6 characters",
+      "required_password": "Password is required",
+      "password_match": "Passwords must match",
+      "required_confirm_password": "Please confirm your password"
+    }
+  },
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "loading": "Loading...",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Submit"
+  },
+  "register_page": {
+    "title": "Create an Account",
+    "subtitle": "Join us today",
+    "already_have_account": "Already have an account?",
+    "login_link": "Login",
+    "full_name_label": "Full Name",
+    "full_name_placeholder": "Enter your full name",
+    "email_label": "Email",
+    "email_placeholder": "Enter your email address",
+    "password_label": "Password",
+    "password_placeholder": "Enter your password",
+    "confirm_password_label": "Confirm Password",
+    "confirm_password_placeholder": "Confirm your password",
+    "signup_button": "Sign Up",
+    "signing_up": "Signing Up...",
+    "or_divider": "Or",
+    "signup_google": "Sign Up with Google",
+    "signup_facebook": "Sign Up with Facebook",
+    "back": "Back",
+    "success_message": "Registration successful! Please check your email for the OTP.",
+    "validation": {
+      "invalid_email": "Invalid email",
+      "required_email": "Email is required",
+      "required_fullname": "Full name is required",
+      "min_fullname": "Full name must be at least 2 characters",
+      "required_password": "Password is required",
+      "min_password": "Password must be at least 8 characters!",
+      "uppercase": "Password must contain at least one uppercase letter!",
+      "lowercase": "Password must contain at least one lowercase letter!",
+      "number": "Password must contain at least one number!",
+      "special_char": "Password must contain at least one special character (@$!%*?&#)!",
+      "required_confirm_password": "Confirm password is required",
+      "password_match": "Passwords must match"
+    },
+    "errors": {
+      "default": "Registration failed. Please try again.",
+      "google_signup_failed": "Google signup failed",
+      "facebook_signup_failed": "Facebook signup failed",
+      "pending_feature": "feature is currently under development"
+    }
+  },
+  "otp_page": {
+    "title": "Verify Your Email",
+    "subtitle": "Enter 4 Digits Code",
+    "instruction": "Enter the 4-digit code that you received on your email.",
+    "resend_button": "Resend Code",
+    "sending": "Sending...",
+    "resend_timer": "Resend code in",
+    "submit_button": "Continue",
+    "verifying": "Verifying...",
+    "back": "Back",
+    "success_message": "Verification successful!",
+    "resend_success": "OTP has been resent to your email",
+    "validation": {
+      "required_otp": "Please enter 4 digits",
+      "invalid_email": "Invalid email"
+    },
+    "errors": {
+      "default": "OTP verification failed",
+      "resend_failed": "Failed to resend OTP",
+      "invalid_email_redirect": "Invalid email. Please register again."
+    }
+  },
+  "change_password_page": {
+    "title": "Change Password",
+    "subtitle": "Enter your current password and a new strong password.",
+    "set_password_title": "Set Your Password",
+    "set_password_subtitle": "You haven't set a password yet. Set one now to login with email next time.",
+    "current_password_placeholder": "Current Password",
+    "new_password_placeholder": "New Password",
+    "confirm_password_placeholder": "Confirm New Password",
+    "submit_button": "Change Password",
+    "set_password_button": "Set Password",
+    "submitting": "Submitting...",
+    "success_message": "Password changed successfully",
+    "validation": {
+      "required_current_password": "Current password is required",
+      "required_password": "New password is required",
+      "min_password": "Password must be at least 8 characters!",
+      "uppercase": "Password must contain at least one uppercase letter!",
+      "lowercase": "Password must contain at least one lowercase letter!",
+      "number": "Password must contain at least one number!",
+      "special_char": "Password must contain at least one special character (@$!%*?&#)!",
+      "required_confirm_password": "Confirm password is required",
+      "password_match": "Passwords must match"
+    },
+    "errors": {
+      "default": "Failed to change password",
+      "general": "An error occurred",
+      "incorrect_current_password": "Current password is incorrect"
+    }
+  },
+  "cart": {
+    "title": "My Cart",
+    "subtitle": "Items in your bag not reserved — check out now to make them yours.",
+    "breadcrumbs": {
+      "home": "Home",
+      "cart": "Cart"
+    },
+    "select_all": "Select All",
+    "number_of_items": "Number of Items",
+    "empty": "Your cart is empty",
+    "item": {
+      "color": "Color",
+      "size": "Size",
+      "per_item": "per item",
+      "remove_tooltip": "Remove item"
+    },
+    "summary": {
+      "title": "Order Summary",
+      "price": "Price",
+      "shipping": "Shipping",
+      "tax": "Tax",
+      "discount": "Discount",
+      "free": "Free",
+      "gift_box": "Pack in a Gift Box",
+      "total_price": "Total Price",
+      "checkout_button": "SHOP NOW",
+      "empty_hint": "Add items to cart to proceed"
+    },
+    "recommend": {
+      "title": "YOU MIGHT ALSO LIKE",
+      "add_to_cart": "Add to cart",
+      "loading": "Loading recommendations..."
+    },
+    "promo": {
+      "free_shipping": "Free shipping on orders over $100!"
+    }
+  },
+  "profile_page": {
+    "success_update": "Profile updated successfully",
+    "error_update": "Failed to update profile details",
+    "error_general": "An error occurred",
+    "account": {
+      "title": "Account Details",
+      "first_name": "FIRST NAME",
+      "last_name": "LAST NAME",
+      "email": "EMAIL ADDRESS",
+      "phone": "PHONE NUMBER",
+      "gender": "GENDER",
+      "gender_options": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "dob": "DATE OF BIRTH",
+      "about_me": "ABOUT ME",
+      "about_me_placeholder": "Tell us a bit about yourself...",
+      "save_button": "Save Changes"
+    },
+    "address": {
+      "title": "Saved Addresses",
+      "empty_state": "No addresses found. Add one now!",
+      "default_badge": "Default Address",
+      "address_badge": "Address",
+      "set_default": "Set Default",
+      "success_add": "Address added successfully",
+      "success_update": "Address updated successfully",
+      "error_save": "Failed to save address. Please try again.",
+      "confirm_delete": "Are you sure you want to delete this address?",
+      "success_delete": "Address deleted successfully",
+      "error_delete": "Failed to delete address",
+      "success_default": "Default address updated",
+      "error_default": "Failed to set default address",
+      "edit_tooltip": "Edit Address",
+      "delete_tooltip": "Delete Address",
+      "modal": {
+        "title_add": "Add New Address",
+        "title_edit": "Edit Address",
+        "receiver_name": "Receiver Name",
+        "receiver_name_placeholder": "Ex: John Doe",
+        "phone": "Phone Number",
+        "phone_placeholder": "Ex: 0912345678",
+        "province": "Province",
+        "select_province": "Select Province",
+        "ward": "Ward",
+        "select_ward": "Select Ward",
+        "street": "Street",
+        "street_placeholder": "Street name, number",
+        "specific_address": "Specific Address",
+        "specific_address_placeholder": "Building, Floor, Unit etc.",
+        "set_default": "Set as default address",
+        "cancel": "Cancel",
+        "save": "Save Address",
+        "update": "Update Address"
+      }
+    },
+    "orders": {
+      "title": "Orders History",
+      "loading": "Loading your orders...",
+      "empty_title": "No orders found",
+      "empty_msg": "Looks like you haven't placed any orders yet.",
+      "table": {
+        "id": "Order ID",
+        "date": "Date Placed",
+        "status": "Status",
+        "total": "Total Amount",
+        "action": "Action"
+      },
+      "error_invoice": "Failed to get invoice",
+      "error_invoice_alert": "Could not generate invoice. Please try again.",
+      "error_payment": "Failed to create payment link",
+      "status": {
+        "completed": "Completed",
+        "pending": "Pending",
+        "cancelled": "Cancelled",
+        "processing": "Processing"
+      }
+    }
+  },
+  "product_details": {
+    "title": "Product Details",
+    "home": "Home",
+    "shop": "Shop",
+    "add_to_cart": "ADD TO CART",
+    "shop_now": "SHOP NOW",
+    "quantity": "Quantity :",
+    "stock": "2545 In stock",
+    "favorite": "Favorite",
+    "favorite_badge": "Preferred",
+    "join_date": "Joined",
+    "months_ago": "months ago",
+    "followers": "Followers",
+    "following": "Following",
+    "rating": "Rating",
+    "chat_response": "Chat Response",
+    "cancel_rate": "Cancel Rate",
+    "products": "Products",
+    "chat_now": "Chat Now",
+    "view_shop": "View Shop",
+    "follow": "Follow",
+    "updating": "Updating",
+    "sold": "Sold",
+    "updated_at": "Updated At",
+    "created_at": "Created At",
+    "views": "Views",
+    "status": "Status",
+    "wishlist_count": "Wishlist Count",
+    "status_active": "Active",
+    "status_inactive": "Out of Stock",
+    "reviews": "Reviews",
+    "review_count": "{{count}} reviews",
+    "select_variant": "Please select a product variant",
+    "success_cart": "Added to cart successfully!",
+    "success_wishlist_add": "Added to wishlist successfully!",
+    "success_wishlist_remove": "Removed from wishlist!",
+    "error_wishlist": "Please login to add to wishlist",
+    "error_action": "An error occurred!",
+    "error_not_found": "Product not found.",
+    "back_to_shop": "Back to shop",
+    "loading": "Loading...",
+    "toast_select_all": "Please select all options",
+    "toast_unavailable": "Selected variation is unavailable",
+    "toast_insufficient_stock": "Insufficient stock! Available: ",
+    "toast_add_cart_success": "Added to cart successfully!",
+    "toast_add_cart_failed": "Failed to add to cart",
+    "toast_wishlist_add": "Added to wishlist",
+    "toast_wishlist_remove": "Removed from wishlist",
+    "toast_wishlist_failed": "Failed to update wishlist",
+    "err_product_not_found": "Product Not Found",
+    "back_to_products": "Back to Products",
+    "breadcrumb_home": "Home",
+    "breadcrumb_shop": "Shop",
+    "btn_add_to_cart": "Add to Cart",
+    "btn_buy_now": "Buy Now",
+    "label_quantity": "Quantity",
+    "label_stock_available": "pieces available",
+    "label_in_stock": "In stock",
+    "shop_badge_favorite": "Preferred",
+    "shop_joined": "Joined",
+    "shop_months_ago": "months ago",
+    "btn_follow": "Follow",
+    "btn_view_shop": "View Shop",
+    "btn_chat_now": "Chat Now",
+    "shop_stat_products": "Products",
+    "shop_stat_followers": "Followers",
+    "shop_stat_following": "Following",
+    "shop_stat_rating": "Rating",
+    "shop_stat_response_rate": "Response Rate",
+    "shop_stat_cancel_rate": "Cancel Rate",
+    "val_updating": "Updating",
+    "stat_sold": "Sold",
+    "stat_updated_at": "Updated At",
+    "stat_created_at": "Created At",
+    "stat_views": "Views",
+    "stat_status": "Status",
+    "stat_status_active": "Active",
+    "stat_status_inactive": "Out of Stock",
+    "stat_wishlist": "Wishlist Count",
+    "tab_description": "Description",
+    "tab_details": "Details",
+    "tab_shipping": "Shipping",
+    "tab_warranty": "Warranty",
+    "btn_size_chart": "Size Chart",
+    "size_chart_empty_title": "No Size Guide Available",
+    "size_chart_empty_desc": "This shop has not updated the size guide for this product.",
+    "size_chart_close": "Close",
+    "tab_description_upper": "DESCRIPTION",
+    "tab_additional_upper": "ADDITIONAL INFORMATION",
+    "tab_review_upper": "REVIEW",
+    "title_description": "Description",
+    "no_description": "No description available.",
+    "title_features": "Feature",
+    "no_features": "No features available.",
+    "title_shipping_info": "Shipping Information",
+    "title_additional_info": "Additional Information",
+    "label_available_variations": "Available Variations",
+    "title_customer_reviews": "Customer Reviews",
+    "total_reviews": "Reviews",
+    "no_reviews": "No reviews yet.",
+    "frequently_bought": "FREQUENTLY BOUGHT TOGETHER",
+    "related_products": "RELATED PRODUCTS",
+    "view_all": "VIEW ALL",
+    "label_stock": "Stock",
+    "label_sku": "SKU",
+    "default_shipping_detail": "Delivery in 2-3 days • Free shipping",
+    "default_warranty_detail": "Free return within 15 days",
+    "shipping_method": {
+      "free": {
+        "name": "Free Shipping",
+        "description": "Delivery 5-7 business days"
+      },
+      "express": {
+        "name": "Express Shipping",
+        "description": "Delivery 2-3 business days"
+      },
+      "pickup": {
+        "name": "Store Pickup",
+        "description": "Available at select locations"
+      }
+    },
+    "only_left": "Only {{stock}} left!",
+    "tab_home": "Home",
+    "tab_all_products": "ALL PRODUCTS",
+    "suggested_for_you": "SUGGESTED FOR YOU",
+    "no_products": "This shop does not have any products yet."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "loading": "Loading...",
+    "empty": "No notifications",
+    "recent": "Recently Received Notifications",
+    "view_all": "View All",
+    "view_details": "View Details",
+    "page_title": "Your Notifications",
+    "page_subtitle": "Stay updated with your latest alerts and messages.",
+    "categories": {
+      "all": "All Notifications",
+      "order": "Order Updates",
+      "promotion": "Promotions",
+      "flash_sale": "Flash Sales",
+      "voucher": "Vouchers",
+      "wallet": "Wallet Updates",
+      "system": "System Updates"
+    }
+  },
+  "common": {
+    "changeLanguage": "Change Language",
+    "languageVietnamese": "Tiếng Việt",
+    "languageEnglish": "English"
+  },
+  "sellerDashboard": {
+    "title": "Dashboard",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "exchangeRate": {
+      "label": "CNY / VND Rate",
+      "vndUnit": "VND",
+      "updated": "Updated: {{time}}"
+    },
+    "actionCenter": {
+      "title": "Tasks to do today",
+      "pending": "Pending Orders",
+      "pendingSub": "Needs confirmation before processing",
+      "toShip": "Awaiting Packing / Delivery",
+      "toShipSub": "Needs packaging and handoff",
+      "cancelOrReturn": "Cancellation / Return Requests",
+      "cancelOrReturnSub": "Needs response within 24h",
+      "unreadMessages": "Unread Messages",
+      "unreadMessagesSub": "Customer support needed"
+    },
+    "stats": {
+      "revenue": "Revenue This Period",
+      "orders": "Orders This Period",
+      "aov": "Avg. Order Value",
+      "profit": "Total Profit",
+      "vsPeriod": "vs. previous period"
+    },
+    "period": {
+      "daily": "Last 30 days",
+      "weekly": "Last 13 weeks",
+      "monthly": "Last 12 months",
+      "quarterly": "Last 4 quarters",
+      "yearly": "Last 5 years"
+    },
+    "periodCompare": {
+      "daily": "vs. 30 days ago",
+      "weekly": "vs. 13 weeks ago",
+      "monthly": "vs. 12 months ago",
+      "quarterly": "vs. 4 quarters ago",
+      "yearly": "vs. 5 years ago"
+    },
+    "periodShort": {
+      "daily": "30 Days",
+      "weekly": "13 Weeks",
+      "monthly": "12 Months",
+      "quarterly": "4 Quarters",
+      "yearly": "5 Years"
+    },
+    "lowStock": {
+      "title": "Low Stock Alerts",
+      "danger": "Critical",
+      "createPO": "Create PO",
+      "createPOBtn": "Create PO",
+      "stockLeft": "{{current}} / {{safety}} items",
+      "allStockOk": "All products are well-stocked",
+      "uncategorized": "Uncategorized"
+    },
+    "expense": {
+      "title": "Cost Analysis",
+      "noData": "No cost data available",
+      "source": "Source: {{count}} completed POs",
+      "types": {
+        "goodsValuePo": "Goods Value (PO)",
+        "buyingServiceFee": "Buying Service Fee",
+        "intlFreightCnVn": "Intl Freight (CN→VN)",
+        "importTax": "Import Tax",
+        "cnDomesticShipping": "CN Domestic Shipping",
+        "packagingInsurance": "Packaging / Insurance",
+        "vnLastMilePoWarehouse": "VN Last-Mile (PO→Warehouse)",
+        "otherCosts": "Other Costs",
+        "lastMileDeliveryOrder": "Last-Mile Delivery (Order)"
+      }
+    },
+    "topProducts": {
+      "title": "Top Profitable Products",
+      "viewAll": "View all",
+      "product": "Product",
+      "sold": "Sold",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "margin": "Margin"
+    },
+    "category": {
+      "title": "Product Analytics by Category",
+      "noData": "No category analytics data",
+      "source": "Source: revenue by category — {{count}} categories in period",
+      "legendTooltip": "{{name}} — {{percent}}% period revenue"
+    },
+    "segmented": {
+      "week": "Week",
+      "month": "Month",
+      "quarter": "Quarter",
+      "year": "Year"
+    },
+    "overallSales": {
+      "title": "Revenue Over Time",
+      "vsPrevious": "vs. previous period",
+      "loading": "Loading data...",
+      "noData": "No data available"
+    },
+    "revenueDetail": {
+      "title": "Revenue Details",
+      "thisPeriod": "This Period",
+      "prevPeriod": "Prev Period",
+      "growth": "Growth",
+      "ordersUnit": "orders",
+      "itemsUnit": "items",
+      "ordersGrowth": "% orders",
+      "chartTitle": "Revenue Over Time",
+      "dataPoints": "{{count}} data points",
+      "topRevenueProducts": "Top Revenue Products",
+      "loading": "Loading data...",
+      "noRevenueData": "No revenue data",
+      "noProductData": "No product data"
+    },
+    "ordersDetail": {
+      "title": "Order Details",
+      "thisPeriod": "This Period",
+      "prevPeriod": "Prev Period",
+      "growth": "Growth",
+      "ordersUnit": "orders",
+      "orderCode": "Order ID",
+      "customer": "Customer",
+      "value": "Value",
+      "items": "Items",
+      "itemsUnit": "items",
+      "status": "Status",
+      "createdAt": "Created Date",
+      "loading": "Loading orders...",
+      "recentOrders": "recent orders",
+      "viewAllOrders": "View all orders",
+      "noOrders": "No orders found"
+    },
+    "aovDetail": {
+      "title": "Average Order Value Details",
+      "aovThisPeriod": "AOV This Period",
+      "aovPrevPeriod": "AOV Prev Period",
+      "aovGrowth": "AOV Growth",
+      "distributionTitle": "Order Value Distribution",
+      "recentOrders": "recent orders",
+      "topHighestValue": "Highest-Value Orders",
+      "orderCode": "Order ID",
+      "customer": "Customer",
+      "orderValue": "Order Value",
+      "date": "Date",
+      "loading": "Loading data...",
+      "noDistribution": "No distribution data",
+      "noOrders": "No orders"
+    },
+    "profitDetail": {
+      "title": "Profit Details",
+      "totalRevenue": "Total Revenue",
+      "totalCost": "Total Cost",
+      "netProfit": "Net Profit",
+      "profitThisPeriod": "Profit This Period",
+      "profitPrevPeriod": "Prev Period",
+      "growth": "Growth",
+      "chartTitle": "Revenue & Cost by Period",
+      "revenue": "Revenue",
+      "cost": "Cost",
+      "topProfitProducts": "Top Profitable Products",
+      "loading": "Loading data...",
+      "noPLData": "No P&L data",
+      "noProductData": "No product data"
+    },
+    "topProfitProducts": {
+      "title": "Top Profitable Products",
+      "chartTitle": "Revenue & Profit Chart — Top 10",
+      "productList": "High-Profit Product List",
+      "totalProducts": "products",
+      "totalRevenue": "Total Revenue",
+      "totalProfit": "Total Profit",
+      "avgMargin": "Avg. Margin",
+      "loading": "Loading data…",
+      "noData": "No product data"
+    }
+  },
+  "sellerOrders": {
+    "title": "Orders",
+    "subtitle": "Manage and track orders from your customers.",
+    "header": {
+      "title": "Orders",
+      "subtitle": "Manage and track orders from your customers."
+    },
+    "loading": "Loading orders...",
+    "errorLoading": "Error Loading Orders",
+    "retryButton": "Try Again",
+    "empty": {
+      "title": "No Orders Found",
+      "default": "You don't have any orders yet.",
+      "byStatus": "No \"{{status}}\" orders yet."
+    },
+    "filters": {
+      "payment": "Payment",
+      "sortBy": "Sort By",
+      "shipping": "Shipping",
+      "paymentOptions": {
+        "all": "All Methods",
+        "cash_on_delivery": "Cash on Delivery",
+        "credit_card": "Credit Card",
+        "bank_transfer": "Bank Transfer",
+        "wallet": "E-Wallet"
+      },
+      "sortOptions": {
+        "newest_first": "Newest First",
+        "oldest_first": "Oldest First",
+        "highest_total": "Highest Total",
+        "lowest_total": "Lowest Total"
+      },
+      "shippingOptions": {
+        "all": "All Methods",
+        "standard": "Standard",
+        "express": "Express"
+      }
+    },
+    "order": {
+      "orderId": "Order ID",
+      "date": "Date",
+      "customer": "Customer",
+      "product": "Unknown Product",
+      "status": "Status",
+      "total": "Total",
+      "qty": "Qty:",
+      "message": "Message",
+      "opening": "Opening…"
+    },
+    "paymentStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "refund_pending": "Refund Pend"
+    },
+    "status": {
+      "all": "All",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refund_pending": "Refund",
+      "refunded": "Refunded",
+      "under_investigation": "Under Investigation"
+    },
+    "pagination": {
+      "previous": "Previous page",
+      "next": "Next page"
+    }
+  },
+  "shopDecoration": {
+    "moduleLibrary": {
+      "title": "Module Library",
+      "subtitle": "Drag to canvas or click to add module"
+    },
+    "topBar": {
+      "preview": "Preview",
+      "save": "Save",
+      "saving": "Saving...",
+      "publish": "Publish",
+      "publishing": "Publishing...",
+      "notSaved": "Not saved",
+      "lastSaved": "Last saved: {{time}}"
+    },
+    "rightPanel": {
+      "moduleConfig": "Module Configuration",
+      "moduleConfigTitle": "Module Configuration",
+      "selectModuleHint": "Select a module to configure",
+      "selectModuleHint2": "Or click on the cover photo above to change shop cover",
+      "mandatoryNotice": "This is a mandatory module that always appears first and cannot be removed or modified.",
+      "autoWidgetNote": "Content is automatically fetched from the system. Just configure the display settings.",
+      "manualWidgetNote": "Set up content for this module.",
+      "showOnHomepage": "Show on homepage",
+      "removeModule": "Remove module"
+    },
+    "coverPhoto": {
+      "title": "Shop Cover Photo",
+      "subtitle": "Update your shop's hero banner",
+      "currentCover": "Current Cover Photo",
+      "uploadCover": "Upload Cover"
+    },
+    "imageSpecs": {
+      "title": "Image specifications",
+      "imageDesc": "≤2MB, maximum 2000×2000px. Formats: JPG, JPEG, PNG, GIF.",
+      "videoDesc": "≤30MB, maximum 1280×1280px, 10–60 seconds. Format: MP4.",
+      "quantityDesc": "Maximum {{count}} images/videos.",
+      "coverSize": "Recommended 1200×300px (4:1) or wider.",
+      "coverFile": "≤2MB (JPG, JPEG, PNG).",
+      "coverNote": "Shows at the top of your shop profile across all devices."
+    },
+    "moduleLabels": {
+      "voucherSource": "Voucher source",
+      "auto": "Auto",
+      "manual": "Manual",
+      "systemAutoNote": "System automatically displays active vouchers for the shop.",
+      "maxVouchers": "Maximum vouchers to display",
+      "manualNote": "Select active vouchers from Marketing Channel. Maximum 5 vouchers.",
+      "selectedVouchers": "Selected vouchers ({{count}}/5)",
+      "selectVouchers": "Select vouchers",
+      "noHotspots": "No hotspot areas yet. Click the button below to open the editor.",
+      "hotspots": "Hotspot areas — {{count}}/10",
+      "noLink": "⚠ No link",
+      "uploadBg": "Upload background image",
+      "editHotspot": "Edit Hotspot",
+      "createHotspot": "Create Hotspot",
+      "uploadBgFirst": "Please upload background image first"
+    },
+    "autoRotate": "Auto rotate images",
+    "interval": "Interval: {{seconds}} seconds",
+    "showTitle": "Show title",
+    "title": "Title",
+    "content": "Content",
+    "enterTitle": "Enter title...",
+    "enterContent": "Enter content...",
+    "aspectRatio": "Aspect ratio",
+    "numberOfColumns": "Number of columns",
+    "uploadImage": "Upload image",
+    "addImageVideo": "Add image/video ({{current}}/{{max}})",
+    "addImage": "Add image ({{current}}/{{max}})",
+    "edit": "Edit",
+    "crop": "Crop image",
+    "changeImage": "Change image",
+    "delete": "Delete",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "selectItem": "Select item...",
+    "enterUrl": "Enter URL (e.g., /category/shirt)",
+    "maxImages": "Maximum {{max}} images.",
+    "selectItem": "Select item..."
+  },
+  "toast": {
+    "moduleCannotRemove": "This module cannot be removed.",
+    "moduleDeleted": "Module deleted.",
+    "moduleRemoved": "Module removed.",
+    "draftSaved": "Draft saved successfully.",
+    "saveFailed": "Failed to save draft.",
+    "published": "Published successfully!",
+    "publishFailed": "Failed to publish.",
+    "shopNotFound": "Shop information not found."
+  },
+  "voucherPicker": {
+    "title": "Select vouchers",
+    "count": "{{selected}}/{{max}}",
+    "tabs": {
+      "active": "Active",
+      "upcoming": "Upcoming",
+      "expired": "Expired"
+    },
+    "loading": "Loading...",
+    "empty": "No vouchers available",
+    "cancel": "Cancel",
+    "apply": "Apply ({{count}})"
+  },
+  "productPicker": {
+    "title": "Select Product",
+    "loading": "Loading...",
+    "empty": "No products available",
+    "noPrice": "No price"
+  },
+  "categoryPicker": {
+    "title": "Select Category",
+    "loading": "Loading...",
+    "empty": "No categories available"
+  },
+  "comboPicker": {
+    "title": "Select Combo",
+    "loading": "Loading...",
+    "empty": "No combos available"
+  },
+  "addonPicker": {
+    "title": "Select Add-on Deal",
+    "loading": "Loading...",
+    "empty": "No add-on deals available"
+  },
+  "validation": {
+    "placeholderImages": "Module \"{{name}}\" is still using placeholder images. Please upload real images before publishing.",
+    "placeholderInList": "Module \"{{name}}\" has placeholder images in the list. Please replace with real images."
+  },
+  "sellerReturns": {
+    "title": "Returns",
+    "subtitle": "Manage customer return and refund requests",
+    "stats": {
+      "total": "Total",
+      "pending": "Pending",
+      "approved": "Approved",
+      "refunded": "Refunded"
+    },
+    "searchPlaceholder": "Search return ID, customer, product…",
+    "loading": "Loading return requests...",
+    "errorLoading": "Failed to load return requests",
+    "retry": "Retry",
+    "empty": {
+      "noResults": "No results for \"{{search}}\"",
+      "noRequests": "No return requests"
+    },
+    "table": {
+      "returnId": "Return ID",
+      "order": "Order",
+      "product": "Product",
+      "customer": "Customer",
+      "reason": "Reason",
+      "refund": "Refund",
+      "date": "Date",
+      "status": "Status",
+      "actions": ""
+    },
+    "status": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "items_returned": "Items Returned",
+      "processing": "Processing",
+      "completed": "Completed",
+      "pending_review": "Pending Review"
+    },
+    "type": {
+      "refund": "Refund",
+      "exchange": "Exchange"
+    },
+    "reason": {
+      "wrong_size": "Wrong size",
+      "defective": "Defective product",
+      "wrong_item": "Wrong item sent",
+      "not_as_described": "Not as described",
+      "damaged_in_shipping": "Damaged in shipping",
+      "change_of_mind": "Change of mind",
+      "other": "Other"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "reject": "Reject",
+      "approve": "Approve"
+    },
+    "tableFooter": {
+      "returnsFound": "{{count}} return{{count !== 1 ? 's' : ''}} found"
+    },
+    "quickAction": {
+      "successApprove": "Return request approved successfully!",
+      "successReject": "Return request rejected successfully!",
+      "errorApprove": "Failed to approve return request",
+      "errorReject": "Failed to reject return request"
+    },
+    "management": {
+      "pageTitle": "Return Request Management",
+      "emptyRequests": "No requests found.",
+      "loadingRequests": "Loading...",
+      "columns": {
+        "code": "Code",
+        "order": "Order",
+        "customer": "Customer",
+        "type": "Type",
+        "reason": "Reason",
+        "status": "Status",
+        "amount": "Amount",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "modal": {
+        "responseTitle": "Respond to Return Request",
+        "requestCode": "Request Code",
+        "type": "Type",
+        "reason": "Reason",
+        "description": "Description",
+        "decision": "Decision",
+        "approve": "Approve request",
+        "reject": "Reject request",
+        "notes": "Notes",
+        "notesPlaceholderReject": "Please enter rejection reason...",
+        "notesPlaceholderOptional": "Additional notes (optional)...",
+        "notesRequired": "Notes are required when rejecting",
+        "cancel": "Cancel",
+        "submit": "Submit Response",
+        "submitting": "Processing..."
+      },
+      "buttons": {
+        "respond": "Respond",
+        "refund": "Refund",
+        "exchange": "Exchange"
+      },
+      "confirmRefund": "Confirm refund to customer?",
+      "confirmExchange": "Confirm create exchange order?",
+      "successApprove": "Request approved",
+      "successReject": "Request rejected",
+      "successRefund": "Refund processed successfully",
+      "successExchange": "Exchange order created",
+      "errorProcess": "Failed to process request",
+      "alert": {
+        "title": "Important Notice",
+        "points": {
+          "respondWithin": "You have 3 days to respond to return requests",
+          "autoApprove": "After 3 days without response, requests will be auto-approved",
+          "sellerFault": "If product is defective/wrong: Seller pays return shipping",
+          "customerFault": "If customer changes mind: Customer pays return shipping",
+          "refundAsCoin": "Refunds will be converted to coins in customer's wallet"
+        }
+      },
+      "errors": {
+        "cannotLoad": "Cannot load request list",
+        "enterRejectReason": "Please enter rejection reason"
+      }
+    }
+  }
+}

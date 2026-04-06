@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Form, Row, Col } from 'react-bootstrap';
 import { productService } from '../../../services/api/productService';
@@ -6,6 +6,10 @@ import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
 import TiersEditor from './TiersEditor';
 import VariantsTable from './VariantsTable';
+import AiPriceSuggest from './AiPriceSuggest';
+import AiPriceSuggestModal from './AiPriceSuggestModal';
+import AiPriceDetailModal from './AiPriceDetailModal';
+import RichTextEditor from '../../common/RichTextEditor';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
 const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
@@ -33,6 +37,19 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [videos, setVideos] = useState([]);
   const [videoPreviews, setVideoPreviews] = useState([]);
+  const [shippingPerVariant, setShippingPerVariant] = useState(false);
+  const [productWeight, setProductWeight] = useState(0);
+  const [productWeightUnit, setProductWeightUnit] = useState('gr');
+  const [productDim, setProductDim] = useState({ length: 0, width: 0, height: 0 });
+  const [preOrderEnabled, setPreOrderEnabled] = useState(false);
+  const [preOrderDays, setPreOrderDays] = useState(2);
+  const [aiModalShow, setAiModalShow] = useState(false);
+  const [aiVariantDetail, setAiVariantDetail] = useState(null);
+  // [Tham khảo giá] State for simple-product inline price suggestion
+  const [aiPriceSuggestData, setAiPriceSuggestData] = useState(null);
+  const [showAiPriceDetail, setShowAiPriceDetail] = useState(false);
+  /** Stable id for AI rate-limit / cache while creating a product (avoid temp-${Date.now()} every render). */
+  const [draftAiProductId, setDraftAiProductId] = useState(null);
 
   const isEditMode = !!editingProduct;
   // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
@@ -49,6 +66,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     return () => document.body.classList.remove('drawer-open');
   }, [show]);
 
+  useEffect(() => {
+    if (!show) {
+      setDraftAiProductId(null);
+      return;
+    }
+    if (editingProduct) {
+      setDraftAiProductId(null);
+      return;
+    }
+    setDraftAiProductId((prev) => prev || `temp-${Date.now()}`);
+  }, [show, editingProduct]);
+
   // Pre-fill form when editing
   useEffect(() => {
     if (editingProduct && show) {
@@ -56,10 +85,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         name: editingProduct.name || '',
         description: editingProduct.description || '',
         categoryId:
+          editingProduct.categoryId &&
           typeof editingProduct.categoryId === 'object'
             ? editingProduct.categoryId._id
             : editingProduct.categoryId || '',
-        originalPrice: editingProduct.originalPrice || '',
+        // If AI suggested price was applied, pre-fill with it so seller can review
+        originalPrice: editingProduct._suggestedPrice || editingProduct.originalPrice || '',
         // costPrice lives in models[0].costPrice (synced from InventoryItem).
         // Product schema has no top-level costPrice — read from first model.
         costPrice: editingProduct.models?.[0]?.costPrice || '',
@@ -126,6 +157,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
       // Fetch attributes for the category
       const categoryId =
+        editingProduct.categoryId &&
         typeof editingProduct.categoryId === 'object'
           ? editingProduct.categoryId._id
           : editingProduct.categoryId;
@@ -133,6 +165,24 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       if (categoryId) {
         fetchAttributes(categoryId, rawAttributes);
       }
+
+      // Pre-fill shipping & pre-order
+      setPreOrderEnabled((editingProduct.preOrderDays || 0) > 0);
+      setPreOrderDays(editingProduct.preOrderDays || 2);
+      const w = editingProduct.weight ?? 0;
+      const wu = editingProduct.weightUnit || 'gr';
+      setProductWeight(wu === 'kg' ? w * 1000 : w);
+      setProductWeightUnit('gr');
+      setProductDim({
+        length: editingProduct.dimLength || 0,
+        width: editingProduct.dimWidth || 0,
+        height: editingProduct.dimHeight || 0,
+      });
+      // If any model has per-variant weight/dim, show per-variant
+      const hasModelShipping = (editingProduct.models || []).some(
+        (m) => (m.weight && m.weight > 0) || m.dimLength || m.dimWidth || m.dimHeight
+      );
+      setShippingPerVariant(!!hasModelShipping);
     } else if (!show) {
       // Reset form when modal closes
       setFormData({
@@ -156,6 +206,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       setVideoPreviews([]);
       setAttributeValues({});
       setErrors({});
+      setShippingPerVariant(false);
+      setProductWeight(0);
+      setProductWeightUnit('gr');
+      setProductDim({ length: 0, width: 0, height: 0 });
+      setPreOrderEnabled(false);
+      setPreOrderDays(2);
     }
   }, [editingProduct, show]);
 
@@ -168,6 +224,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       }
       generateModels();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generateModels is stable, deps would cause loops
   }, [tiers, productType]);
 
   const generateModels = () => {
@@ -209,6 +266,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         return {
           ...existingModel,
           tierIndex, // Ensure tierIndex is correct
+          // Ensure a stable clientId exists so AI batch calls are deterministic
+          clientId: existingModel.clientId || `m-${key}`,
         };
       }
 
@@ -219,6 +278,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         costPrice: parseFloat(formData.costPrice) || 0,
         stock: 0,
         sku: '',
+        clientId: `m-${key}`,
       };
     });
 
@@ -227,14 +287,35 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryService.getAll();
+      // Match Admin Attribute Management: use tree endpoint and flatten with depth.
+      const response = await categoryService.getTree();
 
       if (response.success) {
-        setCategories(response.data);
+        const flat = [];
+        const flatten = (nodes, depth = 0) => {
+          (nodes || []).forEach((node) => {
+            flat.push({ ...node, depth });
+            if (node.children?.length) {
+              flatten(node.children, depth + 1);
+            }
+          });
+        };
+
+        flatten(response.data || []);
+        setCategories(flat);
       } else {
         setCategories([]);
       }
     } catch (error) {
+      // Fallback to flat list if tree endpoint fails.
+      try {
+        const fallback = await categoryService.getAll({ status: 'active' });
+        if (fallback.success) {
+          setCategories((fallback.data || []).map((cat) => ({ ...cat, depth: 0 })));
+          return;
+        }
+      } catch {}
+
       console.error('❌ Error fetching categories:', error);
     }
   };
@@ -355,6 +436,22 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     setVideos((prev) => prev.filter((_, i) => i !== index));
     setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
+
+  // [Batch AI] Apply AI-suggested prices to selected models
+  const handleAiBatchApply = (changes) => {
+    const priceMap = new Map(changes.map((c) => [String(c.modelId), c.suggestedPrice]));
+    setModels((prev) =>
+      prev.map((m) => {
+        const key = m.clientId || m._id?.toString();
+        const newPrice = key != null ? priceMap.get(String(key)) : undefined;
+        return newPrice != null ? { ...m, price: newPrice } : m;
+      })
+    );
+  };
+  // [Tham khảo giá] Apply suggested price to simple product
+  const handleAiSimplePriceApply = (suggestedPrice) => {
+    setFormData((prev) => ({ ...prev, originalPrice: String(Math.round(suggestedPrice)) }));
+  };
   const fetchAttributes = async (categoryId, existingAttributes = []) => {
     try {
       const response = await attributeService.getByCategory(categoryId);
@@ -388,18 +485,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             }
           });
 
-          if (import.meta.env.DEV) {
-            console.log('📋 Edit mode — raw attributes from backend:', existingAttributes);
-            console.log('📋 Edit mode — merged attributeValues:', attrObj);
-          }
-
           setAttributeValues(attrObj);
         }
       } else {
         setAttributes([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching attributes:', error);
       setAttributes([]);
     }
   };
@@ -411,19 +502,24 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     }));
   };
 
-  const validateForm = () => {
+  const validateForm = (forcedStatus) => {
     const newErrors = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Product name is required';
     }
 
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Category is required';
-    }
+    if (forcedStatus !== 'draft') {
+      if (!formData.categoryId) {
+        newErrors.categoryId = 'Category is required';
+      }
 
-    if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
-      newErrors.originalPrice = 'Valid price is required';
+      // Price is required only for simple products — variant prices are set in VariantsTable
+      if (productType === 'simple') {
+        if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
+          newErrors.originalPrice = 'Valid price is required';
+        }
+      }
     }
 
     // Validate required attributes
@@ -438,7 +534,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
 
     // For simple products, stock is required only on CREATE
     // In edit mode, stock is controlled via the Inventory page
-    if (productType === 'simple' && !isEditMode) {
+    if (forcedStatus !== 'draft' && productType === 'simple' && !isEditMode) {
       if (!formData.stock || parseInt(formData.stock) < 0) {
         newErrors.stock = 'Valid stock quantity is required';
       }
@@ -483,16 +579,25 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         newErrors.models = `${invalidModels.length} variant(s) have invalid price${!isEditMode ? ' or stock' : ''}`;
       }
 
-      // Every SKU must have an image
-      const noImageCount = models.filter((m) => !m.imageFile && !m.image).length;
-      if (noImageCount > 0) {
-        newErrors.modelImages = `${noImageCount} SKU${noImageCount !== 1 ? 's are' : ' is'} missing an image. Add an image to every variant before saving.`;
+      // Every Tier 1 option must have an image (unless saving as draft)
+      if (forcedStatus !== 'draft' && tiers.length > 0) {
+        const tier0Options = tiers[0]?.options || [];
+        const missingTier0Images = tier0Options.filter((_, t0Idx) => 
+          // Check if any model with this tier0Index has an image
+           !models.some(
+            (m) => m.tierIndex[0] === t0Idx && (m.imageFile || m.image)
+          )
+        );
+        if (missingTier0Images.length > 0) {
+          const missingNames = missingTier0Images.map((opt) => opt.value || '?').join(', ');
+          newErrors.modelImages = `Missing image for: ${missingNames}. Add an image to every ${tiers[0]?.name || 'variant group'} before publishing.`;
+        }
       }
     }
 
-    // Simple product must have at least 1 product image
-    if (productType === 'simple' && imagePreviews.length === 0) {
-      newErrors.images = 'At least one product image is required before saving.';
+    // Simple product must have at least 1 product image (unless saving as draft)
+    if (forcedStatus !== 'draft' && productType === 'simple' && imagePreviews.length === 0) {
+      newErrors.images = 'At least one product image is required before publishing.';
     }
 
     // SKU is optional - backend will auto-generate if not provided
@@ -511,10 +616,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, forcedStatus = null) => {
+    if (e && e.preventDefault) {
+e.preventDefault();
+}
 
-    if (!validateForm()) {
+    if (!validateForm(forcedStatus)) {
       return;
     }
 
@@ -526,26 +633,28 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         (attr) => attr.value !== undefined && attr.value !== '' && attr.value !== null
       );
 
-      if (import.meta.env.DEV) {
-        console.log('📤 Submit — attributeValues state:', attributeValues);
-        console.log('📤 Submit — attributesArray to send:', attributesArray);
-      }
-
       // Prepare models based on product type
       // In edit mode, costPrice is NEVER sent — it is owned by InventoryItem
       // and synced back to Product.models via the Inventory adjust flow.
       let productModels;
+      // Normalize stock to avoid NaN/null — backend uses totalStock for status (active vs out_of_stock)
+      const safeStock = (val) => Math.max(0, parseInt(val, 10) || 0);
+
       if (productType === 'simple') {
         productModels = [
           {
             ...(formData.sku.trim() && { sku: formData.sku.trim().toUpperCase() }),
-            price: parseFloat(formData.originalPrice),
-            // Only include costPrice on CREATE — Inventory manages it on edit
+            price: parseFloat(formData.originalPrice) || 0,
             ...(!isEditMode && formData.costPrice
               ? { costPrice: parseFloat(formData.costPrice) }
               : {}),
-            stock: parseInt(formData.stock),
+            stock: safeStock(formData.stock),
             tierIndex: [],
+            weight: productWeight || 0,
+            weightUnit: 'gr',
+            dimLength: productDim.length || 0,
+            dimWidth: productDim.width || 0,
+            dimHeight: productDim.height || 0,
           },
         ];
       } else {
@@ -553,11 +662,25 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           ...(model._id && { _id: model._id }),
           tierIndex: model.tierIndex,
           price: parseFloat(model.price),
-          // Only include costPrice on CREATE
           ...(!isEditMode && model.costPrice ? { costPrice: parseFloat(model.costPrice) } : {}),
-          stock: parseInt(model.stock),
+          stock: safeStock(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
           ...(!model.imageFile && model.image && { image: model.image }),
+          ...(shippingPerVariant
+            ? {
+                weight: model.weight ?? 0,
+                weightUnit: 'gr',
+                dimLength: model.dimLength ?? 0,
+                dimWidth: model.dimWidth ?? 0,
+                dimHeight: model.dimHeight ?? 0,
+              }
+            : {
+                weight: productWeight || 0,
+                weightUnit: 'gr',
+                dimLength: productDim.length || 0,
+                dimWidth: productDim.width || 0,
+                dimHeight: productDim.height || 0,
+              }),
         }));
       }
 
@@ -574,8 +697,10 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         // Append text fields
         formDataToSend.append('name', formData.name.trim());
         formDataToSend.append('description', formData.description.trim());
-        formDataToSend.append('categoryId', formData.categoryId);
-        formDataToSend.append('originalPrice', parseFloat(formData.originalPrice));
+        if (formData.categoryId) {
+          formDataToSend.append('categoryId', formData.categoryId);
+        }
+        formDataToSend.append('originalPrice', parseFloat(formData.originalPrice) || 0);
         // formDataToSend.append('status', 'draft');
 
         // Append tags
@@ -589,6 +714,15 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           formDataToSend.append('attributes', JSON.stringify(attributesArray));
         }
 
+        formDataToSend.append('preOrderDays', preOrderEnabled ? preOrderDays : 0);
+        if (!shippingPerVariant) {
+          formDataToSend.append('weight', productWeight || 0);
+          formDataToSend.append('weightUnit', 'gr');
+          formDataToSend.append('dimLength', productDim.length || 0);
+          formDataToSend.append('dimWidth', productDim.width || 0);
+          formDataToSend.append('dimHeight', productDim.height || 0);
+        }
+
         // Append tiers (for variant products)
         if (productType === 'variant') {
           const tiersData = tiers.map((tier) => ({
@@ -599,22 +733,24 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         }
 
         // Append models (without imageFile which is not serializable)
-        const modelsData = productModels.map((model) => {
-          const { imageFile, imagePreview, ...rest } = model;
-          return rest;
-        });
+        const modelsData = productModels.map((model) =>
+          Object.fromEntries(
+            Object.entries(model).filter(([k]) => k !== 'imageFile' && k !== 'imagePreview')
+          )
+        );
         formDataToSend.append('models', JSON.stringify(modelsData));
 
-        // Append variant images with tierIndex mapping
+        // Append variant images — one per tier-0 option (not per SKU)
         if (hasVariantImages) {
-          models.forEach((model, index) => {
-            if (model.imageFile) {
-              // Use field name: variantImages[tierIndex]
-              const tierIndexKey = model.tierIndex.join('-');
+          const uploadedTier0 = new Set();
+          models.forEach((model) => {
+            const t0Idx = model.tierIndex[0];
+            if (model.imageFile && !uploadedTier0.has(t0Idx)) {
+              uploadedTier0.add(t0Idx);
               formDataToSend.append(
-                `variantImages[${tierIndexKey}]`,
+                `variantImages[${t0Idx}]`,
                 model.imageFile,
-                `variant-${tierIndexKey}.${model.imageFile.name.split('.').pop()}`
+                `variant-${t0Idx}.${model.imageFile.name.split('.').pop()}`
               );
             }
           });
@@ -632,16 +768,15 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           });
         }
 
-        // Log FormData contents (for debugging)
-        if (import.meta.env.DEV) {
-          console.log('📤 Sending FormData with files:');
-          for (const [key, value] of formDataToSend.entries()) {
-            if (value instanceof File) {
-              console.log(`  ${key}: [File] ${value.name} (${(value.size / 1024).toFixed(2)} KB)`);
-            } else {
-              console.log(`  ${key}:`, value);
-            }
-          }
+        // Always send imagePreviews in edit mode so removed images are tracked
+        if (isEditMode) {
+          // Filter out blob URLs (new uploads are sent as files separately)
+          const existingUrls = imagePreviews.filter((url) => !url.startsWith('blob:'));
+          formDataToSend.append('existingImages', JSON.stringify(existingUrls));
+        }
+        
+        if (forcedStatus) {
+          formDataToSend.append('status', forcedStatus);
         }
 
         response = isEditMode
@@ -652,10 +787,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         const productData = {
           name: formData.name.trim(),
           description: formData.description.trim(),
-          categoryId: formData.categoryId,
-          originalPrice: parseFloat(formData.originalPrice),
+          ...(formData.categoryId && { categoryId: formData.categoryId }),
+          originalPrice: parseFloat(formData.originalPrice) || 0,
           tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()) : [],
           attributes: attributesArray,
+          preOrderDays: preOrderEnabled ? preOrderDays : 0,
+          ...(!shippingPerVariant && {
+            weight: productWeight || 0,
+            weightUnit: 'gr',
+            dimLength: productDim.length || 0,
+            dimWidth: productDim.width || 0,
+            dimHeight: productDim.height || 0,
+          }),
           tiers:
             productType === 'variant'
               ? tiers.map((tier) => ({
@@ -664,12 +807,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                 }))
               : [],
           models: productModels,
-          // status: 'draft',
+          // In edit mode, send remaining existing image URLs (blob URLs are excluded)
+          ...(isEditMode && {
+            images: imagePreviews.filter((url) => !url.startsWith('blob:')),
+          }),
+          ...(forcedStatus && { status: forcedStatus }),
         };
-
-        if (import.meta.env.DEV) {
-          console.log('📤 Sending JSON (no files):', productData);
-        }
 
         response = isEditMode
           ? await productService.update(editingProduct._id, productData)
@@ -751,6 +894,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       setAttributeValues({});
       setProductType('simple');
       setTiers([]);
+      setShippingPerVariant(false);
+      setProductWeight(0);
+      setProductWeightUnit('gr');
+      setProductDim({ length: 0, width: 0, height: 0 });
+      setPreOrderEnabled(false);
+      setPreOrderDays(2);
       // Clean up variant image previews before clearing models
       models.forEach((model) => {
         if (model.imagePreview) {
@@ -906,12 +1055,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const missingVariantImages =
     productType === 'variant' ? models.filter((m) => !m.imageFile && !m.image).length : 0;
   const missingProductImage = productType === 'simple' && imagePreviews.length === 0;
-  const saveBlocked = missingVariantImages > 0 || missingProductImage;
-  const saveBlockReason =
+  const publishBlocked = missingVariantImages > 0 || missingProductImage;
+  const publishBlockReason =
     missingVariantImages > 0
       ? `${missingVariantImages} SKU${missingVariantImages !== 1 ? 's are' : ' is'} missing an image`
       : missingProductImage
-        ? 'Add at least one product image'
+        ? 'Add at least one product image to publish'
         : '';
 
   return createPortal(
@@ -962,10 +1111,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
             {isEditMode && <span className={styles.editingBadge}>Editing</span>}
             <button
               type="button"
+              className={styles.drawerDraftBtn}
+              onClick={(e) => handleSubmit(e, 'draft')}
+              disabled={loading}
+            >
+              Save Draft
+            </button>
+            <button
+              type="button"
               className={styles.drawerSaveBtn}
-              onClick={handleSubmit}
-              disabled={loading || saveBlocked}
-              title={saveBlockReason || undefined}
+              onClick={(e) => handleSubmit(e, isEditMode && editingProduct?.status === 'draft' ? 'active' : null)}
+              disabled={loading || publishBlocked}
+              title={publishBlockReason || undefined}
             >
               {loading ? (
                 <>
@@ -980,7 +1137,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                   >
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  {isEditMode ? 'Updating...' : 'Saving...'}
+                  {isEditMode ? (editingProduct?.status === 'draft' ? 'Publishing...' : 'Updating...') : 'Saving...'}
                 </>
               ) : (
                 <>
@@ -996,7 +1153,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                     <polyline points="17 21 17 13 7 13 7 21" />
                     <polyline points="7 3 7 8 15 8" />
                   </svg>
-                  {isEditMode ? 'Update Product' : 'Save Product'}
+                  {isEditMode ? (editingProduct?.status === 'draft' ? 'Publish Product' : 'Update Product') : 'Publish Product'}
                 </>
               )}
             </button>
@@ -1051,6 +1208,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                       <option value="">Select category...</option>
                       {categories.map((cat) => (
                         <option key={cat._id} value={cat._id}>
+                          {cat.depth > 0 ? `${'  '.repeat(cat.depth * 2)}› ` : ''}
                           {cat.name}
                         </option>
                       ))}
@@ -1112,146 +1270,173 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionNum}>2</span>Pricing &amp; Stock
               </div>
-              <Row>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>
-                      Price (₫) <span className={styles.required}>*</span>
-                    </label>
-                    <div className={styles.inputAddon}>
-                      <span className={styles.addonPrefix}>₫</span>
-                      <Form.Control
-                        type="number"
-                        name="originalPrice"
-                        value={formData.originalPrice}
-                        onChange={handleChange}
-                        isInvalid={!!errors.originalPrice}
-                        placeholder="150000"
-                        min="0"
-                        disabled={loading}
-                        className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}
-                      />
-                    </div>
-                    {errors.originalPrice && (
-                      <div className={styles.invalidFeedback}>{errors.originalPrice}</div>
-                    )}
-                  </Form.Group>
-                </Col>
-                <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>
-                      Cost Price (₫)
-                      {isEditMode && <span className={styles.lockBadge}>Locked</span>}
-                    </label>
-                    <div className={styles.inputAddon}>
-                      <span className={styles.addonPrefix}>₫</span>
-                      <Form.Control
-                        type="number"
-                        name="costPrice"
-                        value={formData.costPrice}
-                        onChange={handleChange}
-                        placeholder="80000"
-                        min="0"
-                        disabled={loading || isEditMode}
-                        readOnly={isEditMode}
-                        className={`${styles.formControl} ${styles.withPrefix}`}
-                      />
-                    </div>
-                    {isEditMode &&
-                      (() => {
-                        const src = editingProduct?.models?.[0]?.costSource;
-                        const poId = editingProduct?.models?.[0]?.costSourcePoId;
-                        return (
-                          <div className={styles.stockLockedNote}>
-                            {src === 'po' && poId ? (
-                              <>
-                                <span className={styles.costSourceBadgePo}>via PO</span>
-                                {' · '}
-                                <a
-                                  href="/seller/erp/purchase-orders"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  View POs ↗
-                                </a>
-                              </>
-                            ) : (
-                              <>
-                                <span className={styles.costSourceBadgeManual}>Manual</span>
-                                {' · update via '}
-                                <a
-                                  href="/seller/inventory"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  Inventory
-                                </a>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })()}
-                  </Form.Group>
-                </Col>
-                {productType === 'simple' && (
-                  <>
-                    <Col md={2}>
-                      <Form.Group className="mb-3">
-                        <label className={styles.formLabel}>
-                          Stock{' '}
-                          {isEditMode ? (
-                            <span className={styles.lockBadge}>Locked</span>
-                          ) : (
-                            <span className={styles.required}>*</span>
-                          )}
-                        </label>
+
+              {productType === 'variant' ? (
+                /* Variant mode: price is set per-variant in the table below */
+                <div className={styles.variantPricingPlaceholder}>
+                  <svg className={styles.variantPricingPlaceholderIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <span>Price is set individually for each variant in the <strong>Variations</strong> table below.</span>
+                </div>
+              ) : (
+                <Row>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <label className={styles.formLabel}>
+                        Price (₫) <span className={styles.required}>*</span>
+                      </label>
+                      <div className={styles.inputAddon}>
+                        <span className={styles.addonPrefix}>₫</span>
                         <Form.Control
                           type="number"
-                          name="stock"
-                          value={formData.stock}
+                          name="originalPrice"
+                          value={formData.originalPrice}
                           onChange={handleChange}
-                          isInvalid={!!errors.stock}
-                          placeholder="100"
+                          isInvalid={!!errors.originalPrice}
+                          placeholder="150000"
+                          min="0"
+                          disabled={loading}
+                          className={`${styles.formControl} ${styles.withPrefix} ${errors.originalPrice ? styles.invalid : ''}`}
+                        />
+                      </div>
+                      {errors.originalPrice && (
+                        <div className={styles.invalidFeedback}>{errors.originalPrice}</div>
+                      )}
+                    </Form.Group>
+                    {/* Tham khảo giá — simple products only */}
+                    {productType === 'simple' && (
+                      <AiPriceSuggest
+                        product={{
+                          id: editingProduct?._id || draftAiProductId,
+                          name: formData.name || 'Sản phẩm mới',
+                          price: parseFloat(formData.originalPrice) || 0,
+                        }}
+                        onApply={handleAiSimplePriceApply}
+                        disabled={!formData.name.trim() || !formData.categoryId}
+                        disabledTitle="Cần nhập Tên sản phẩm và Danh mục trước"
+                      />
+                    )}
+                  </Col>
+                  <Col md={3}>
+                    <Form.Group className="mb-3">
+                      <label className={styles.formLabel}>
+                        Cost Price (₫)
+                        {isEditMode && <span className={styles.lockBadge}>Locked</span>}
+                      </label>
+                      <div className={styles.inputAddon}>
+                        <span className={styles.addonPrefix}>₫</span>
+                        <Form.Control
+                          type="number"
+                          name="costPrice"
+                          value={formData.costPrice}
+                          onChange={handleChange}
+                          placeholder="80000"
                           min="0"
                           disabled={loading || isEditMode}
                           readOnly={isEditMode}
-                          className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}
+                          className={`${styles.formControl} ${styles.withPrefix}`}
                         />
-                        {isEditMode ? (
-                          <div className={styles.stockLockedNote}>
-                            Via{' '}
-                            <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">
-                              Inventory
-                            </a>
-                          </div>
-                        ) : (
-                          errors.stock && (
-                            <div className={styles.invalidFeedback}>{errors.stock}</div>
-                          )
-                        )}
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <label className={styles.formLabel}>
-                          SKU <span className={styles.optionalBadge}>Optional</span>
-                        </label>
-                        <Form.Control
-                          type="text"
-                          name="sku"
-                          value={formData.sku}
-                          onChange={handleChange}
-                          isInvalid={!!errors.sku}
-                          placeholder="Auto-generated if left blank"
-                          disabled={loading}
-                          className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}
-                        />
-                        {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
-                      </Form.Group>
-                    </Col>
-                  </>
-                )}
-              </Row>
+                      </div>
+                      {isEditMode &&
+                        (() => {
+                          const src = editingProduct?.models?.[0]?.costSource;
+                          const poId = editingProduct?.models?.[0]?.costSourcePoId;
+                          return (
+                            <div className={styles.stockLockedNote}>
+                              {src === 'po' && poId ? (
+                                <>
+                                  <span className={styles.costSourceBadgePo}>via PO</span>
+                                  {' · '}
+                                  <a
+                                    href="/seller/erp/purchase-orders"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    View POs ↗
+                                  </a>
+                                </>
+                              ) : (
+                                <>
+                                  <span className={styles.costSourceBadgeManual}>Manual</span>
+                                  {' · update via '}
+                                  <a
+                                    href="/seller/inventory"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Inventory
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+                    </Form.Group>
+                  </Col>
+                  {productType === 'simple' && (
+                    <>
+                      <Col md={2}>
+                        <Form.Group className="mb-3">
+                          <label className={styles.formLabel}>
+                            Stock{' '}
+                            {isEditMode ? (
+                              <span className={styles.lockBadge}>Locked</span>
+                            ) : (
+                              <span className={styles.required}>*</span>
+                            )}
+                          </label>
+                          <Form.Control
+                            type="number"
+                            name="stock"
+                            value={formData.stock}
+                            onChange={handleChange}
+                            isInvalid={!!errors.stock}
+                            placeholder="100"
+                            min="0"
+                            disabled={loading || isEditMode}
+                            readOnly={isEditMode}
+                            className={`${styles.formControl} ${errors.stock ? styles.invalid : ''}`}
+                          />
+                          {isEditMode ? (
+                            <div className={styles.stockLockedNote}>
+                              Via{' '}
+                              <a href="/seller/inventory" target="_blank" rel="noopener noreferrer">
+                                Inventory
+                              </a>
+                            </div>
+                          ) : (
+                            errors.stock && (
+                              <div className={styles.invalidFeedback}>{errors.stock}</div>
+                            )
+                          )}
+                        </Form.Group>
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <label className={styles.formLabel}>
+                            SKU <span className={styles.optionalBadge}>Optional</span>
+                          </label>
+                          <Form.Control
+                            type="text"
+                            name="sku"
+                            value={formData.sku}
+                            onChange={handleChange}
+                            isInvalid={!!errors.sku}
+                            placeholder="Auto-generated if left blank"
+                            disabled={loading}
+                            className={`${styles.formControl} ${styles.monoInput} ${errors.sku ? styles.invalid : ''}`}
+                          />
+                          {errors.sku && <div className={styles.invalidFeedback}>{errors.sku}</div>}
+                        </Form.Group>
+                      </Col>
+                    </>
+                  )}
+                </Row>
+              )}
 
               {/* ── Details ── */}
               <div className={styles.sectionHeader}>
@@ -1276,16 +1461,185 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                 <Col md={6}>
                   <Form.Group className="mb-3">
                     <label className={styles.formLabel}>Description</label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
-                      name="description"
+                    <RichTextEditor
                       value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Describe your product..."
+                      onChange={(html) =>
+                        setFormData((prev) => ({ ...prev, description: html || '' }))
+                      }
+                      placeholder="Mô tả sản phẩm... Có thể thêm ảnh bằng nút 📷 trên thanh công cụ"
                       disabled={loading}
-                      className={styles.formControl}
+                      minHeight={200}
                     />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* ── Vận chuyển (Shipping) ── */}
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>4</span>Vận chuyển
+              </div>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Check
+                      type="switch"
+                      id="shippingPerVariant"
+                      label="Thiết lập cân nặng &amp; kích thước cho từng phân loại"
+                      checked={shippingPerVariant}
+                      onChange={(e) => setShippingPerVariant(e.target.checked)}
+                      disabled={loading || productType !== 'variant'}
+                      className={styles.shippingToggle}
+                    />
+                    {productType !== 'variant' && (
+                      <p className={styles.textMuted}>
+                        Chỉ áp dụng cho sản phẩm có phân loại (biến thể)
+                      </p>
+                    )}
+                  </Form.Group>
+                </Col>
+                {!shippingPerVariant && (
+                  <>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <label className={styles.formLabel}>Cân nặng (Sau khi đóng gói)</label>
+                        <div className={styles.weightUnitRow}>
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step={productWeightUnit === 'gr' ? 1 : 0.01}
+                            value={
+                              productWeightUnit === 'gr'
+                                ? productWeight || ''
+                                : productWeight / 1000 || ''
+                            }
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value) || 0;
+                              setProductWeight(
+                                productWeightUnit === 'gr' ? v : Math.round(v * 1000)
+                              );
+                            }}
+                            disabled={loading}
+                            className={styles.formControl}
+                          />
+                          <Form.Select
+                            value={productWeightUnit}
+                            onChange={(e) => setProductWeightUnit(e.target.value)}
+                            disabled={loading}
+                            className={styles.unitSelect}
+                          >
+                            <option value="gr">gr</option>
+                            <option value="kg">kg</option>
+                          </Form.Select>
+                        </div>
+                      </Form.Group>
+                    </Col>
+                    <Col md={8}>
+                      <Form.Group className="mb-3">
+                        <label className={styles.formLabel}>
+                          Kích thước đóng gói (R × D × C cm)
+                        </label>
+                        <div className={styles.dimRow}>
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="R"
+                            value={productDim.length || ''}
+                            onChange={(e) =>
+                              setProductDim((d) => ({
+                                ...d,
+                                length: parseFloat(e.target.value) || 0,
+                              }))
+                            }
+                            disabled={loading}
+                            className={styles.dimInput}
+                          />
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="D"
+                            value={productDim.width || ''}
+                            onChange={(e) =>
+                              setProductDim((d) => ({
+                                ...d,
+                                width: parseFloat(e.target.value) || 0,
+                              }))
+                            }
+                            disabled={loading}
+                            className={styles.dimInput}
+                          />
+                          <Form.Control
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="C"
+                            value={productDim.height || ''}
+                            onChange={(e) =>
+                              setProductDim((d) => ({
+                                ...d,
+                                height: parseFloat(e.target.value) || 0,
+                              }))
+                            }
+                            disabled={loading}
+                            className={styles.dimInput}
+                          />
+                        </div>
+                        <p className={styles.dimWarning}>
+                          Phí vận chuyển thực tế sẽ thay đổi nếu bạn nhập sai kích thước
+                        </p>
+                      </Form.Group>
+                    </Col>
+                  </>
+                )}
+              </Row>
+
+              {/* ── Hàng Đặt Trước (Pre-order) ── */}
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionNum}>5</span>Hàng Đặt Trước
+              </div>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <div className={styles.radioGroup}>
+                      <Form.Check
+                        type="radio"
+                        id="preOrderNo"
+                        name="preOrder"
+                        label="Không"
+                        checked={!preOrderEnabled}
+                        onChange={() => setPreOrderEnabled(false)}
+                        disabled={loading}
+                      />
+                      <Form.Check
+                        type="radio"
+                        id="preOrderYes"
+                        name="preOrder"
+                        label="Đồng ý"
+                        checked={preOrderEnabled}
+                        onChange={() => setPreOrderEnabled(true)}
+                        disabled={loading}
+                      />
+                    </div>
+                    {preOrderEnabled && (
+                      <div className={styles.preOrderDaysRow}>
+                        <Form.Control
+                          type="number"
+                          min="1"
+                          value={preOrderDays}
+                          onChange={(e) =>
+                            setPreOrderDays(Math.max(1, parseInt(e.target.value, 10) || 2))
+                          }
+                          disabled={loading}
+                          className={styles.formControl}
+                          style={{ width: 80 }}
+                        />
+                        <span className={styles.preOrderText}>
+                          Tôi sẽ gửi hàng trong {preOrderDays} ngày (không bao gồm ngày nghỉ lễ, Tết
+                          và những ngày đơn vị vận chuyển không làm việc)
+                        </span>
+                      </div>
+                    )}
                   </Form.Group>
                 </Col>
               </Row>
@@ -1317,9 +1671,24 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                   {models.length > 0 && (
                     <>
                       <div className={styles.variantCountBadge}>
-                        {models.length} variant{models.length !== 1 ? 's' : ''} generated
-                        {models.length > 200 && (
-                          <span className={styles.overLimitBadge}> (max 200)</span>
+                        <span>
+                          {models.length} variant{models.length !== 1 ? 's' : ''} generated
+                          {models.length > 200 && (
+                            <span className={styles.overLimitBadge}> (max 200)</span>
+                          )}
+                        </span>
+                        {models.length > 0 && !loading && formData.name.trim() && formData.categoryId && (
+                          <button
+                            type="button"
+                            className={styles.aiSuggestBtn}
+                            onClick={() => setAiModalShow(true)}
+                            title="Gợi ý giá tham khảo cho tất cả variants"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
+                            </svg>
+                            Suggest All
+                          </button>
                         )}
                       </div>
                       {errors.models && (
@@ -1333,6 +1702,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
                         tiers={tiers}
                         disabled={loading}
                         isEditMode={isEditMode}
+                        showShippingColumns={shippingPerVariant}
                       />
                       {missingVariantImages > 0 && (
                         <div className={`${styles.alert} ${styles.alertWarning}`}>
@@ -1587,17 +1957,74 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           <button
             type="button"
             className={styles.btnPrimary}
-            onClick={handleSubmit}
-            disabled={loading || saveBlocked}
-            title={saveBlockReason || undefined}
+            onClick={(e) => handleSubmit(e, isEditMode && editingProduct?.status === 'draft' ? 'active' : null)}
+            disabled={loading || publishBlocked}
+            title={publishBlockReason || undefined}
           >
             {loading ? 'Saving...' : isEditMode ? 'Update Product' : 'Save Product'}
-            {saveBlocked && !loading && (
-              <span className={styles.saveBtnHint}>&nbsp;· {saveBlockReason}</span>
+            {publishBlocked && !loading && (
+              <span className={styles.saveBtnHint}>&nbsp;· {publishBlockReason}</span>
             )}
           </button>
         </div>
       </div>
+
+      <AiPriceSuggestModal
+        show={aiModalShow}
+        product={{
+          id: editingProduct?._id || draftAiProductId || 'new-product',
+          name: formData.name || 'Sản phẩm mới',
+          // Always use live tiers/models from state — editingProduct.models can be stale or empty
+          _raw: { ...(editingProduct || {}), tiers, models },
+          tiers,
+          models,
+        }}
+        onApply={handleAiBatchApply}
+        onClose={() => setAiModalShow(false)}
+        onViewDetail={({ detailResult, batchData }) => {
+          setAiVariantDetail({
+            detailResult,
+            batchData,
+            productSnapshot: {
+              id: editingProduct?._id || draftAiProductId || 'new-product',
+              name: formData.name || 'Sản phẩm mới',
+            },
+          });
+        }}
+      />
+
+      {aiVariantDetail && (
+        <AiPriceDetailModal
+          show
+          data={{
+            suggestedPrice: aiVariantDetail.detailResult.suggestedPrice,
+            reasoning: aiVariantDetail.detailResult.reasoning,
+            riskLevel: aiVariantDetail.detailResult.riskLevel,
+            warning: aiVariantDetail.detailResult.warning,
+            warningMessage: aiVariantDetail.detailResult.warningMessage,
+            discountPct: aiVariantDetail.detailResult.discountPct,
+            marketData: aiVariantDetail.batchData.marketData,
+            competitors: aiVariantDetail.batchData.competitors,
+            costData:
+              aiVariantDetail.detailResult.costData ??
+              aiVariantDetail.batchData.costData ??
+              null,
+            product: {
+              ...aiVariantDetail.batchData.product,
+              currentPrice: aiVariantDetail.detailResult.currentPrice,
+              modelId: aiVariantDetail.detailResult.modelId,
+              modelSku: aiVariantDetail.detailResult.sku,
+            },
+          }}
+          product={{
+            id: aiVariantDetail.productSnapshot?.id,
+            name: aiVariantDetail.productSnapshot?.name,
+            price: aiVariantDetail.detailResult.currentPrice,
+          }}
+          onApply={() => setAiVariantDetail(null)}
+          onClose={() => setAiVariantDetail(null)}
+        />
+      )}
     </>,
     document.body
   );

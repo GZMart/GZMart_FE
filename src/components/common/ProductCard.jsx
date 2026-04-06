@@ -1,13 +1,15 @@
-import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
-import { getProductImages } from '@utils/data/ProductsPage_MockData';
-import * as favouriteService from '@services/api/favouriteService';
-import styles from '@assets/styles/ProductCard.module.css';
+import * as wishlistService from '@/services/api/wishlistService';
+import styles from '@assets/styles/common/ProductCard.module.css';
+
+// Placeholder when product has no image (avoid empty src = broken image)
+const PLACEHOLDER_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f1f5f9" width="200" height="200"/%3E%3Ctext fill="%2394a3b8" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="14"%3ENo image%3C/text%3E%3C/svg%3E';
 
 const ProductCard = React.forwardRef(({ product }, ref) => {
   const navigate = useNavigate();
@@ -15,13 +17,9 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
   const [isFav, setIsFav] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
 
-  const productImage = (() => {
-    if (product.tier_variations && product.tier_variations.length > 0) {
-      const images = getProductImages(product);
-      return images.length > 0 ? images[0] : product.image;
-    }
-    return product.image;
-  })();
+  const productImage = (product.image && String(product.image).trim())
+    ? product.image
+    : PLACEHOLDER_IMAGE;
 
   const discountPercentage =
     product.originalPrice > 0 && product.originalPrice > product.price
@@ -42,7 +40,7 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
     e.preventDefault();
 
     if (!user) {
-      toast.info('Please login to add favourites');
+      toast.info('Please login to add wishlists');
       navigate('/login');
       return;
     }
@@ -50,11 +48,11 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
     setFavLoading(true);
     try {
       if (isFav) {
-        await favouriteService.removeFromFavourites(product.id);
+        await wishlistService.removeFromWishlists(product.id);
         setIsFav(false);
         toast.success('Removed from wishlist');
       } else {
-        await favouriteService.addToFavourites(product.id);
+        await wishlistService.addToWishlists(product.id);
         setIsFav(true);
         toast.success('Added to wishlist');
       }

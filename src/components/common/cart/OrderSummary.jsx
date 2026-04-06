@@ -19,6 +19,7 @@ const OrderSummary = ({
 }) => {
   const navigate = useNavigate();
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
+  const [includeCoin, setIncludeCoin] = useState(true);
 
   // Calculate subtotal from selected items only
   const subtotal =
@@ -37,7 +38,7 @@ const OrderSummary = ({
 
   const handleCheckout = () => {
     if (onCheckout) {
-      onCheckout({ includeGiftBox, total });
+      onCheckout({ includeGiftBox, includeCoin, total });
     } else {
       // Pass selected items to checkout page
       navigate(BUYER_ROUTES.CHECKOUT, {
@@ -91,6 +92,18 @@ const OrderSummary = ({
             {includeGiftBox && (
               <small className="text-muted ms-4">+{formatCurrency(giftBoxPrice)}</small>
             )}
+          </div>
+        )}
+        {selectedItems.length > 0 && (
+          <div className="mb-3">
+            <Form.Check
+              type="checkbox"
+              id="useCoin"
+              label="Use GZCoin Available"
+              checked={includeCoin}
+              onChange={(e) => setIncludeCoin(e.target.checked)}
+              disabled={selectedItems.length === 0}
+            />
           </div>
         )}
 

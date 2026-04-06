@@ -23,36 +23,17 @@ const rmaService = {
    * @param {Array<string>} data.images - Evidence image URLs
    * @param {Array<Object>} data.items - Items to return
    */
-  createReturnRequest: async (data) => {
-    console.log('🔵 [RETURN/REFUND REQUEST API] Request:', {
-      endpoint: 'POST /api/rma/requests',
-      data,
-      timestamp: new Date().toISOString(),
-    });
-
-    try {
-      const response = await axiosClient.post('/api/rma/requests', data);
-      console.log('✅ [RETURN/REFUND REQUEST API] Response:', {
-        status: response.status,
-        data: response.data,
-        timestamp: new Date().toISOString(),
-      });
-      return response;
-    } catch (error) {
-      console.error('❌ [RETURN/REFUND REQUEST API] Error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        timestamp: new Date().toISOString(),
-      });
-      throw error;
-    }
-  },
+  createReturnRequest: async (data) => axiosClient.post('/api/rma/requests', data),
 
   /**
    * Get user's return requests
    */
   getMyReturnRequests: async (params = {}) => axiosClient.get('/api/rma/requests', { params }),
+
+  /**
+   * Get latest return request by order for current buyer
+   */
+  getOrderReturnRequest: async (orderId) => axiosClient.get(`/api/rma/requests/order/${orderId}`),
 
   /**
    * Get return request details
@@ -63,6 +44,18 @@ const rmaService = {
    * Cancel return request (before seller responds)
    */
   cancelReturnRequest: async (id) => axiosClient.put(`/api/rma/requests/${id}/cancel`),
+
+  /**
+   * Buyer updates shipping info after handing item to courier
+   */
+  updateReturnShipping: async (id, data = {}) =>
+    axiosClient.put(`/api/rma/requests/${id}/shipping`, data),
+
+  /**
+   * Buyer confirms handover at end of leg 1 (seller -> buyer)
+   */
+  confirmBuyerHandover: async (id, data = {}) =>
+    axiosClient.put(`/api/rma/requests/${id}/confirm-handover`, data),
 
   // ==================== WALLET ENDPOINTS ====================
 
@@ -93,6 +86,12 @@ const rmaService = {
    */
   respondToReturnRequest: async (id, data) =>
     axiosClient.put(`/api/rma/seller/requests/${id}/respond`, data),
+
+  /**
+   * Seller confirms receiving returned faulty items
+   */
+  confirmItemsReceived: async (id, data = {}) =>
+    axiosClient.put(`/api/rma/seller/requests/${id}/confirm-received`, data),
 
   /**
    * Process refund (add coins to buyer wallet)

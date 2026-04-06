@@ -12,10 +12,11 @@ export const PUBLIC_ROUTES = {
   DEALS: '/deals',
   PRODUCT_DETAILS: '/product/:id',
   SEARCH: '/search',
+  IMAGE_SEARCH: '/search/image',
   LOGIN: '/login',
   REGISTER: '/register',
   OTP_VERIFICATION: '/otp-verification',
-  FAVOURITES: '/favourites',
+  WISHLIST: '/wishlist',
   TRACK_ORDER: '/track-order',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password/:token',
@@ -34,8 +35,8 @@ export const BUYER_ROUTES = {
   DASHBOARD: '/buyer/dashboard',
   PROFILE: '/buyer/profile?tab=account',
   ORDERS: '/buyer/profile?tab=orders',
-  ORDER_DETAILS: '/buyer/orders/:id',
-  FAVOURITES: '/buyer/favourites',
+  ORDER_DETAILS: '/buyer/profile?tab=orders',
+  WISHLIST: '/buyer/wishlist',
   CART: '/buyer/cart',
   CHECKOUT: '/buyer/checkout',
   PAYMENT: '/buyer/payment',
@@ -53,6 +54,7 @@ export const BUYER_ROUTES = {
 export const SELLER_ROUTES = {
   DASHBOARD: '/seller/dashboard',
   PROFILE: '/seller/profile',
+  SHOP_DECORATION: '/seller/shop-decoration',
   ORDERS: '/seller/orders',
 
   // Purchase Orders
@@ -71,6 +73,9 @@ export const SELLER_ROUTES = {
 
   // Returns
   RETURNS: '/seller/returns',
+
+  // Live stream (seller studio)
+  LIVE: '/seller/live',
 };
 
 // Admin Routes

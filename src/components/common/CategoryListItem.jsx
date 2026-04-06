@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import styles from '@assets/styles/CategoryListItem.module.css';
+import styles from '@assets/styles/common/CategoryListItem.module.css';
 
 const CategoryListItem = ({ category, image, link, productCount }) => (
   <Link to={link} className={styles.categoryListItem}>

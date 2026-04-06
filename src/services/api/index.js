@@ -17,6 +17,21 @@ export { default as landedCostService } from './landedCostService';
 export { default as reviewService } from './reviewService';
 export { default as followService } from './follow.service';
 export { default as uploadService } from './uploadService';
+export { default as livestreamService } from './livestreamService';
+export {
+  MODULE_TYPES,
+  MODULE_LABELS,
+  MODULE_GROUPS,
+  WIDGET_KEYS,
+  WIDGET_LABELS,
+  WIDGET_AUTO_KEYS,
+  WIDGET_MAX,
+  getDefaultWidgets,
+  getDefaultConfig,
+  createModule,
+  reorderModules,
+} from './shopDecorationService';
+export { shopDecorationApi } from './shopDecorationApi';
 export * as sellerApplicationService from './sellerApplicationService';
 export { default as notificationAPI } from './notificationAPI';
 

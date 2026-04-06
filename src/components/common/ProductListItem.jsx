@@ -1,13 +1,11 @@
-import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
-import { getProductImages } from '@utils/data/ProductsPage_MockData';
-import * as favouriteService from '@services/api/favouriteService';
-import styles from '@assets/styles/ProductListItem.module.css';
+import * as wishlistService from '@/services/api/wishlistService';
+import styles from '@assets/styles/buyer/Product/ProductListItem.module.css';
 
 const ProductListItem = React.forwardRef(({ product }, ref) => {
   const navigate = useNavigate();
@@ -15,13 +13,7 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
   const [isFav, setIsFav] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
 
-  const productImage = (() => {
-    if (product.tier_variations && product.tier_variations.length > 0) {
-      const images = getProductImages(product);
-      return images.length > 0 ? images[0] : product.image;
-    }
-    return product.image;
-  })();
+  const productImage = product.image || '';
 
   // Flash sale countdown timer
   const [timeLeft, setTimeLeft] = useState('');
@@ -78,7 +70,7 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
     e.preventDefault();
 
     if (!user) {
-      toast.info('Please login to add favourites');
+      toast.info('Please login to add wishlists');
       navigate('/login');
       return;
     }
@@ -86,11 +78,11 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
     setFavLoading(true);
     try {
       if (isFav) {
-        await favouriteService.removeFromFavourites(product.id);
+        await wishlistService.removeFromWishlists(product.id);
         setIsFav(false);
         toast.success('Removed from wishlist');
       } else {
-        await favouriteService.addToFavourites(product.id);
+        await wishlistService.addToWishlists(product.id);
         setIsFav(true);
         toast.success('Added to wishlist');
       }

@@ -157,6 +157,59 @@
   line-height: 1.4;
 }
 
+.weightUnitRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.weightUnitRow .formControl {
+  flex: 1;
+  min-width: 0;
+}
+.unitSelect {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: #fff;
+  min-width: 70px;
+}
+.dimRow {
+  display: flex;
+  gap: 8px;
+}
+.dimRow .dimInput {
+  width: 70px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+.dimWarning {
+  font-size: 11px;
+  color: #d97706;
+  margin-top: 6px;
+}
+.radioGroup {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+.preOrderDaysRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.preOrderText {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+.shippingToggle .form-check-input {
+  cursor: pointer;
+}
+
 /* Stock locked help text */
 .stockLockedNote {
   display: flex;
@@ -496,9 +549,10 @@
 
 /* ── Variant count badge ────────────────────────────────────────── */
 .variantCountBadge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
@@ -511,6 +565,31 @@
 .overLimitBadge {
   color: #dc2626;
   font-size: 11px;
+}
+.aiSuggestBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  height: 22px;
+  background: #fff;
+  border: 1px solid #c7d2fe;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a56db;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.aiSuggestBtn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+.aiSuggestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Media blocks ───────────────────────────────────────────────── */
@@ -860,6 +939,33 @@
   cursor: not-allowed;
 }
 
+.drawerDraftBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  height: 38px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+}
+.drawerDraftBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.drawerDraftBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ── Scrollable body ────────────────────────────────────────────── */
 .drawerBody {
   flex: 1;
@@ -912,4 +1018,22 @@
 .mediaRow .mediaBlock {
   flex: 1;
   min-width: 160px;
+}
+
+/* ── Variant mode — pricing fields are collapsed, replaced by per-variant table ─ */
+.variantPricingPlaceholder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.variantPricingPlaceholderIcon {
+  color: #94a3b8;
+  flex-shrink: 0;
 }

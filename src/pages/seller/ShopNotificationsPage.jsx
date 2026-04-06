@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 
 const ANNOUNCEMENT_TYPES = [
   { value: 'ANNOUNCEMENT', label: 'Thông báo chung', icon: '📢', color: '#6c757d' },
-  { value: 'PROMOTION', label: 'Khuyến mãi', icon: '🎉', color: '#0d6efd' },
+  { value: 'PROMOTION', label: 'Khuyến mãi', icon: '🎉', color: '#B13C36' },
   { value: 'VOUCHER', label: 'Phát hành Voucher', icon: '🎟️', color: '#198754' },
-  { value: 'FLASH_SALE', label: 'Flash Sale', icon: '⚡', color: '#dc3545' },
+  { value: 'FLASH_SALE', label: 'Flash Sale', icon: '⚡', color: '#B13C36' },
 ];
 
 const ShopNotificationsPage = () => {
@@ -100,9 +100,9 @@ const ShopNotificationsPage = () => {
                         onClick={() => setForm(prev => ({ ...prev, type: type.value }))}
                         className="btn btn-sm d-flex align-items-center gap-1"
                         style={{
-                          border: `2px solid ${form.type === type.value ? type.color : '#dee2e6'}`,
-                          backgroundColor: form.type === type.value ? `${type.color}15` : '#fff',
-                          color: form.type === type.value ? type.color : '#555',
+                          border: `2px solid ${form.type === type.value ? type.color : 'var(--color-border)'}`,
+                            backgroundColor: form.type === type.value ? `${type.color}15` : 'var(--color-white)',
+                            color: form.type === type.value ? type.color : 'var(--color-gray-700)',
                           fontWeight: form.type === type.value ? '600' : '400',
                           borderRadius: '8px',
                           padding: '6px 14px',

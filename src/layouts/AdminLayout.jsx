@@ -191,8 +191,11 @@ const AdminLayout = ({ children }) => {
 
         <div className={styles.topbarRight}>
           {/* Notifications */}
-          <div className={styles.topbarIconBtn} title="Notifications" style={{ padding: 0 }}>
-             <NotificationBell />
+          <div
+            title="Notifications"
+            style={{ display: 'flex', alignItems: 'center', padding: '0 8px' }}
+          >
+            <NotificationBell triggerClassName="text-dark text-decoration-none" />
           </div>
 
           <div className={styles.topbarDivider} />

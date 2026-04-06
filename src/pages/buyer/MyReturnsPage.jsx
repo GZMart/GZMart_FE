@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
 import { toast } from 'react-toastify';
@@ -15,11 +15,7 @@ const MyReturnsPage = () => {
   const [returns, setReturns] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
 
-  useEffect(() => {
-    fetchReturns();
-  }, [activeTab]);
-
-  const fetchReturns = async () => {
+  const fetchReturns = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -36,7 +32,11 @@ const MyReturnsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchReturns();
+  }, [fetchReturns]);
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -102,7 +102,7 @@ const MyReturnsPage = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Yêu Cầu Đổi Trả Của Tôi</h2>
-        <Button variant="outline-primary" onClick={() => navigate('/buyer/orders')}>
+        <Button variant="outline-primary" onClick={() => navigate('/buyer/profile?tab=orders')}>
           Quay lại Đơn hàng
         </Button>
       </div>

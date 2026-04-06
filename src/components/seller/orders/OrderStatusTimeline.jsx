@@ -1,93 +1,90 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import { Check, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import styles from '../../../assets/styles/seller/OrderStatusTimeline.module.css';
+
+const STATUS_CONFIG = {
+  pending: { dotClass: 'dotPending', labelClass: 'labelPending', Icon: Clock },
+  processing: { dotClass: 'dotProcessing', labelClass: 'labelProcessing', Icon: RefreshCw },
+  shipped: { dotClass: 'dotShipped', labelClass: 'labelShipped', Icon: Check },
+  delivered: { dotClass: 'dotDelivered', labelClass: 'labelDelivered', Icon: Check },
+  delivered_pending_confirmation: {
+    dotClass: 'dotDeliveredPendingConfirmation',
+    labelClass: 'labelDeliveredPendingConfirmation',
+    Icon: Clock,
+  },
+  completed: { dotClass: 'dotCompleted', labelClass: 'labelCompleted', Icon: Check },
+  cancelled: { dotClass: 'dotCancelled', labelClass: 'labelCancelled', Icon: AlertTriangle },
+  refunded: { dotClass: 'dotRefunded', labelClass: 'labelRefunded', Icon: AlertTriangle },
+  refund_pending: { dotClass: 'dotRefundPending', labelClass: 'labelRefundPending', Icon: Clock },
+  under_investigation: {
+    dotClass: 'dotUnderInvestigation',
+    labelClass: 'labelUnderInvestigation',
+    Icon: AlertTriangle,
+  },
+};
+
+const formatStatus = (status) => {
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) {
+    return 'Unknown';
+  }
+
+  if (normalized === 'shipped') {
+    return 'Shipping';
+  }
+
+  return normalized.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 const OrderStatusTimeline = ({ history }) => {
-  // Get status badge color
-  const getStatusColor = (status) => {
-    const statusColors = {
-      pending: 'warning',
-      processing: 'info',
-      shipped: 'primary',
-      delivered: 'success',
-      delivered_pending_confirmation: 'info',
-      completed: 'success',
-      cancelled: 'danger',
-      refunded: 'warning',
-      refund_pending: 'warning',
-      under_investigation: 'danger',
-    };
-    return statusColors[status] || 'secondary';
-  };
+  if (!history || history.length === 0) {
+    return <p className={styles.emptyText}>No status history available</p>;
+  }
 
   return (
-    <div className="timeline">
-      {history && history.length > 0 ? (
-        history.map((entry, index) => (
-          <div key={index} className="timeline-item mb-3">
-            <div className="d-flex">
-              {/* Timeline dot */}
-              <div className="timeline-dot me-3" style={{ minWidth: '40px' }}>
-                <div
-                  className={`badge badge-${getStatusColor(entry.status)} p-2`}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <i className="bi bi-check"></i>
-                </div>
-              </div>
+    <div className={styles.timeline}>
+      {history.map((entry, index) => {
+        const config = STATUS_CONFIG[entry.status] || {
+          dotClass: 'dotDefault',
+          labelClass: 'labelDefault',
+          Icon: Clock,
+        };
+        const { Icon } = config;
 
-              {/* Timeline content */}
-              <div className="timeline-content flex-grow-1">
-                <h6 className="mb-1">
-                  <span
-                    className="badge"
-                    style={{ backgroundColor: getStatusColorCode(entry.status) }}
-                  >
-                    {entry.status?.replace(/_/g, ' ').toUpperCase()}
-                  </span>
-                </h6>
-                {entry.reason && <p className="mb-1 text-muted">{entry.reason}</p>}
-                {entry.notes && <p className="mb-1 text-muted">{entry.notes}</p>}
-                <div className="small text-muted">
-                  <p className="mb-1">
-                    <strong>Changed by:</strong> {entry.changedBy?.name || 'System'} (
-                    {entry.changedByRole?.toUpperCase() || 'SYSTEM'})
-                  </p>
-                  <p className="mb-0">
-                    <strong>Date:</strong> {new Date(entry.changedAt).toLocaleString('vi-VN')}
-                  </p>
-                </div>
+        return (
+          <div key={index} className={styles.timelineItem}>
+            {/* Dot */}
+            <div className={`${styles.dot} ${styles[config.dotClass]}`}>
+              <Icon strokeWidth={2.5} />
+            </div>
+
+            {/* Content */}
+            <div className={styles.content}>
+              <span className={`${styles.statusLabel} ${styles[config.labelClass]}`}>
+                {formatStatus(entry.status)}
+              </span>
+
+              {entry.reason && <p className={styles.reason}>{entry.reason}</p>}
+
+              {entry.notes && <p className={styles.notes}>{entry.notes}</p>}
+
+              <div className={styles.meta}>
+                <span>
+                  <strong>By:</strong> {entry.changedBy?.name || 'System'}
+                  {entry.changedByRole ? ` (${entry.changedByRole.toUpperCase()})` : ''}
+                </span>
+                <span>
+                  <strong>On:</strong> {new Date(entry.changedAt).toLocaleString('vi-VN')}
+                </span>
               </div>
             </div>
           </div>
-        ))
-      ) : (
-        <p className="text-muted">No status history available</p>
-      )}
+        );
+      })}
     </div>
   );
-};
-
-// Helper function to get hex color for status
-const getStatusColorCode = (status) => {
-  const statusColors = {
-    pending: '#ffc107',
-    processing: '#17a2b8',
-    shipped: '#007bff',
-    delivered: '#28a745',
-    delivered_pending_confirmation: '#17a2b8',
-    completed: '#28a745',
-    cancelled: '#dc3545',
-    refunded: '#ffc107',
-    refund_pending: '#ffc107',
-    under_investigation: '#dc3545',
-  };
-  return statusColors[status] || '#6c757d';
 };
 
 OrderStatusTimeline.propTypes = {

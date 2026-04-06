@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { cartService } from '@services/cart.service';
+import { cartService } from '@/services/api/cart.service';
 
 const initialState = {
   items: [],
@@ -68,6 +68,22 @@ export const removeFromCart = createAsyncThunk(
       return { itemId, total: response.cartTotal };
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to remove item');
+    }
+  }
+);
+
+export const addToCartFromLive = createAsyncThunk(
+  'cart/addFromLive',
+  async (
+    { productId, quantity, price, color, size, image, name },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      await cartService.addToCart({ productId, quantity, color, size });
+      dispatch(fetchCart());
+      return;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -156,6 +172,20 @@ const cartSlice = createSlice({
       state.totalPrice = total;
       state.totalItems = state.items.reduce((acc, item) => acc + item.quantity, 0);
     });
+
+    // addToCartFromLive
+    builder
+      .addCase(addToCartFromLive.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addToCartFromLive.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(addToCartFromLive.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 

@@ -1,15 +1,31 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Breadcrumb from '@components/common/Breadcrumb';
 import ProductCard from '@components/common/ProductCard';
 import ProductListItem from '@components/common/ProductListItem';
 import LoadingSpinner from '@components/common/LoadingSpinner';
-import styles from '@assets/styles/ProductsPage.module.css';
+import Pagination from '@components/common/Pagination';
+import styles from '@assets/styles/buyer/Product/ProductsPage.module.css';
 import { dealService, flashsaleService } from '../../services/api';
 
+const dealTypes = [
+  { id: 'flash_sale', name: 'Flash Sale', icon: 'lightning-fill' },
+  { id: 'daily_deal', name: 'Daily Deal', icon: 'calendar-day' },
+  { id: 'limited_time', name: 'Limited Time', icon: 'clock' },
+  { id: 'clearance', name: 'Clearance', icon: 'tag' },
+];
+
+const discountOptions = [
+  { id: '50', name: '50% trở lên' },
+  { id: '40', name: '40% trở lên' },
+  { id: '30', name: '30% trở lên' },
+  { id: '20', name: '20% trở lên' },
+  { id: '10', name: '10% trở lên' },
+];
+
 const FlashDealsPage = () => {
-  const [viewMode, setViewMode] = useState('grid');
-  const itemsPerPage = 12;
+  const viewMode = 'grid';
+  const itemsPerPage = 24;
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('discount');
   const [loading, setLoading] = useState(true);
@@ -19,22 +35,25 @@ const FlashDealsPage = () => {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000000 });
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedDealTypes, setSelectedDealTypes] = useState([]);
-  const [openSections, setOpenSections] = useState({});
+  const [openSections, setOpenSections] = useState({
+    dealType: true,
+    discount: true,
+    brand: true,
+    category: true,
+    priceRange: true,
+  });
   const [tempPriceRange, setTempPriceRange] = useState({ min: 0, max: 10000000 });
 
-  // Fetch deals from API
   useEffect(() => {
     const fetchDeals = async () => {
       try {
         setLoading(true);
 
-        // Fetch both flash sales and active deals in parallel
         const [flashSaleRes, dealsRes] = await Promise.allSettled([
           flashsaleService.getActive(),
           dealService.getActiveDeals({ limit: 100 }),
         ]);
 
-        // ── Parse flash sales ────────────────────────────────────────────────
         let flashSalesData = [];
         if (flashSaleRes.status === 'fulfilled') {
           const response = flashSaleRes.value;
@@ -47,7 +66,6 @@ const FlashDealsPage = () => {
           }
         }
 
-        // Group flash sales by product + campaign so each product appears once
         const grouped = {};
         flashSalesData
           .filter((fs) => fs && fs.productId)
@@ -83,8 +101,8 @@ const FlashDealsPage = () => {
             name: product.name,
             description: product.description,
             image:
-              product.images?.[0] ||
               variantModel.image ||
+              product.images?.[0] ||
               'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
             images: product.images || [],
             price: priceMin,
@@ -123,7 +141,6 @@ const FlashDealsPage = () => {
           };
         });
 
-        // ── Parse active deals (special, limited_time, clearance, etc.) ─────
         let dealsData = [];
         if (dealsRes.status === 'fulfilled') {
           const response = dealsRes.value;
@@ -134,7 +151,6 @@ const FlashDealsPage = () => {
           }
         }
 
-        // Filter out flash_sale types (already shown above) and deals without product
         const flashSaleProductIds = new Set(productsFromFlashSales.map((p) => p.id));
         const productsFromDeals = dealsData
           .filter((deal) => deal && deal.productId && deal.type !== 'flash_sale')
@@ -150,6 +166,7 @@ const FlashDealsPage = () => {
               name: product.name,
               description: product.description,
               image:
+                (product.models?.find(m => m.isActive) || product.models?.[0])?.image ||
                 product.images?.[0] ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               images: product.images || [],
@@ -180,17 +197,9 @@ const FlashDealsPage = () => {
             };
           });
 
-        const allProducts = [...productsFromFlashSales, ...productsFromDeals];
-
-        if (import.meta.env.DEV) {
-          console.log('📊 Flash Sale products:', productsFromFlashSales.length);
-          console.log('📊 Deal products:', productsFromDeals.length);
-          console.log('📊 Total products:', allProducts.length);
-        }
-
-        setProducts(allProducts);
+        setProducts([...productsFromFlashSales, ...productsFromDeals]);
       } catch (error) {
-        console.error('❌ Error fetching deals:', error);
+        console.error('Error fetching deals:', error);
         setProducts([]);
       } finally {
         setLoading(false);
@@ -200,30 +209,11 @@ const FlashDealsPage = () => {
     fetchDeals();
   }, []);
 
-  // Breadcrumb
   const breadcrumbItems = [
     { label: 'Home', path: '/' },
     { label: 'All Deals', path: '/deals' },
   ];
 
-  // Deal type options
-  const dealTypes = [
-    { id: 'flash_sale', name: 'Flash Sale', icon: 'lightning-fill' },
-    { id: 'daily_deal', name: 'Daily Deal', icon: 'calendar-day' },
-    { id: 'limited_time', name: 'Limited Time', icon: 'clock' },
-    { id: 'clearance', name: 'Clearance', icon: 'tag' },
-  ];
-
-  // Discount options
-  const discounts = [
-    { id: '50', name: '50% or more' },
-    { id: '40', name: '40% or more' },
-    { id: '30', name: '30% or more' },
-    { id: '20', name: '20% or more' },
-    { id: '10', name: '10% or more' },
-  ];
-
-  // Get unique brands and categories from products
   const availableBrands = useMemo(() => {
     const brands = [...new Set(products.map((p) => p.brand).filter(Boolean))];
     return brands.sort();
@@ -234,49 +224,36 @@ const FlashDealsPage = () => {
     return categories.sort();
   }, [products]);
 
-  // Filter products
   const filteredProducts = useMemo(
     () =>
       products.filter((product) => {
-        // Deal Type filter
         if (selectedDealTypes.length > 0 && !selectedDealTypes.includes(product.dealType)) {
           return false;
         }
-
-        // Brand filter
         if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
           return false;
         }
-
-        // Category filter
         if (selectedCategories.length > 0 && !selectedCategories.includes(product.category)) {
           return false;
         }
-
-        // Price range filter
         if (priceRange.min > 0 || priceRange.max < 10000000) {
           if (product.price < priceRange.min || product.price > priceRange.max) {
             return false;
           }
         }
-
-        // Discount filter
         if (selectedDiscounts.length > 0) {
           const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
           if (product.discount < minDiscount) {
             return false;
           }
         }
-
         return true;
       }),
     [products, selectedDealTypes, selectedBrands, selectedCategories, priceRange, selectedDiscounts]
   );
 
-  // Sort products
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
-
     switch (sortBy) {
       case 'name':
         return sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -298,33 +275,9 @@ const FlashDealsPage = () => {
   }, [filteredProducts, sortBy]);
 
   const totalProducts = filteredProducts.length;
-  const displayedProducts = sortedProducts.slice(0, page * itemsPerPage);
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
+  const displayedProducts = sortedProducts.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // Infinite Scroll Observer
-  const observer = useRef();
-  const lastElementRef = useCallback(
-    (node) => {
-      if (loading) {
-        return;
-      }
-      if (observer.current) {
-        observer.current.disconnect();
-      }
-
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && displayedProducts.length < totalProducts) {
-          setPage((prevPage) => prevPage + 1);
-        }
-      });
-
-      if (node) {
-        observer.current.observe(node);
-      }
-    },
-    [loading, displayedProducts.length, totalProducts]
-  );
-
-  // Toggle filter
   const toggleFilter = (filterType, value) => {
     const setters = {
       brand: setSelectedBrands,
@@ -332,7 +285,6 @@ const FlashDealsPage = () => {
       discount: setSelectedDiscounts,
       dealType: setSelectedDealTypes,
     };
-
     const setter = setters[filterType];
     if (setter) {
       setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
@@ -341,10 +293,7 @@ const FlashDealsPage = () => {
   };
 
   const toggleSection = (section) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const handleApplyPriceFilter = () => {
@@ -357,6 +306,22 @@ const FlashDealsPage = () => {
     setTempPriceRange(defaultRange);
     setPriceRange(defaultRange);
     setPage(1);
+  };
+
+  const hasActiveFilters =
+    selectedDealTypes.length > 0 ||
+    selectedBrands.length > 0 ||
+    selectedCategories.length > 0 ||
+    selectedDiscounts.length > 0 ||
+    priceRange.min > 0 ||
+    priceRange.max < 10000000;
+
+  const clearAllFilters = () => {
+    setSelectedDealTypes([]);
+    setSelectedBrands([]);
+    setSelectedCategories([]);
+    setSelectedDiscounts([]);
+    handleResetPriceFilter();
   };
 
   if (loading) {
@@ -372,14 +337,16 @@ const FlashDealsPage = () => {
           {/* Sidebar Filters */}
           <aside className={styles.sidebar}>
             <div className={styles.filterHeader}>
-              <i className="bi bi-lightning-fill" style={{ color: '#f59e0b' }}></i>
-              <span className={styles.filterMainTitle}>Deal Filters</span>
+              <i className="bi bi-lightning-fill"></i>
+              <span className={styles.filterMainTitle}>Bộ Lọc Ưu Đãi</span>
             </div>
 
-            {/* Deal Type Filter */}
+            {/* Deal Type */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('dealType')}>
-                <span className={styles.filterTitle}>Deal Type</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-bookmark-star"></i> Loại Ưu Đãi
+                </span>
                 <i className={`bi bi-chevron-${openSections.dealType ? 'up' : 'down'}`}></i>
               </button>
               {openSections.dealType && (
@@ -392,25 +359,27 @@ const FlashDealsPage = () => {
                         onChange={() => toggleFilter('dealType', type.id)}
                         className={styles.checkbox}
                       />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <i className={`bi bi-${type.icon}`} style={{ color: '#f59e0b' }}></i>
-                        <span className={styles.brandName}>{type.name}</span>
-                      </div>
+                      <span className={styles.filterItemName}>
+                        <i className={`bi bi-${type.icon}`} style={{ marginRight: 4 }}></i>
+                        {type.name}
+                      </span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Discount Filter */}
+            {/* Discount */}
             <div className={styles.filterSection}>
               <button className={styles.filterHeaderBtn} onClick={() => toggleSection('discount')}>
-                <span className={styles.filterTitle}>Discount Amount</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-percent"></i> Mức Giảm Giá
+                </span>
                 <i className={`bi bi-chevron-${openSections.discount ? 'up' : 'down'}`}></i>
               </button>
               {openSections.discount && (
                 <div className={styles.filterContent}>
-                  {discounts.map((discount) => (
+                  {discountOptions.map((discount) => (
                     <label key={discount.id} className={styles.checkboxLabel}>
                       <input
                         type="checkbox"
@@ -418,18 +387,20 @@ const FlashDealsPage = () => {
                         onChange={() => toggleFilter('discount', discount.id)}
                         className={styles.checkbox}
                       />
-                      <span className={styles.brandName}>{discount.name}</span>
+                      <span className={styles.filterItemName}>{discount.name}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Brand Filter */}
+            {/* Brand */}
             {availableBrands.length > 0 && (
               <div className={styles.filterSection}>
                 <button className={styles.filterHeaderBtn} onClick={() => toggleSection('brand')}>
-                  <span className={styles.filterTitle}>Brand</span>
+                  <span className={styles.filterTitle}>
+                    <i className="bi bi-tag"></i> Thương Hiệu
+                  </span>
                   <i className={`bi bi-chevron-${openSections.brand ? 'up' : 'down'}`}></i>
                 </button>
                 {openSections.brand && (
@@ -442,7 +413,7 @@ const FlashDealsPage = () => {
                           onChange={() => toggleFilter('brand', brand)}
                           className={styles.checkbox}
                         />
-                        <span className={styles.brandName}>{brand}</span>
+                        <span className={styles.filterItemName}>{brand}</span>
                       </label>
                     ))}
                   </div>
@@ -450,14 +421,16 @@ const FlashDealsPage = () => {
               </div>
             )}
 
-            {/* Category Filter */}
+            {/* Category */}
             {availableCategories.length > 0 && (
               <div className={styles.filterSection}>
                 <button
                   className={styles.filterHeaderBtn}
                   onClick={() => toggleSection('category')}
                 >
-                  <span className={styles.filterTitle}>Category</span>
+                  <span className={styles.filterTitle}>
+                    <i className="bi bi-grid"></i> Danh Mục
+                  </span>
                   <i className={`bi bi-chevron-${openSections.category ? 'up' : 'down'}`}></i>
                 </button>
                 {openSections.category && (
@@ -470,7 +443,7 @@ const FlashDealsPage = () => {
                           onChange={() => toggleFilter('category', category)}
                           className={styles.checkbox}
                         />
-                        <span className={styles.brandName}>{category}</span>
+                        <span className={styles.filterItemName}>{category}</span>
                       </label>
                     ))}
                   </div>
@@ -478,171 +451,236 @@ const FlashDealsPage = () => {
               </div>
             )}
 
-            {/* Price Range Filter */}
+            {/* Price Range */}
             <div className={styles.filterSection}>
               <button
                 className={styles.filterHeaderBtn}
                 onClick={() => toggleSection('priceRange')}
               >
-                <span className={styles.filterTitle}>Price Range</span>
+                <span className={styles.filterTitle}>
+                  <i className="bi bi-cash-stack"></i> Khoảng Giá
+                </span>
                 <i className={`bi bi-chevron-${openSections.priceRange ? 'up' : 'down'}`}></i>
               </button>
               {openSections.priceRange && (
                 <div className={styles.filterContent}>
-                  <div className={styles.priceSlider}>
-                    <div className={styles.priceInputs}>
-                      <div className={styles.priceInputGroup}>
-                        <input
-                          type="number"
-                          placeholder="₫ FROM"
-                          value={tempPriceRange.min}
-                          onChange={(e) =>
-                            setTempPriceRange({ ...tempPriceRange, min: Number(e.target.value) })
-                          }
-                          className={styles.priceInput}
-                        />
-                      </div>
-                      <div className={styles.priceSeparator}>-</div>
-                      <div className={styles.priceInputGroup}>
-                        <input
-                          type="number"
-                          placeholder="₫ TO"
-                          value={tempPriceRange.max}
-                          onChange={(e) =>
-                            setTempPriceRange({ ...tempPriceRange, max: Number(e.target.value) })
-                          }
-                          className={styles.priceInput}
-                        />
-                      </div>
+                  <div className={styles.rangeSliderContainer}>
+                    <div className={styles.sliderTrack}>
+                      <div
+                        className={styles.sliderRange}
+                        style={{
+                          left: `${(tempPriceRange.min / 10000000) * 100}%`,
+                          right: `${100 - (tempPriceRange.max / 10000000) * 100}%`,
+                        }}
+                      ></div>
                     </div>
-                    <div className={styles.priceActions}>
-                      <button onClick={handleApplyPriceFilter} className={styles.applyBtn}>
-                        Apply
-                      </button>
-                      <button onClick={handleResetPriceFilter} className={styles.resetBtn}>
-                        Reset
-                      </button>
-                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000000"
+                      step="100000"
+                      value={tempPriceRange.min}
+                      onChange={(e) => {
+                        const val = Math.min(Number(e.target.value), tempPriceRange.max - 100000);
+                        setTempPriceRange({ ...tempPriceRange, min: val });
+                      }}
+                      className={styles.rangeInput}
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000000"
+                      step="100000"
+                      value={tempPriceRange.max}
+                      onChange={(e) => {
+                        const val = Math.max(Number(e.target.value), tempPriceRange.min + 100000);
+                        setTempPriceRange({ ...tempPriceRange, max: val });
+                      }}
+                      className={styles.rangeInput}
+                    />
                   </div>
+                  <div className={styles.rangePriceLabels}>
+                    <span>₫{tempPriceRange.min.toLocaleString()}</span>
+                    <span>₫{tempPriceRange.max.toLocaleString()}</span>
+                  </div>
+                  <button className={styles.applyBtn} onClick={handleApplyPriceFilter}>
+                    ÁP DỤNG
+                  </button>
                 </div>
               )}
             </div>
+
+            {/* Clear All */}
+            {hasActiveFilters && (
+              <div className={styles.clearAllSection}>
+                <button className={styles.clearAllBtn} onClick={clearAllFilters}>
+                  <i className="bi bi-x-circle"></i> Xóa Tất Cả
+                </button>
+              </div>
+            )}
           </aside>
 
           {/* Main Content */}
           <main className={styles.mainContent}>
-            <div className={styles.productsHeader}>
-              <h1 className={styles.pageTitle}>
-                <i
-                  className="bi bi-lightning-fill"
-                  style={{ color: '#f59e0b', marginRight: '8px' }}
-                ></i>
-                All Deals
-              </h1>
-
-              <div className={styles.productsControls}>
-                <div className={styles.viewToggle}>
-                  <button
-                    className={`${styles.viewButton} ${viewMode === 'grid' ? styles.active : ''}`}
-                    onClick={() => setViewMode('grid')}
-                    aria-label="Grid view"
-                  >
-                    <i className="bi bi-grid-3x3-gap"></i>
-                  </button>
-                  <button
-                    className={`${styles.viewButton} ${viewMode === 'list' ? styles.active : ''}`}
-                    onClick={() => setViewMode('list')}
-                    aria-label="List view"
-                  >
-                    <i className="bi bi-list-ul"></i>
-                  </button>
+            {/* Result Info */}
+            <div className={styles.resultInfo}>
+              <span className={styles.resultCount}>
+                <i className="bi bi-lightning-fill"></i> {totalProducts} ưu đãi
+              </span>
+              {hasActiveFilters && (
+                <div className={styles.activeFilters}>
+                  {selectedDealTypes.map((dtId) => {
+                    const dt = dealTypes.find((d) => d.id === dtId);
+                    return dt ? (
+                      <span key={dtId} className={styles.filterTag}>
+                        {dt.name}
+                        <i className="bi bi-x" onClick={() => toggleFilter('dealType', dtId)}></i>
+                      </span>
+                    ) : null;
+                  })}
+                  {selectedDiscounts.map((discId) => (
+                    <span key={discId} className={styles.filterTag}>
+                      ≥{discId}%
+                      <i className="bi bi-x" onClick={() => toggleFilter('discount', discId)}></i>
+                    </span>
+                  ))}
+                  {selectedBrands.map((brand) => (
+                    <span key={brand} className={styles.filterTag}>
+                      {brand}
+                      <i className="bi bi-x" onClick={() => toggleFilter('brand', brand)}></i>
+                    </span>
+                  ))}
+                  {selectedCategories.map((cat) => (
+                    <span key={cat} className={styles.filterTag}>
+                      {cat}
+                      <i className="bi bi-x" onClick={() => toggleFilter('category', cat)}></i>
+                    </span>
+                  ))}
+                  {(priceRange.min > 0 || priceRange.max < 10000000) && (
+                    <span className={styles.filterTag}>
+                      {priceRange.min > 0 ? `₫${priceRange.min.toLocaleString()}` : '₫0'} —{' '}
+                      {priceRange.max < 10000000 ? `₫${priceRange.max.toLocaleString()}` : '∞'}
+                      <i className="bi bi-x" onClick={handleResetPriceFilter}></i>
+                    </span>
+                  )}
                 </div>
+              )}
+            </div>
 
-                <div className={styles.infoText}>
-                  Showing {displayedProducts.length} of {totalProducts} deals
-                </div>
-
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>Sort by:</label>
-                  <select
-                    className={styles.filterSelect}
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setPage(1);
-                    }}
-                  >
-                    <option value="discount">Discount: High to Low</option>
-                    <option value="ending-soon">Ending Soon</option>
-                    <option value="name">Name</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                  </select>
-                </div>
+            {/* Sort Bar */}
+            <div className={styles.sortBar}>
+              <div className={styles.sortBarLeft}>
+                <span className={styles.sortLabel}>Sắp xếp theo</span>
+                <button
+                  className={`${styles.sortBtn} ${sortBy === 'discount' ? styles.sortBtnActive : ''}`}
+                  onClick={() => {
+                    setSortBy('discount');
+                    setPage(1);
+                  }}
+                >
+                  Giảm Nhiều
+                </button>
+                <button
+                  className={`${styles.sortBtn} ${sortBy === 'ending-soon' ? styles.sortBtnActive : ''}`}
+                  onClick={() => {
+                    setSortBy('ending-soon');
+                    setPage(1);
+                  }}
+                >
+                  Sắp Kết Thúc
+                </button>
+                <select
+                  className={`${styles.sortPriceSelect} ${sortBy === 'price-asc' || sortBy === 'price-desc' ? styles.sortPriceActive : ''}`}
+                  value={sortBy === 'price-asc' || sortBy === 'price-desc' ? sortBy : ''}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="" disabled>
+                    Giá
+                  </option>
+                  <option value="price-asc">Giá: Thấp đến Cao</option>
+                  <option value="price-desc">Giá: Cao đến Thấp</option>
+                </select>
+              </div>
+              <div className={styles.sortBarRight}>
+                <span className={styles.pageInfo}>
+                  <span className={styles.pageInfoCurrent}>{page}</span>/{totalPages || 1}
+                </span>
+                <button
+                  className={styles.pageNavBtn}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+                <button
+                  className={styles.pageNavBtn}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  <i className="bi bi-chevron-right"></i>
+                </button>
               </div>
             </div>
 
             {/* Product Grid/List */}
-            {viewMode === 'grid' ? (
+            {displayedProducts.length === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>
+                  <i className="bi bi-lightning"></i>
+                </div>
+                <h3>
+                  {products.length === 0 ? 'Chưa có ưu đãi nào' : 'Không tìm thấy ưu đãi phù hợp'}
+                </h3>
+                <p>
+                  {products.length === 0
+                    ? 'Hiện tại chưa có chương trình ưu đãi nào. Hãy quay lại sau!'
+                    : 'Thử điều chỉnh bộ lọc để xem thêm ưu đãi'}
+                </p>
+                {hasActiveFilters && (
+                  <button className={styles.emptyResetBtn} onClick={clearAllFilters}>
+                    <i className="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc
+                  </button>
+                )}
+              </div>
+            ) : viewMode === 'grid' ? (
               <div className={styles.productGrid}>
-                {displayedProducts.map((product, index) => {
-                  const isLast = index === displayedProducts.length - 1;
-                  return (
-                    <Link
-                      key={product.id}
-                      to={`/product/${product.id}`}
-                      style={{ textDecoration: 'none' }}
-                      ref={isLast ? lastElementRef : null}
-                    >
-                      <ProductCard product={product} />
-                    </Link>
-                  );
-                })}
+                {displayedProducts.map((product) => (
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <ProductCard product={product} />
+                  </Link>
+                ))}
               </div>
             ) : (
               <div className={styles.productList}>
-                {displayedProducts.map((product, index) => {
-                  const isLast = index === displayedProducts.length - 1;
-                  return (
-                    <Link
-                      key={product.id}
-                      to={`/product/${product.id}`}
-                      style={{ textDecoration: 'none' }}
-                      ref={isLast ? lastElementRef : null}
-                    >
-                      <ProductListItem product={product} />
-                    </Link>
-                  );
-                })}
+                {displayedProducts.map((product) => (
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <ProductListItem product={product} />
+                  </Link>
+                ))}
               </div>
             )}
 
-            {/* Loading More Indicator */}
-            {displayedProducts.length < totalProducts && (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            )}
-
-            {displayedProducts.length === 0 && !loading && (
-              <div style={{ textAlign: 'center', padding: '48px', color: '#6b7280' }}>
-                <i
-                  className="bi bi-inbox"
-                  style={{ fontSize: '48px', marginBottom: '16px', display: 'block' }}
-                ></i>
-                <p style={{ fontSize: '18px', marginBottom: '8px', fontWeight: '600' }}>
-                  {products.length === 0
-                    ? '🛒 No Flash Sales Available'
-                    : 'No Matching Flash Sales'}
-                </p>
-                <p style={{ fontSize: '14px', marginBottom: '8px' }}>
-                  {products.length === 0
-                    ? 'Backend has no active flash sales at the moment. Check back later or sellers can create flash sales.'
-                    : 'Try adjusting your filters to see more flash sales'}
-                </p>
-              </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(newPage) => {
+                  setPage(newPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
             )}
           </main>
         </div>
