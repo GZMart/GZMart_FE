@@ -73,6 +73,9 @@ export const SELLER_ROUTES = {
 
   // Returns
   RETURNS: '/seller/returns',
+
+  // Live stream (seller studio)
+  LIVE: '/seller/live',
 };
 
 // Admin Routes

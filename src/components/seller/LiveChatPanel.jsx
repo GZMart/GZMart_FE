@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { DataPacket_Kind } from 'livekit-client';
@@ -11,44 +11,89 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
   const [activeTab, setActiveTab] = useState('interaction');
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
-  const [chatStatus, setChatStatus] = useState('idle'); // idle | connecting | connected | error
+  const [chatStatus, setChatStatus] = useState('idle');
+  const [refreshing, setRefreshing] = useState(false);
   const chatEndRef = useRef(null);
   const user = useSelector((state) => state.auth?.user);
   const sellerIdRef = useRef(user?._id || 'seller_self');
   const displayNameRef = useRef(user?.fullName || 'Seller');
+  const existingIdsRef = useRef(new Set()); // dedup set for refresh
 
-  // Sync user into refs whenever auth state changes
+  // Sync user into refs
   useEffect(() => {
     sellerIdRef.current = user?._id || 'seller_self';
     displayNameRef.current = user?.fullName || 'Seller';
   }, [user]);
 
-  // ── Fetch chat history from REST API ────────────────────────────
+  // ── Session persistence: save/restore on mount/unmount ──────────────
   useEffect(() => {
-    if (!isLive || !sessionId) {
-return;
-}
-
-    livestreamService
-      .getSessionMessages(sessionId)
-      .then((res) => {
-        const list = Array.isArray(res?.data) ? res.data : res?.data?.data;
-        if (list?.length) {
-          setMessages(
-            list.map((m) => ({
-              id: m.id || m._id || String(Math.random()),
-              sender: m.displayName || m.userId || 'Viewer',
-              initials: (m.displayName || 'V').slice(0, 2).toUpperCase(),
-              colorClass: m.role === 'host' || m.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
-              text: m.content,
-              isLocal: false,
-            }))
+    if (!sessionId) return;
+    try {
+      const saved = sessionStorage.getItem('gzmart_seller_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.sessionId === sessionId && Array.isArray(parsed?.messages)) {
+          const deduped = parsed.messages.filter(
+            (m, i, arr) => arr.findIndex((p) => p.id === m.id) === i,
           );
+          setMessages(deduped);
+          deduped.forEach((m) => existingIdsRef.current.add(m.id));
         }
-      })
-      .catch(() => {
-        // Silently ignore — chat history is optional
-      });
+      }
+    } catch {
+      /* non-critical */
+    }
+  }, [sessionId]);
+
+  const persistSession = useCallback((msgList) => {
+    if (!sessionId) return;
+    try {
+      sessionStorage.setItem(
+        'gzmart_seller_session',
+        JSON.stringify({ sessionId, messages: msgList.slice(-100) }),
+      );
+    } catch {
+      /* non-critical */
+    }
+  }, [sessionId]);
+
+  // Persist on message changes
+  useEffect(() => {
+    if (messages.length > 0) {
+      persistSession(messages);
+    }
+  }, [messages, persistSession]);
+
+  // ── Refresh chat history ──────────────────────────────────────────────
+  const handleRefreshChat = useCallback(async () => {
+    if (!isLive || !sessionId) return;
+    setRefreshing(true);
+    try {
+      const res = await livestreamService.getSessionMessages(sessionId, 100);
+      const list = Array.isArray(res?.data) ? res.data : res?.data?.data;
+      if (list?.length) {
+        const normalized = list.map((m) => ({
+          id: m.id || m._id || String(Math.random()),
+          sender: m.displayName || m.userId || 'Viewer',
+          initials: (m.displayName || 'V').slice(0, 2).toUpperCase(),
+          colorClass: m.role === 'host' || m.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
+          text: m.content,
+          isLocal: false,
+          timestamp: m.timestamp,
+          senderId: m.senderId,
+        }));
+        // Only add messages we don't already have
+        const fresh = normalized.filter((m) => !existingIdsRef.current.has(m.id));
+        if (fresh.length > 0) {
+          setMessages((prev) => [...prev, ...fresh]);
+          fresh.forEach((m) => existingIdsRef.current.add(m.id));
+        }
+      }
+    } catch {
+      /* non-critical */
+    } finally {
+      setRefreshing(false);
+    }
   }, [isLive, sessionId]);
 
   // LiveKit room connected → enable chat input
@@ -82,34 +127,15 @@ return;
       if (!msg?.content || msg.sessionId !== sessionId) {
 return;
 }
-      // Skip own messages (already added optimistically via localMsg)
       const sid = String(sellerIdRef.current);
       if (String(msg.senderId) === sid || String(msg.userId) === sid) {
 return;
 }
-      // Deduplicate by server-generated message id
       if (msg.id) {
-        setMessages((prev) => {
-          if (prev.some((p) => p.id === msg.id)) {
-return prev;
-}
-          return [
-            ...prev,
-            {
-              id: msg.id,
-              sender: msg.displayName || 'Viewer',
-              initials: (msg.displayName || 'V').slice(0, 2).toUpperCase(),
-              colorClass: msg.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
-              text: msg.content,
-              isLocal: false,
-              timestamp: msg.timestamp,
-              senderId: msg.senderId,
-            },
-          ];
-        });
-      } else {
-        setMessages((prev) => [...prev, {
-          id: `sock_${Date.now()}`,
+        if (existingIdsRef.current.has(msg.id)) return;
+        existingIdsRef.current.add(msg.id);
+        const newMsg = {
+          id: msg.id,
           sender: msg.displayName || 'Viewer',
           initials: (msg.displayName || 'V').slice(0, 2).toUpperCase(),
           colorClass: msg.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
@@ -117,7 +143,21 @@ return prev;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
-        }]);
+        };
+        setMessages((prev) => [...prev, newMsg]);
+      } else {
+        const id = `sock_${Date.now()}_${Math.random()}`;
+        const newMsg = {
+          id,
+          sender: msg.displayName || 'Viewer',
+          initials: (msg.displayName || 'V').slice(0, 2).toUpperCase(),
+          colorClass: msg.role === 'seller' ? styles.chatAvatarBlue : styles.chatAvatarGray,
+          text: msg.content,
+          isLocal: false,
+          timestamp: msg.timestamp,
+          senderId: msg.senderId,
+        };
+        setMessages((prev) => [...prev, newMsg]);
       }
     };
 
@@ -232,6 +272,35 @@ return;
         {/* Live Interaction: messages + featured queue + composer (other tabs use full height) */}
         {activeTab === 'interaction' && (
           <>
+            {/* Chat header with refresh */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem 0', flexShrink: 0 }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555', fontFamily: "'Inter', system-ui, sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Chat History
+              </span>
+              <button
+                type="button"
+                onClick={handleRefreshChat}
+                disabled={refreshing || !isLive}
+                title="Refresh chat history"
+                aria-label="Refresh chat"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: isLive ? 'pointer' : 'default',
+                  color: isLive ? '#B13C36' : '#ccc',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  opacity: isLive ? 1 : 0.5,
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={(e) => { if (isLive) e.currentTarget.style.color = '#8f2e29'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = isLive ? '#B13C36' : '#ccc'; }}
+              >
+                <i className={`bi bi-arrow-clockwise ${refreshing ? styles.spinning : ''}`} style={{ fontSize: '13px', display: 'inline-block' }} />
+              </button>
+            </div>
+
             <div className={styles.chatBody}>
               {!isLive && messages.length === 0 ? (
                 <div className={styles.emptyChat}>
@@ -381,7 +450,7 @@ return;
                     alt={p.name}
                     className={styles.showcaseImg}
                     onError={(e) => {
- e.target.src = '/placeholder.png'; 
+ e.target.src = '/placeholder.png';
 }}
                   />
                   <div className={styles.showcaseInfo}>
@@ -404,10 +473,10 @@ return;
                     }}
                     title={isPinned ? 'Unpin' : 'Pin to viewer overlay'}
                     onMouseEnter={(e) => {
- e.currentTarget.style.color = '#B13C36'; 
+ e.currentTarget.style.color = '#B13C36';
 }}
                     onMouseLeave={(e) => {
- e.currentTarget.style.color = isPinned ? '#B13C36' : '#9ca3af'; 
+ e.currentTarget.style.color = isPinned ? '#B13C36' : '#9ca3af';
 }}
                   >
                     <i className={`bi ${isPinned ? 'bi-pin-fill' : 'bi-pin'}`} style={{ fontSize: '14px' }} />
@@ -426,10 +495,10 @@ return;
                     }}
                     title="Remove from live"
                     onMouseEnter={(e) => {
- e.currentTarget.style.color = '#ef4444'; 
+ e.currentTarget.style.color = '#ef4444';
 }}
                     onMouseLeave={(e) => {
- e.currentTarget.style.color = '#9ca3af'; 
+ e.currentTarget.style.color = '#9ca3af';
 }}
                   >
                     <i className="bi bi-x-circle-fill" style={{ fontSize: '14px' }} />
@@ -513,7 +582,12 @@ return;
         {/* Order Syntax tab — same scroll container as other tabs */}
         {activeTab === 'syntax' && (
           <div className={styles.chatBody}>
-            <OrderSyntaxPanel sessionId={sessionId} isLive={isLive} liveProducts={liveProducts} />
+            <OrderSyntaxPanel
+              sessionId={sessionId}
+              isLive={isLive}
+              liveProducts={liveProducts}
+              pinnedProductId={pinnedProductId}
+            />
           </div>
         )}
         </div>

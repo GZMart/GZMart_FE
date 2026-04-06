@@ -621,6 +621,14 @@
   font-weight: 500;
 }
 
+.pending-product-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .pending-product-card {
   display: flex;
   align-items: center;

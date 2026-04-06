@@ -136,7 +136,7 @@ return;
     try {
       const res = await livestreamService.addProductsToSession(session._id, productIds);
       setLiveProducts(res?.data?.products || []);
-      setPinnedProductId(res?.data?.pinnedProduct?._id || null);
+      setPinnedProductId(res?.data?.pinnedProduct?._id || pinnedProductId);
       setShowProductSelector(false);
     } catch (e) {
       alert(e.response?.data?.message || 'Failed to add products');
