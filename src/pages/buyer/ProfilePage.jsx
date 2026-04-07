@@ -24,6 +24,7 @@ import ProfileAddressTab from '@/components/buyer/ProfilePage/ProfileAddressTab'
 import ProfileOrdersTab from '@/components/buyer/ProfilePage/ProfileOrdersTab';
 import ProfileCoinTab from '@/components/buyer/ProfilePage/ProfileCoinTab';
 import ProfileAddressDrawer from '@/components/buyer/ProfilePage/ProfileAddressDrawer';
+import DisputeCenter from '@/components/disputes/DisputeCenter';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -923,6 +924,10 @@ const ProfilePage = () => {
           setOrders={setOrders}
         />
       );
+    }
+
+    if (activeTab === 'reports') {
+      return <DisputeCenter mode="buyer" embedded />;
     }
 
     return (

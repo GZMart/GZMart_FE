@@ -13,6 +13,7 @@ const NAV_GROUPS = [
     items: [
       { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
       { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
+      { to: SELLER_ROUTES.DISPUTES, icon: 'bi-shield-exclamation', label: 'Disputes' },
       { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },

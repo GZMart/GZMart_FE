@@ -34,6 +34,7 @@ export const PUBLIC_ROUTES = {
 export const BUYER_ROUTES = {
   DASHBOARD: '/buyer/dashboard',
   PROFILE: '/buyer/profile?tab=account',
+  DISPUTES: '/buyer/disputes',
   ORDERS: '/buyer/profile?tab=orders',
   ORDER_DETAILS: '/buyer/profile?tab=orders',
   WISHLIST: '/buyer/wishlist',
@@ -56,6 +57,7 @@ export const SELLER_ROUTES = {
   PROFILE: '/seller/profile',
   SHOP_DECORATION: '/seller/shop-decoration',
   ORDERS: '/seller/orders',
+  DISPUTES: '/seller/disputes',
 
   // Purchase Orders
   PO_LIST: '/seller/purchase-orders',
@@ -79,6 +81,7 @@ export const SELLER_ROUTES = {
 export const ADMIN_ROUTES = {
   DASHBOARD: '/admin/dashboard',
   PROFILE: '/admin/profile',
+  DISPUTES: '/admin/disputes',
 
   // User Management
   USERS: '/admin/users',
