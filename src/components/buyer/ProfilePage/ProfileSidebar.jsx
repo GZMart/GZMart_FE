@@ -1,5 +1,16 @@
 import PropTypes from 'prop-types';
-import { Camera, Check, ChevronDown, Coins, Edit2, Package, Store, User, X } from 'lucide-react';
+import {
+  Camera,
+  Check,
+  ChevronDown,
+  Coins,
+  Edit2,
+  Package,
+  Store,
+  User,
+  X,
+  Clipboard,
+} from 'lucide-react';
 import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
 
 const ProfileSidebar = ({
@@ -115,6 +126,14 @@ const ProfileSidebar = ({
       >
         <Coins className={styles.navIcon} size={20} strokeWidth={2} />
         <span className={styles.navText}>GZMart Coin</span>
+      </div>
+
+      <div
+        className={`${styles.navItem} ${activeTab === 'reports' ? styles.navItemActive : ''}`}
+        onClick={() => onTabChange('reports')}
+      >
+        <Clipboard className={styles.navIcon} size={20} strokeWidth={2} />
+        <span className={styles.navText}>Reports</span>
       </div>
 
       {user?.role === 'buyer' && (
