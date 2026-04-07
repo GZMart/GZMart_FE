@@ -9,7 +9,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getAuthToken } from '../../utils/storage';
 import { formatCurrency } from '../../utils/formatters';
-import styles from '../../assets/styles/common/ChatWidget.module.css';
+import styles from '@assets/styles/common/ChatWidget.module.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
@@ -667,6 +667,15 @@ const ChatWidget = () => {
     return null;
   }
 
+  const pendingPreviewList =
+    activeConversation && activeChatId !== 'ai'
+      ? (() => {
+          const raw = pendingProducts[activeConversation._id];
+          if (raw == null) return [];
+          return Array.isArray(raw) ? raw : [raw];
+        })()
+      : [];
+
   return (
     <div className={styles['chat-widget-container']}>
       {/* Floating Button */}
@@ -1026,9 +1035,7 @@ const ChatWidget = () => {
                 </div>
 
                 {/* Pending Product to Send - OUTSIDE scroll container */}
-                {activeConversation &&
-                  activeChatId !== 'ai' &&
-                  pendingProducts[activeConversation._id] && (
+                {pendingPreviewList.length > 0 && (
                     <div className={styles['pending-product-wrapper']}>
                       <div className={styles['pending-product-header']}>
                         <span className={styles['pending-product-title']}>
@@ -1047,31 +1054,36 @@ const ChatWidget = () => {
                           }}
                         ></button>
                       </div>
-                      <div className={styles['pending-product-card']}>
-                        <img
-                          src={pendingProducts[activeConversation._id].image}
-                          alt={pendingProducts[activeConversation._id].name}
-                          className={styles['pending-product-image']}
-                        />
-                        <div className={styles['pending-product-info']}>
-                          <div className={styles['pending-product-name']}>
-                            {pendingProducts[activeConversation._id].name}
-                          </div>
-                          <div className={styles['pending-product-price-row']}>
-                            <span className={styles['pending-product-price']}>
-                              {formatCurrency(pendingProducts[activeConversation._id].price)}
-                            </span>
-                            {pendingProducts[activeConversation._id].originalPrice &&
-                              pendingProducts[activeConversation._id].originalPrice >
-                                pendingProducts[activeConversation._id].price && (
-                                <span className={styles['pending-product-original-price']}>
-                                  {formatCurrency(
-                                    pendingProducts[activeConversation._id].originalPrice
-                                  )}
+                      <div className={styles['pending-product-cards']}>
+                        {pendingPreviewList.map((p, idx) => (
+                          <div
+                            key={p.productId ?? idx}
+                            className={styles['pending-product-card']}
+                          >
+                            <img
+                              src={p.image || 'https://via.placeholder.com/44'}
+                              alt={p.name || 'Sản phẩm'}
+                              className={styles['pending-product-image']}
+                            />
+                            <div className={styles['pending-product-info']}>
+                              <div className={styles['pending-product-name']} title={p.name}>
+                                {p.name || 'Sản phẩm'}
+                              </div>
+                              <div className={styles['pending-product-price-row']}>
+                                <span className={styles['pending-product-price']}>
+                                  {formatCurrency(p.price)}
                                 </span>
-                              )}
+                                {p.originalPrice != null &&
+                                  p.price != null &&
+                                  p.originalPrice > p.price && (
+                                    <span className={styles['pending-product-original-price']}>
+                                      {formatCurrency(p.originalPrice)}
+                                    </span>
+                                  )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   )}

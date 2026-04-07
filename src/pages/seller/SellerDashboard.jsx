@@ -23,6 +23,8 @@ import {
 } from 'antd';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { formatCurrency } from '../../utils/formatters';
 import dashboardService from '../../services/api/dashboardService';
 import { chatService } from '../../services/api/chatService';
@@ -34,11 +36,31 @@ import { ProfitDetailModal } from '../../components/seller/dashboard/modals/Prof
 import { TopProfitProductsModal } from '../../components/seller/dashboard/modals/TopProfitProductsModal';
 import styles from '../../assets/styles/seller/Dashboard.module.css';
 
-const ACTION_ITEMS = [
+const EXPENSE_TYPE_TO_I18N = {
+  'Goods Value (PO)': 'goodsValuePo',
+  'Buying Service Fee': 'buyingServiceFee',
+  'Intl Freight (CN→VN)': 'intlFreightCnVn',
+  'Import Tax': 'importTax',
+  'CN Domestic Shipping': 'cnDomesticShipping',
+  'Packaging / Insurance': 'packagingInsurance',
+  'VN Last-Mile (PO→Warehouse)': 'vnLastMilePoWarehouse',
+  'Other Costs': 'otherCosts',
+  'Last-Mile Delivery (Order)': 'lastMileDeliveryOrder',
+};
+
+const translateExpenseType = (type, t) => {
+  const subKey = EXPENSE_TYPE_TO_I18N[type];
+  if (!subKey) {
+    return type;
+  }
+  return t(`sellerDashboard.expense.types.${subKey}`, type);
+};
+
+const ACTION_ITEMS = (t) => [
   {
     key: 'pending',
-    label: 'Đơn chờ xác nhận',
-    sub: 'Cần xác nhận trước khi xử lý',
+    label: t('sellerDashboard.actionCenter.pending', 'Đơn chờ xác nhận'),
+    sub: t('sellerDashboard.actionCenter.pendingSub', 'Cần xác nhận trước khi xử lý'),
     icon: ShoppingBag,
     color: '#1677ff',
     bg: '#eff6ff',
@@ -47,8 +69,8 @@ const ACTION_ITEMS = [
   },
   {
     key: 'toShip',
-    label: 'Chờ đóng gói / giao ĐVVC',
-    sub: 'Cần đóng gói và bàn giao',
+    label: t('sellerDashboard.actionCenter.toShip', 'Chờ đóng gói / giao ĐVVC'),
+    sub: t('sellerDashboard.actionCenter.toShipSub', 'Cần đóng gói và bàn giao'),
     icon: PackageOpen,
     color: '#fa8c16',
     bg: '#fff7e6',
@@ -57,8 +79,8 @@ const ACTION_ITEMS = [
   },
   {
     key: 'cancelOrReturn',
-    label: 'Yêu cầu hủy / hoàn trả',
-    sub: 'Cần phản hồi trong 24h',
+    label: t('sellerDashboard.actionCenter.cancelOrReturn', 'Yêu cầu hủy / hoàn trả'),
+    sub: t('sellerDashboard.actionCenter.cancelOrReturnSub', 'Cần phản hồi trong 24h'),
     icon: Repeat,
     color: '#f5222d',
     bg: '#fff1f0',
@@ -67,8 +89,8 @@ const ACTION_ITEMS = [
   },
   {
     key: 'unreadMessages',
-    label: 'Tin nhắn chưa đọc',
-    sub: 'Phản hồi khách hàng',
+    label: t('sellerDashboard.actionCenter.unreadMessages', 'Tin nhắn chưa đọc'),
+    sub: t('sellerDashboard.actionCenter.unreadMessagesSub', 'Phản hồi khách hàng'),
     icon: AlertTriangle,
     color: '#722ed1',
     bg: '#f9f0ff',
@@ -94,13 +116,13 @@ const CATEGORY_CHART_COLORS = [
   '#722ed1', '#13c2c2', '#faad14', '#eb2f96',
 ];
 
-const CATEGORY_PERIOD_LABELS = {
-  daily: '30 ngày gần nhất',
-  weekly: '13 tuần gần nhất',
-  monthly: '12 tháng gần nhất',
-  quarterly: '4 quý gần nhất',
-  yearly: '5 năm gần nhất',
-};
+const getCategoryPeriodLabels = (t) => ({
+  daily:     t('sellerDashboard.period.daily', '30 ngày gần nhất'),
+  weekly:    t('sellerDashboard.period.weekly', '13 tuần gần nhất'),
+  monthly:   t('sellerDashboard.period.monthly', '12 tháng gần nhất'),
+  quarterly: t('sellerDashboard.period.quarterly', '4 quý gần nhất'),
+  yearly:    t('sellerDashboard.period.yearly', '5 năm gần nhất'),
+});
 
 // ─── Skeleton: Action Card ──────────────────────────────────────────────────
 const SkeletonActionCard = () => (
@@ -210,26 +232,30 @@ StatCard.propTypes = {
 };
 
 // ─── Greeting Helper ────────────────────────────────────────────────────────
-const getGreeting = () => {
+const getGreeting = (t) => {
   const hour = new Date().getHours();
   if (hour < 12) {
-    return 'Chào buổi sáng';
+    return t('sellerDashboard.greeting.morning', 'Chào buổi sáng');
   }
   if (hour < 18) {
-    return 'Chào buổi chiều';
+    return t('sellerDashboard.greeting.afternoon', 'Chào buổi chiều');
   }
-  return 'Chào buổi tối';
+  return t('sellerDashboard.greeting.evening', 'Chào buổi tối');
 };
 
-const getFormattedDate = () => new Date().toLocaleDateString('vi-VN', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
+const getFormattedDate = () => {
+  const lang = i18n.language;
+  const localeMap = { vi: 'vi-VN', en: 'en-US' };
+  const locale = localeMap[lang] || 'vi-VN';
+  const options = lang === 'vi'
+    ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+    : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  return new Date().toLocaleDateString(locale, options);
+};
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 const SellerDashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // ── Loading states ──
@@ -289,7 +315,7 @@ const SellerDashboard = () => {
         if (typeof rate === 'number') {
           setExchangeRate({
             cnyToVnd: rate,
-            lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            updatedAt: new Date(),
           });
         } else {
           setExchangeRate(null);
@@ -463,8 +489,8 @@ const SellerDashboard = () => {
       .getProductAnalyticsByCategory({ period: categoryPeriod })
       .then((res) => {
         if (cancelled) {
-return;
-}
+          return;
+        }
         const payload = res?.data;
         setCategoryAnalytics(
           payload && typeof payload === 'object' && !Array.isArray(payload)
@@ -474,12 +500,12 @@ return;
       })
       .finally(() => {
         if (!cancelled) {
-setCategoryLoading(false);
-}
+          setCategoryLoading(false);
+        }
       });
     return () => {
- cancelled = true; 
-};
+      cancelled = true;
+    };
   }, [categoryPeriod]);
 
   // ── Derived: revenue trend KPI ──
@@ -497,14 +523,14 @@ setCategoryLoading(false);
 
   const periodFromLabel = useMemo(() => {
     const map = {
-      daily:     'so với 30 ngày trước',
-      weekly:    'so với 13 tuần trước',
-      monthly:   'so với 12 tháng trước',
-      quarterly: 'so với 4 quý trước',
-      yearly:    'so với 5 năm trước',
+      daily:     t('sellerDashboard.periodCompare.daily', 'so với 30 ngày trước'),
+      weekly:    t('sellerDashboard.periodCompare.weekly', 'so với 13 tuần trước'),
+      monthly:   t('sellerDashboard.periodCompare.monthly', 'so với 12 tháng trước'),
+      quarterly: t('sellerDashboard.periodCompare.quarterly', 'so với 4 quý trước'),
+      yearly:    t('sellerDashboard.periodCompare.yearly', 'so với 5 năm trước'),
     };
-    return map[trendPeriod] ?? 'so với kỳ trước';
-  }, [trendPeriod]);
+    return map[trendPeriod] ?? t('sellerDashboard.stats.vsPeriod', 'so với kỳ trước');
+  }, [trendPeriod, t]);
 
   // ── Derived: expense pie ──
   const expensePieSlices = useMemo(() => {
@@ -512,12 +538,12 @@ setCategoryLoading(false);
       return [];
     }
     return expense.breakdownByType.map((x) => ({
-      name: x.type,
+      name: translateExpenseType(x.type, t),
       value: Number(x.amount) || 0,
       type: x.type,
       color: EXPENSE_COLORS[x.type] ?? '#d9d9d9',
     }));
-  }, [expense]);
+  }, [expense, t]);
 
   // ── Derived: comparison KPIs ──
   const comparisonKpis = useMemo(() => {
@@ -577,30 +603,38 @@ setCategoryLoading(false);
     Object.values(todoCounts).filter((v) => typeof v === 'number' && v > 0).length,
   [todoCounts]);
 
+  // ── Action items with i18n ──
+  const actionItems = useMemo(() => ACTION_ITEMS(t), [t]);
+
+  // ── Category period labels with i18n ──
+  const categoryPeriodLabels = useMemo(() => getCategoryPeriodLabels(t), [t]);
+
+  const numberLocale = i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN';
+
   // ─── Top profit products columns ──
-  const topProfitColumns = [
+  const topProfitColumns = useMemo(() => [
     {
-      title: 'Sản phẩm',
+      title: t('sellerDashboard.topProducts.product', 'Sản phẩm'),
       dataIndex: 'productName',
       key: 'productName',
       render: (text) => <span className={styles.productNameCell}>{text}</span>,
     },
     {
-      title: 'Đã bán',
+      title: t('sellerDashboard.topProducts.sold', 'Đã bán'),
       dataIndex: 'soldQty',
       key: 'soldQty',
       width: 90,
-      render: (v) => Number(v).toLocaleString('vi-VN'),
+      render: (v) => Number(v).toLocaleString(numberLocale),
     },
     {
-      title: 'Doanh thu',
+      title: t('sellerDashboard.topProducts.revenue', 'Doanh thu'),
       dataIndex: 'netSales',
       key: 'netSales',
       render: (value) => formatCurrency(value),
       width: 140,
     },
     {
-      title: 'Lợi nhuận',
+      title: t('sellerDashboard.topProducts.profit', 'Lợi nhuận'),
       dataIndex: 'profit',
       key: 'profit',
       render: (value) => {
@@ -614,13 +648,13 @@ setCategoryLoading(false);
       width: 140,
     },
     {
-      title: 'Margin',
+      title: t('sellerDashboard.topProducts.margin', 'Margin'),
       dataIndex: 'margin',
       key: 'margin',
       width: 80,
       render: (v) => <span className={styles.marginCell}>{v}</span>,
     },
-  ];
+  ], [t, numberLocale]);
 
   // ─── Expense legend items ──
   const renderExpenseLegend = () => (
@@ -638,16 +672,16 @@ setCategoryLoading(false);
   // ── Derived: category chart data (pie slices + stable keys for a11y) ──
   const categoryChartData = useMemo(() => {
     if (!Array.isArray(categoryAnalytics?.categories)) {
-return [];
-}
+      return [];
+    }
     return categoryAnalytics.categories.map((cat, idx) => ({
       rowKey: cat._id != null ? String(cat._id) : `cat-${idx}`,
-      categoryName: cat.categoryName || 'Không phân loại',
+      categoryName: cat.categoryName || t('sellerDashboard.lowStock.uncategorized', 'Không phân loại'),
       totalRevenue: Number(cat.totalRevenue) || 0,
       revenuePercent: typeof cat.revenuePercent === 'number' ? cat.revenuePercent : 0,
       color: CATEGORY_CHART_COLORS[idx % CATEGORY_CHART_COLORS.length],
     }));
-  }, [categoryAnalytics]);
+  }, [categoryAnalytics, t]);
 
   const renderCategoryLegend = () => (
     <div className={styles.pieLegend}>
@@ -656,7 +690,7 @@ return [];
           key={s.rowKey}
           className={styles.pieLegendItem}
           style={{ background: `${s.color}14` }}
-          title={`${s.categoryName} — ${s.revenuePercent}% doanh thu kỳ`}
+          title={t('sellerDashboard.category.legendTooltip', '{{name}} — {{percent}}% period revenue', { name: s.categoryName, percent: s.revenuePercent })}
         >
           <span className={styles.pieLegendDot} style={{ background: s.color }} />
           <span style={{ color: '#334155' }}>
@@ -681,8 +715,8 @@ return [];
         >
           <div className={styles.headerInner}>
             <div className={styles.headerLeft}>
-              <span className={styles.headerGreeting}>{getGreeting()}</span>
-              <h1 className={styles.headerTitle}>Dashboard</h1>
+              <span className={styles.headerGreeting}>{getGreeting(t)}</span>
+              <h1 className={styles.headerTitle}>{t('sellerDashboard.title', 'Dashboard')}</h1>
             </div>
             <div className={styles.headerRight}>
               {exchangeRate && (
@@ -691,13 +725,16 @@ return [];
                     <ArrowRightLeft size={16} color="#d97706" />
                   </div>
                   <div className={styles.xrBannerInfo}>
-                    <span className={styles.xrBannerLabel}>Tỷ giá CNY / VND</span>
+                    <span className={styles.xrBannerLabel}>{t('sellerDashboard.exchangeRate.label', 'Tỷ giá CNY / VND')}</span>
                     <span className={styles.xrBannerRate}>
-                      <strong>1 CNY = {Math.round(exchangeRate.cnyToVnd).toLocaleString('vi-VN')}</strong>
-                      VND
+                      <strong>1 CNY = {Math.round(exchangeRate.cnyToVnd).toLocaleString(numberLocale)}</strong>
+                      {' '}
+                      {t('sellerDashboard.exchangeRate.vndUnit', 'VND')}
                     </span>
                     <span className={styles.xrBannerUpdated}>
-                      Cập nhật: {exchangeRate.lastUpdated}
+                      {t('sellerDashboard.exchangeRate.updated', 'Cập nhật: {{time}}', {
+                        time: (exchangeRate.updatedAt instanceof Date ? exchangeRate.updatedAt : new Date()).toLocaleTimeString(numberLocale, { hour: '2-digit', minute: '2-digit' }),
+                      })}
                     </span>
                   </div>
                 </div>
@@ -714,7 +751,7 @@ return [];
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleRow}>
               <AlertTriangle size={16} color="#fa8c16" />
-              <span className={styles.sectionTitle}>Việc cần làm hôm nay</span>
+              <span className={styles.sectionTitle}>{t('sellerDashboard.actionCenter.title', 'Việc cần làm hôm nay')}</span>
               {activeTasksCount > 0 && (
                 <span className={styles.sectionBadge}>{activeTasksCount}</span>
               )}
@@ -728,7 +765,7 @@ return [];
               </div>
             ) : (
               <div className={styles.actionCardsGrid}>
-                {ACTION_ITEMS.map((item) => (
+                {actionItems.map((item) => (
                   <ActionCard
                     key={item.key}
                     item={item}
@@ -762,7 +799,7 @@ return [];
             <div className={styles.statCardsGrid}>
               <StatCard
                 icon={TrendingUp}
-                label="Doanh thu kỳ này"
+                label={t('sellerDashboard.stats.revenue', 'Doanh thu kỳ này')}
                 value={formatCurrency(chartPeriodRevenue)}
                 trend={`${trendGrowth >= 0 ? '+' : ''}${trendGrowth}%`}
                 trendUp={trendGrowth >= 0}
@@ -772,9 +809,9 @@ return [];
               />
               <StatCard
                 icon={ShoppingCart}
-                label="Đơn hàng kỳ này"
+                label={t('sellerDashboard.stats.orders', 'Đơn hàng kỳ này')}
                 value={comparison?.currentPeriod?.orders != null
-                  ? Number(comparison.currentPeriod.orders).toLocaleString('vi-VN')
+                  ? Number(comparison.currentPeriod.orders).toLocaleString(numberLocale)
                   : '—'}
                 trend={`${comparisonKpis.ordersGrowth >= 0 ? '+' : ''}${comparisonKpis.ordersGrowth}%`}
                 trendUp={comparisonKpis.ordersGrowth >= 0}
@@ -784,7 +821,7 @@ return [];
               />
               <StatCard
                 icon={DollarSign}
-                label="Giá trị TB / đơn"
+                label={t('sellerDashboard.stats.aov', 'Giá trị TB / đơn')}
                 value={comparisonKpis.avgOrderValue != null
                   ? formatCurrency(comparisonKpis.avgOrderValue)
                   : '—'}
@@ -796,7 +833,7 @@ return [];
               />
               <StatCard
                 icon={Percent}
-                label="Tổng lợi nhuận"
+                label={t('sellerDashboard.stats.profit', 'Tổng lợi nhuận')}
                 value={
                   comparison?.currentPeriod && typeof comparison.currentPeriod.profit === 'number'
                     ? formatCurrency(comparison.currentPeriod.profit)
@@ -822,7 +859,7 @@ return [];
           <div className={`${styles.sectionHeader} ${styles.lowStockSectionHeader}`}>
             <div className={styles.sectionTitleRow}>
               <AlertTriangle size={16} color="#fa8c16" />
-              <span className={styles.sectionTitle}>Cảnh báo sắp hết hàng</span>
+              <span className={styles.sectionTitle}>{t('sellerDashboard.lowStock.title', 'Cảnh báo sắp hết hàng')}</span>
               {lowStock.length > 0 && (
                 <span className={styles.sectionBadge}>{lowStock.length}</span>
               )}
@@ -838,7 +875,7 @@ return [];
                 }
               }}
             >
-              Tạo PO mới
+              {t('sellerDashboard.lowStock.createPO', 'Tạo PO mới')}
             </Button>
           </div>
           <div className={styles.sectionBody}>
@@ -881,7 +918,7 @@ return [];
                         <div className={styles.lowStockNameRow}>
                           <span className={styles.lowStockName}>{p?.name ?? '—'}</span>
                           {isCritical && (
-                            <span className={styles.lowStockCriticalTag}>Nguy hiểm</span>
+                            <span className={styles.lowStockCriticalTag}>{t('sellerDashboard.lowStock.danger', 'Nguy hiểm')}</span>
                           )}
                         </div>
                         <div className={styles.lowStockSku}>SKU: {sku ?? '—'}</div>
@@ -894,7 +931,7 @@ return [];
                         />
                         <div className={styles.lowStockFooter}>
                           <span className={styles.lowStockStock}>
-                            {currentStock} / {safetyStock} sản phẩm
+                            {t('sellerDashboard.lowStock.stockLeft', '{{current}} / {{safety}} sản phẩm', { current: currentStock, safety: safetyStock })}
                           </span>
                           <Button
                             type="primary"
@@ -905,7 +942,7 @@ return [];
                               navigate(`/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(p))}`);
                             }}
                           >
-                            Lên PO
+                            {t('sellerDashboard.lowStock.createPOBtn', 'Lên PO')}
                           </Button>
                         </div>
                       </div>
@@ -918,7 +955,7 @@ return [];
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <p>Tất cả sản phẩm đều có đủ hàng trong kho</p>
+                <p>{t('sellerDashboard.lowStock.allStockOk', 'Tất cả sản phẩm đều có đủ hàng trong kho')}</p>
               </div>
             )}
           </div>
@@ -935,9 +972,9 @@ return [];
               <div className={styles.erpSectionTitleRow}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" strokeWidth="2">
                   <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20.488 15H12a9 9 0 010 18h8.488a9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span className={styles.erpSectionTitle}>Phân tích chi phí</span>
+                <span className={styles.erpSectionTitle}>{t('sellerDashboard.expense.title', 'Phân tích chi phí')}</span>
                 {expense?.period && (
                   <span className={styles.erpSectionSub}>— {expense.period}</span>
                 )}
@@ -947,10 +984,10 @@ return [];
                 value={expensePeriod}
                 onChange={(val) => setExpensePeriod(val)}
                 options={[
-                  { label: 'Tuần', value: 'daily' },
-                  { label: 'Tháng', value: 'monthly' },
-                  { label: 'Quý', value: 'quarterly' },
-                  { label: 'Năm', value: 'yearly' },
+                  { label: t('sellerDashboard.segmented.week', 'Tuần'), value: 'daily' },
+                  { label: t('sellerDashboard.segmented.month', 'Tháng'), value: 'monthly' },
+                  { label: t('sellerDashboard.segmented.quarter', 'Quý'), value: 'quarterly' },
+                  { label: t('sellerDashboard.segmented.year', 'Năm'), value: 'yearly' },
                 ]}
               />
             </div>
@@ -980,14 +1017,14 @@ return [];
                   </ResponsiveContainer>
                 ) : (
                   <div className={styles.emptyState}>
-                    <p>Không có dữ liệu chi phí</p>
+                    <p>{t('sellerDashboard.expense.noData', 'Không có dữ liệu chi phí')}</p>
                   </div>
                 )}
               </div>
               {expensePieSlices.length > 0 && renderExpenseLegend()}
               {expense?.poDetail?.poCount > 0 && (
                 <span className={styles.pieSourceNote}>
-                  Nguồn: {expense.poDetail.poCount} PO đã hoàn thành
+                  {t('sellerDashboard.expense.source', 'Nguồn: {{count}} PO đã hoàn thành', { count: expense.poDetail.poCount })}
                 </span>
               )}
             </div>
@@ -1003,14 +1040,14 @@ return [];
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" strokeWidth="2">
                   <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span className={styles.erpSectionTitle}>Top sản phẩm lợi nhuận cao</span>
+                <span className={styles.erpSectionTitle}>{t('sellerDashboard.topProducts.title', 'Top sản phẩm lợi nhuận cao')}</span>
               </div>
               <Button
                 type="link"
                 onClick={() => setTopProfitProductsModalOpen(true)}
                 style={{ padding: 0, height: 'auto', fontSize: '0.8125rem' }}
               >
-                Xem tất cả
+                {t('sellerDashboard.topProducts.viewAll', 'Xem tất cả')}
               </Button>
             </div>
             <div className={styles.erpSectionBody}>
@@ -1036,11 +1073,11 @@ return [];
               <div className={styles.erpSectionTitleRow}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" strokeWidth="2">
                   <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20.488 15H12a9 9 0 010 18h8.488a9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span className={styles.erpSectionTitle}>Phân tích sản phẩm theo danh mục</span>
+                <span className={styles.erpSectionTitle}>{t('sellerDashboard.category.title', 'Phân tích sản phẩm theo danh mục')}</span>
                 <span className={styles.erpSectionSub}>
-                  — {CATEGORY_PERIOD_LABELS[categoryPeriod] ?? categoryPeriod}
+                  — {categoryPeriodLabels[categoryPeriod] ?? categoryPeriod}
                 </span>
               </div>
               <Segmented
@@ -1048,10 +1085,10 @@ return [];
                 value={categoryPeriod}
                 onChange={(val) => setCategoryPeriod(val)}
                 options={[
-                  { label: 'Tuần', value: 'daily' },
-                  { label: 'Tháng', value: 'monthly' },
-                  { label: 'Quý', value: 'quarterly' },
-                  { label: 'Năm', value: 'yearly' },
+                  { label: t('sellerDashboard.segmented.week', 'Tuần'), value: 'daily' },
+                  { label: t('sellerDashboard.segmented.month', 'Tháng'), value: 'monthly' },
+                  { label: t('sellerDashboard.segmented.quarter', 'Quý'), value: 'quarterly' },
+                  { label: t('sellerDashboard.segmented.year', 'Năm'), value: 'yearly' },
                 ]}
               />
             </div>
@@ -1083,16 +1120,16 @@ return [];
                   </div>
                   {renderCategoryLegend()}
                   <span className={styles.pieSourceNote}>
-                    Nguồn: doanh thu theo danh mục — {categoryChartData.length} danh mục trong kỳ
+                    {t('sellerDashboard.category.source', 'Nguồn: doanh thu theo danh mục — {{count}} danh mục trong kỳ', { count: categoryChartData.length })}
                   </span>
                 </>
               ) : (
                 <div className={styles.emptyState}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
                     <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M20.488 15H12a9 9 0 010 18h8.488a9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <p>Không có dữ liệu phân tích theo danh mục</p>
+                  <p>{t('sellerDashboard.category.noData', 'Không có dữ liệu phân tích theo danh mục')}</p>
                 </div>
               )}
             </div>

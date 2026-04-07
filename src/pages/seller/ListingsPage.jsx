@@ -26,7 +26,7 @@ const STATUS_MAP = {
   out_of_stock: { label: 'Out of Stock', cls: styles.badgeOutOfStock },
 };
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 /* ─────────────────────────────────────────────────────────────────── */
 const ListingsPage = () => {

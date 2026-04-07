@@ -11,6 +11,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { PlusOutlined } from '@ant-design/icons';
 import PageTransition from '@components/common/PageTransition';
@@ -104,6 +105,7 @@ function ImageListEditor({
   linkOptions,
   aspectRatio,
 }) {
+  const { t } = useTranslation();
   const [cropEditingIndex, setCropEditingIndex] = useState(null);
   const [openPicker, setOpenPicker] = useState({ type: null, index: null });
   const [products, setProducts] = useState([]);
@@ -146,11 +148,11 @@ input.click();
 
   const handleAddImage = useCallback(() => {
     if (images.length >= maxItems) {
-      toast.warning(`Maximum ${maxItems} images.`);
+      toast.warning(t('shopDecoration.maxImages', { max: maxItems }));
       return;
     }
     onChange([...images, { url: '', link: '' }]);
-  }, [images, maxItems, onChange]);
+  }, [images, maxItems, onChange, t]);
 
   const handleRemoveImage = useCallback(
     (index) => {
@@ -184,13 +186,13 @@ return;
   );
 
   const PRESET_LINKS = [
-    { value: '', label: 'Select path from...(Custom)' },
-    { value: '__product__', label: 'Product page' },
-    { value: '__category__', label: 'Category in Shop' },
-    { value: '__custom__', label: 'Link / Redirect' },
-    { value: '__combo__', label: 'Promotion Combo' },
-    { value: '__voucher__', label: 'Discount code' },
-    { value: '__addon__', label: 'Add-on Deal' },
+    { value: '', label: t('shopDecoration.selectItem') },
+    { value: '__product__', label: t('productPicker.title') },
+    { value: '__category__', label: t('categoryPicker.title') },
+    { value: '__custom__', label: t('shopDecoration.enterUrl') },
+    { value: '__combo__', label: t('comboPicker.title') },
+    { value: '__voucher__', label: t('voucherPicker.title') },
+    { value: '__addon__', label: t('addonPicker.title') },
   ];
   const opts = linkOptions || PRESET_LINKS;
 
@@ -503,7 +505,7 @@ categoryIdsWithProducts.add(String(cat));
                 onClick={() => handleMoveUp(index)}
                 disabled={index === 0}
                 title="Move up"
-                aria-label="Move up"
+                aria-label={t('shopDecoration.moveUp')}
               >
                 <i className="bi bi-chevron-up" />
               </button>
@@ -513,7 +515,7 @@ categoryIdsWithProducts.add(String(cat));
                 onClick={() => handleMoveDown(index)}
                 disabled={index === images.length - 1}
                 title="Move down"
-                aria-label="Move down"
+                aria-label={t('shopDecoration.moveDown')}
               >
                 <i className="bi bi-chevron-down" />
               </button>
@@ -526,7 +528,7 @@ categoryIdsWithProducts.add(String(cat));
                     type="button"
                     className={styles.bannerCardEditBtn}
                     onClick={() => setCropEditingIndex(index)}
-                    title="Edit"
+                    title={t('shopDecoration.edit')}
                   >
                     <i className="bi bi-pencil" />
                     <span>Edit</span>
@@ -635,7 +637,7 @@ categoryIdsWithProducts.add(String(cat));
                       }
                     }}
                   >
-                    <span>{img.linkName || 'Select item...'}</span>
+                    <span>{img.linkName || t('productPicker.selectItem')}</span>
                     <i className="bi bi-chevron-up" />
                   </div>
                 )}
@@ -645,7 +647,7 @@ categoryIdsWithProducts.add(String(cat));
                     className={styles.imageListLink}
                     value={typeof img.link === 'string' ? img.link : ''}
                     onChange={(e) => handleLinkChange(index, e.target.value)}
-                    placeholder="Enter URL (e.g., /category/shirt)"
+                    placeholder={t('shopDecoration.enterUrl')}
                   />
                 )}
               </div>
@@ -758,21 +760,21 @@ function DiscountModuleConfig({ module, onUpdate }) {
     <>
       {/* ── Discount source ── */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Voucher source</label>
+        <label className={styles.formLabel}>{t('shopDecoration.moduleLabels.voucherSource')}</label>
         <div className={styles.toggleGroup}>
           <button
             type="button"
             className={`${styles.toggleBtn} ${isAuto ? styles.toggleBtnActive : ''}`}
             onClick={() => update({ ...props, source: 'auto', voucherIds: [] })}
           >
-            <i className="bi bi-magic" /> Auto
+            <i className="bi bi-magic" /> {t('shopDecoration.moduleLabels.auto')}
           </button>
           <button
             type="button"
             className={`${styles.toggleBtn} ${!isAuto ? styles.toggleBtnActive : ''}`}
             onClick={() => update({ ...props, source: 'manual' })}
           >
-            <i className="bi bi-hand-index-thumb" /> Manual
+            <i className="bi bi-hand-index-thumb" /> {t('shopDecoration.moduleLabels.manual')}
           </button>
         </div>
       </div>
@@ -783,11 +785,11 @@ function DiscountModuleConfig({ module, onUpdate }) {
           <div className={styles.formGroup}>
             <p className={styles.hintText}>
               <i className="bi bi-robot" />
-              System automatically displays active vouchers for the shop.
+              {t('shopDecoration.moduleLabels.systemAutoNote')}
             </p>
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Maximum vouchers to display</label>
+            <label className={styles.formLabel}>{t('shopDecoration.moduleLabels.maxVouchers')}</label>
             <input
               type="number"
               className={styles.formInput}
@@ -806,12 +808,12 @@ function DiscountModuleConfig({ module, onUpdate }) {
           <div className={styles.formGroup}>
             <p className={styles.hintText}>
               <i className="bi bi-ticket-perforated" />
-              Select active vouchers from Marketing Channel. Maximum 5 vouchers.
+              {t('shopDecoration.moduleLabels.manualNote')}
             </p>
           </div>
           <div className={styles.formGroup}>
             <span className={styles.configSectionLabel}>
-              Selected vouchers ({(props.voucherIds || []).length}/5)
+              {t('shopDecoration.moduleLabels.selectedVouchers', { count: (props.voucherIds || []).length })}
             </span>
             {(props.voucherIds || []).map((vid, i) => {
               // Get voucher code from flat mapping object, fallback to ID
@@ -845,7 +847,7 @@ function DiscountModuleConfig({ module, onUpdate }) {
               className={styles.addImageBtn}
               onClick={() => setShowPicker(true)}
             >
-              <PlusOutlined /> Select vouchers
+              <PlusOutlined /> {t('shopDecoration.moduleLabels.selectVouchers')}
             </button>
           </div>
         </>
@@ -865,6 +867,7 @@ function DiscountModuleConfig({ module, onUpdate }) {
 // ─── Right Panel: Module Config ───────────────────────────────────────────────
 
 function ModuleConfigPanel({ module, onUpdate, onDelete }) {
+  const { t } = useTranslation();
   const { type, props = {}, isEnabled = true } = module || {};
   const [showHotspotEditor, setShowHotspotEditor] = useState(false);
 
@@ -892,17 +895,17 @@ return;
     return (
       <div className={styles.rightPanel}>
         <div className={styles.rightHeader}>
-          <h3 className={styles.rightTitle}>Module Configuration</h3>
-          <p className={styles.rightSubtitle}>Select a module to configure</p>
+          <h3 className={styles.rightTitle}>{t('shopDecoration.rightPanel.moduleConfigTitle')}</h3>
+          <p className={styles.rightSubtitle}>{t('shopDecoration.rightPanel.selectModuleHint')}</p>
         </div>
         <div className={styles.emptyState}>
           <i
             className="bi bi-cursor-fill"
             style={{ fontSize: 28, display: 'block', marginBottom: 8 }}
           />
-          Select a module in canvas to edit
+          {t('shopDecoration.rightPanel.selectModuleHint')}
           <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 8 }}>
-            Hoặc click vào ảnh bìa phía trên để đổi ảnh bìa shop
+            {t('shopDecoration.rightPanel.selectModuleHint2')}
           </p>
         </div>
       </div>
@@ -918,16 +921,16 @@ return;
   ].includes(type);
 
   return (
-    <div className={styles.rightPanel}>
-      <div className={styles.rightHeader}>
-        <h3 className={styles.rightTitle}>Module Configuration</h3>
-        <p className={styles.rightSubtitle}>{MODULE_LABELS[type]}</p>
-      </div>
-      <div className={styles.rightDesc}>
-        {isAutoWidget
-          ? 'Content is automatically fetched from the system. Just configure the display settings.'
-          : 'Set up content for this module.'}
-      </div>
+      <div className={styles.rightPanel}>
+        <div className={styles.rightHeader}>
+          <h3 className={styles.rightTitle}>{t('shopDecoration.rightPanel.moduleConfigTitle')}</h3>
+          <p className={styles.rightSubtitle}>{MODULE_LABELS[type]}</p>
+        </div>
+        <div className={styles.rightDesc}>
+          {isAutoWidget
+            ? t('shopDecoration.rightPanel.autoWidgetNote')
+            : t('shopDecoration.rightPanel.manualWidgetNote')}
+        </div>
 
       <div className={styles.configForm}>
         {/* Mandatory modules notice */}
@@ -935,8 +938,7 @@ return;
           <div className={styles.formGroup}>
             <p className={styles.hintText}>
               <i className="bi bi-info-circle" />
-              This is a mandatory module that always appears first and cannot be removed or
-              modified.
+              {t('shopDecoration.rightPanel.mandatoryNotice')}
             </p>
           </div>
         )}
@@ -950,7 +952,7 @@ return;
                 checked={!!isEnabled}
                 onChange={(e) => update({ isEnabled: e.target.checked })}
               />{' '}
-              Show on homepage
+              {t('shopDecoration.rightPanel.showOnHomepage')}
             </label>
           </div>
         )}
@@ -964,22 +966,22 @@ return;
         {[MODULE_TYPES.TEXT, MODULE_TYPES.IMAGE_TEXT].includes(type) && (
           <>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Title</label>
+              <label className={styles.formLabel}>{t('shopDecoration.title')}</label>
               <input
                 type="text"
                 className={styles.formInput}
                 value={props.title || ''}
                 onChange={(e) => updateProps({ title: e.target.value })}
-                placeholder="Enter title..."
+                placeholder={t('shopDecoration.enterTitle')}
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Content</label>
+              <label className={styles.formLabel}>{t('shopDecoration.content')}</label>
               <textarea
                 className={styles.formTextarea}
                 value={props.content || ''}
                 onChange={(e) => updateProps({ content: e.target.value })}
-                placeholder="Enter content..."
+                placeholder={t('shopDecoration.enterContent')}
               />
             </div>
           </>
@@ -988,7 +990,7 @@ return;
         {/* ── Aspect Ratio for IMAGE_TEXT ── */}
         {type === MODULE_TYPES.IMAGE_TEXT && (
           <div className={styles.formGroup}>
-            <span className={styles.configSectionLabel}>Aspect ratio</span>
+            <span className={styles.configSectionLabel}>{t('shopDecoration.aspectRatio')}</span>
             <div className={styles.aspectRatioGroup}>
               {[
                 { value: '1:1', label: '1:1' },
@@ -1018,23 +1020,23 @@ return;
                 ? [{ url: props.image, link: props.link || '' }]
                 : [];
             return (
-              <ImageListEditor
-                images={imgs}
-                onChange={(newImgs) => {
-                  updateProps({ images: newImgs, image: undefined, link: undefined });
-                }}
-                maxItems={1}
-                aspectRatio="16:6"
-                addButtonLabel="Upload image"
-                linkOptions={[
-                  { value: '', label: 'Select path...' },
-                  { value: '/', label: 'Home' },
-                  { value: '/products', label: 'Products' },
-                  { value: '/categories', label: 'Categories' },
-                  { value: '/about', label: 'About' },
-                  { value: '__custom__', label: 'Custom (enter URL)' },
-                ]}
-              />
+                <ImageListEditor
+                  images={imgs}
+                  onChange={(newImgs) => {
+                    updateProps({ images: newImgs, image: undefined, link: undefined });
+                  }}
+                  maxItems={1}
+                  aspectRatio="16:6"
+                  addButtonLabel={t('shopDecoration.uploadImage')}
+                  linkOptions={[
+                    { value: '', label: 'Select path...' },
+                    { value: '/', label: 'Home' },
+                    { value: '/products', label: 'Products' },
+                    { value: '/categories', label: 'Categories' },
+                    { value: '/about', label: 'About' },
+                    { value: '__custom__', label: 'Custom (enter URL)' },
+                  ]}
+                />
             );
           })()}
 
@@ -1047,22 +1049,22 @@ return;
                 ? [{ url: props.image, link: props.link || '' }]
                 : [];
             return (
-              <ImageListEditor
-                images={imgs}
-                onChange={(newImgs) => {
-                  updateProps({ images: newImgs, image: undefined, link: undefined });
-                }}
-                maxItems={1}
-                aspectRatio={props.aspectRatio || '1:1'}
-                addButtonLabel="Upload image"
-                linkOptions={[
-                  { value: '', label: 'Select path...' },
-                  { value: '/', label: 'Home' },
-                  { value: '/products', label: 'Products' },
-                  { value: '/categories', label: 'Categories' },
-                  { value: '__custom__', label: 'Custom (enter URL)' },
-                ]}
-              />
+                <ImageListEditor
+                  images={imgs}
+                  onChange={(newImgs) => {
+                    updateProps({ images: newImgs, image: undefined, link: undefined });
+                  }}
+                  maxItems={1}
+                  aspectRatio={props.aspectRatio || '1:1'}
+                  addButtonLabel={t('shopDecoration.uploadImage')}
+                  linkOptions={[
+                    { value: '', label: 'Select path...' },
+                    { value: '/', label: 'Home' },
+                    { value: '/products', label: 'Products' },
+                    { value: '/categories', label: 'Categories' },
+                    { value: '__custom__', label: 'Custom (enter URL)' },
+                  ]}
+                />
             );
           })()}
 
@@ -1071,24 +1073,24 @@ return;
           <>
             <div className={styles.uploadRequirements}>
               <span className={styles.uploadRequirementsTitle}>
-                <i className="bi bi-camera" /> Image specifications
+                <i className="bi bi-camera" /> {t('shopDecoration.imageSpecs.title')}
               </span>
               <ul className={styles.uploadRequirementsList}>
                 <li>
-                  <strong>Image:</strong> ≤2MB, maximum 2000×2000px. Formats: JPG, JPEG, PNG, GIF.
+                  <strong>{t('shopDecoration.title')}:</strong> {t('shopDecoration.imageSpecs.imageDesc')}
                 </li>
                 <li>
-                  <strong>Video:</strong> ≤30MB, maximum 1280×1280px, 10–60 seconds. Format: MP4.
+                  <strong>Video:</strong> {t('shopDecoration.imageSpecs.videoDesc')}
                 </li>
                 <li>
-                  <strong>Quantity:</strong> Maximum 6 images/videos.
+                  <strong>{t('shopDecoration.content')}:</strong> {t('shopDecoration.imageSpecs.quantityDesc', { count: 6 })}
                 </li>
               </ul>
             </div>
 
             {/* Aspect ratio */}
             <div className={styles.formGroup}>
-              <span className={styles.configSectionLabel}>Aspect ratio</span>
+              <span className={styles.configSectionLabel}>{t('shopDecoration.aspectRatio')}</span>
               <div className={styles.aspectRatioGroup}>
                 {[
                   { value: '2:1', label: '2:1' },
@@ -1113,14 +1115,14 @@ return;
               images={props.images || []}
               onChange={(imgs) => updateProps({ images: imgs })}
               maxItems={6}
-              addButtonLabel={`Add image/video (${(props.images || []).length}/6)`}
+              addButtonLabel={t('shopDecoration.addImageVideo', { current: (props.images || []).length, max: 6 })}
               aspectRatio={props.aspectRatio || '2:1'}
             />
 
             {/* Autoplay */}
             <div className={styles.formGroup}>
               <div className={styles.toggleRow}>
-                <span>Auto rotate images</span>
+                <span>{t('shopDecoration.autoRotate')}</span>
                 <div
                   className={`${styles.toggleTrack} ${props.autoplay ? styles.toggleTrackOn : ''}`}
                   onClick={() => updateProps({ autoplay: !props.autoplay })}
@@ -1142,7 +1144,7 @@ return;
                     style={{ width: '100%', marginTop: 8 }}
                   />
                   <span className={styles.hintText}>
-                    Interval: {(props.interval || 4000) / 1000} seconds
+                    {t('shopDecoration.interval', { seconds: (props.interval || 4000) / 1000 })}
                   </span>
                 </>
               )}
@@ -1154,7 +1156,7 @@ return;
         {type === MODULE_TYPES.BANNER_MULTI && (
           <>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Number of columns</label>
+              <label className={styles.formLabel}>{t('shopDecoration.numberOfColumns')}</label>
               <select
                 className={styles.formInput}
                 value={props.columns || 2}
@@ -1169,7 +1171,7 @@ return;
               images={props.images || []}
               onChange={(imgs) => updateProps({ images: imgs })}
               maxItems={props.columns || 2}
-              addButtonLabel={`Add image (${(props.images || []).length}/${props.columns || 2})`}
+              addButtonLabel={t('shopDecoration.addImage', { current: (props.images || []).length, max: props.columns || 2 })}
             />
           </>
         )}
@@ -1191,13 +1193,13 @@ return;
                   }}
                   maxItems={1}
                   aspectRatio="16:7"
-                  addButtonLabel="Upload background image"
+                  addButtonLabel={t('shopDecoration.moduleLabels.uploadBg')}
                 />
 
                 {/* Hotspot status */}
                 <div className={styles.formGroup}>
                   <span className={styles.configSectionLabel}>
-                    Hotspot areas — {(props.hotspots || []).length}/10
+                    {t('shopDecoration.moduleLabels.hotspots', { count: (props.hotspots || []).length })}
                   </span>
                   {(props.hotspots || []).length > 0 ? (
                     <div className={styles.hotspotStatusList}>
@@ -1210,7 +1212,7 @@ return;
                           <span
                             className={`${styles.hotspotLink} ${!h.link ? styles.hotspotLinkMissing : ''}`}
                           >
-                            {h.link ? h.link : '⚠ No link'}
+                            {h.link ? h.link : t('shopDecoration.moduleLabels.noLink')}
                           </span>
                         </div>
                       ))}
@@ -1218,7 +1220,7 @@ return;
                   ) : (
                     <p className={styles.hintText}>
                       <i className="bi bi-info-circle" />
-                      No hotspot areas yet. Click the button below to open the editor.
+                      {t('shopDecoration.moduleLabels.noHotspots')}
                     </p>
                   )}
                 </div>
@@ -1231,11 +1233,11 @@ return;
                   style={{ marginBottom: 8 }}
                 >
                   <i className="bi bi-pin-map" />
-                  {props.hotspots?.length > 0 ? 'Edit Hotspot' : 'Create Hotspot'}
+                  {props.hotspots?.length > 0 ? t('shopDecoration.moduleLabels.editHotspot') : t('shopDecoration.moduleLabels.createHotspot')}
                 </button>
                 {!props.image && (
                   <p className={styles.hintText} style={{ color: '#ef4444' }}>
-                    Please upload background image first
+                    {t('shopDecoration.moduleLabels.uploadBgFirst')}
                   </p>
                 )}
 
@@ -1264,13 +1266,13 @@ return;
         ].includes(type) && (
           <>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Title</label>
+              <label className={styles.formLabel}>{t('shopDecoration.title')}</label>
               <input
                 type="text"
                 className={styles.formInput}
                 value={props.title || ''}
                 onChange={(e) => updateProps({ title: e.target.value })}
-                placeholder="Enter module title..."
+                placeholder={t('shopDecoration.enterTitle')}
               />
             </div>
             <div className={styles.formGroup}>
@@ -1280,7 +1282,7 @@ return;
                   checked={!props.hideTitle}
                   onChange={(e) => updateProps({ hideTitle: !e.target.checked })}
                 />{' '}
-                Show title
+                {t('shopDecoration.showTitle')}
               </label>
             </div>
           </>
@@ -1290,13 +1292,13 @@ return;
         {[MODULE_TYPES.FEATURED_CATEGORIES, MODULE_TYPES.CATEGORY_LIST].includes(type) && (
           <>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Title</label>
+              <label className={styles.formLabel}>{t('shopDecoration.title')}</label>
               <input
                 type="text"
                 className={styles.formInput}
                 value={props.title || ''}
                 onChange={(e) => updateProps({ title: e.target.value })}
-                placeholder="Enter module title..."
+                placeholder={t('shopDecoration.enterTitle')}
               />
             </div>
             <div className={styles.formGroup}>
@@ -1306,7 +1308,7 @@ return;
                   checked={!props.hideTitle}
                   onChange={(e) => updateProps({ hideTitle: !e.target.checked })}
                 />{' '}
-                Show title
+                {t('shopDecoration.showTitle')}
               </label>
             </div>
           </>
@@ -1322,7 +1324,7 @@ return;
               onDelete(module.id);
             }}
           >
-            <i className="bi bi-trash" /> Remove module
+            <i className="bi bi-trash" /> {t('shopDecoration.rightPanel.removeModule')}
           </button>
         </div>
       )}
@@ -1364,8 +1366,8 @@ input.click();
   return (
     <div className={styles.rightPanel}>
       <div className={styles.rightHeader}>
-        <h3 className={styles.rightTitle}>Shop Cover Photo</h3>
-        <p className={styles.rightSubtitle}>Update your shop&apos;s hero banner</p>
+        <h3 className={styles.rightTitle}>{t('shopDecoration.coverPhoto.title')}</h3>
+        <p className={styles.rightSubtitle}>{t('shopDecoration.coverPhoto.subtitle')}</p>
         <button
           type="button"
           onClick={onClose}
@@ -1387,21 +1389,21 @@ input.click();
       <div className={styles.rightScroll}>
         <div className={styles.uploadRequirements}>
           <span className={styles.uploadRequirementsTitle}>
-            <i className="bi bi-camera" /> Image specifications
+            <i className="bi bi-camera" /> {t('shopDecoration.imageSpecs.title')}
           </span>
           <ul className={styles.uploadRequirementsList}>
             <li>
-              <strong>Size:</strong> Recommended 1200×300px (4:1) or wider.
+              <strong>{t('shopDecoration.content')}:</strong> {t('shopDecoration.imageSpecs.coverSize')}
             </li>
             <li>
-              <strong>File:</strong> ≤2MB (JPG, JPEG, PNG).
+              <strong>File:</strong> {t('shopDecoration.imageSpecs.coverFile')}
             </li>
-            <li>Shows at the top of your shop profile across all devices.</li>
+            <li>{t('shopDecoration.imageSpecs.coverNote')}</li>
           </ul>
         </div>
 
         <div className={styles.formGroup} style={{ marginTop: 24 }}>
-          <label className={styles.configSectionLabel}>Current Cover Photo</label>
+          <label className={styles.configSectionLabel}>{t('shopDecoration.coverPhoto.currentCover')}</label>
             <div className={styles.bannerCard} style={{ marginTop: 8 }}>
               <div className={styles.bannerCardMain}>
                 {coverUrl ? (
@@ -1411,17 +1413,17 @@ input.click();
                       type="button"
                       className={styles.bannerCardEditBtn}
                       onClick={() => setCropEditorOpen(true)}
-                      title="Edit"
+                      title={t('shopDecoration.edit')}
                     >
                       <i className="bi bi-pencil" />
-                      <span>Edit</span>
+                      <span>{t('shopDecoration.edit')}</span>
                     </button>
                     <div className={styles.bannerCardToolbar}>
                       <button
                         type="button"
                         className={styles.bannerCardToolbarBtn}
                         onClick={() => setCropEditorOpen(true)}
-                        title="Crop image"
+                        title={t('shopDecoration.crop')}
                       >
                         <i className="bi bi-crop" />
                       </button>
@@ -1429,7 +1431,7 @@ input.click();
                         type="button"
                         className={styles.bannerCardToolbarBtn}
                         onClick={handleChangeImage}
-                        title="Change image"
+                        title={t('shopDecoration.changeImage')}
                       >
                         <i className="bi bi-folder2" />
                       </button>
@@ -1437,7 +1439,7 @@ input.click();
                         type="button"
                         className={`${styles.bannerCardToolbarBtn} text-red-400 border-red-400 hover:text-red-500 hover:border-red-500`}
                         onClick={handleRemove}
-                        title="Delete"
+                        title={t('shopDecoration.delete')}
                       >
                         <i className="bi bi-trash" />
                       </button>
@@ -1452,7 +1454,7 @@ input.click();
                     <CloudinaryUpload
                       value=""
                       onChange={handleUploadSuccess}
-                      hint="Upload Cover"
+                      hint={t('shopDecoration.coverPhoto.uploadCover')}
                       aspectRatio="4:1"
                     />
                   </div>
@@ -1480,6 +1482,7 @@ input.click();
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ShopDecorationPage() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const userId = user?._id;
@@ -1546,11 +1549,11 @@ clearTimeout(autoSaveTimerRef.current);
 return;
 }
         if (selectedModule.isMandatory) {
-          toast.info('This module cannot be removed.');
+          toast.info(t('toast.moduleCannotRemove'));
           return;
         }
         dispatch(removeModule(selectedModule.id));
-        toast.success('Module deleted.');
+        toast.success(t('toast.moduleDeleted'));
       }
       // Escape → Clear selection
       if (e.key === 'Escape') {
@@ -1598,9 +1601,9 @@ return;
   const handleDeleteModule = useCallback(
     (moduleId) => {
       dispatch(removeModule(moduleId));
-      toast.success('Module removed.');
+      toast.success(t('toast.moduleRemoved'));
     },
-    [dispatch]
+    [dispatch, t]
   );
 
   // ── Validate: prevent publish if placeholder images exist ────────────────────
@@ -1628,7 +1631,7 @@ continue;
       if (props.image && placeholderPattern.test(props.image)) {
         return {
           valid: false,
-          message: `Module "${MODULE_LABELS[module.type]}" is still using placeholder images. Please upload real images before publishing.`,
+          message: t('validation.placeholderImages', { name: MODULE_LABELS[module.type] }),
         };
       }
 
@@ -1639,7 +1642,7 @@ continue;
           if (url && placeholderPattern.test(url)) {
             return {
               valid: false,
-              message: `Module "${MODULE_LABELS[module.type]}" has placeholder images in the list. Please replace with real images.`,
+              message: t('validation.placeholderInList', { name: MODULE_LABELS[module.type] }),
             };
           }
         }
@@ -1647,17 +1650,17 @@ continue;
     }
 
     return { valid: true };
-  }, []);
+  }, [t]);
 
   // ── Save & publish ────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     try {
       await dispatch(saveDecoration({ modules: rawModules, widgets: {} })).unwrap();
-      toast.success('Draft saved successfully.');
+      toast.success(t('toast.draftSaved'));
     } catch (err) {
-      toast.error(err || 'Failed to save draft.');
+      toast.error(err || t('toast.saveFailed'));
     }
-  }, [dispatch, rawModules]);
+  }, [dispatch, rawModules, t]);
 
   const handlePublish = useCallback(async () => {
     const validation = validateNoPlaceholders(modules);
@@ -1675,26 +1678,26 @@ continue;
       }
 
       await dispatch(publishDecoration()).unwrap();
-      toast.success('Published successfully!');
+      toast.success(t('toast.published'));
     } catch (err) {
-      toast.error(err || 'Failed to publish.');
+      toast.error(err || t('toast.publishFailed'));
     }
-  }, [dispatch, modules, validateNoPlaceholders, pendingCoverUrl, user]);
+  }, [dispatch, modules, validateNoPlaceholders, pendingCoverUrl, user, t]);
 
   const handlePreview = useCallback(() => {
     if (!userId) {
-      toast.info('Shop information not found.');
+      toast.info(t('toast.shopNotFound'));
       return;
     }
     window.open(`/shop/${userId}`, '_blank', 'noopener,noreferrer');
-  }, [userId]);
+  }, [userId, t]);
 
   const formatTime = (date) => {
     if (!date) {
-      return 'Not saved';
+      return t('shopDecoration.topBar.notSaved');
     }
     const d = new Date(date);
-    return `Last saved: ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    return t('shopDecoration.topBar.lastSaved', { time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) });
   };
 
   return (
@@ -1710,7 +1713,7 @@ continue;
             </div>
             <div className={styles.topActions}>
               <button type="button" className={styles.topBtn} onClick={handlePreview}>
-                <i className="bi bi-eye" /> Preview
+                <i className="bi bi-eye" /> {t('shopDecoration.topBar.preview')}
               </button>
               <button
                 type="button"
@@ -1718,7 +1721,7 @@ continue;
                 onClick={handleSave}
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save'}
+                {isSaving ? t('shopDecoration.topBar.saving') : t('shopDecoration.topBar.save')}
               </button>
               <button
                 type="button"
@@ -1726,7 +1729,7 @@ continue;
                 onClick={handlePublish}
                 disabled={isSaving}
               >
-                {isSaving ? 'Publishing...' : 'Publish'}
+                {isSaving ? t('shopDecoration.topBar.publishing') : t('shopDecoration.topBar.publish')}
               </button>
             </div>
           </div>
@@ -1738,8 +1741,8 @@ continue;
           <aside className={styles.leftPanel}>
             <div className={styles.leftPanelScroll}>
               <div className={styles.panelHeader}>
-                <p className={styles.panelTitle}>Module Library</p>
-                <p className={styles.panelSubtitle}>Drag to canvas or click to add module</p>
+                <p className={styles.panelTitle}>{t('shopDecoration.moduleLibrary.title')}</p>
+                <p className={styles.panelSubtitle}>{t('shopDecoration.moduleLibrary.subtitle')}</p>
               </div>
 
               {/* Module groups */}
@@ -1783,6 +1786,7 @@ continue;
 // ─── Voucher Picker Modal ────────────────────────────────────────────────────
 
 function VoucherPickerModal({ selectedIds = [], onApply, onClose }) {
+  const { t } = useTranslation();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(new Set(selectedIds));
@@ -1852,9 +1856,9 @@ return v.status === 'expired';
       <div className={styles.voucherModal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.voucherModalHeader}>
-          <h3>Select vouchers</h3>
+          <h3>{t('voucherPicker.title')}</h3>
           <span className={styles.voucherModalCount}>
-            {selected.size}/{maxSelect}
+            {t('voucherPicker.count', { selected: selected.size, max: maxSelect })}
           </span>
           <button type="button" className={styles.voucherModalClose} onClick={onClose}>
             <i className="bi bi-x-lg" />
@@ -1864,9 +1868,9 @@ return v.status === 'expired';
         {/* Tabs */}
         <div className={styles.voucherModalTabs}>
           {[
-            { key: 'active', label: 'Active' },
-            { key: 'upcoming', label: 'Upcoming' },
-            { key: 'expired', label: 'Expired' },
+            { key: 'active', label: t('voucherPicker.tabs.active') },
+            { key: 'upcoming', label: t('voucherPicker.tabs.upcoming') },
+            { key: 'expired', label: t('voucherPicker.tabs.expired') },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -1883,12 +1887,12 @@ return v.status === 'expired';
         <div className={styles.voucherModalList}>
           {loading ? (
             <div className={styles.voucherModalLoading}>
-              <span>Loading...</span>
+              <span>{t('voucherPicker.loading')}</span>
             </div>
           ) : filtered.length === 0 ? (
             <div className={styles.voucherModalEmpty}>
               <i className="bi bi-ticket-perforated" />
-              <p>No vouchers available</p>
+              <p>{t('voucherPicker.empty')}</p>
             </div>
           ) : (
             filtered.map((v) => {
@@ -1920,10 +1924,10 @@ return v.status === 'expired';
                     className={`${styles.voucherStatusBadge} ${styles[`voucherStatus_${v.status}`]}`}
                   >
                     {v.status === 'active'
-                      ? 'Active'
+                      ? t('voucherPicker.tabs.active')
                       : v.status === 'upcoming'
-                        ? 'Upcoming'
-                        : 'Expired'}
+                        ? t('voucherPicker.tabs.upcoming')
+                        : t('voucherPicker.tabs.expired')}
                   </span>
                 </div>
               );
@@ -1934,10 +1938,10 @@ return v.status === 'expired';
         {/* Footer */}
         <div className={styles.voucherModalFooter}>
           <button type="button" className={styles.voucherModalCancel} onClick={onClose}>
-            Cancel
+            {t('voucherPicker.cancel')}
           </button>
           <button type="button" className={styles.voucherModalConfirm} onClick={handleApply}>
-            Apply ({selected.size})
+            {t('voucherPicker.apply', { count: selected.size })}
           </button>
         </div>
       </div>
@@ -1948,11 +1952,12 @@ return v.status === 'expired';
 // ─── Product Picker Modal ────────────────────────────────────────────────────
 
 function ProductPickerModal({ products, loading, onSelect, onClose }) {
+  const { t } = useTranslation();
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.voucherModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.voucherModalHeader}>
-          <h3>Select Product</h3>
+          <h3>{t('productPicker.title')}</h3>
           <button type="button" className={styles.voucherModalClose} onClick={onClose}>
             <i className="bi bi-x-lg" />
           </button>
@@ -1960,12 +1965,12 @@ function ProductPickerModal({ products, loading, onSelect, onClose }) {
         <div className={styles.voucherModalList}>
           {loading ? (
             <div className={styles.voucherModalLoading}>
-              <span>Loading...</span>
+              <span>{t('productPicker.loading')}</span>
             </div>
           ) : products.length === 0 ? (
             <div className={styles.voucherModalEmpty}>
               <i className="bi bi-box-seam" />
-              <p>No products available</p>
+              <p>{t('productPicker.empty')}</p>
             </div>
           ) : (
             products.map((p) => (
@@ -1977,7 +1982,7 @@ function ProductPickerModal({ products, loading, onSelect, onClose }) {
                 <div className={styles.voucherModalItemBody}>
                   <div className={styles.voucherModalItemCode}>{p.name}</div>
                   <div className={styles.voucherModalItemDesc}>
-                    {p.price ? `${p.price.toLocaleString()}đ` : 'No price'}
+                    {p.price ? `${p.price.toLocaleString()}đ` : t('productPicker.noPrice')}
                   </div>
                 </div>
               </div>
@@ -1992,11 +1997,12 @@ function ProductPickerModal({ products, loading, onSelect, onClose }) {
 // ─── Category Picker Modal ────────────────────────────────────────────────────
 
 function CategoryPickerModal({ categories, loading, onSelect, onClose }) {
+  const { t } = useTranslation();
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.voucherModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.voucherModalHeader}>
-          <h3>Select Category</h3>
+          <h3>{t('categoryPicker.title')}</h3>
           <button type="button" className={styles.voucherModalClose} onClick={onClose}>
             <i className="bi bi-x-lg" />
           </button>
@@ -2004,12 +2010,12 @@ function CategoryPickerModal({ categories, loading, onSelect, onClose }) {
         <div className={styles.voucherModalList}>
           {loading ? (
             <div className={styles.voucherModalLoading}>
-              <span>Loading...</span>
+              <span>{t('categoryPicker.loading')}</span>
             </div>
           ) : categories.length === 0 ? (
             <div className={styles.voucherModalEmpty}>
               <i className="bi bi-folder" />
-              <p>No categories available</p>
+              <p>{t('categoryPicker.empty')}</p>
             </div>
           ) : (
             categories.map((c) => (
@@ -2033,11 +2039,12 @@ function CategoryPickerModal({ categories, loading, onSelect, onClose }) {
 // ─── Voucher Picker Modal for Image Link ────────────────────────────────────────
 
 function VoucherPickerModalForImage({ vouchers, loading, onSelect, onClose }) {
+  const { t } = useTranslation();
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.voucherModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.voucherModalHeader}>
-          <h3>Select Voucher</h3>
+          <h3>{t('voucherPicker.title')}</h3>
           <button type="button" className={styles.voucherModalClose} onClick={onClose}>
             <i className="bi bi-x-lg" />
           </button>
@@ -2045,12 +2052,12 @@ function VoucherPickerModalForImage({ vouchers, loading, onSelect, onClose }) {
         <div className={styles.voucherModalList}>
           {loading ? (
             <div className={styles.voucherModalLoading}>
-              <span>Loading...</span>
+              <span>{t('voucherPicker.loading')}</span>
             </div>
           ) : vouchers.length === 0 ? (
             <div className={styles.voucherModalEmpty}>
               <i className="bi bi-ticket-perforated" />
-              <p>No vouchers available</p>
+              <p>{t('voucherPicker.empty')}</p>
             </div>
           ) : (
             vouchers.map((v) => (
@@ -2084,11 +2091,12 @@ function VoucherPickerModalForImage({ vouchers, loading, onSelect, onClose }) {
 // ─── Combo Picker Modal ──────────────────────────────────────────────────────────
 
 function ComboPickerModal({ combos, loading, onSelect, onClose }) {
+  const { t } = useTranslation();
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.voucherModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.voucherModalHeader}>
-          <h3>Select Combo</h3>
+          <h3>{t('comboPicker.title')}</h3>
           <button type="button" className={styles.voucherModalClose} onClick={onClose}>
             <i className="bi bi-x-lg" />
           </button>
@@ -2096,12 +2104,12 @@ function ComboPickerModal({ combos, loading, onSelect, onClose }) {
         <div className={styles.voucherModalList}>
           {loading ? (
             <div className={styles.voucherModalLoading}>
-              <span>Loading...</span>
+              <span>{t('comboPicker.loading')}</span>
             </div>
           ) : combos.length === 0 ? (
             <div className={styles.voucherModalEmpty}>
               <i className="bi bi-box-seam" />
-              <p>No combos available</p>
+              <p>{t('comboPicker.empty')}</p>
             </div>
           ) : (
             combos.map((c) => (
@@ -2130,11 +2138,12 @@ function ComboPickerModal({ combos, loading, onSelect, onClose }) {
 // ─── Addon Picker Modal ──────────────────────────────────────────────────────────
 
 function AddonPickerModal({ addons, loading, onSelect, onClose }) {
+  const { t } = useTranslation();
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.voucherModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.voucherModalHeader}>
-          <h3>Select Add-on Deal</h3>
+          <h3>{t('addonPicker.title')}</h3>
           <button type="button" className={styles.voucherModalClose} onClick={onClose}>
             <i className="bi bi-x-lg" />
           </button>
@@ -2142,12 +2151,12 @@ function AddonPickerModal({ addons, loading, onSelect, onClose }) {
         <div className={styles.voucherModalList}>
           {loading ? (
             <div className={styles.voucherModalLoading}>
-              <span>Loading...</span>
+              <span>{t('addonPicker.loading')}</span>
             </div>
           ) : addons.length === 0 ? (
             <div className={styles.voucherModalEmpty}>
               <i className="bi bi-gift" />
-              <p>No add-on deals available</p>
+              <p>{t('addonPicker.empty')}</p>
             </div>
           ) : (
             addons.map((a) => (

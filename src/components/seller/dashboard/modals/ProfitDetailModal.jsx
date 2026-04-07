@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Spin,
@@ -28,14 +29,6 @@ import dashboardService from '../../../../services/api/dashboardService';
 
 const { Text } = Typography;
 
-const PERIOD_LABELS = {
-  daily: '30 Ngày',
-  weekly: '13 Tuần',
-  monthly: '12 Tháng',
-  quarterly: '4 Quý',
-  yearly: '5 Năm',
-};
-
 const CHART_COLORS = {
   primary: '#3B82F6',
   revenue: '#3B82F6',
@@ -59,6 +52,7 @@ const periodBtnStyle = (active) => ({
 });
 
 export function ProfitDetailModal({ open, onClose, period, comparison }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [profitData, setProfitData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
@@ -66,13 +60,13 @@ export function ProfitDetailModal({ open, onClose, period, comparison }) {
 
   useEffect(() => {
     if (open) {
-setSelectedPeriod(period || 'monthly');
+ setSelectedPeriod(period || 'monthly'); 
 }
   }, [open, period]);
 
   useEffect(() => {
     if (!open) {
-return;
+ return; 
 }
     let cancelled = false;
     setLoading(true);
@@ -83,7 +77,7 @@ return;
     ])
       .then(([profitRes, productsRes]) => {
         if (cancelled) {
-return;
+ return; 
 }
         setProfitData(Array.isArray(profitRes?.data) ? profitRes.data : []);
         setTopProducts(Array.isArray(productsRes?.data) ? productsRes.data : []);
@@ -95,7 +89,7 @@ return;
       })
       .finally(() => {
         if (!cancelled) {
-setLoading(false);
+ setLoading(false); 
 }
       });
 
@@ -111,7 +105,7 @@ setLoading(false);
 
   const waterfallData = useMemo(() => {
     if (!profitData.length) {
-return [];
+ return []; 
 }
     return profitData.slice(-12).map((d) => ({
       _id: d._id,
@@ -120,16 +114,24 @@ return [];
     }));
   }, [profitData]);
 
+  const periodShortLabels = {
+    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
+    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
+    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
+    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
+    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+  };
+
   const productColumns = [
     {
-      title: 'Sản phẩm',
+      title: t('sellerDashboard.topProducts.product', 'Sản phẩm'),
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
       render: (v) => <Text strong style={{ fontSize: 13 }}>{v || '—'}</Text>,
     },
     {
-      title: 'Đã bán',
+      title: t('sellerDashboard.topProducts.sold', 'Đã bán'),
       dataIndex: 'totalQuantity',
       key: 'totalQuantity',
       width: 80,
@@ -137,7 +139,7 @@ return [];
       render: (v) => <Text style={{ color: '#64748B' }}>{Number(v || 0).toLocaleString('vi-VN')}</Text>,
     },
     {
-      title: 'Doanh thu',
+      title: t('sellerDashboard.topProducts.revenue', 'Doanh thu'),
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
       width: 120,
@@ -145,7 +147,7 @@ return [];
       render: (v) => <Text style={{ color: CHART_COLORS.primary, fontWeight: 600, fontSize: 13 }}>{formatCurrency(v || 0)}</Text>,
     },
     {
-      title: 'Chi phí',
+      title: t('sellerDashboard.profitDetail.cost', 'Chi phí'),
       dataIndex: 'cost',
       key: 'cost',
       width: 120,
@@ -153,7 +155,7 @@ return [];
       render: (v) => <Text style={{ color: CHART_COLORS.negative, fontSize: 13 }}>{formatCurrency(v || 0)}</Text>,
     },
     {
-      title: 'Lợi nhuận',
+      title: t('sellerDashboard.topProducts.profit', 'Lợi nhuận'),
       dataIndex: 'profit',
       key: 'profit',
       width: 120,
@@ -168,7 +170,7 @@ return [];
       },
     },
     {
-      title: 'Margin',
+      title: t('sellerDashboard.topProducts.margin', 'Margin'),
       dataIndex: 'profitMargin',
       key: 'profitMargin',
       width: 80,
@@ -203,7 +205,7 @@ return [];
           }}>
             <TrendingUp size={15} color="#10B981" />
           </div>
-          <span style={{ fontWeight: 600 }}>Chi tiết lợi nhuận</span>
+          <span style={{ fontWeight: 600 }}>{t('sellerDashboard.profitDetail.title', 'Chi tiết lợi nhuận')}</span>
         </Space>
       }
       open={open}
@@ -212,7 +214,7 @@ return [];
       width={960}
       destroyOnHidden
     >
-      <Spin spinning={loading} tip="Đang tải dữ liệu...">
+      <Spin spinning={loading} tip={t('sellerDashboard.profitDetail.loading', 'Đang tải dữ liệu...')}>
         {/* Period selector */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
           {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
@@ -233,7 +235,7 @@ return [];
                 }
               }}
             >
-              {PERIOD_LABELS[p]}
+              {periodShortLabels[p]}
             </button>
           ))}
         </div>
@@ -249,7 +251,7 @@ return [];
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Tổng doanh thu
+                  {t('sellerDashboard.profitDetail.totalRevenue', 'Tổng doanh thu')}
                 </Text>
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: CHART_COLORS.primary, lineHeight: 1.2 }}>
@@ -265,7 +267,7 @@ return [];
               padding: '14px 16px',
             }}>
               <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Tổng chi phí
+                {t('sellerDashboard.profitDetail.totalCost', 'Tổng chi phí')}
               </Text>
               <div style={{ fontSize: 18, fontWeight: 700, color: CHART_COLORS.negative, lineHeight: 1.2, marginTop: 6 }}>
                 {formatCurrency(totalCost)}
@@ -280,7 +282,7 @@ return [];
               padding: '14px 16px',
             }}>
               <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Lợi nhuận ròng
+                {t('sellerDashboard.profitDetail.netProfit', 'Lợi nhuận ròng')}
               </Text>
               <div style={{
                 fontSize: 18,
@@ -312,13 +314,13 @@ return [];
             gap: 20,
           }}>
             <Text style={{ fontSize: 12, color: '#64748B' }}>
-              Lợi nhuận kỳ này:
+              {t('sellerDashboard.profitDetail.profitThisPeriod', 'Lợi nhuận kỳ này')}:
             </Text>
             <Text strong style={{ fontSize: 13, color: '#1E293B' }}>
               {formatCurrency(comparison.currentPeriod.profit)}
             </Text>
             <div style={{ width: 1, height: 16, background: '#E2E8F0' }} />
-            <Text style={{ fontSize: 12, color: '#94A3B8' }}>Kỳ trước:</Text>
+            <Text style={{ fontSize: 12, color: '#94A3B8' }}>{t('sellerDashboard.profitDetail.profitPrevPeriod', 'Kỳ trước')}:</Text>
             <Text style={{ fontSize: 13, color: '#94A3B8' }}>
               {formatCurrency(comparison.previousPeriod?.profit || 0)}
             </Text>
@@ -335,16 +337,16 @@ return [];
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BarChart2 size={14} color={CHART_COLORS.primary} />
-            <Text strong style={{ fontSize: 13, color: '#334155' }}>Doanh thu & Chi phí theo kỳ</Text>
+            <Text strong style={{ fontSize: 13, color: '#334155' }}>{t('sellerDashboard.profitDetail.chartTitle', 'Doanh thu & Chi phí theo kỳ')}</Text>
           </div>
           <Space size={16}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: CHART_COLORS.revenue }} />
-              <Text style={{ fontSize: 11, color: '#94A3B8' }}>Doanh thu</Text>
+              <Text style={{ fontSize: 11, color: '#94A3B8' }}>{t('sellerDashboard.profitDetail.revenue', 'Doanh thu')}</Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: CHART_COLORS.cost }} />
-              <Text style={{ fontSize: 11, color: '#94A3B8' }}>Chi phí</Text>
+              <Text style={{ fontSize: 11, color: '#94A3B8' }}>{t('sellerDashboard.profitDetail.cost', 'Chi phí')}</Text>
             </div>
           </Space>
         </div>
@@ -360,10 +362,10 @@ return [];
                   tickLine={false}
                   tickFormatter={(v) => {
                     if (Math.abs(v) >= 1_000_000) {
-return `${(Math.abs(v) / 1_000_000).toFixed(1)}M`;
+ return `${(Math.abs(v) / 1_000_000).toFixed(1)}M`; 
 }
                     if (Math.abs(v) >= 1_000) {
-return `${(Math.abs(v) / 1_000).toFixed(0)}K`;
+ return `${(Math.abs(v) / 1_000).toFixed(0)}K`; 
 }
                     return v;
                   }}
@@ -371,9 +373,9 @@ return `${(Math.abs(v) / 1_000).toFixed(0)}K`;
                 <Tooltip
                   formatter={(value, name) => {
                     if (name === 'revenue') {
-return [formatCurrency(Math.abs(value)), 'Doanh thu'];
-}
-                    return [formatCurrency(Math.abs(value)), 'Chi phí'];
+                      return [formatCurrency(Math.abs(value)), t('sellerDashboard.profitDetail.revenue', 'Doanh thu')];
+                    }
+                    return [formatCurrency(Math.abs(value)), t('sellerDashboard.profitDetail.cost', 'Chi phí')];
                   }}
                   contentStyle={{
                     borderRadius: 10,
@@ -389,7 +391,7 @@ return [formatCurrency(Math.abs(value)), 'Doanh thu'];
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <Empty description="Không có dữ liệu P&L" style={{ paddingTop: 40 }} />
+            <Empty description={t('sellerDashboard.profitDetail.noPLData', 'Không có dữ liệu P&L')} style={{ paddingTop: 40 }} />
           )}
         </div>
 
@@ -398,7 +400,7 @@ return [formatCurrency(Math.abs(value)), 'Doanh thu'];
         {/* Top products by profit */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <Package size={14} color={CHART_COLORS.positive} />
-          <Text strong style={{ fontSize: 13, color: '#334155' }}>Top sản phẩm lợi nhuận cao nhất</Text>
+          <Text strong style={{ fontSize: 13, color: '#334155' }}>{t('sellerDashboard.profitDetail.topProfitProducts', 'Top sản phẩm lợi nhuận cao nhất')}</Text>
         </div>
         <Table
           columns={productColumns}
@@ -406,7 +408,7 @@ return [formatCurrency(Math.abs(value)), 'Doanh thu'];
           pagination={{ pageSize: 6, size: 'small' }}
           size="small"
           scroll={{ x: 640 }}
-          locale={{ emptyText: 'Không có dữ liệu sản phẩm' }}
+          locale={{ emptyText: t('sellerDashboard.profitDetail.noProductData', 'Không có dữ liệu sản phẩm') }}
         />
       </Spin>
     </Modal>

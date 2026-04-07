@@ -209,13 +209,26 @@ class SocketService {
 
   /**
    * Emit event to server
+   * Waits for the socket to be connected before emitting.
    * @param {string} event - Event name
    * @param {*} data - Data to send
    */
   emit(event, data) {
     if (this.socket?.connected) {
       this.socket.emit(event, data);
+      return;
     }
+    // Queue: retry once when connected, then clean up the listener
+    let fired = false;
+    const retry = () => {
+      if (fired) return;
+      fired = true;
+      if (this.socket?.connected) {
+        this.socket.emit(event, data);
+      }
+      this.socket?.off(SOCKET_EVENTS.CONNECT, retry);
+    };
+    this.socket?.on(SOCKET_EVENTS.CONNECT, retry);
   }
 
   /**

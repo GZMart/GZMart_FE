@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -26,7 +27,6 @@ import inventoryService from '../../../services/api/inventoryService';
 import {
   adjustStockItem,
   selectInventoryAdjusting,
-  selectInventoryError,
   clearError,
 } from '../../../store/slices/inventorySlice';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
@@ -62,7 +62,7 @@ const getStockStatus = (stock, threshold) => {
 const loadStoredThresholds = () => {
   try {
     return JSON.parse(localStorage.getItem(THRESHOLD_KEY) || '{}');
-  } catch {
+  } catch { // eslint-disable-line no-empty
     return {};
   }
 };
@@ -70,7 +70,8 @@ const loadStoredThresholds = () => {
 const persistThresholds = (map) => {
   try {
     localStorage.setItem(THRESHOLD_KEY, JSON.stringify(map));
-  } catch {}
+  } catch { // eslint-disable-line no-empty
+  }
 };
 
 const formatVariantLabel = (model) => {
@@ -229,6 +230,11 @@ const LotBreakdownRow = ({ sku, colCount }) => {
   );
 };
 
+LotBreakdownRow.propTypes = {
+  sku: PropTypes.string.isRequired,
+  colCount: PropTypes.number.isRequired,
+};
+
 // ─── Sortable Column Header ───────────────────────────────────────
 const SortableHeader = ({ label, colKey, sortKey, sortDir, onSort, align = 'left' }) => {
   const active = sortKey === colKey;
@@ -260,6 +266,15 @@ const SortableHeader = ({ label, colKey, sortKey, sortDir, onSort, align = 'left
       </span>
     </th>
   );
+};
+
+SortableHeader.propTypes = {
+  label: PropTypes.string.isRequired,
+  colKey: PropTypes.string.isRequired,
+  sortKey: PropTypes.string.isRequired,
+  sortDir: PropTypes.string.isRequired,
+  onSort: PropTypes.func.isRequired,
+  align: PropTypes.string,
 };
 
 // ─── Transaction History Drawer ───────────────────────────────────
@@ -379,6 +394,15 @@ const TransactionHistoryDrawer = ({ item, onClose }) => {
       </div>
     </>
   );
+};
+
+TransactionHistoryDrawer.propTypes = {
+  item: PropTypes.shape({
+    sku: PropTypes.string,
+    productName: PropTypes.string,
+    variantLabel: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
 };
 
 // ─── Adjust Modal ─────────────────────────────────────────────────
@@ -582,7 +606,6 @@ const AdjustModal = ({ item, onClose, onSave, saving }) => {
 const InventoryPage = () => {
   const dispatch = useDispatch();
   const adjusting = useSelector(selectInventoryAdjusting);
-  const adjustError = useSelector(selectInventoryError);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);

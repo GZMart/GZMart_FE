@@ -224,7 +224,7 @@ const DealsOfTheDay = () => {
             id: flashSale._id,
             productId: product?._id,
             name: product?.name || 'Product',
-            image: product?.images?.[0] || variantModel?.image || '',
+            image: variantModel?.image || product?.images?.[0] || '',
             price: formatPrice(flashSale.salePrice || variantModel?.price || 0),
             originalPrice: variantModel?.price,
             discount:
@@ -263,7 +263,7 @@ const DealsOfTheDay = () => {
               id: deal._id,
               productId: pid,
               name: product?.name || 'Product',
-              image: product?.images?.[0] || '',
+              image: (product?.models?.find(m => m.isActive) || product?.models?.[0])?.image || product?.images?.[0] || '',
               price: formatPrice(salePrice),
               originalPrice: product?.originalPrice || product?.price,
               discount: deal.discountPercent || 0,

@@ -11,7 +11,9 @@ const ImageSearchModal = ({ isOpen, onClose }) => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+return null;
+}
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -45,7 +47,9 @@ const ImageSearchModal = ({ isOpen, onClose }) => {
   };
 
   const handleSearch = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+return;
+}
 
     try {
       setIsSearching(true);

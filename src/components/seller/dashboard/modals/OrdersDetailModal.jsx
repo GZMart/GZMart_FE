@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import PropTypes from 'prop-types'; // Thêm dòng này
+import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import { Modal, Spin, Table, Tag, Space, Typography } from 'antd';
 import { ShoppingCart, Package, Clock, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '../../../../utils/formatters';
@@ -41,6 +42,7 @@ const STATUS_ICONS = {
 };
 
 export function OrdersDetailModal({ open, onClose, _period, comparison }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -48,8 +50,8 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
 
   useEffect(() => {
     if (!open) {
-      return;
-    }
+ return; 
+}
     let cancelled = false;
     setLoading(true);
     setPage(1);
@@ -58,24 +60,24 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
       .getSellerRecentOrders({ limit: 20 })
       .then((res) => {
         if (cancelled) {
-          return;
-        }
+ return; 
+}
         setOrders(Array.isArray(res?.data) ? res.data : []);
       })
       .catch(() => {
         if (!cancelled) {
-          setOrders([]);
-        }
+ setOrders([]); 
+}
       })
       .finally(() => {
         if (!cancelled) {
-          setLoading(false);
-        }
+ setLoading(false); 
+}
       });
 
     return () => {
-      cancelled = true;
-    };
+ cancelled = true; 
+};
   }, [open]);
 
   const ordersGrowth = comparison?.growth?.orders ?? 0;
@@ -83,7 +85,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
 
   const columns = [
     {
-      title: 'Mã đơn',
+      title: t('sellerDashboard.ordersDetail.orderCode', 'Mã đơn'),
       dataIndex: 'orderNumber',
       key: 'orderNumber',
       width: 150,
@@ -115,7 +117,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
       ),
     },
     {
-      title: 'Khách hàng',
+      title: t('sellerDashboard.ordersDetail.customer', 'Khách hàng'),
       dataIndex: 'customer',
       key: 'customer',
       width: 150,
@@ -131,7 +133,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
       ),
     },
     {
-      title: 'Giá trị',
+      title: t('sellerDashboard.ordersDetail.value', 'Giá trị'),
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       width: 130,
@@ -143,7 +145,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
       ),
     },
     {
-      title: 'Sản phẩm',
+      title: t('sellerDashboard.ordersDetail.items', 'Sản phẩm'),
       dataIndex: 'itemsCount',
       key: 'itemsCount',
       width: 80,
@@ -163,12 +165,12 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
           }}
         >
           <Package size={10} />
-          {v} sp
+          {v} {t('sellerDashboard.ordersDetail.itemsUnit', 'sp')}
         </div>
       ),
     },
     {
-      title: 'Trạng thái',
+      title: t('sellerDashboard.ordersDetail.status', 'Trạng thái'),
       dataIndex: 'status',
       key: 'status',
       width: 150,
@@ -196,7 +198,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
       },
     },
     {
-      title: 'Ngày tạo',
+      title: t('sellerDashboard.ordersDetail.createdAt', 'Ngày tạo'),
       dataIndex: 'createdAtStr',
       key: 'createdAtStr',
       width: 140,
@@ -226,7 +228,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
           >
             <ShoppingCart size={15} color="#3B82F6" />
           </div>
-          <span style={{ fontWeight: 600 }}>Chi tiết đơn hàng</span>
+          <span style={{ fontWeight: 600 }}>{t('sellerDashboard.ordersDetail.title', 'Chi tiết đơn hàng')}</span>
         </Space>
       }
       open={open}
@@ -240,7 +242,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
             width: '100%',
           }}
         >
-          <Text style={{ fontSize: 12, color: '#94A3B8' }}>{orders.length} đơn gần nhất</Text>
+          <Text style={{ fontSize: 12, color: '#94A3B8' }}>{orders.length} {t('sellerDashboard.ordersDetail.recentOrders', 'đơn gần nhất')}</Text>
           <div
             onClick={() => {
               onClose();
@@ -259,14 +261,14 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
             onMouseEnter={(e) => (e.currentTarget.style.gap = '8px')}
             onMouseLeave={(e) => (e.currentTarget.style.gap = '4px')}
           >
-            Xem tất cả đơn hàng <ArrowRight size={13} />
+            {t('sellerDashboard.ordersDetail.viewAllOrders', 'Xem tất cả đơn hàng')} <ArrowRight size={13} />
           </div>
         </div>
       }
       width={1000}
-      destroyOnClose // Sử dụng destroyOnClose của Antd thay vì destroyOnHidden
+      destroyOnClose
     >
-      <Spin spinning={loading} tip="Đang tải đơn hàng...">
+      <Spin spinning={loading} tip={t('sellerDashboard.ordersDetail.loading', 'Đang tải đơn hàng...')}>
         {/* Comparison summary */}
         {comparison && (
           <div
@@ -290,12 +292,12 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
                   fontWeight: 500,
                 }}
               >
-                Kỳ này
+                {t('sellerDashboard.ordersDetail.thisPeriod', 'Kỳ này')}
               </Text>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#10B981', marginTop: 4 }}>
                 {Number(comparison.currentPeriod?.orders || 0).toLocaleString('vi-VN')}
                 <Text style={{ fontSize: 13, fontWeight: 400, color: '#94A3B8', marginLeft: 4 }}>
-                  đơn
+                  {t('sellerDashboard.ordersDetail.ordersUnit', 'đơn')}
                 </Text>
               </div>
             </div>
@@ -309,12 +311,12 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
                   fontWeight: 500,
                 }}
               >
-                Kỳ trước
+                {t('sellerDashboard.ordersDetail.prevPeriod', 'Kỳ trước')}
               </Text>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#94A3B8', marginTop: 4 }}>
                 {Number(comparison.previousPeriod?.orders || 0).toLocaleString('vi-VN')}
                 <Text style={{ fontSize: 13, fontWeight: 400, color: '#CBD5E1', marginLeft: 4 }}>
-                  đơn
+                  {t('sellerDashboard.ordersDetail.ordersUnit', 'đơn')}
                 </Text>
               </div>
             </div>
@@ -328,13 +330,13 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
                   fontWeight: 500,
                 }}
               >
-                Tăng trưởng
+                {t('sellerDashboard.ordersDetail.growth', 'Tăng trưởng')}
               </Text>
               <div
                 style={{
                   fontSize: 20,
                   fontWeight: 700,
-                  color: isPositive ? '#10B981' : '#EF4444',
+                  color: isPositive ? '#10B981' : '#ef4444',
                   marginTop: 4,
                   display: 'flex',
                   alignItems: 'center',
@@ -360,14 +362,13 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
           }}
           size="small"
           scroll={{ x: 800 }}
-          locale={{ emptyText: 'Không có đơn hàng nào' }}
+          locale={{ emptyText: t('sellerDashboard.ordersDetail.noOrders', 'Không có đơn hàng nào') }}
         />
       </Spin>
     </Modal>
   );
 }
 
-// Khai báo PropTypes để fix lỗi ESLint
 OrdersDetailModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,

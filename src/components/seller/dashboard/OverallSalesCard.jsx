@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -12,14 +13,6 @@ import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import styles from '../../../assets/styles/seller/Dashboard.module.css';
 
-const PERIOD_LABELS = {
-  daily: '30 Ngày',
-  weekly: '13 Tuần',
-  monthly: '12 Tháng',
-  quarterly: '4 Quý',
-  yearly: '5 Năm',
-};
-
 export function OverallSalesCard({
   chartData = [],
   period = 'monthly',
@@ -28,13 +21,23 @@ export function OverallSalesCard({
   revenueCurrent = 0,
   trend = 0,
 }) {
+  const { t } = useTranslation();
+
   const isPositive = Number(trend) >= 0;
   const trendAbs = Math.abs(Number(trend));
+
+  const periodShortLabels = {
+    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
+    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
+    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
+    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
+    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+  };
 
   return (
     <div className={styles.chartCard}>
       <div className={styles.chartHeader}>
-        <h3 className={styles.chartCardTitle}>Doanh thu theo thời gian</h3>
+        <h3 className={styles.chartCardTitle}>{t('sellerDashboard.overallSales.title', 'Doanh thu theo thời gian')}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {onPeriodChange ? (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -44,14 +47,14 @@ export function OverallSalesCard({
                   onClick={() => onPeriodChange(p)}
                   className={`${styles.periodBtn} ${period === p ? styles.periodBtnActive : styles.periodBtnInactive}`}
                 >
-                  {PERIOD_LABELS[p]}
+                  {periodShortLabels[p]}
                 </button>
               ))}
             </div>
           ) : (
             <button className={styles.dateButton}>
               <Calendar size={14} />
-              {PERIOD_LABELS[period] || period}
+              {periodShortLabels[period] || period}
             </button>
           )}
         </div>
@@ -66,7 +69,7 @@ export function OverallSalesCard({
           {isPositive ? '+' : '-'}
           {trendAbs}%
         </span>
-        <span className={styles.chartMetricLabel}>So với kỳ trước</span>
+        <span className={styles.chartMetricLabel}>{t('sellerDashboard.overallSales.vsPrevious', 'So với kỳ trước')}</span>
       </div>
 
       <div className={styles.chartContainer}>
@@ -81,7 +84,7 @@ export function OverallSalesCard({
               fontSize: '0.875rem',
             }}
           >
-            Đang tải dữ liệu...
+            {t('sellerDashboard.overallSales.loading', 'Đang tải dữ liệu...')}
           </div>
         ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -136,7 +139,7 @@ export function OverallSalesCard({
               fontSize: '0.875rem',
             }}
           >
-            Không có dữ liệu
+            {t('sellerDashboard.overallSales.noData', 'Không có dữ liệu')}
           </div>
         )}
       </div>

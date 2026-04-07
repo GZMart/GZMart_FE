@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import styles from '@assets/styles/CategoryCard.module.css';
+import styles from '@assets/styles/common/CategoryCard.module.css';
 
 const CategoryCard = ({ category, image, link, isActive = false }) => (
   <Link to={link} className={`${styles.categoryCard} ${isActive ? styles.active : ''}`}>

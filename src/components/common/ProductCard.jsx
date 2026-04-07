@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
-import { getProductImages } from '@utils/data/ProductsPage_MockData';
 import * as wishlistService from '@/services/api/wishlistService';
 import styles from '@assets/styles/common/ProductCard.module.css';
 
@@ -18,15 +17,9 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
   const [isFav, setIsFav] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
 
-  const productImage = (() => {
-    if (product.tier_variations && product.tier_variations.length > 0) {
-      const images = getProductImages(product);
-      const url = images.length > 0 ? images[0] : product.image;
-      return url && String(url).trim() ? url : PLACEHOLDER_IMAGE;
-    }
-    const url = product.image;
-    return url && String(url).trim() ? url : PLACEHOLDER_IMAGE;
-  })();
+  const productImage = (product.image && String(product.image).trim())
+    ? product.image
+    : PLACEHOLDER_IMAGE;
 
   const discountPercentage =
     product.originalPrice > 0 && product.originalPrice > product.price

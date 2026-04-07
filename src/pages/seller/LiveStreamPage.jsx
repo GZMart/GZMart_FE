@@ -6,7 +6,7 @@ import LiveChatPanel from '@components/seller/LiveChatPanel';
 import LiveActionBar from '@components/seller/LiveActionBar';
 import LiveProductSelector from '@components/seller/LiveProductSelector';
 import LiveVoucherSelector from '@components/seller/LiveVoucherSelector';
-import styles from './LiveStreamPage.module.css';
+import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
 const DEFAULT_FORM = {
   title: 'Live Stream: Giới thiệu sản phẩm mới',
@@ -136,7 +136,7 @@ return;
     try {
       const res = await livestreamService.addProductsToSession(session._id, productIds);
       setLiveProducts(res?.data?.products || []);
-      setPinnedProductId(res?.data?.pinnedProduct?._id || null);
+      setPinnedProductId(res?.data?.pinnedProduct?._id || pinnedProductId);
       setShowProductSelector(false);
     } catch (e) {
       alert(e.response?.data?.message || 'Failed to add products');
