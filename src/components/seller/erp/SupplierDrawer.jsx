@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styles from '@assets/styles/seller/erp/SuppliersPage.module.css';
+import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
+import AddressAutocompleteDropdown from '@components/common/AddressAutocompleteDropdown';
+import { applyGoongSuggestion } from '@utils/addressAutocomplete';
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────
 const IconSupplier = () => (
@@ -124,6 +127,23 @@ const mapLegacyToNested = (supplier) => ({
 const SupplierDrawer = ({ supplier, onClose, onSave }) => {
   const [form, setForm] = useState(supplier ? mapLegacyToNested(supplier) : { ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [addressTargetField, setAddressTargetField] = useState(null);
+
+  const {
+    activeField: addressSuggestionField,
+    setActiveField: setAddressSuggestionField,
+    suggestions: addressSuggestions,
+    showSuggestions: showAddressSuggestions,
+    resolveSuggestionDetails,
+  } = useAddressAutocomplete({
+    addresses: [],
+    formValues: {
+      street: form.addressInfo.address,
+      details: form.addressInfo.returnAddress,
+      provinceName: '',
+      wardName: '',
+    },
+  });
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -199,6 +219,42 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAddressSuggestionSelect = async (suggestion) => {
+    const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
+    const currentFormValues = {
+      street: form.addressInfo.address,
+      details: form.addressInfo.returnAddress,
+      provinceName: '',
+      wardName: '',
+    };
+
+    const addressPatch = applyGoongSuggestion({
+      suggestion: resolvedSuggestion,
+      activeField: addressSuggestionField,
+      provinces: [],
+      wards: [],
+      currentFormValues,
+    });
+
+    setForm((prev) => ({
+      ...prev,
+      addressInfo: {
+        ...prev.addressInfo,
+        address:
+          addressTargetField === 'address'
+            ? addressPatch.street || prev.addressInfo.address
+            : prev.addressInfo.address,
+        returnAddress:
+          addressTargetField === 'returnAddress'
+            ? addressPatch.details || prev.addressInfo.returnAddress
+            : prev.addressInfo.returnAddress,
+      },
+    }));
+
+    setAddressSuggestionField(null);
+    setAddressTargetField(null);
   };
 
   const isEdit = !!supplier;
@@ -409,25 +465,69 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
                 {/* Address */}
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                   <label>Supplier Address</label>
-                  <input
-                    type="text"
-                    name="addressInfo.address"
-                    value={form.addressInfo.address}
-                    onChange={handleChange}
-                    placeholder="Street, District, City, China"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      name="addressInfo.address"
+                      value={form.addressInfo.address}
+                      onChange={handleChange}
+                      onFocus={() => {
+                        setAddressTargetField('address');
+                        setAddressSuggestionField('street');
+                      }}
+                      onBlur={() =>
+                        setTimeout(() => {
+                          setAddressSuggestionField(null);
+                          setAddressTargetField(null);
+                        }, 150)
+                      }
+                      autoComplete="street-address"
+                      placeholder="Street, District, City, China"
+                    />
+                    <AddressAutocompleteDropdown
+                      show={
+                        showAddressSuggestions &&
+                        addressTargetField === 'address' &&
+                        addressSuggestionField === 'street'
+                      }
+                      suggestions={addressSuggestions}
+                      onSelect={handleAddressSuggestionSelect}
+                    />
+                  </div>
                 </div>
 
                 {/* Return Address */}
                 <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                   <label>Return Address (if different)</label>
-                  <input
-                    type="text"
-                    name="addressInfo.returnAddress"
-                    value={form.addressInfo.returnAddress}
-                    onChange={handleChange}
-                    placeholder="Return address (leave empty if same as supplier address)"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      name="addressInfo.returnAddress"
+                      value={form.addressInfo.returnAddress}
+                      onChange={handleChange}
+                      onFocus={() => {
+                        setAddressTargetField('returnAddress');
+                        setAddressSuggestionField('details');
+                      }}
+                      onBlur={() =>
+                        setTimeout(() => {
+                          setAddressSuggestionField(null);
+                          setAddressTargetField(null);
+                        }, 150)
+                      }
+                      autoComplete="street-address"
+                      placeholder="Return address (leave empty if same as supplier address)"
+                    />
+                    <AddressAutocompleteDropdown
+                      show={
+                        showAddressSuggestions &&
+                        addressTargetField === 'returnAddress' &&
+                        addressSuggestionField === 'details'
+                      }
+                      suggestions={addressSuggestions}
+                      onSelect={handleAddressSuggestionSelect}
+                    />
+                  </div>
                 </div>
 
                 {/* Lead Time */}

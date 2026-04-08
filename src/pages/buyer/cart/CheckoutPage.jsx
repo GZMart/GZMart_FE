@@ -11,6 +11,10 @@ import voucherService from '@services/api/voucherService';
 import { formatCurrency } from '@utils/formatters';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { Modal } from 'react-bootstrap';
+import { geocodeAddressForSave } from '@utils/addressGeocoding';
+import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
+import AddressAutocompleteDropdown from '@components/common/AddressAutocompleteDropdown';
+import { applyAddressSuggestion, applyGoongSuggestion } from '@utils/addressAutocomplete';
 
 const randomDeliveryWindow = (minDays, maxDays) => {
   const start = Math.floor(Math.random() * (maxDays - minDays + 1)) + minDays;
@@ -21,8 +25,8 @@ const randomDeliveryWindow = (minDays, maxDays) => {
 /** API `eligible` can omit min-order checks; enforce minBasketPrice against cart subtotal in UI. */
 function voucherEligibleForCartSubtotal(voucher, cartSubtotal) {
   if (!voucher) {
-return false;
-}
+    return false;
+  }
   const min = Number(voucher.minBasketPrice);
   if (!Number.isNaN(min) && min > 0 && cartSubtotal < min) {
     return false;
@@ -53,7 +57,7 @@ const CheckoutPage = () => {
         const id = item._id || item.id;
         return id && String(id).startsWith('live_');
       }),
-    [rawItems],
+    [rawItems]
   );
 
   // Real cart item IDs (filter out the fake 'live_' prefixes used in live session checkout)
@@ -62,7 +66,7 @@ const CheckoutPage = () => {
       (rawItems || [])
         .map((item) => item._id || item.id)
         .filter((id) => id && !String(id).startsWith('live_')),
-    [rawItems],
+    [rawItems]
   );
 
   // Live session context — voucher is passed directly from LiveQuickBuySheet
@@ -280,11 +284,22 @@ const CheckoutPage = () => {
 
   const handleSaveAddress = async () => {
     try {
+      const addressData = { ...addressForm };
+      const geocodedAddress = await geocodeAddressForSave(addressData);
+
+      if (geocodedAddress) {
+        addressData.location = geocodedAddress.location;
+        addressData.formattedAddress = geocodedAddress.formattedAddress;
+      } else if (editingAddress?.location) {
+        addressData.location = editingAddress.location;
+        addressData.formattedAddress = editingAddress.formattedAddress;
+      }
+
       let response;
       if (editingAddress) {
-        response = await addressService.updateAddress(editingAddress._id, addressForm);
+        response = await addressService.updateAddress(editingAddress._id, addressData);
       } else {
-        response = await addressService.createAddress(addressForm);
+        response = await addressService.createAddress(addressData);
       }
 
       if (response.success) {
@@ -309,6 +324,25 @@ const CheckoutPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleAddressSuggestionSelect = async (suggestion) => {
+    const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
+    setAddressForm((prev) =>
+      resolvedSuggestion.source === 'goong'
+        ? applyGoongSuggestion({
+            suggestion: resolvedSuggestion,
+            activeField: addressSuggestionField,
+            provinces,
+            wards,
+            currentFormValues: prev,
+          })
+        : {
+            ...prev,
+            ...applyAddressSuggestion(resolvedSuggestion),
+          }
+    );
+    setAddressSuggestionField(null);
   };
 
   const handleProvinceChange = (e) => {
@@ -354,6 +388,18 @@ const CheckoutPage = () => {
     street: '',
     details: '',
     isDefault: false,
+  });
+
+  const {
+    activeField: addressSuggestionField,
+    setActiveField: setAddressSuggestionField,
+    suggestions: addressSuggestions,
+    showSuggestions: showAddressSuggestions,
+    resolveSuggestionDetails,
+  } = useAddressAutocomplete({
+    addresses,
+    formValues: addressForm,
+    excludeId: editingAddress?._id || null,
   });
 
   const [provinces, setProvinces] = useState([]);
@@ -486,19 +532,19 @@ const CheckoutPage = () => {
   // Drop shop/product selection if cart no longer meets min order (or API eligibility changed)
   useEffect(() => {
     if (!applicableVouchers.length) {
-return;
-}
+      return;
+    }
     setSelectedShopVoucherId((id) => {
       if (!id) {
-return id;
-}
+        return id;
+      }
       const v = applicableVouchers.find((x) => x._id === id);
       return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
     });
     setSelectedProductVoucherId((id) => {
       if (!id) {
-return id;
-}
+        return id;
+      }
       const v = applicableVouchers.find((x) => x._id === id);
       return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
     });
@@ -508,23 +554,31 @@ return id;
   useEffect(() => {
     const fetchPreview = async () => {
       // Resolve resolved voucher objects from IDs
-      const resolvedShopVoucher = applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
-      const resolvedProductVoucher = applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
+      const resolvedShopVoucher =
+        applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+      const resolvedProductVoucher =
+        applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
 
       // Helper: compute discount from a single voucher against a subtotal
       const calcDiscount = (voucher, sub) => {
         if (!voucher) {
-return 0;
-}
+          return 0;
+        }
         if (voucher.discountType === 'percent') {
-          return Math.min(sub * (Number(voucher.discountValue) / 100), Number(voucher.maxDiscount) || Infinity);
+          return Math.min(
+            sub * (Number(voucher.discountValue) / 100),
+            Number(voucher.maxDiscount) || Infinity
+          );
         }
         return Number(voucher.discountValue) || 0;
       };
 
       const selectedShipping = shippingCompanies.find((c) => c.id === shippingCompany);
       const previewShippingCost = selectedShipping ? selectedShipping.shippingCost : 0;
-      const rawSubtotal = cartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+      const rawSubtotal = cartItems.reduce(
+        (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+        0
+      );
 
       // Skip API when there are no real persisted cart items (live session flow)
       if (realCartItemIds.length === 0) {
@@ -1109,8 +1163,10 @@ return 0;
 
   // Render Voucher Section (Minimized in Checkout Sidebar)
   const renderVoucherSection = () => {
-    const selectedShopVoucher = applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
-    const selectedProductVoucher = applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
+    const selectedShopVoucher =
+      applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+    const selectedProductVoucher =
+      applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
 
     return (
       <div className="mb-3">
@@ -1167,12 +1223,21 @@ return 0;
                       >
                         LIVE
                       </span>
-                      <span className="fw-semibold text-truncate" style={{ color: '#fff', maxWidth: '160px' }}>
+                      <span
+                        className="fw-semibold text-truncate"
+                        style={{ color: '#fff', maxWidth: '160px' }}
+                      >
                         {preSelectedLiveVoucher.name}
                       </span>
                     </div>
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', marginTop: '4px' }}>
+                  <div
+                    style={{
+                      color: 'rgba(255,255,255,0.85)',
+                      fontSize: '0.78rem',
+                      marginTop: '4px',
+                    }}
+                  >
                     {preSelectedLiveVoucher.discountType === 'percent'
                       ? `Giảm ${preSelectedLiveVoucher.discountValue}%`
                       : `Giảm ${new Intl.NumberFormat('vi-VN').format(preSelectedLiveVoucher.discountValue)}đ`}
@@ -1560,141 +1625,143 @@ return 0;
                     .map((v) => {
                       const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
                       return (
-                      <div
-                        key={v._id}
-                        className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
-                          !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
-                        }`}
-                        style={{
-                          border:
-                            selectedShopVoucherId === v._id
-                              ? '2px solid #B13C36'
-                              : '1px solid transparent',
-                          cursor: cartOk ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                        onClick={() => {
-                          if (!cartOk) {
-                            return;
-                          }
-                          if (!v.isSaved) {
-                            return; // Must save first
-                          }
-                          setSelectedShopVoucherId(selectedShopVoucherId === v._id ? null : v._id);
-                        }}
-                      >
-                        {/* Decorative edge */}
                         <div
+                          key={v._id}
+                          className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
+                            !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
+                          }`}
                           style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: '4px',
-                            backgroundColor: '#B13C36',
-                            opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
+                            border:
+                              selectedShopVoucherId === v._id
+                                ? '2px solid #B13C36'
+                                : '1px solid transparent',
+                            cursor: cartOk ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative',
+                            overflow: 'hidden',
                           }}
-                        ></div>
-
-                        <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                          onClick={() => {
+                            if (!cartOk) {
+                              return;
+                            }
+                            if (!v.isSaved) {
+                              return; // Must save first
+                            }
+                            setSelectedShopVoucherId(
+                              selectedShopVoucherId === v._id ? null : v._id
+                            );
+                          }}
+                        >
+                          {/* Decorative edge */}
                           <div
-                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                             style={{
-                              width: '54px',
-                              height: '54px',
-                              backgroundColor: '#fff5f0',
-                              color: '#B13C36',
-                              border: '1px solid #ffeada',
+                              position: 'absolute',
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: '4px',
+                              backgroundColor: '#B13C36',
+                              opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
                             }}
-                          >
-                            <i className="bi bi-shop fs-4"></i>
-                          </div>
-                          <div className="flex-grow-1">
+                          ></div>
+
+                          <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
                             <div
-                              className="fw-bold text-truncate"
-                              style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
+                              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                              style={{
+                                width: '54px',
+                                height: '54px',
+                                backgroundColor: '#fff5f0',
+                                color: '#B13C36',
+                                border: '1px solid #ffeada',
+                              }}
                             >
-                              {v.name}
+                              <i className="bi bi-shop fs-4"></i>
                             </div>
-                            <div className="text-muted small mt-1">
-                              {v.minBasketPrice > 0
-                                ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
-                                : 'Không có mức tối thiểu'}
-                            </div>
-                            {cartOk && v.estimatedSaving > 0 && (
+                            <div className="flex-grow-1">
                               <div
-                                className="mt-1 d-inline-block px-2 py-1 rounded"
-                                style={{
-                                  backgroundColor: '#ffe9e6',
-                                  color: '#B13C36',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                }}
+                                className="fw-bold text-truncate"
+                                style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
                               >
-                                Giảm {formatCurrency(v.estimatedSaving)}
+                                {v.name}
+                              </div>
+                              <div className="text-muted small mt-1">
+                                {v.minBasketPrice > 0
+                                  ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
+                                  : 'Không có mức tối thiểu'}
+                              </div>
+                              {cartOk && v.estimatedSaving > 0 && (
+                                <div
+                                  className="mt-1 d-inline-block px-2 py-1 rounded"
+                                  style={{
+                                    backgroundColor: '#ffe9e6',
+                                    color: '#B13C36',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Giảm {formatCurrency(v.estimatedSaving)}
+                                </div>
+                              )}
+                              {!cartOk &&
+                                (() => {
+                                  const min = Number(v.minBasketPrice);
+                                  const line =
+                                    v.eligible &&
+                                    !Number.isNaN(min) &&
+                                    min > 0 &&
+                                    localSubtotal < min
+                                      ? `Cần đơn tối thiểu ${formatCurrency(min)} (hiện ${formatCurrency(localSubtotal)})`
+                                      : v.ineligibleReason;
+                                  return line ? (
+                                    <div
+                                      className="text-danger mt-1 fw-medium"
+                                      style={{ fontSize: '0.75rem' }}
+                                    >
+                                      {line}
+                                    </div>
+                                  ) : null;
+                                })()}
+                            </div>
+                          </div>
+
+                          <div className="ms-3 flex-shrink-0 text-end pe-2">
+                            {!v.isSaved ? (
+                              <Button
+                                size="sm"
+                                className="fw-semibold px-3"
+                                style={{
+                                  backgroundColor: '#B13C36',
+                                  borderColor: '#B13C36',
+                                  fontSize: '0.85rem',
+                                  borderRadius: '6px',
+                                }}
+                                onClick={(e) => handleSaveAndUseVoucher(e, v)}
+                                disabled={!cartOk}
+                              >
+                                Lưu
+                              </Button>
+                            ) : (
+                              <div className="form-check m-0">
+                                <input
+                                  className="form-check-input"
+                                  type="radio"
+                                  id={`shop-v-${v._id}`}
+                                  name="modalShopVoucher"
+                                  checked={selectedShopVoucherId === v._id}
+                                  disabled={!cartOk}
+                                  onChange={() => {}}
+                                  style={{
+                                    width: '1.4em',
+                                    height: '1.4em',
+                                    cursor: 'pointer',
+                                    accentColor: '#B13C36', // Modern browser styling
+                                  }}
+                                />
                               </div>
                             )}
-                            {!cartOk &&
-                              (() => {
-                                const min = Number(v.minBasketPrice);
-                                const line =
-                                  v.eligible &&
-                                  !Number.isNaN(min) &&
-                                  min > 0 &&
-                                  localSubtotal < min
-                                    ? `Cần đơn tối thiểu ${formatCurrency(min)} (hiện ${formatCurrency(localSubtotal)})`
-                                    : v.ineligibleReason;
-                                return line ? (
-                                  <div
-                                    className="text-danger mt-1 fw-medium"
-                                    style={{ fontSize: '0.75rem' }}
-                                  >
-                                    {line}
-                                  </div>
-                                ) : null;
-                              })()}
                           </div>
                         </div>
-
-                        <div className="ms-3 flex-shrink-0 text-end pe-2">
-                          {!v.isSaved ? (
-                            <Button
-                              size="sm"
-                              className="fw-semibold px-3"
-                              style={{
-                                backgroundColor: '#B13C36',
-                                borderColor: '#B13C36',
-                                fontSize: '0.85rem',
-                                borderRadius: '6px',
-                              }}
-                              onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                              disabled={!cartOk}
-                            >
-                              Lưu
-                            </Button>
-                          ) : (
-                            <div className="form-check m-0">
-                              <input
-                                className="form-check-input"
-                                type="radio"
-                                id={`shop-v-${v._id}`}
-                                name="modalShopVoucher"
-                                checked={selectedShopVoucherId === v._id}
-                                disabled={!cartOk}
-                                onChange={() => {}}
-                                style={{
-                                  width: '1.4em',
-                                  height: '1.4em',
-                                  cursor: 'pointer',
-                                  accentColor: '#B13C36', // Modern browser styling
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
                       );
                     })}
                 </div>
@@ -1718,143 +1785,143 @@ return 0;
                     .map((v) => {
                       const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
                       return (
-                      <div
-                        key={v._id}
-                        className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
-                          !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
-                        }`}
-                        style={{
-                          border:
-                            selectedProductVoucherId === v._id
-                              ? '2px solid #B13C36'
-                              : '1px solid transparent',
-                          cursor: cartOk ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                        onClick={() => {
-                          if (!cartOk) {
-                            return;
-                          }
-                          if (!v.isSaved) {
-                            return; // Must save first
-                          }
-                          setSelectedProductVoucherId(
-                            selectedProductVoucherId === v._id ? null : v._id
-                          );
-                        }}
-                      >
-                        {/* Decorative edge */}
                         <div
+                          key={v._id}
+                          className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
+                            !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
+                          }`}
                           style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: '4px',
-                            backgroundColor: '#B13C36',
-                            opacity: selectedProductVoucherId === v._id ? 1 : 0.2,
+                            border:
+                              selectedProductVoucherId === v._id
+                                ? '2px solid #B13C36'
+                                : '1px solid transparent',
+                            cursor: cartOk ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            position: 'relative',
+                            overflow: 'hidden',
                           }}
-                        ></div>
-
-                        <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                          onClick={() => {
+                            if (!cartOk) {
+                              return;
+                            }
+                            if (!v.isSaved) {
+                              return; // Must save first
+                            }
+                            setSelectedProductVoucherId(
+                              selectedProductVoucherId === v._id ? null : v._id
+                            );
+                          }}
+                        >
+                          {/* Decorative edge */}
                           <div
-                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                             style={{
-                              width: '54px',
-                              height: '54px',
-                              backgroundColor: '#fff5f0',
-                              color: '#B13C36',
-                              border: '1px solid #ffeada',
+                              position: 'absolute',
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: '4px',
+                              backgroundColor: '#B13C36',
+                              opacity: selectedProductVoucherId === v._id ? 1 : 0.2,
                             }}
-                          >
-                            <i className="bi bi-box-seam fs-4"></i>
-                          </div>
-                          <div className="flex-grow-1">
+                          ></div>
+
+                          <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
                             <div
-                              className="fw-bold text-truncate"
-                              style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
+                              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                              style={{
+                                width: '54px',
+                                height: '54px',
+                                backgroundColor: '#fff5f0',
+                                color: '#B13C36',
+                                border: '1px solid #ffeada',
+                              }}
                             >
-                              {v.name}
+                              <i className="bi bi-box-seam fs-4"></i>
                             </div>
-                            <div className="text-muted small mt-1">
-                              {v.minBasketPrice > 0
-                                ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
-                                : 'Không có mức tối thiểu'}
-                            </div>
-                            {cartOk && v.estimatedSaving > 0 && (
+                            <div className="flex-grow-1">
                               <div
-                                className="mt-1 d-inline-block px-2 py-1 rounded"
-                                style={{
-                                  backgroundColor: '#ffe9e6',
-                                  color: '#B13C36',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                }}
+                                className="fw-bold text-truncate"
+                                style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
                               >
-                                Giảm {formatCurrency(v.estimatedSaving)}
+                                {v.name}
+                              </div>
+                              <div className="text-muted small mt-1">
+                                {v.minBasketPrice > 0
+                                  ? `Đơn Tối Thiểu ${formatCurrency(v.minBasketPrice)}`
+                                  : 'Không có mức tối thiểu'}
+                              </div>
+                              {cartOk && v.estimatedSaving > 0 && (
+                                <div
+                                  className="mt-1 d-inline-block px-2 py-1 rounded"
+                                  style={{
+                                    backgroundColor: '#ffe9e6',
+                                    color: '#B13C36',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Giảm {formatCurrency(v.estimatedSaving)}
+                                </div>
+                              )}
+                              {!cartOk &&
+                                (() => {
+                                  const min = Number(v.minBasketPrice);
+                                  const line =
+                                    v.eligible &&
+                                    !Number.isNaN(min) &&
+                                    min > 0 &&
+                                    localSubtotal < min
+                                      ? `Cần đơn tối thiểu ${formatCurrency(min)} (hiện ${formatCurrency(localSubtotal)})`
+                                      : v.ineligibleReason;
+                                  return line ? (
+                                    <div
+                                      className="text-danger mt-1 fw-medium"
+                                      style={{ fontSize: '0.75rem' }}
+                                    >
+                                      {line}
+                                    </div>
+                                  ) : null;
+                                })()}
+                            </div>
+                          </div>
+
+                          <div className="ms-3 flex-shrink-0 text-end pe-2">
+                            {!v.isSaved ? (
+                              <Button
+                                size="sm"
+                                className="fw-semibold px-3"
+                                style={{
+                                  backgroundColor: '#B13C36',
+                                  borderColor: '#B13C36',
+                                  fontSize: '0.85rem',
+                                  borderRadius: '6px',
+                                }}
+                                onClick={(e) => handleSaveAndUseVoucher(e, v)}
+                                disabled={!cartOk}
+                              >
+                                Lưu
+                              </Button>
+                            ) : (
+                              <div className="form-check m-0">
+                                <input
+                                  className="form-check-input"
+                                  type="radio"
+                                  id={`prod-v-${v._id}`}
+                                  name="modalProductVoucher"
+                                  checked={selectedProductVoucherId === v._id}
+                                  disabled={!cartOk}
+                                  onChange={() => {}}
+                                  style={{
+                                    width: '1.4em',
+                                    height: '1.4em',
+                                    cursor: 'pointer',
+                                    accentColor: '#B13C36',
+                                  }}
+                                />
                               </div>
                             )}
-                            {!cartOk &&
-                              (() => {
-                                const min = Number(v.minBasketPrice);
-                                const line =
-                                  v.eligible &&
-                                  !Number.isNaN(min) &&
-                                  min > 0 &&
-                                  localSubtotal < min
-                                    ? `Cần đơn tối thiểu ${formatCurrency(min)} (hiện ${formatCurrency(localSubtotal)})`
-                                    : v.ineligibleReason;
-                                return line ? (
-                                  <div
-                                    className="text-danger mt-1 fw-medium"
-                                    style={{ fontSize: '0.75rem' }}
-                                  >
-                                    {line}
-                                  </div>
-                                ) : null;
-                              })()}
                           </div>
                         </div>
-
-                        <div className="ms-3 flex-shrink-0 text-end pe-2">
-                          {!v.isSaved ? (
-                            <Button
-                              size="sm"
-                              className="fw-semibold px-3"
-                              style={{
-                                backgroundColor: '#B13C36',
-                                borderColor: '#B13C36',
-                                fontSize: '0.85rem',
-                                borderRadius: '6px',
-                              }}
-                              onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                              disabled={!cartOk}
-                            >
-                              Lưu
-                            </Button>
-                          ) : (
-                            <div className="form-check m-0">
-                              <input
-                                className="form-check-input"
-                                type="radio"
-                                id={`prod-v-${v._id}`}
-                                name="modalProductVoucher"
-                                checked={selectedProductVoucherId === v._id}
-                                disabled={!cartOk}
-                                onChange={() => {}}
-                                style={{
-                                  width: '1.4em',
-                                  height: '1.4em',
-                                  cursor: 'pointer',
-                                  accentColor: '#B13C36',
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
                       );
                     })}
                 </div>
@@ -1999,6 +2066,7 @@ return 0;
                       name="receiverName"
                       value={addressForm.receiverName}
                       onChange={handleAddressFormChange}
+                      autoComplete="name"
                       className="py-2"
                     />
                   </Form.Group>
@@ -2011,6 +2079,7 @@ return 0;
                       name="phone"
                       value={addressForm.phone}
                       onChange={handleAddressFormChange}
+                      autoComplete="tel"
                       className="py-2"
                     />
                   </Form.Group>
@@ -2055,18 +2124,26 @@ return 0;
                 </Col>
               </Row>
 
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 position-relative">
                 <Form.Control
                   type="text"
                   placeholder="Street Name"
                   name="street"
                   value={addressForm.street}
                   onChange={handleAddressFormChange}
+                  onFocus={() => setAddressSuggestionField('street')}
+                  onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
+                  autoComplete="address-line1"
                   className="py-2"
+                />
+                <AddressAutocompleteDropdown
+                  show={showAddressSuggestions && addressSuggestionField === 'street'}
+                  suggestions={addressSuggestions}
+                  onSelect={handleAddressSuggestionSelect}
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 position-relative">
                 <Form.Control
                   as="textarea"
                   rows={2}
@@ -2074,7 +2151,15 @@ return 0;
                   name="details"
                   value={addressForm.details}
                   onChange={handleAddressFormChange}
+                  onFocus={() => setAddressSuggestionField('details')}
+                  onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
+                  autoComplete="address-line2"
                   className="py-2"
+                />
+                <AddressAutocompleteDropdown
+                  show={showAddressSuggestions && addressSuggestionField === 'details'}
+                  suggestions={addressSuggestions}
+                  onSelect={handleAddressSuggestionSelect}
                 />
               </Form.Group>
 
