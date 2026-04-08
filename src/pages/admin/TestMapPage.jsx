@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import DeliveryTrackingMap from '@components/buyer/DeliveryTrackingMap';
-import './TestMapPage.css';
+import '../../assets/styles/admin/TestMapPage.module.css';
 
 const GOONG_API_KEY = import.meta.env.GOONG_API_KEY || import.meta.env.VITE_GOONG_API_KEY;
 
