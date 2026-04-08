@@ -73,6 +73,9 @@ export const SELLER_ROUTES = {
 
   // Returns
   RETURNS: '/seller/returns',
+
+  // Banner Ads
+  BANNER_ADS: '/seller/banner-ads',
 };
 
 // Admin Routes
@@ -108,6 +111,9 @@ export const ADMIN_ROUTES = {
   // Monitoring
   ACTIVITY_LOGS: '/admin/activity-logs',
   SYSTEM_HEALTH: '/admin/system-health',
+
+  // Banner Ads Management
+  BANNER_ADS: '/admin/banner-ads',
 };
 
 // Error Routes

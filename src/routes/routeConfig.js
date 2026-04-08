@@ -68,6 +68,7 @@ const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage'));
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
+const SellerBannerAdsPage = lazy(() => import('@pages/seller/SellerBannerAdsPage'));
 
 // Buyer - Seller Application
 const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
@@ -81,6 +82,7 @@ const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
 const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouchersPage'));
 const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
+const AdminBannerAdsPage = lazy(() => import('@pages/admin/AdminBannerAdsPage'));
 
 // Error Pages
 const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
@@ -574,6 +576,13 @@ export const routeConfig = [
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
+  {
+    path: '/seller/banner-ads',
+    element: SellerBannerAdsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
 
   // Admin Routes
   {
@@ -593,6 +602,13 @@ export const routeConfig = [
   {
     path: '/admin/seller-applications',
     element: SellerApplicationsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/banner-ads',
+    element: AdminBannerAdsPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',

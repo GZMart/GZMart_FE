@@ -1,0 +1,685 @@
+/* SellerBannerAdsPage.module.css
+   Design system: giống Dashboard — #f1f5f9 bg, white cards, border-radius 14px, shadow nhẹ
+*/
+
+/* ─── Page Layout ───────────────────────────────────────────────── */
+.page {
+  background: #F8F9FA;
+  min-height: 100vh;
+  padding: 1.75rem 1.75rem 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ─── Page Header ───────────────────────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pageHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.backBtn {
+  margin-top: 2px;
+}
+
+.pageTitle {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.pageSub {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.pageHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-shrink: 0;
+}
+
+.walletCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  color: #64748b;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.walletAmt {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f97316;
+  line-height: 1.2;
+}
+
+.walletLabel {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.createBtn {
+  border-radius: 10px;
+  background: #0f172a;
+  border-color: #0f172a;
+  font-weight: 700;
+}
+.createBtn:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+}
+
+/* ─── Info Strip ─────────────────────────────────────────────────── */
+.infoStrip {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  padding: 0.8rem 1.25rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.infoStripItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.infoStripIcon {
+  font-size: 14px;
+}
+
+.infoStripDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  flex-shrink: 0;
+}
+
+/* ─── Stats Grid ─────────────────────────────────────────────────── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.statCard {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+  transition: box-shadow 0.2s;
+}
+.statCard:hover {
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.08);
+}
+
+.statIcon {
+  font-size: 22px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* ─── List Section ───────────────────────────────────────────────── */
+.listSection {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.sectionTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sectionSub {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.emptySection {
+  padding: 3rem 0;
+}
+
+.loadingCenter {
+  padding: 3rem;
+  text-align: center;
+}
+
+/* ─── Banner Grid ────────────────────────────────────────────────── */
+.bannerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.bannerCard {
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.bannerCard:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+  transform: translateY(-2px);
+}
+
+.bannerCardThumb {
+  position: relative;
+  height: 130px;
+  background-size: cover;
+  background-position: center;
+  background-color: #f1f5f9;
+}
+
+.statusTag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 11px;
+}
+
+.hotspotBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bannerCardBody {
+  padding: 0.875rem;
+}
+
+.bannerCardTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bannerCardSub {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bannerCardMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.metricsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.metricItem {
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.bannerCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.feeDisplay {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #f97316;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── Create Layout ──────────────────────────────────────────────── */
+.createLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stepsCard {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 14px;
+  padding: 1.25rem 1.75rem;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+}
+
+.stepContent {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 14px;
+  padding: 1.75rem;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+}
+
+/* ─── Step Panel ─────────────────────────────────────────────────── */
+.stepPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stepHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.8125rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.stepActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 0.5rem;
+}
+
+/* ─── Upload section ─────────────────────────────────────────────── */
+.uploadSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.uploadLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.urlInputRow {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.imagePreviewBox {
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.imagePreviewLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8ecf0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.imagePreview {
+  width: 100%;
+  aspect-ratio: 1300 / 450;
+  object-fit: cover;
+  display: block;
+}
+
+.imageDimHint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e8ecf0;
+}
+
+.imgErrorBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 2rem;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 13px;
+  text-align: center;
+}
+
+
+/* ─── Hotspot section ────────────────────────────────────────────── */
+.hotspotSection {
+  background: #fafafa;
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  padding: 1.125rem;
+}
+
+.hotspotSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.hotspotTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.hotspotSub {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.hotspotList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1rem;
+}
+
+.hotspotItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.hotspotBadgeNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hotspotItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hotspotPos {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.hotspotLink {
+  font-size: 0.75rem;
+  color: #1677ff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Hotspot preview overlay ────────────────────────────────────── */
+.hotspotPreviewWrap {
+  border: 1px solid #e8ecf0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hotspotPreviewLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8ecf0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hotspotPreviewImgWrap {
+  position: relative;
+  display: block;
+}
+
+.hotspotPreviewImg {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.hotspotDot {
+  position: absolute;
+  border: 2px solid #f97316;
+  background: rgba(249, 115, 22, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.hotspotDotNum {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Schedule step ──────────────────────────────────────────────── */
+.calLegend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.calLegend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.calDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pricingCard {
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pricingAvailable {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.pricingFull {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+}
+
+.pricingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.pricingTotal {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pricingHighlight {
+  font-weight: 700;
+  color: #16a34a;
+  font-size: 1rem;
+}
+
+.pricingFee {
+  color: #f97316;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+/* ─── Info box ───────────────────────────────────────────────────── */
+.infoBox {
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.infoStep {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0f172a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ─── Primary button ─────────────────────────────────────────────── */
+.primaryBtn {
+  background: #0f172a;
+  border-color: #0f172a;
+  font-weight: 600;
+}
+.primaryBtn:hover {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+}

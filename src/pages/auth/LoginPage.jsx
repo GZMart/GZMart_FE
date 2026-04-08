@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { PUBLIC_ROUTES } from '@constants/routes';
-import styles from '@assets/styles/LoginPage/LoginPage.module.css';
+import styles from '@assets/styles/common/LoginPage/LoginPage.module.css';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
 import { loginUser, loginWithGoogle, loginWithFacebook } from '@store/slices/authSlice';

@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import bannerAdsService from '@services/api/bannerAdsService';
 
 // --- 1. CONSTANTS & STYLES ---
 const COLORS = {
   bg: '#f8f9fa',
-  accent: 'var(--color-primary)',
-  textWhite: '#fff',
-  textDark: '#333',
 };
 
 const styles = {
@@ -77,7 +76,7 @@ const styles = {
     transition: 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)',
   },
 
-  // Slide đơn lẻ
+  // Slide đơn lẻ — chỉ ảnh nền
   heroBannerSlide: {
     minWidth: '100%',
     height: '100%',
@@ -85,104 +84,6 @@ const styles = {
     display: 'flex',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-  },
-  heroBannerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(120deg, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.3) 100%)',
-    zIndex: 1,
-  },
-  heroBannerGrid: {
-    position: 'relative',
-    zIndex: 2,
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 80px',
-  },
-
-  // Cột nội dung (Text)
-  heroBannerTextCol: {
-    flex: 1,
-    textAlign: 'left',
-    maxWidth: '55%',
-  },
-  heroBannerTopTag: {
-    fontSize: '0.9rem',
-    fontWeight: 600,
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    color: COLORS.accent,
-    marginBottom: '8px',
-    display: 'block',
-    opacity: 0,
-    transform: 'translateY(20px)',
-    transition: '0.5s ease-out',
-  },
-  heroBannerHeading: {
-    fontFamily: "'Anton', sans-serif",
-    fontSize: '4rem',
-    lineHeight: 1,
-    marginBottom: '10px',
-    color: '#fff',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    whiteSpace: 'pre-line',
-    opacity: 0,
-    transform: 'translateY(20px)',
-    transition: '0.5s ease-out',
-  },
-  heroBannerPromo: {
-    fontSize: '2.2rem',
-    fontWeight: 800,
-    color: '#fff',
-    display: 'block',
-    marginBottom: '10px',
-    opacity: 0,
-    transform: 'translateY(20px)',
-    transition: '0.5s ease-out',
-  },
-  heroBannerDesc: {
-    fontSize: '0.95rem',
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: 300,
-    opacity: 0,
-    transform: 'translateY(20px)',
-    transition: '0.5s ease-out',
-  },
-
-  // Cột ảnh (Image)
-  heroBannerImgCol: {
-    flex: 1,
-    height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  heroBannerTiltImg: {
-    width: '320px',
-    height: 'auto',
-    objectFit: 'contain',
-    transform: 'rotate(-15deg)',
-    filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))',
-    transition: 'transform 0.5s ease',
-    opacity: 0,
-  },
-
-  // Trạng thái Active (Animation state)
-  heroBannerActiveElem: {
-    opacity: 1,
-    transform: 'translateY(0)',
-  },
-  heroBannerActiveImg: {
-    opacity: 1,
-    transform: 'rotate(-15deg) translateX(0)',
-    transition: 'all 0.8s ease-out 0.2s',
   },
 
   // Dots Navigation
@@ -212,56 +113,96 @@ const styles = {
   },
 };
 
+function resolveBannerHref(banner) {
+  const lt = banner.linkType || 'none';
+  if (!lt || lt === 'none') {
+    return null;
+  }
+
+  if (lt === 'external' && banner.link) {
+    const u = String(banner.link).trim();
+    if (!u) {
+      return null;
+    }
+    return /^https?:\/\//i.test(u) ? u : `https://${u}`;
+  }
+
+  if (lt === 'product') {
+    const pid =
+      banner.productId && typeof banner.productId === 'object'
+        ? banner.productId._id
+        : banner.productId;
+    const id = pid || banner.link;
+    if (id) {
+      return `/product/${id}`;
+    }
+  }
+
+  if (banner.link) {
+    const path = String(banner.link).trim();
+    return path.startsWith('/') ? path : `/${path}`;
+  }
+
+  return null;
+}
+
 // --- 2. COMPONENT ---
 const HeroBanner = () => {
+  const navigate = useNavigate();
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // DATA (Giả lập)
-  const fakeData = [
-    {
-      id: 1,
-      bgImage:
-        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop',
-      productImage:
-        'https://png.pngtree.com/png-vector/20240309/ourmid/pngtree-the-smartwatch-banner-png-image_11919210.png',
-      tag: 'Best Deal Online on',
-      title: 'Smart Watches',
-      promoPrefix: 'UP TO',
-      promoHighlight: '50% OFF',
-      desc: '*Applicable to Series 7 and above models.',
-    },
-    {
-      id: 2,
-      bgImage:
-        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=2070&auto=format&fit=crop',
-      productImage:
-        'https://png.pngtree.com/png-clipart/20241210/original/pngtree-nike-shoes-transparent-png-image_17778783.png',
-      tag: 'New Collection',
-      title: 'Latest Nike Shoes',
-      promoPrefix: 'FLAT',
-      promoHighlight: '30% OFF',
-      desc: 'Free shipping for orders placed today.',
-    },
-    {
-      id: 3,
-      bgImage:
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop',
-      productImage:
-        'https://www.gonoise.com/cdn/shop/files/3_f6efac49-e93c-4cf1-93db-313be862cab9.webp?v=1720759166',
-      tag: 'Premium Sound',
-      title: 'Wireless Headset',
-      promoPrefix: 'BUY 1',
-      promoHighlight: 'GET 1',
-      desc: 'Limited quantity gift combo.',
-    },
-  ];
-
   useEffect(() => {
-    setBanners(fakeData);
-    setLoading(false);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const raw = await bannerAdsService.getActiveBanners();
+        const list = Array.isArray(raw) ? raw : [];
+        const slides = list
+          .filter((b) => b?.image)
+          .map((b) => ({
+            id: String(b._id ?? b.id),
+            raw: b,
+            image: b.image,
+            linkHref: resolveBannerHref(b),
+          }));
+        if (!cancelled) {
+          setBanners(slides);
+          setCurrentIndex(0);
+        }
+      } catch {
+        if (!cancelled) {
+          setBanners([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const handleSlideClick = useCallback(
+    (slide) => {
+      if (!slide?.linkHref) {
+        return;
+      }
+      if (slide?.raw?._id) {
+        bannerAdsService.trackClick(slide.raw._id).catch(() => {});
+      }
+      if (/^https?:\/\//i.test(slide.linkHref)) {
+        window.open(slide.linkHref, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate(slide.linkHref);
+      }
+    },
+    [navigate]
+  );
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
@@ -315,78 +256,28 @@ const HeroBanner = () => {
                 transform: `translateX(-${currentIndex * 100}%)`,
               }}
             >
-              {banners.map((banner, index) => {
-                const isActive = index === currentIndex;
-
-                return (
+              {banners.map((banner) => (
                   <div
                     key={banner.id}
+                    role={banner.linkHref ? 'button' : undefined}
+                    tabIndex={banner.linkHref ? 0 : undefined}
+                    onClick={() => handleSlideClick(banner)}
+                    onKeyDown={(e) => {
+                      if (!banner.linkHref) {
+                        return;
+                      }
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSlideClick(banner);
+                      }
+                    }}
                     style={{
                       ...styles.heroBannerSlide,
-                      backgroundImage: `url(${banner.bgImage})`,
+                      backgroundImage: `url(${banner.image})`,
+                      cursor: banner.linkHref ? 'pointer' : 'default',
                     }}
-                  >
-                    <div style={styles.heroBannerOverlay}></div>
-                    <div style={styles.heroBannerGrid}>
-                      {/* Text Column */}
-                      <div style={styles.heroBannerTextCol}>
-                        <span
-                          style={{
-                            ...styles.heroBannerTopTag,
-                            ...(isActive ? styles.heroBannerActiveElem : {}),
-                            transitionDelay: '0.1s',
-                          }}
-                        >
-                          {banner.tag}
-                        </span>
-
-                        <h1
-                          style={{
-                            ...styles.heroBannerHeading,
-                            ...(isActive ? styles.heroBannerActiveElem : {}),
-                            transitionDelay: '0.3s',
-                          }}
-                        >
-                          {banner.title}
-                        </h1>
-
-                        <div
-                          style={{
-                            ...styles.heroBannerPromo,
-                            ...(isActive ? styles.heroBannerActiveElem : {}),
-                            transitionDelay: '0.5s',
-                          }}
-                        >
-                          {banner.promoPrefix}{' '}
-                          <span style={{ color: COLORS.accent }}>{banner.promoHighlight}</span>
-                        </div>
-
-                        <p
-                          style={{
-                            ...styles.heroBannerDesc,
-                            ...(isActive ? styles.heroBannerActiveElem : {}),
-                            transitionDelay: '0.6s',
-                          }}
-                        >
-                          {banner.desc}
-                        </p>
-                      </div>
-
-                      {/* Image Column */}
-                      <div style={styles.heroBannerImgCol}>
-                        <img
-                          src={banner.productImage}
-                          alt={banner.title}
-                          style={{
-                            ...styles.heroBannerTiltImg,
-                            ...(isActive ? styles.heroBannerActiveImg : {}),
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  />
+              ))}
             </div>
           </div>
 
