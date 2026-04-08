@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectUser, updateUserProfile } from '@store/slices/authSlice';
 import { toast } from 'react-toastify';
@@ -18,6 +18,10 @@ import {
 } from 'lucide-react';
 import { Offcanvas } from 'react-bootstrap';
 import locationService from '@services/api/locationService';
+import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
+import AddressAutocompleteDropdown from '@components/common/AddressAutocompleteDropdown';
+import { applyAddressSuggestion, applyGoongSuggestion } from '@utils/addressAutocomplete';
+import { geocodeAddressForSave } from '@utils/addressGeocoding';
 import styles from '@assets/styles/seller/SellerProfilePage.module.css';
 
 const SellerProfilePage = () => {
@@ -43,10 +47,34 @@ const SellerProfilePage = () => {
     provinceName: '',
     wardCode: '',
     wardName: '',
+    goongPlaceId: '',
+    location: null,
   });
 
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
+
+  const autocompleteAddresses = useMemo(() => [], []);
+  const autocompleteFormValues = useMemo(
+    () => ({
+      street: formData.address,
+      details: '',
+      wardName: formData.wardName,
+      provinceName: formData.provinceName,
+    }),
+    [formData.address, formData.wardName, formData.provinceName]
+  );
+
+  const {
+    activeField: addressSuggestionField,
+    setActiveField: setAddressSuggestionField,
+    suggestions: addressSuggestions,
+    showSuggestions: showAddressSuggestions,
+    resolveSuggestionDetails,
+  } = useAddressAutocomplete({
+    addresses: autocompleteAddresses,
+    formValues: autocompleteFormValues,
+  });
 
   useEffect(() => {
     const loadProvinces = async () => {
@@ -90,7 +118,8 @@ const SellerProfilePage = () => {
         provinceName: user.provinceName || '',
         wardCode: user.wardCode || '',
         wardName: user.wardName || '',
-        // location coordinates removed (GPS no longer required)
+        goongPlaceId: '',
+        location: user.location || null,
       });
       setAvatarPreview(user.avatar || null);
     }
@@ -98,7 +127,11 @@ const SellerProfilePage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'address' ? { goongPlaceId: '', location: null } : {}),
+    }));
     setHasChanges(true);
   };
 
@@ -111,6 +144,8 @@ const SellerProfilePage = () => {
       provinceName: province ? province.name : '',
       wardCode: '',
       wardName: '',
+      goongPlaceId: '',
+      location: null,
     }));
     setHasChanges(true);
   };
@@ -122,7 +157,48 @@ const SellerProfilePage = () => {
       ...prev,
       wardCode: code,
       wardName: ward ? ward.name : '',
+      goongPlaceId: '',
+      location: null,
     }));
+    setHasChanges(true);
+  };
+
+  const handleAddressSuggestionSelect = async (suggestion) => {
+    const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
+    const autocompleteFormValues = {
+      street: formData.address,
+      details: '',
+      wardName: formData.wardName,
+      provinceName: formData.provinceName,
+      provinceCode: formData.provinceCode,
+      wardCode: formData.wardCode,
+    };
+
+    const addressPatch =
+      resolvedSuggestion.source === 'goong'
+        ? applyGoongSuggestion({
+            suggestion: resolvedSuggestion,
+            activeField: 'street',
+            provinces,
+            wards,
+            currentFormValues: autocompleteFormValues,
+          })
+        : {
+            ...autocompleteFormValues,
+            ...applyAddressSuggestion(resolvedSuggestion),
+          };
+
+    setFormData((prev) => ({
+      ...prev,
+      address: addressPatch.street || prev.address,
+      provinceCode: addressPatch.provinceCode || prev.provinceCode,
+      provinceName: addressPatch.provinceName || prev.provinceName,
+      wardCode: addressPatch.wardCode || prev.wardCode,
+      wardName: addressPatch.wardName || prev.wardName,
+      goongPlaceId: addressPatch.goongPlaceId || prev.goongPlaceId,
+      location: addressPatch.location || prev.location,
+    }));
+    setAddressSuggestionField(null);
     setHasChanges(true);
   };
 
@@ -151,18 +227,39 @@ const SellerProfilePage = () => {
     }
     setSaving(true);
     try {
+      const geocodedAddress = await geocodeAddressForSave({
+        street: formData.address,
+        details: '',
+        wardName: formData.wardName,
+        provinceName: formData.provinceName,
+        goongPlaceId: formData.goongPlaceId,
+      });
+
       const submitData = new FormData();
       submitData.append('fullName', formData.fullName.trim());
       submitData.append('phone', formData.phone);
       submitData.append('gender', formData.gender);
       submitData.append('dateOfBirth', formData.dateOfBirth);
       submitData.append('aboutMe', formData.aboutMe);
-      submitData.append('address', formData.address);
+      submitData.append('address', geocodedAddress?.formattedAddress || formData.address);
       submitData.append('provinceCode', formData.provinceCode);
       submitData.append('provinceName', formData.provinceName);
       submitData.append('wardCode', formData.wardCode);
       submitData.append('wardName', formData.wardName);
-      // GPS coordinates are no longer collected here
+
+      const resolvedLocation = geocodedAddress?.location || formData.location;
+
+      if (resolvedLocation?.lat != null && resolvedLocation?.lng != null) {
+        submitData.append(
+          'location',
+          JSON.stringify({
+            lat: resolvedLocation.lat,
+            lng: resolvedLocation.lng,
+            address: geocodedAddress.formattedAddress || formData.address,
+          })
+        );
+      }
+
       if (avatarFile) {
         submitData.append('avatar', avatarFile);
       }
@@ -419,14 +516,24 @@ const SellerProfilePage = () => {
         <Offcanvas.Body className={styles.drawerBody}>
           <div className={styles.formGroup}>
             <label className={styles.label}>Address</label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className={styles.input}
-              placeholder="Street address, building, etc."
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                onFocus={() => setAddressSuggestionField('street')}
+                onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
+                autoComplete="street-address"
+                className={styles.input}
+                placeholder="Street address, building, etc."
+              />
+              <AddressAutocompleteDropdown
+                show={showAddressSuggestions && addressSuggestionField === 'street'}
+                suggestions={addressSuggestions}
+                onSelect={handleAddressSuggestionSelect}
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>

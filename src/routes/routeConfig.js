@@ -84,6 +84,7 @@ const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
 const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouchersPage'));
 const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
+const TestMapPage = lazy(() => import('@pages/admin/TestMapPage'));
 
 // Error Pages
 const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
@@ -662,6 +663,14 @@ export const routeConfig = [
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',
+  },
+
+  // Test Routes (Public - No Authentication)
+  {
+    path: '/admin/test-map',
+    element: TestMapPage,
+    public: true,
+    layout: 'none',
   },
 
   // Error Routes
