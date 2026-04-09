@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Clock,
   Truck,
@@ -42,81 +43,84 @@ const normalizeLegacyStatus = (s) => {
 };
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pending', Icon: Clock, cls: 'statusPending' },
-  confirmed: { label: 'Confirmed', Icon: CheckCircle, cls: 'statusProcessing' },
-  packed: { label: 'Packed', Icon: Package, cls: 'statusProcessing' },
-  shipped: { label: 'Shipped', Icon: Truck, cls: 'statusShipped' },
-  delivered: { label: 'Delivered', Icon: CheckCircle, cls: 'statusDelivered' },
-  completed: { label: 'Completed', Icon: CheckCircle, cls: 'statusCompleted' },
-  cancelled: { label: 'Cancelled', Icon: XCircle, cls: 'statusCancelled' },
-  refunded: { label: 'Refunded', Icon: XCircle, cls: 'statusRefunded' },
-  refund_pending: { label: 'Refund Pending', Icon: RefreshCw, cls: 'statusRefundPending' },
+  pending: { labelKey: 'sellerOrders.status.pending', Icon: Clock, cls: 'statusPending' },
+  confirmed: { labelKey: 'sellerOrders.status.confirmed', Icon: CheckCircle, cls: 'statusProcessing' },
+  packed: { labelKey: 'sellerOrders.status.packed', Icon: Package, cls: 'statusProcessing' },
+  shipped: { labelKey: 'sellerOrders.status.shipped', Icon: Truck, cls: 'statusShipped' },
+  delivered: { labelKey: 'sellerOrders.status.delivered', Icon: CheckCircle, cls: 'statusDelivered' },
+  completed: { labelKey: 'sellerOrders.status.completed', Icon: CheckCircle, cls: 'statusCompleted' },
+  cancelled: { labelKey: 'sellerOrders.status.cancelled', Icon: XCircle, cls: 'statusCancelled' },
+  refunded: { labelKey: 'sellerOrders.status.refunded', Icon: XCircle, cls: 'statusRefunded' },
+  refund_pending: { labelKey: 'sellerOrders.status.refund_pending', Icon: RefreshCw, cls: 'statusRefundPending' },
   under_investigation: {
-    label: 'Under Investigation',
+    labelKey: 'sellerOrders.status.under_investigation',
     Icon: AlertCircle,
     cls: 'statusUnderInvestigation',
   },
 };
 
 const PAYMENT_CONFIG = {
-  pending: { label: 'Pending', Icon: Clock, cls: 'paymentPending' },
-  paid: { label: 'Paid', Icon: CheckCircle, cls: 'paymentPaid' },
-  completed: { label: 'Paid', Icon: CheckCircle, cls: 'paymentPaid' },
-  failed: { label: 'Failed', Icon: XCircle, cls: 'paymentFailed' },
-  refunded: { label: 'Refunded', Icon: XCircle, cls: 'paymentRefunded' },
-  refund_pending: { label: 'Refund Pend', Icon: RefreshCw, cls: 'paymentPending' },
+  pending: { labelKey: 'sellerOrders.paymentStatus.pending', Icon: Clock, cls: 'paymentPending' },
+  paid: { labelKey: 'sellerOrders.paymentStatus.paid', Icon: CheckCircle, cls: 'paymentPaid' },
+  completed: { labelKey: 'sellerOrders.paymentStatus.paid', Icon: CheckCircle, cls: 'paymentPaid' },
+  failed: { labelKey: 'sellerOrders.paymentStatus.failed', Icon: XCircle, cls: 'paymentFailed' },
+  refunded: { labelKey: 'sellerOrders.paymentStatus.refunded', Icon: XCircle, cls: 'paymentRefunded' },
+  refund_pending: { labelKey: 'sellerOrders.paymentStatus.refund_pending', Icon: RefreshCw, cls: 'paymentPending' },
 };
 
 const STATUS_TABS = [
-  { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'confirmed', label: 'Confirmed' },
-  { value: 'packed', label: 'Packed' },
-  { value: 'shipped', label: 'Shipped' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'refund_pending', label: 'Refund' },
+  { value: 'all', labelKey: 'sellerOrders.status.all' },
+  { value: 'pending', labelKey: 'sellerOrders.status.pending' },
+  { value: 'confirmed', labelKey: 'sellerOrders.status.confirmed' },
+  { value: 'packed', labelKey: 'sellerOrders.status.packed' },
+  { value: 'shipped', labelKey: 'sellerOrders.status.shipped' },
+  { value: 'delivered', labelKey: 'sellerOrders.status.delivered' },
+  { value: 'completed', labelKey: 'sellerOrders.status.completed' },
+  { value: 'cancelled', labelKey: 'sellerOrders.status.cancelled' },
+  { value: 'refund_pending', labelKey: 'sellerOrders.status.refund_pending' },
 ];
 
 const ITEMS_PER_PAGE = 10;
 
 /* ─── Helper Components ───────────────────────────────────────── */
-const StatusBadge = ({ status }) => {
+const StatusBadge = ({ status, t }) => {
   const key = normalizeLegacyStatus(status);
   const config = STATUS_CONFIG[key] || {
+    labelKey: null,
     label: status,
     Icon: AlertCircle,
     cls: 'statusDefault',
   };
-  const { Icon, label, cls } = config;
+  const { labelKey, label, Icon, cls } = config;
   return (
     <span className={`${styles.statusBadge} ${styles[cls]}`}>
       <Icon size={11} strokeWidth={2.5} />
-      {label}
+      {labelKey ? t(labelKey) : label}
     </span>
   );
 };
-StatusBadge.propTypes = { status: PropTypes.string };
+StatusBadge.propTypes = { status: PropTypes.string, t: PropTypes.func.isRequired };
 
-const PaymentBadge = ({ status }) => {
+const PaymentBadge = ({ status, t }) => {
   const config = PAYMENT_CONFIG[status] || {
+    labelKey: null,
     label: status,
     Icon: AlertCircle,
     cls: 'paymentPending',
   };
-  const { Icon, label, cls } = config;
+  const { labelKey, label, Icon, cls } = config;
   return (
     <span className={`${styles.paymentBadge} ${styles[cls]}`}>
       <Icon size={10} strokeWidth={2.5} />
-      {label}
+      {labelKey ? t(labelKey) : label}
     </span>
   );
 };
-PaymentBadge.propTypes = { status: PropTypes.string };
+PaymentBadge.propTypes = { status: PropTypes.string, t: PropTypes.func.isRequired };
 
 /* ─── Main Component ──────────────────────────────────────────── */
 const OrdersPage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -166,11 +170,11 @@ const OrdersPage = () => {
           setOrders(response.data || []);
           setTotalPages(response.pages || 1);
         } else {
-          setError('Failed to load orders');
+          setError(t('sellerOrders.errorLoading'));
           setOrders([]);
         }
       } catch (err) {
-        setError(err.message || 'Failed to load orders');
+        setError(err.message || t('sellerOrders.errorLoading'));
         setOrders([]);
       } finally {
         setLoading(false);
@@ -257,7 +261,7 @@ const OrdersPage = () => {
     key: order._id,
     _id: order._id,
     orderNumber: order.orderNumber,
-    buyer: order.userId?.fullName || 'Unknown',
+    buyer: order.userId?.fullName || t('sellerOrders.order.customer'),
     buyerEmail: order.userId?.email || '',
     totalItems: order.items?.length || 0,
     totalPrice: order.totalPrice,
@@ -268,7 +272,7 @@ const OrdersPage = () => {
     createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
     items: (order.items || []).map((item) => ({
       _id: item._id,
-      productName: item.productId?.name || 'Unknown Product',
+      productName: item.productId?.name || t('sellerOrders.order.product', 'Unknown Product'),
       productImage: item.productId?.images?.[0] || null,
       price: item.price || 0,
       quantity: item.quantity || 1,
@@ -306,12 +310,12 @@ const OrdersPage = () => {
     <div className={styles.header}>
       <div className={styles.headerLeft}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <h1>Orders</h1>
+          <h1>{t('sellerOrders.header.title')}</h1>
           {isRefetching && (
             <RefreshCw size={18} className={styles.spinAnimation} style={{ color: '#888' }} />
           )}
         </div>
-        <p>Manage and track orders from your customers.</p>
+        <p>{t('sellerOrders.header.subtitle')}</p>
       </div>
     </div>
   );
@@ -336,11 +340,11 @@ const OrdersPage = () => {
             <AlertCircle size={20} />
           </div>
           <div className={styles.errorContent}>
-            <div className={styles.errorTitle}>Error Loading Orders</div>
+            <div className={styles.errorTitle}>{t('sellerOrders.errorLoading')}</div>
             <div className={styles.errorMessage}>{error}</div>
           </div>
           <button className={styles.retryButton} onClick={() => fetchOrders(currentPage)}>
-            Try Again
+            {t('sellerOrders.retryButton')}
           </button>
         </div>
       </div>
@@ -358,7 +362,7 @@ const OrdersPage = () => {
             className={`${styles.statusTab} ${filters.status === tab.value ? styles.statusTabActive : ''}`}
             onClick={() => handleStatusTabClick(tab.value)}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -366,44 +370,44 @@ const OrdersPage = () => {
       <div className={styles.filtersCard}>
         <div className={styles.filtersGrid}>
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Payment</label>
+            <label className={styles.filterLabel}>{t('sellerOrders.filters.payment')}</label>
             <select
               className={styles.filterSelect}
               value={filters.paymentMethod}
               onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             >
-              <option value="all">All Methods</option>
-              <option value="cash_on_delivery">Cash on Delivery</option>
-              <option value="credit_card">Credit Card</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="wallet">E-Wallet</option>
+              <option value="all">{t('sellerOrders.filters.paymentOptions.all')}</option>
+              <option value="cash_on_delivery">{t('sellerOrders.filters.paymentOptions.cash_on_delivery')}</option>
+              <option value="credit_card">{t('sellerOrders.filters.paymentOptions.credit_card')}</option>
+              <option value="bank_transfer">{t('sellerOrders.filters.paymentOptions.bank_transfer')}</option>
+              <option value="wallet">{t('sellerOrders.filters.paymentOptions.wallet')}</option>
             </select>
           </div>
 
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Sort By</label>
+            <label className={styles.filterLabel}>{t('sellerOrders.filters.sortBy')}</label>
             <select
               className={styles.filterSelect}
               value={filters.sortBy}
               onChange={(e) => handleFilterChange('sortBy', e.target.value)}
             >
-              <option value="newest-first">Newest First</option>
-              <option value="oldest-first">Oldest First</option>
-              <option value="highest-total">Highest Total</option>
-              <option value="lowest-total">Lowest Total</option>
+              <option value="newest-first">{t('sellerOrders.filters.sortOptions.newest_first')}</option>
+              <option value="oldest-first">{t('sellerOrders.filters.sortOptions.oldest_first')}</option>
+              <option value="highest-total">{t('sellerOrders.filters.sortOptions.highest_total')}</option>
+              <option value="lowest-total">{t('sellerOrders.filters.sortOptions.lowest_total')}</option>
             </select>
           </div>
 
           <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Shipping</label>
+            <label className={styles.filterLabel}>{t('sellerOrders.filters.shipping')}</label>
             <select
               className={styles.filterSelect}
               value={filters.shippingMethod}
               onChange={(e) => handleFilterChange('shippingMethod', e.target.value)}
             >
-              <option value="all">All Methods</option>
-              <option value="standard">Standard</option>
-              <option value="express">Express</option>
+              <option value="all">{t('sellerOrders.filters.shippingOptions.all')}</option>
+              <option value="standard">{t('sellerOrders.filters.shippingOptions.standard')}</option>
+              <option value="express">{t('sellerOrders.filters.shippingOptions.express')}</option>
             </select>
           </div>
         </div>
@@ -414,11 +418,11 @@ const OrdersPage = () => {
           <div className={styles.emptyStateIconWrapper}>
             <Package size={28} strokeWidth={1.5} />
           </div>
-          <div className={styles.emptyStateTitle}>No Orders Found</div>
+          <div className={styles.emptyStateTitle}>{t('sellerOrders.empty.title')}</div>
           <div className={styles.emptyStateText}>
             {filters.status !== 'all'
-              ? `No "${STATUS_CONFIG[filters.status]?.label || filters.status}" orders yet.`
-              : 'Try adjusting your filters or check back later.'}
+              ? t('sellerOrders.empty.byStatus', STATUS_CONFIG[filters.status]?.labelKey ? t(STATUS_CONFIG[filters.status].labelKey) : filters.status)
+              : t('sellerOrders.empty.default')}
           </div>
         </div>
       ) : (
@@ -440,31 +444,31 @@ const OrdersPage = () => {
               <div className={styles.orderHeaderRow}>
                 <div className={styles.orderMeta}>
                   <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Order ID</span>
+                    <span className={styles.metaLabel}>{t('sellerOrders.order.orderId')}</span>
                     <span className={styles.metaValue}>{order.orderNumber}</span>
                   </div>
                   <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Date</span>
+                    <span className={styles.metaLabel}>{t('sellerOrders.order.date')}</span>
                     <span className={styles.metaValue}>{order.createdAt}</span>
                   </div>
                   <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Customer</span>
+                    <span className={styles.metaLabel}>{t('sellerOrders.order.customer')}</span>
                     <span className={styles.metaValue}>{order.buyer}</span>
                   </div>
                   <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Status</span>
+                    <span className={styles.metaLabel}>{t('sellerOrders.order.status')}</span>
                     <span className={styles.metaValue}>
-                      <StatusBadge status={order.status} />
+                      <StatusBadge status={order.status} t={t} />
                     </span>
                   </div>
                 </div>
 
                 <div className={styles.totalPriceItem}>
-                  <span className={styles.metaLabel}>Total</span>
+                  <span className={styles.metaLabel}>{t('sellerOrders.order.total')}</span>
                   <span className={`${styles.metaValue} ${styles.totalPriceValue}`}>
                     {formatCurrency(order.totalPrice)}
                   </span>
-                  <PaymentBadge status={order.paymentStatus} />
+                  <PaymentBadge status={order.paymentStatus} t={t} />
                 </div>
               </div>
 
@@ -487,7 +491,7 @@ const OrdersPage = () => {
                       <h3 className={styles.productName}>{item.productName}</h3>
                       <div className={styles.productAttributesList}>
                         <div className={styles.attributeItem}>
-                          <span className={styles.attributeLabel}>Qty:</span>
+                          <span className={styles.attributeLabel}>{t('sellerOrders.order.qty')}</span>
                           <span className={styles.attributeValue}>{item.quantity}</span>
                         </div>
                         {Object.entries(item.tierDetails || {}).map(([key, value]) => (
@@ -504,11 +508,11 @@ const OrdersPage = () => {
                         <button
                           className={`${styles.actionButton} ${styles.actionButtonOutline}`}
                           onClick={(e) => handleMessageBuyer(e, order)}
-                          title="Message Buyer"
+                          title={t('sellerOrders.order.message')}
                           disabled={messagingBuyer === order._id}
                         >
                           <MessageSquare size={13} />
-                          {messagingBuyer === order._id ? 'Opening…' : 'Message'}
+                          {messagingBuyer === order._id ? t('sellerOrders.order.opening') : t('sellerOrders.order.message')}
                         </button>
                       </div>
                     )}
@@ -526,7 +530,7 @@ const OrdersPage = () => {
             className={styles.paginationButton}
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            aria-label="Previous page"
+            aria-label={t('sellerOrders.pagination.previous')}
           >
             <ChevronLeft size={16} />
           </button>
@@ -552,7 +556,7 @@ const OrdersPage = () => {
             className={styles.paginationButton}
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            aria-label="Next page"
+            aria-label={t('sellerOrders.pagination.next')}
           >
             <ChevronRight size={16} />
           </button>

@@ -83,6 +83,14 @@ const inventoryService = {
    */
   getProductPerformance: async (productId, params = {}) =>
     axiosClient.get(`${BASE}/product-performance/${productId}`, { params }),
+
+  /**
+   * Get rich demand analysis details for a single product (chart data + web insights)
+   * GET /api/inventory/demand-forecast/:productId/details
+   * params: { days?: number } (default 30 days)
+   */
+  getProductDemandDetails: async (productId, params = {}) =>
+    axiosClient.get(`${BASE}/demand-forecast/${productId}/details`, { params }),
 };
 
 export default inventoryService;

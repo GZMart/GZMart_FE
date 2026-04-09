@@ -7,7 +7,6 @@ import { toast } from 'react-toastify';
 import { Ticket } from 'lucide-react';
 import ProductCard from '../../components/common/ProductCard';
 import Pagination from '../../components/common/Pagination';
-import ShopInfoCard from '../../components/common/ShopInfoCard';
 import { productService, followService, livestreamService } from '../../services/api';
 import { MODULE_TYPES } from '../../services/api/shopDecorationService';
 import voucherService from '../../services/api/voucherService';
@@ -207,29 +206,13 @@ function BannerCarouselModule({ module }) {
               aria-hidden={idx !== currentSlide}
             >
               <div
-                className={styles.carouselSlideLink}
+                className={`${styles.carouselSlideLink}${img.link ? '' : ` ${styles.carouselSlideLinkNoCursor}`}`}
                 onClick={() => handleModuleLink(img.link)}
-                style={{ cursor: img.link ? 'pointer' : 'default' }}
               >
                 {imageErrors.has(idx) ? (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: 'var(--shop-surface-container-high)',
-                      color: 'var(--shop-on-surface-variant)',
-                      padding: '24px',
-                    }}
-                  >
-                    <i
-                      className="bi bi-image"
-                      style={{ fontSize: '48px', opacity: 0.3, marginBottom: '12px' }}
-                    />
-                    <span style={{ fontSize: '14px', opacity: 0.6 }}>Không thể tải hình ảnh</span>
+                  <div className={styles.carouselErrorWrap}>
+                    <i className={`bi bi-image ${styles.carouselErrorIcon}`} />
+                    <span className={styles.carouselErrorText}>Không thể tải hình ảnh</span>
                   </div>
                 ) : (
                   <img
@@ -243,40 +226,14 @@ function BannerCarouselModule({ module }) {
                 )}
                 {/* Gradient overlay with title/description */}
                 {(img.title || img.description) && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      padding: '24px 32px',
-                      background:
-                        'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
-                      color: '#fff',
-                      pointerEvents: 'none',
-                    }}
-                  >
+                  <div className={styles.carouselSlideOverlay}>
                     {img.title && (
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontSize: '1.25rem',
-                          fontWeight: 700,
-                          textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-                        }}
-                      >
+                      <h3 className={styles.carouselSlideOverlayTitle}>
                         {img.title}
                       </h3>
                     )}
                     {img.description && (
-                      <p
-                        style={{
-                          margin: '4px 0 0',
-                          fontSize: '0.875rem',
-                          opacity: 0.9,
-                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                        }}
-                      >
+                      <p className={styles.carouselSlideOverlayDesc}>
                         {img.description}
                       </p>
                     )}
@@ -379,11 +336,7 @@ function BannerMultiModule({ module }) {
           <div
             key={i}
             onClick={() => handleModuleLink(img.link)}
-            style={{
-              cursor: img.link ? 'pointer' : 'default',
-              overflow: 'hidden',
-              borderRadius: 8,
-            }}
+            className={`${styles.bannerMultiItem}${img.link ? '' : ` ${styles.bannerMultiItemNoCursor}`}`}
           >
             {img.url && <img src={img.url} alt="" className={styles.decorationBannerImg} />}
           </div>
@@ -398,7 +351,7 @@ function BannerHotspotModule({ module }) {
   const { props = {} } = module;
 
   return (
-    <div className={styles.decorationBlock} style={{ position: 'relative' }}>
+    <div className={styles.decorationBlock}>
       <img src={props.image} alt="" className={styles.decorationBannerImg} />
       {(props.hotspots || []).map((h, i) => (
         <div
@@ -423,7 +376,7 @@ function BannerSingleModule({ module }) {
     <div className={styles.decorationBlock}>
       <div
         onClick={() => handleModuleLink(props.link)}
-        style={{ cursor: props.link ? 'pointer' : 'default' }}
+        className={`${styles.bannerSingleLink}${props.link ? '' : ` ${styles.bannerSingleLinkNoCursor}`}`}
       >
         <img src={props.image} alt="" className={styles.decorationBannerImg} />
       </div>
@@ -486,9 +439,9 @@ function FlashDealsModule({ module }) {
               <span className={styles.countdownLabel}>Kết thúc trong</span>
               <div className={styles.countdownBox}>
                 <span className={styles.countdownNum}>{pad(timeLeft.h)}</span>
-                <span style={{ color: 'var(--shop-secondary)', fontWeight: 700 }}>:</span>
+                <span className={`${styles.countdownColon}`}>:</span>
                 <span className={styles.countdownNum}>{pad(timeLeft.m)}</span>
-                <span style={{ color: 'var(--shop-secondary)', fontWeight: 700 }}>:</span>
+                <span className={`${styles.countdownColon}`}>:</span>
                 <span className={styles.countdownNum}>{pad(timeLeft.s)}</span>
               </div>
             </div>
@@ -692,7 +645,7 @@ function FeaturedCategoriesModule({ module, onCategoryClick }) {
                 {c.image ? (
                   <img src={c.image} alt="" />
                 ) : (
-                  <i className="bi bi-tag" style={{ fontSize: 24, color: 'var(--shop-primary)' }} />
+                  <i className={`bi bi-tag ${styles.categoryChipIcon}`} />
                 )}
               </div>
               <span className={styles.categoryChipLabel}>{c.name}</span>
@@ -734,8 +687,7 @@ function CategoryListModule({ module, onCategoryClick }) {
                   <img src={c.image} alt="" />
                 ) : (
                   <i
-                    className="bi bi-grid-3x2-gap-fill"
-                    style={{ fontSize: 24, color: 'var(--shop-primary)' }}
+                    className={`bi bi-grid-3x2-gap-fill ${styles.categoryChipIcon}`}
                   />
                 )}
               </div>
@@ -748,6 +700,129 @@ function CategoryListModule({ module, onCategoryClick }) {
   );
 }
 
+/** Full-page skeleton while shop header data is loading (replaces centered spinner). */
+function ShopProfilePageSkeleton() {
+  return (
+    <>
+      <div className={styles.pageWrap}>
+        <div className={styles.inner}>
+          <section className={styles.hero} aria-busy="true" aria-label="Loading shop profile">
+            <div className={styles.pageSkHeroBg} />
+            <div className={styles.heroProfile}>
+              <div className={styles.heroAvatarWrap}>
+                <div className={styles.pageSkAvatar} />
+                <span className={styles.pageSkFavBadge} aria-hidden />
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.strip} aria-hidden>
+            <div className={styles.stripLeft}>
+              <div className={styles.pageSkTitleLine} />
+              <div className={styles.pageSkStatusLine} />
+              <div className={styles.pageSkJoinedLine} />
+            </div>
+            <div className={styles.stripStats}>
+              <div className={styles.statBlock}>
+                <div className={styles.pageSkStatValue} />
+                <div className={styles.pageSkStatLabel} />
+              </div>
+              <span className={styles.statDivider} />
+              <div className={styles.statBlock}>
+                <div className={styles.pageSkStatValue} />
+                <div className={styles.pageSkStatLabel} />
+              </div>
+              <span className={styles.statDivider} />
+              <div className={styles.statBlock}>
+                <div className={styles.pageSkStatValue} />
+                <div className={styles.pageSkStatLabel} />
+              </div>
+              <span className={styles.statDivider} />
+              <div className={styles.statBlock}>
+                <div className={styles.pageSkStatValue} />
+                <div className={styles.pageSkStatLabel} />
+              </div>
+            </div>
+            <div className={styles.stripActions}>
+              <div className={styles.pageSkBtnFollow} />
+              <div className={styles.pageSkBtnChat} />
+            </div>
+          </section>
+
+          <section className={styles.voucherSection} aria-hidden>
+            <div className={styles.voucherHeader}>
+              <div className={styles.pageSkVoucherTitle} />
+              <div className={styles.pageSkVoucherLink} />
+            </div>
+            <div className={styles.voucherCarousel}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={styles.pageSkVoucherCard}>
+                  <div className={styles.pageSkVoucherStripe} />
+                  <div className={styles.pageSkVoucherBody}>
+                    <div className={styles.pageSkVoucherDiscount} />
+                    <div className={styles.pageSkVoucherLine} />
+                    <div className={styles.pageSkVoucherExpiry} />
+                  </div>
+                  <div className={styles.pageSkVoucherAction}>
+                    <div className={styles.pageSkVoucherPill} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <nav className={styles.tabsContainer} aria-hidden>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.pageSkTab} />
+            ))}
+          </nav>
+
+          <div className={styles.suggestedSection} aria-hidden>
+            <div className={styles.suggestedHeader}>
+              <div className={styles.pageSkSuggestedTitle} />
+              <div className={styles.pageSkSuggestedLink} />
+            </div>
+            <div className={styles.suggestedGrid}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className={styles.suggestedItem}>
+                  <div className={styles.productCardWrap}>
+                    <div className={styles.skeletonCard}>
+                      <div className={styles.skeletonImage} />
+                      <div className={styles.skeletonInfo}>
+                        <div className={styles.skeletonLine} style={{ width: '82%' }} />
+                        <div className={styles.skeletonLine} style={{ width: '58%' }} />
+                        <div className={styles.skeletonLine} style={{ width: '44%' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav className={styles.bottomNav} aria-label="Mobile navigation">
+        <span className={styles.bottomNavLink} style={{ pointerEvents: 'none', opacity: 0.5 }}>
+          <i className="bi bi-house-door-fill" /> Home
+        </span>
+        <span className={styles.bottomNavLink} style={{ pointerEvents: 'none', opacity: 0.5 }}>
+          <i className="bi bi-grid-3x3-gap" /> Category
+        </span>
+        <span className={styles.bottomNavLink} style={{ pointerEvents: 'none', opacity: 0.5 }}>
+          <i className="bi bi-rss" /> Feed
+        </span>
+        <span className={styles.bottomNavLink} style={{ pointerEvents: 'none', opacity: 0.5 }}>
+          <i className="bi bi-cart3" /> Cart
+        </span>
+        <span className={styles.bottomNavLink} style={{ pointerEvents: 'none', opacity: 0.5 }}>
+          <i className="bi bi-person" /> Profile
+        </span>
+      </nav>
+    </>
+  );
+}
+
 const ShopProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -757,7 +832,7 @@ const ShopProfilePage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('ALL');
+  const [activeTab, setActiveTab] = useState('HOME');
   const [isFollowing, setIsFollowing] = useState(false);
   const [vouchers, setVouchers] = useState([]);
   const [activeVoucherFilter, setActiveVoucherFilter] = useState(null);
@@ -765,6 +840,9 @@ const ShopProfilePage = () => {
   const voucherScrollRef = useRef(null);
   const productsSectionRef = useRef(null);
   const { isAuthenticated } = useSelector((state) => state.auth);
+
+  // Per-tab data cache — survives tab switches without re-fetching
+  const tabDataCache = useRef({});
 
   const [topCategories, setTopCategories] = useState([]);
   const [activeLive, setActiveLive] = useState(null);
@@ -775,6 +853,15 @@ const ShopProfilePage = () => {
     total: 0,
     pages: 0,
   });
+
+  const isProductListTab = activeTab !== 'HOME' && activeTab !== 'PROFILE';
+  const showProductListSkeleton = loading && isProductListTab;
+  const showHomeContentSkeleton = loading && activeTab === 'HOME' && products.length === 0;
+
+  // Clear cache when navigating to a different shop
+  useEffect(() => {
+    tabDataCache.current = {};
+  }, [id]);
 
   useEffect(() => {
     fetchShopData();
@@ -803,7 +890,9 @@ const ShopProfilePage = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     const fetchActive = () => {
       livestreamService
         .getActiveByShop(id)
@@ -878,6 +967,18 @@ const ShopProfilePage = () => {
   };
 
   const fetchShopData = async () => {
+    const cacheKey = `${activeTab}-${pagination.page}`;
+
+    // Serve from cache instantly — no API call, no loading flicker
+    if (tabDataCache.current[cacheKey]) {
+      const cached = tabDataCache.current[cacheKey];
+      setSeller(cached.seller);
+      setProducts(cached.products);
+      setLiveModules(cached.liveModules);
+      setPagination((prev) => ({ ...prev, total: cached.total, pages: cached.pages }));
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -897,67 +998,77 @@ const ShopProfilePage = () => {
       if (responseData) {
         setSeller(responseData.seller);
         const transformedProducts = (responseData.products || []).map(normalizeProduct);
-        setProducts(transformedProducts);
         setLiveModules(responseData.liveModules || []);
 
         // Fetch promotions for all visible products
         const productIds = transformedProducts.map((p) => p.id).filter(Boolean);
+        let productsWithPromos = transformedProducts;
+
         if (productIds.length > 0) {
           try {
             const promoResponse = await promotionBuyerService.getProductPromotionsBatch(productIds);
             const promoMap = promoResponse?.data?.data || promoResponse?.data || promoResponse;
             if (promoMap && typeof promoMap === 'object') {
-              setProducts((prev) =>
-                prev.map((p) => {
-                  const promo = promoMap[p.id];
-                  if (!promo) {
-                    return p;
-                  }
+              productsWithPromos = transformedProducts.map((p) => {
+                const promo = promoMap[p.id];
+                if (!promo) {
+                  return p;
+                }
 
-                  const updated = { ...p };
+                const updated = { ...p };
 
-                  // Shop program price override
-                  if (
-                    promo.shopProgram &&
-                    promo.shopProgram.salePrice < promo.shopProgram.originalPrice
-                  ) {
-                    updated.price = promo.shopProgram.salePrice;
-                    updated.originalPrice = promo.shopProgram.originalPrice;
-                    updated.promotionType = 'shopProgram';
-                  }
+                // Shop program price override
+                if (
+                  promo.shopProgram &&
+                  promo.shopProgram.salePrice < promo.shopProgram.originalPrice
+                ) {
+                  updated.price = promo.shopProgram.salePrice;
+                  updated.originalPrice = promo.shopProgram.originalPrice;
+                  updated.promotionType = 'shopProgram';
+                }
 
-                  // Combo promotion info
-                  if (promo.comboPromotions && promo.comboPromotions.length > 0) {
-                    const combo = promo.comboPromotions[0];
-                    const bestTier = combo.tiers?.reduce(
-                      (best, t) => (t.value > (best?.value || 0) ? t : best),
-                      null
-                    );
-                    updated.comboPromotion = {
-                      name: combo.name,
-                      comboType: combo.comboType,
-                      bestDiscount: bestTier?.value || 0,
-                    };
-                  }
+                // Combo promotion info
+                if (promo.comboPromotions && promo.comboPromotions.length > 0) {
+                  const combo = promo.comboPromotions[0];
+                  const bestTier = combo.tiers?.reduce(
+                    (best, t) => (t.value > (best?.value || 0) ? t : best),
+                    null
+                  );
+                  updated.comboPromotion = {
+                    name: combo.name,
+                    comboType: combo.comboType,
+                    bestDiscount: bestTier?.value || 0,
+                  };
+                }
 
-                  return updated;
-                })
-              );
+                return updated;
+              });
             }
           } catch (promoErr) {
             console.error('Error fetching batch promotions:', promoErr);
           }
         }
 
+        setProducts(productsWithPromos);
+
         // Match the pagination structure from the backend
         const pageData = response.data?.pagination || response.pagination;
+        let cachedTotal = 0;
+        let cachedPages = 0;
         if (pageData) {
-          setPagination((prev) => ({
-            ...prev,
-            total: pageData.total || 0,
-            pages: pageData.pages || 0,
-          }));
+          cachedTotal = pageData.total || 0;
+          cachedPages = pageData.pages || 0;
+          setPagination((prev) => ({ ...prev, total: cachedTotal, pages: cachedPages }));
         }
+
+        // Persist to cache
+        tabDataCache.current[cacheKey] = {
+          seller: responseData.seller,
+          products: productsWithPromos,
+          liveModules: responseData.liveModules || [],
+          total: cachedTotal,
+          pages: cachedPages,
+        };
       }
     } catch (err) {
       console.error('Error fetching shop data:', err);
@@ -1034,11 +1145,7 @@ const ShopProfilePage = () => {
   void scrollVouchers;
 
   if (loading && !seller) {
-    return (
-      <Container className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status"></div>
-      </Container>
-    );
+    return <ShopProfilePageSkeleton />;
   }
 
   if (error || !seller) {
@@ -1073,12 +1180,19 @@ const ShopProfilePage = () => {
     ? `Online ${Math.max(1, Math.floor((Date.now() - new Date(seller.updatedAt).getTime()) / 60000))} phút trước`
     : t('product_details.shop_online', 'Đang hoạt động');
   const locationText = seller?.address?.city || seller?.address?.district || '';
+  const sellerId = seller._id || seller.id;
+  const liveSessionId = activeLive?._id || activeLive?.id;
+  const liveHref =
+    sellerId && liveSessionId ? `/shop/${sellerId}/live/${liveSessionId}` : null;
+  const shopAvatarSrc =
+    seller.avatar ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.fullName || 'Shop')}&background=random`;
 
   return (
     <>
       <div className={styles.pageWrap}>
         <div className={styles.inner}>
-          {/* Hero: banner only — avatar lives in ShopInfoCard below (avoids duplicate) */}
+          {/* Hero: banner + avatar overlay (matches ShopDecoration preview canvas) */}
           <section className={styles.hero}>
             <img
               src={seller.profileImage || 'https://placehold.co/1200x240/fae3e0/8b716e?text=Banner'}
@@ -1086,24 +1200,53 @@ const ShopProfilePage = () => {
               className={styles.heroImg}
             />
             <div className={styles.heroOverlay} />
+            <div className={styles.heroProfile}>
+              <div className={styles.heroAvatarWrap}>
+                <div className={styles.heroAvatar}>
+                  {liveHref ? (
+                    <Link
+                      to={liveHref}
+                      className={styles.heroAvatarLink}
+                      aria-label="Watch live"
+                    >
+                      <img
+                        src={shopAvatarSrc}
+                        alt={seller.fullName || 'Shop'}
+                        className={styles.heroAvatarImg}
+                      />
+                    </Link>
+                  ) : (
+                    <img
+                      src={shopAvatarSrc}
+                      alt={seller.fullName || 'Shop'}
+                      className={styles.heroAvatarImg}
+                    />
+                  )}
+                </div>
+                <span className={styles.heroFavBadge}>
+                  {seller.isPreferred
+                    ? t('product_details.shop_badge_favorite')
+                    : t('product_details.shop', 'Shop')}
+                </span>
+              </div>
+            </div>
           </section>
 
-          <ShopInfoCard
-            seller={seller}
-            showViewShop={false}
-            isFollowing={isFollowing}
-            onToggleFollow={handleToggleFollow}
-            activeLive={activeLive?._id ? activeLive : null}
-          />
-
-          {/* Shop Info Strip */}
+          {/* Shop info strip — same layout as storefront / decoration target UI */}
           <section className={styles.strip}>
             <div className={styles.stripLeft}>
               <h1 className={styles.stripName}>
-                {seller.fullName || 'Shop'}
+                {liveHref ? (
+                  <Link to={liveHref} className={styles.stripNameLink}>
+                    {seller.fullName || 'Shop'}
+                  </Link>
+                ) : (
+                  seller.fullName || 'Shop'
+                )}
                 {(seller.isVerified ?? true) && (
                   <i className={`bi bi-patch-check-fill ${styles.stripVerified}`} aria-hidden />
                 )}
+                {liveHref && <span className={styles.stripLiveBadge}>LIVE</span>}
               </h1>
               <p className={styles.stripStatus}>
                 {onlineStatus}
@@ -1232,49 +1375,69 @@ const ShopProfilePage = () => {
           )}
 
           {/* Tabs */}
-          <nav className={styles.tabsContainer}>
+          <nav
+            className={styles.tabsContainer}
+            role="tablist"
+            aria-label={t('product_details.shop_tabs_label', 'Shop sections')}
+          >
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'HOME'}
               className={`${styles.tabItem} ${activeTab === 'HOME' ? styles.active : ''}`}
               onClick={() => setActiveTab('HOME')}
             >
-              <i className="bi bi-house-door-fill" /> {t('product_details.tab_home', 'Dạo')}
+              <span className={styles.tabInner}>
+                <i className="bi bi-house-door-fill" aria-hidden />
+                {t('product_details.tab_home', 'Dạo')}
+              </span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'ALL'}
               className={`${styles.tabItem} ${activeTab === 'ALL' ? styles.active : ''}`}
               onClick={() => {
                 setActiveTab('ALL');
                 setPagination((p) => ({ ...p, page: 1 }));
               }}
             >
-              <i className="bi bi-grid-3x3-gap" />{' '}
-              {t('product_details.tab_all_products', 'Tất cả sản phẩm')}
+              <span className={styles.tabInner}>
+                <i className="bi bi-grid-3x3-gap" aria-hidden />
+                {t('product_details.tab_all_products', 'Tất cả sản phẩm')}
+              </span>
             </button>
             {topCategories.map((cat) => (
               <button
                 key={cat._id}
                 type="button"
+                role="tab"
+                aria-selected={activeTab === cat._id}
                 className={`${styles.tabItem} ${activeTab === cat._id ? styles.active : ''}`}
                 onClick={() => {
                   setActiveTab(cat._id);
                   setPagination((p) => ({ ...p, page: 1 }));
                 }}
               >
-                {cat.name}
+                <span className={styles.tabInner}>{cat.name}</span>
               </button>
             ))}
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'PROFILE'}
               className={`${styles.tabItem} ${activeTab === 'PROFILE' ? styles.active : ''}`}
               onClick={() => setActiveTab('PROFILE')}
             >
-              <i className="bi bi-rss" /> Hồ Sơ Cửa Hàng
+              <span className={styles.tabInner}>
+                <i className="bi bi-shop-window" aria-hidden />
+                {t('product_details.tab_shop_profile', 'Hồ Sơ Cửa Hàng')}
+              </span>
             </button>
           </nav>
 
           {/* SUGGESTED FOR YOU Section - Always at top for HOME tab */}
-          {activeTab === 'HOME' && products.length > 0 && (
+          {activeTab === 'HOME' && !loading && products.length > 0 && (
             <div className={styles.suggestedSection}>
               <div className={styles.suggestedHeader}>
                 <h3 className={styles.suggestedTitle}>
@@ -1357,95 +1520,9 @@ const ShopProfilePage = () => {
                   return <BannerHotspotModule key={mod.id} module={mod} />;
                 }
 
-                if (type === MODULE_TYPES.SHOP_INFO && seller) {
-                  return (
-                    <div key={mod.id} className={styles.decorationBlock}>
-                      <section className={styles.strip}>
-                        <div className={styles.stripLeft}>
-                          <h2 className={styles.stripName}>
-                            {seller.fullName || 'Shop'}
-                            {(seller.isVerified ?? true) && (
-                              <i
-                                className={`bi bi-patch-check-fill ${styles.stripVerified}`}
-                                aria-hidden
-                              />
-                            )}
-                          </h2>
-                          <p className={styles.stripStatus}>
-                            {onlineStatus}
-                            {locationText && ` | ${locationText}`}
-                          </p>
-                          {formatJoined && (
-                            <div className={styles.stripJoined}>
-                              <i className="bi bi-calendar3" />
-                              Tham gia: {formatJoined}
-                            </div>
-                          )}
-                        </div>
-                        <div className={styles.stripStats}>
-                          <div className={styles.statBlock}>
-                            <div className={styles.statValue}>
-                              <i className="bi bi-box-seam" /> {seller.productCount ?? 0}
-                            </div>
-                            <div className={styles.statLabel}>
-                              {t('product_details.shop_stat_products', 'Sản Phẩm')}
-                            </div>
-                          </div>
-                          <span className={styles.statDivider} />
-                          <div className={styles.statBlock}>
-                            <div className={styles.statValue}>
-                              <i className="bi bi-people-fill" />{' '}
-                              {(seller.followerCount ?? 0) >= 1000
-                                ? `${((seller.followerCount ?? 0) / 1000).toFixed(1)}k`
-                                : (seller.followerCount ?? 0)}
-                            </div>
-                            <div className={styles.statLabel}>
-                              {t('product_details.shop_stat_followers', 'Người theo dõi')}
-                            </div>
-                          </div>
-                          <span className={styles.statDivider} />
-                          <div className={styles.statBlock}>
-                            <div className={styles.statValue}>
-                              <i className="bi bi-star-fill" /> {(seller.rating ?? 0).toFixed(1)}/5
-                            </div>
-                            <div className={styles.statLabel}>
-                              {t('product_details.shop_stat_rating', 'Đánh giá')}
-                            </div>
-                          </div>
-                          <span className={styles.statDivider} />
-                          <div className={styles.statBlock}>
-                            <div className={styles.statValue}>
-                              <i className="bi bi-chat-dots-fill" /> {seller.chatResponseRate ?? 98}
-                              %
-                            </div>
-                            <div className={styles.statLabel}>Phản hồi Chat</div>
-                          </div>
-                        </div>
-                        <div className={styles.stripActions}>
-                          <button
-                            type="button"
-                            className={styles.btnFollow}
-                            onClick={handleToggleFollow}
-                          >
-                            <i
-                              className={`bi ${isFollowing ? 'bi-person-check-fill' : 'bi-plus-lg'}`}
-                            />
-                            {isFollowing
-                              ? t('product_details.btn_following', 'Đang Theo Dõi')
-                              : t('product_details.btn_follow', 'Theo Dõi')}
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.btnChat}
-                            onClick={handleChatClick}
-                          >
-                            <i className="bi bi-chat-dots" />
-                            {t('product_details.btn_chat', 'Chat Ngay')}
-                          </button>
-                        </div>
-                      </section>
-                    </div>
-                  );
+                // Shop header is fixed above; skip module to avoid second identical strip
+                if (type === MODULE_TYPES.SHOP_INFO) {
+                  return null;
                 }
                 if (type === MODULE_TYPES.TEXT && (mod.props?.title || mod.props?.content)) {
                   return (
@@ -1563,9 +1640,52 @@ const ShopProfilePage = () => {
             )}
             {activeTab !== 'PROFILE' && (
               <>
-                {loading && products.length === 0 ? (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status" />
+                {showHomeContentSkeleton ? (
+                  <div className={styles.suggestedSection} aria-busy="true">
+                    <div className={styles.suggestedHeader}>
+                      <div className={styles.pageSkSuggestedTitle} />
+                      <div className={styles.pageSkSuggestedLink} />
+                    </div>
+                    <div className={styles.suggestedGrid}>
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className={styles.suggestedItem}>
+                          <div className={styles.productCardWrap}>
+                            <div className={styles.skeletonCard}>
+                              <div className={styles.skeletonImage} />
+                              <div className={styles.skeletonInfo}>
+                                <div className={styles.skeletonLine} style={{ width: '82%' }} />
+                                <div className={styles.skeletonLine} style={{ width: '58%' }} />
+                                <div className={styles.skeletonLine} style={{ width: '44%' }} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : showProductListSkeleton ? (
+                  <div className={styles.productsSection}>
+                    <div className={styles.sectionHeader}>
+                      <h3 className={styles.sectionTitle}>
+                        {activeTab === 'ALL'
+                          ? t('product_details.tab_all_products', 'Tất cả sản phẩm')
+                          : topCategories.find((c) => c._id === activeTab)?.name || 'Sản phẩm'}
+                      </h3>
+                    </div>
+                    <div className={styles.productGrid}>
+                      {[...Array(Math.min(pagination.limit || 20, 24))].map((_, i) => (
+                        <div key={i} className={styles.productCardWrap}>
+                          <div className={styles.skeletonCard}>
+                            <div className={styles.skeletonImage} />
+                            <div className={styles.skeletonInfo}>
+                              <div className={styles.skeletonLine} style={{ width: '82%' }} />
+                              <div className={styles.skeletonLine} style={{ width: '58%' }} />
+                              <div className={styles.skeletonLine} style={{ width: '44%' }} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : products.length > 0 ? (
                   activeTab !== 'HOME' && (

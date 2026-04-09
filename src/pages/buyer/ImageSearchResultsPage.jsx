@@ -28,7 +28,9 @@ const ImageSearchResultsPage = () => {
     setAiAnalysisFailed(location.state.aiAnalysisFailed || false);
   }, [location, navigate]);
 
-  if (!previewUrl) return null;
+  if (!previewUrl) {
+return null;
+}
 
   return (
     <div className="container py-4 my-3" style={{ minHeight: '60vh' }}>

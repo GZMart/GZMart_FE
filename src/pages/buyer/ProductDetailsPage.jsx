@@ -45,34 +45,195 @@ const getPriceRange = (product) => {
   return { min: Math.min(...prices), max: Math.max(...prices) };
 };
 
+/** Strip query/hash so the same asset is not listed twice; used for dedup + gallery index lookup. */
+const normalizeImageUrl = (url) => {
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
+  const s = url.trim();
+  if (!s) {
+    return '';
+  }
+  try {
+    const u = new URL(s);
+    return `${u.origin}${u.pathname}`.toLowerCase();
+  } catch {
+    return s.split(/[?#]/)[0].toLowerCase();
+  }
+};
+
+const findGalleryImageIndex = (images, url) => {
+  if (!url || !images?.length) {
+    return -1;
+  }
+  const target = normalizeImageUrl(url);
+  if (!target) {
+    return -1;
+  }
+  return images.findIndex((img) => normalizeImageUrl(img) === target);
+};
+
 const findModel = (product, tierIndex) => {
   if (!product || !product.models || !tierIndex || tierIndex.length === 0) {
     return null;
   }
   // Backend models use 'tierIndex' (e.g., [0, 1])
-  return product.models.find(
+  const match = product.models.find(
     (m) =>
       m.tierIndex &&
       m.tierIndex.length === tierIndex.length &&
       m.tierIndex.every((val, i) => val === tierIndex[i])
   );
+  if (!match) {
+    console.warn(
+      '[ProductDetails] findModel no match for tierIndex:',
+      tierIndex,
+      '| available models:',
+      product.models.map((m) => ({ tierIndex: m.tierIndex, image: m.image }))
+    );
+  }
+  return match;
 };
 
+const COLOR_TIER_NAME_RE = /màu|mau|color|colour/i;
+const SIZE_TIER_NAME_RE = /size|kích|kích\s*cỡ|sizes?/i;
+
+/**
+ * Single tier used for variant photos (usually "Màu sắc"). Never pick the size tier when
+ * both color and size have an `images` array — otherwise we would show a size-only image
+ * that does not change when the user switches color (bug after changing away from e.g. S).
+ */
+const getImageTierIndex = (tiers) => {
+  if (!tiers?.length) {
+    return -1;
+  }
+
+  const colorIdx = tiers.findIndex(
+    (t) =>
+      COLOR_TIER_NAME_RE.test(String(t?.name || '')) &&
+      t?.images &&
+      Array.isArray(t.images) &&
+      t.options?.length > 0
+  );
+  if (colorIdx >= 0) {
+    return colorIdx;
+  }
+
+  const nonSizeIdx = tiers.findIndex(
+    (t) =>
+      !SIZE_TIER_NAME_RE.test(String(t?.name || '')) &&
+      t?.images &&
+      Array.isArray(t.images) &&
+      t.options?.length > 0
+  );
+  if (nonSizeIdx >= 0) {
+    return nonSizeIdx;
+  }
+
+  return tiers.findIndex((t) => t?.images && Array.isArray(t.images) && t.options?.length > 0);
+};
+
+/**
+ * Hero image for selection: use model.image (the exact SKU image) first.
+ * Fall back to the variant-photo tier (usually color) only when the model has no image.
+ */
+const resolveVariantImageUrl = (product, tierSelection, model) => {
+  if (model?.image) {
+    return model.image;
+  }
+  const tiers = product?.tiers || product?.tier_variations || [];
+  const imageTierIdx = getImageTierIndex(tiers);
+  if (imageTierIdx >= 0 && tiers[imageTierIdx]?.images) {
+    const sel = tierSelection[imageTierIdx];
+    if (sel != null && sel >= 0) {
+      const url = tiers[imageTierIdx].images[sel];
+      if (url) {
+        return url;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Gallery: product cover(s) first, then one image per color (image tier) option.
+ * Do not append the active SKU image: size variants often use a different URL for the same photo,
+ * which duplicated thumbnails; selection falls back to the color slot via resolveGallerySelectionIndex.
+ */
 const getProductImages = (product) => {
   if (!product) {
     return [];
   }
-  // Prefer images from the first tier (usually Color) if available and populated
-  if (product.tier_variations && product.tier_variations.length > 0) {
-    const firstTier = product.tier_variations[0];
-    if (firstTier.images && firstTier.images.length > 0) {
-      // Flatten or collect images? Usually tier images are one per option.
-      // Shopee logic: Main Product Images + Tier Images?
-      // For now, return product images, but clicking a color variant changes the main image.
-      return product.images || [];
+  const seen = new Set();
+  const result = [];
+  const pushUnique = (url) => {
+    if (!url || typeof url !== 'string' || !url.trim()) {
+      return;
+    }
+    const key = normalizeImageUrl(url);
+    if (!key || seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    result.push(url.trim());
+  };
+
+  (product.images || []).forEach(pushUnique);
+  if (product.image) {
+    pushUnique(product.image);
+  }
+
+  const tiers = product.tiers || product.tier_variations || [];
+  const imageTierIdx = getImageTierIndex(tiers);
+
+  if (imageTierIdx >= 0) {
+    const imgTier = tiers[imageTierIdx];
+    const t0Images = imgTier.images || [];
+    for (let i = 0; i < imgTier.options.length; i++) {
+      let url = t0Images[i];
+      if (!url && product.models?.length) {
+        const m = product.models.find(
+          (mod) =>
+            mod.tierIndex &&
+            mod.tierIndex.length >= imageTierIdx + 1 &&
+            mod.tierIndex[imageTierIdx] === i &&
+            mod.image
+        );
+        url = m?.image;
+      }
+      pushUnique(url);
+    }
+  } else if (product.models?.length > 0) {
+    product.models.forEach((m) => pushUnique(m.image));
+  }
+
+  return result;
+};
+
+/** Resolve which thumbnail to show after variant change (normalized URL + color-tier fallback). */
+const resolveGallerySelectionIndex = (product, tierSelection, matchingModel) => {
+  const images = getProductImages(product);
+  const variantUrl = resolveVariantImageUrl(product, tierSelection, matchingModel);
+
+  let imgIdx = variantUrl ? findGalleryImageIndex(images, variantUrl) : -1;
+
+  if (imgIdx < 0) {
+    const tiers = product?.tiers || product?.tier_variations || [];
+    const imgTierIdx = getImageTierIndex(tiers);
+    if (imgTierIdx >= 0) {
+      const colorSel = tierSelection[imgTierIdx];
+      const coverCount = (product.images?.length || 0) + (product.image ? 1 : 0);
+      const colorThumbnailIdx = coverCount + (colorSel >= 0 ? colorSel : 0);
+      if (colorThumbnailIdx < images.length) {
+        imgIdx = colorThumbnailIdx;
+      }
     }
   }
-  return product.images || (product.image ? [product.image] : []);
+
+  if (imgIdx < 0 && images.length > 0) {
+    imgIdx = 0;
+  }
+  return { images, imgIdx };
 };
 
 const ProductDetailsPage = () => {
@@ -118,10 +279,14 @@ const ProductDetailsPage = () => {
       .getActiveByShop(shopId)
       .then((res) => {
         const data = res?.data ?? res;
-        if (!cancelled) setActiveLive(data || null);
+        if (!cancelled) {
+setActiveLive(data || null);
+}
       })
       .catch(() => {
-        if (!cancelled) setActiveLive(null);
+        if (!cancelled) {
+setActiveLive(null);
+}
       });
     return () => {
       cancelled = true;
@@ -207,8 +372,8 @@ const ProductDetailsPage = () => {
             timeText: 'FLASH SALE STARTS IN 21:00, TODAY',
           },
           shopVouchers: productData.shopVouchers || [{ discount: 'Save 10k' }],
-          shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
-          warranty: productData.warranty || 'Free return within 15 days • Warranty included',
+          // shippingInfo: productData.shippingInfo || 'Delivery in 2-3 days • Free shipping',
+          // warranty: productData.warranty || 'Free return within 15 days • Warranty included',
           soldCount: productData.soldCount || productData.sold || 0,
           wishlistCount: productData.wishlistCount || productData.favoriteCount || 0,
         };
@@ -221,6 +386,10 @@ const ProductDetailsPage = () => {
           const model = findModel(transformed, initialSelection);
           if (model) {
             setActiveModel(model);
+            const { imgIdx } = resolveGallerySelectionIndex(transformed, initialSelection, model);
+            if (imgIdx >= 0) {
+              setSelectedImage(imgIdx);
+            }
           }
         } else if (productData.models?.length === 1) {
           // Case: No tiers, just one model (simple product)
@@ -387,17 +556,16 @@ const ProductDetailsPage = () => {
 
     const newIndex = [...selectedTierIndex];
     newIndex[tierLevel] = optionIndex;
+
     setSelectedTierIndex(newIndex);
 
-    // Update Image if this tier has images (color tier)
-    const tier = product.tier_variations?.[tierLevel];
-    if (tier?.images && tier.images.length > optionIndex) {
-      setSelectedImage(optionIndex);
-    }
-
-    // Update Active Model
     const matchingModel = findModel(product, newIndex);
-    setActiveModel(matchingModel); // Can be null if combination doesn't exist
+    setActiveModel(matchingModel);
+
+    const { imgIdx } = resolveGallerySelectionIndex(product, newIndex, matchingModel);
+    if (imgIdx >= 0) {
+      setSelectedImage(imgIdx);
+    }
   };
 
   const handleQuantityChange = (delta) => {
@@ -421,6 +589,23 @@ const ProductDetailsPage = () => {
     }
     return product?.stock || 0;
   }, [activeModel, product]);
+
+  const productImages = useMemo(() => {
+    if (!product) {
+      return [];
+    }
+    return getProductImages(product);
+  }, [product]);
+
+  useEffect(() => {
+    setSelectedImage((prev) => {
+      if (!productImages.length) {
+        return 0;
+      }
+      const max = productImages.length - 1;
+      return Math.min(Math.max(0, prev), max);
+    });
+  }, [productImages]);
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -554,8 +739,122 @@ const ProductDetailsPage = () => {
   if (loading) {
     return (
       <div className={styles.productDetailsPage}>
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status"></div>
+        <div className={styles.skeletonLayout}>
+          {/* Left: Image skeleton */}
+          <div className={styles.skeletonImageSection}>
+            <div className={styles.skeletonMainImage} />
+            <div className={styles.skeletonThumbnails}>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={styles.skeletonThumb} />
+              ))}
+            </div>
+            <div className={styles.skeletonShareRow}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className={styles.skeletonShareBtn} />
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Info skeleton */}
+          <div className={styles.skeletonInfoSection}>
+            <div className={styles.skeletonTitle} />
+            <div className={styles.skeletonRating}>
+              <div className={styles.skeletonStarRow}>
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className={styles.skeletonStar} />
+                ))}
+              </div>
+              <div className={styles.skeletonLineShort} />
+              <div className={styles.skeletonLineTiny} />
+            </div>
+            <div className={styles.skeletonPriceSection}>
+              <div className={styles.skeletonPrice} />
+              <div className={styles.skeletonPriceSmall} />
+            </div>
+            <div className={styles.skeletonTier}>
+              <div className={styles.skeletonTierLabel} />
+              <div className={styles.skeletonTierOptions}>
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className={styles.skeletonTierChip} />
+                ))}
+              </div>
+            </div>
+            <div className={styles.skeletonTier}>
+              <div className={styles.skeletonTierLabel} />
+              <div className={styles.skeletonTierOptions}>
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className={styles.skeletonTierChip} />
+                ))}
+              </div>
+            </div>
+            <div className={styles.skeletonActions}>
+              <div className={styles.skeletonQtyBox}>
+                <div className={styles.skeletonQtyDash} />
+                <div className={styles.skeletonQtyNum} />
+                <div className={styles.skeletonQtyDash} />
+              </div>
+              <div className={styles.skeletonBtn} />
+              <div className={styles.skeletonBtn} />
+            </div>
+            <div className={styles.skeletonMeta}>
+              <div className={styles.skeletonLineShort} />
+              <div className={styles.skeletonLineShort} />
+            </div>
+          </div>
+        </div>
+
+        {/* Shop section skeleton */}
+        <div className={styles.skeletonShopSection}>
+          <div className={styles.skeletonShopCard}>
+            <div className={styles.skeletonShopAvatar} />
+            <div className={styles.skeletonShopInfo}>
+              <div className={styles.skeletonTitle} style={{ height: 20, width: '55%' }} />
+              <div className={styles.skeletonRating}>
+                <div className={styles.skeletonLineTiny} />
+                <div className={styles.skeletonLineTiny} />
+                <div className={styles.skeletonLineTiny} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Details tabs skeleton */}
+        <div className={styles.skeletonDetailsSection}>
+          <div className={styles.skeletonTabs}>
+            <div className={styles.skeletonTab} />
+            <div className={styles.skeletonTab} />
+            <div className={styles.skeletonTab} />
+          </div>
+          <div className={styles.skeletonTabContent}>
+            <div className={styles.skeletonLine} style={{ height: 18, width: '30%' }} />
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={styles.skeletonLine} style={{ width: `${85 - i * 8}%` }} />
+            ))}
+            <div className={styles.skeletonLine} style={{ height: 18, width: '30%', marginTop: 8 }} />
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className={styles.skeletonLine} style={{ width: `${90 - i * 10}%` }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Related products skeleton */}
+        <div className={styles.skeletonRelatedSection}>
+          <div className={styles.skeletonRelatedHeader}>
+            <div className={styles.skeletonRelatedTitle} />
+            <div className={styles.skeletonRelatedBtn} />
+          </div>
+          <div className={styles.skeletonRelatedGrid}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={styles.skeletonRelatedCard}>
+                <div className={styles.skeletonRelatedImg} />
+                <div className={styles.skeletonRelatedInfo}>
+                  <div className={styles.skeletonRelatedTitleLine} style={{ width: '90%' }} />
+                  <div className={styles.skeletonRelatedTitleLine} style={{ width: '65%' }} />
+                  <div className={styles.skeletonRelatedPriceLine} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -571,8 +870,6 @@ const ProductDetailsPage = () => {
       </div>
     );
   }
-
-  const productImages = getProductImages(product);
 
   return (
     <div className={styles.productDetailsPage}>
@@ -887,28 +1184,6 @@ const ProductDetailsPage = () => {
                 {t('product_details.only_left', { stock: currentStock })}
               </div>
             )}
-          </div>
-
-          {/* 7. Shipping & Warranty — compact */}
-          <div className={styles.shippingInfoSection}>
-            <div className={styles.shippingInfoItem}>
-              <i className="bi bi-truck"></i>
-              <div>
-                <div className={styles.shippingTitle}>{t('product_details.tab_shipping')}</div>
-                <div className={styles.shippingDetail}>
-                  {product.shippingInfo || t('product_details.default_shipping_detail')}
-                </div>
-              </div>
-            </div>
-            <div className={styles.shippingInfoItem}>
-              <i className="bi bi-shield-check"></i>
-              <div>
-                <div className={styles.shippingTitle}>{t('product_details.tab_warranty')}</div>
-                <div className={styles.shippingDetail}>
-                  {product.warranty || t('product_details.default_warranty_detail')}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* 8. Meta Info */}

@@ -55,9 +55,7 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    box-shadow 0.15s;
+  transition: background 0.15s, box-shadow 0.15s;
   white-space: nowrap;
 }
 .btnPrimary:hover {
@@ -77,9 +75,7 @@
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
 .btnSecondary:hover {
@@ -99,9 +95,7 @@
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 .btnRefresh:hover {
   background: #f1f5f9;
@@ -124,10 +118,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 .btnAdjust:hover {
@@ -168,9 +159,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  transition:
-    box-shadow 0.15s,
-    transform 0.15s;
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 .statCard:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
@@ -333,9 +322,7 @@
   font-size: 0.8125rem;
   color: #1e293b;
   background: #fff;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
 }
 .searchInput:focus {
@@ -399,9 +386,7 @@
 .sortableTh {
   cursor: pointer;
   user-select: none;
-  transition:
-    background 0.12s,
-    color 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
 .sortableTh:hover {
   background: #f1f5f9;
@@ -714,9 +699,7 @@
   font-weight: 500;
   color: #374151;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 .pageBtn:hover:not(:disabled) {
   background: #f8fafc;
@@ -910,9 +893,7 @@
   align-items: center;
   justify-content: center;
   color: #94a3b8;
-  transition:
-    background 0.12s,
-    color 0.12s;
+  transition: background 0.12s, color 0.12s;
   flex-shrink: 0;
 }
 .alertBarClose:hover {
@@ -930,12 +911,8 @@
   animation: fadeIn 150ms ease;
 }
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal {
@@ -1062,9 +1039,7 @@
   font-size: 0.9375rem;
   color: #0f172a;
   background: #fff;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
   width: 100%;
 }
@@ -1117,9 +1092,7 @@
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .inputAddonWrap:focus-within {
   border-color: #1a56db;
@@ -1468,372 +1441,4 @@
   font-weight: 500;
   color: #1e293b;
   white-space: nowrap;
-}
-
-/* ─── Demand Forecast Block (v3 — Simple & Clean) ───────────────── */
-
-/* Header */
-.demandBlock {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.demandHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.demandTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 1rem;
-  color: #1e293b;
-}
-
-.demandSubtitle {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 400;
-}
-
-.demandActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.periodSelect {
-  padding: 5px 10px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  color: #334155;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.periodSelect:focus {
-  border-color: #3b82f6;
-}
-
-.iconBtnSm {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #fff;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.iconBtnSm:hover {
-  background: #f1f5f9;
-  color: #3b82f6;
-  border-color: #3b82f6;
-}
-
-/* ── Tab Pills ── */
-.pillRow {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 12px;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #64748b;
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.pill:hover {
-  background: #f8fafc;
-  color: #334155;
-}
-
-.pillActive {
-  background: #1e293b;
-  color: #fff;
-  border-color: #1e293b;
-  font-weight: 600;
-}
-
-.pillActive:hover {
-  background: #334155;
-  color: #fff;
-}
-
-.pillBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  background: #dc2626;
-  color: #fff;
-  border-radius: 9px;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.pillBadgeGreen {
-  background: #16a34a;
-}
-
-/* ── Restock Cards ── */
-.restockGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.restockCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  transition: all 0.15s;
-}
-
-.restockCard:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.restockCardUrgent {
-  background: #fff5f5;
-  border-color: #fca5a5;
-}
-
-.restockCardUrgent:hover {
-  background: #fef2f2;
-}
-
-.restockCardLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.restockName {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1e293b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.restockSku {
-  font-size: 0.72rem;
-  color: #94a3b8;
-}
-
-.restockCardMid {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
-.stockNum {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #1e293b;
-}
-
-.stockUnit {
-  font-size: 0.72rem;
-  color: #94a3b8;
-}
-
-.restockCardRight {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.outOfStockBadge {
-  padding: 3px 8px;
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  border-radius: 5px;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.suggestBadge {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #3b82f6;
-}
-
-.restockBtn {
-  padding: 6px 14px;
-  background: #fff;
-  color: #334155;
-  border: 1px solid #e2e8f0;
-  border-radius: 7px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.restockBtn:hover {
-  background: #1e293b;
-  color: #fff;
-  border-color: #1e293b;
-}
-
-.restockBtnUrgent {
-  background: #dc2626;
-  color: #fff;
-  border-color: #dc2626;
-}
-
-.restockBtnUrgent:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
-
-/* ── Trend ── */
-.trendGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.trendGridSingle {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.trendCol {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px;
-}
-
-.trendColHeader {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #64748b;
-  margin-bottom: 10px;
-}
-
-.trendCount {
-  margin-left: auto;
-  background: #e2e8f0;
-  color: #334155;
-  padding: 1px 6px;
-  border-radius: 10px;
-  font-size: 0.68rem;
-}
-
-.trendItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.82rem;
-}
-
-.trendItem:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.trendName {
-  color: #334155;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.trendPctUp {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #16a34a;
-  flex-shrink: 0;
-}
-
-.trendPctDown {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #dc2626;
-  flex-shrink: 0;
-}
-
-/* ── Empty State ── */
-.forecastEmpty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 28px;
-  color: #94a3b8;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.forecastEmpty p {
-  margin: 0;
-  font-size: 0.82rem;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .trendGrid {
-    grid-template-columns: 1fr;
-  }
-  .restockCard {
-    flex-wrap: wrap;
-  }
 }

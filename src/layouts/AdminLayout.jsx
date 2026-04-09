@@ -72,6 +72,7 @@ const NAV_ITEMS = [
   {
     section: 'MONITORING',
     items: [
+      { to: ADMIN_ROUTES.DISPUTES, icon: 'bi-shield-exclamation', label: 'Disputes' },
       { to: ADMIN_ROUTES.ACTIVITY_LOGS, icon: 'bi bi-activity', label: 'Activity Logs' },
       { to: ADMIN_ROUTES.SYSTEM_HEALTH, icon: 'bi bi-heart-pulse', label: 'System Health' },
     ],
@@ -91,6 +92,7 @@ const PAGE_TITLES = {
   [ADMIN_ROUTES.PAGES]: 'Pages',
   [ADMIN_ROUTES.BANNERS]: 'Banners',
   [ADMIN_ROUTES.BANNER_ADS]: 'Banner Ads Management',
+  [ADMIN_ROUTES.DISPUTES]: 'Disputes',
   [ADMIN_ROUTES.ACTIVITY_LOGS]: 'Activity Logs',
   [ADMIN_ROUTES.SYSTEM_HEALTH]: 'System Health',
 };

@@ -75,6 +75,16 @@ const TiersEditor = ({ tiers, onChange, disabled }) => {
     onChange(updated);
   };
 
+  /** Predefined options already picked on other rows in this tier (same row keeps its value visible). */
+  const getSelectablePredefinedOptions = (tier, predefinedList, optionIndex, currentValue) => {
+    const takenElsewhere = new Set(
+      tier.options
+        .filter((o, i) => i !== optionIndex && o.value && !o.isCustom)
+        .map((o) => o.value)
+    );
+    return predefinedList.filter((opt) => opt === currentValue || !takenElsewhere.has(opt));
+  };
+
   return (
     <div>
       {/* Add Tier Modal */}
@@ -170,7 +180,12 @@ const TiersEditor = ({ tiers, onChange, disabled }) => {
                       disabled={disabled}
                     >
                       <option value="">Select {tier.name.toLowerCase()}</option>
-                      {tierType.options.map((opt) => (
+                      {getSelectablePredefinedOptions(
+                        tier,
+                        tierType.options,
+                        optionIndex,
+                        option.value
+                      ).map((opt) => (
                         <option key={opt} value={opt}>
                           {opt}
                         </option>

@@ -23,8 +23,8 @@ import {
   RotateCcw,
   Loader2,
 } from 'lucide-react';
-import LoadingSpinner from '../../../components/common/LoadingSpinner';
-import ReceivePOModal from '../../components/erp/ReceivePOModal';
+import LoadingSpinner from '@components/common/LoadingSpinner';
+import ReceivePOModal from '@components/seller/erp/ReceivePOModal';
 import styles from '@assets/styles/seller/erp/PurchaseOrderDetailPage.module.css';
 
 /* ── Helper: Toast ──────────────────────────────────────────────── */

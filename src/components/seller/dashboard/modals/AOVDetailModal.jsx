@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Spin,
@@ -30,12 +31,13 @@ const { Text } = Typography;
 const BUCKET_COLORS = ['#EF4444', '#F97316', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
 
 export function AOVDetailModal({ open, onClose, _period, comparison }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [recentOrders, setRecentOrders] = useState([]);
 
   useEffect(() => {
     if (!open) {
-return;
+ return; 
 }
     let cancelled = false;
     setLoading(true);
@@ -44,18 +46,18 @@ return;
       .getSellerRecentOrders({ limit: 100 })
       .then((res) => {
         if (cancelled) {
-return;
+ return; 
 }
         setRecentOrders(Array.isArray(res?.data) ? res.data : []);
       })
       .catch(() => {
         if (!cancelled) {
-setRecentOrders([]);
+ setRecentOrders([]); 
 }
       })
       .finally(() => {
         if (!cancelled) {
-setLoading(false);
+ setLoading(false); 
 }
       });
 
@@ -66,7 +68,7 @@ setLoading(false);
 
   const aovBuckets = useMemo(() => {
     if (!recentOrders.length) {
-return [];
+ return []; 
 }
     const buckets = [
       { range: '< 100K', min: 0, max: 100_000, count: 0 },
@@ -80,15 +82,15 @@ return [];
       const v = o.totalPrice || 0;
       const bucket = buckets.find((b) => v >= b.min && v < b.max);
       if (bucket) {
-bucket.count++;
+ bucket.count++; 
 }
     });
     return buckets.map((b, i) => ({ ...b, color: BUCKET_COLORS[i] }));
   }, [recentOrders]);
 
   const topOrders = useMemo(() => [...recentOrders]
-      .sort((a, b) => (b.totalPrice || 0) - (a.totalPrice || 0))
-      .slice(0, 5), [recentOrders]);
+    .sort((a, b) => (b.totalPrice || 0) - (a.totalPrice || 0))
+    .slice(0, 5), [recentOrders]);
 
   const currAov =
     comparison?.currentPeriod?.orders > 0
@@ -105,7 +107,7 @@ bucket.count++;
 
   const topOrderColumns = [
     {
-      title: 'Mã đơn',
+      title: t('sellerDashboard.aovDetail.orderCode', 'Mã đơn'),
       dataIndex: 'orderNumber',
       key: 'orderNumber',
       width: 140,
@@ -127,14 +129,14 @@ bucket.count++;
       ),
     },
     {
-      title: 'Khách hàng',
+      title: t('sellerDashboard.aovDetail.customer', 'Khách hàng'),
       dataIndex: 'customer',
       key: 'customer',
       ellipsis: true,
       render: (v) => <Text style={{ fontSize: 13 }}>{v}</Text>,
     },
     {
-      title: 'Giá trị đơn',
+      title: t('sellerDashboard.aovDetail.orderValue', 'Giá trị đơn'),
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       align: 'right',
@@ -146,7 +148,7 @@ bucket.count++;
       ),
     },
     {
-      title: 'Ngày',
+      title: t('sellerDashboard.aovDetail.date', 'Ngày'),
       dataIndex: 'createdAtStr',
       key: 'createdAtStr',
       width: 130,
@@ -169,7 +171,7 @@ bucket.count++;
           }}>
             <DollarSign size={15} color="#F97316" />
           </div>
-          <span style={{ fontWeight: 600 }}>Chi tiết giá trị trung bình / đơn</span>
+          <span style={{ fontWeight: 600 }}>{t('sellerDashboard.aovDetail.title', 'Chi tiết giá trị trung bình / đơn')}</span>
         </Space>
       }
       open={open}
@@ -178,7 +180,7 @@ bucket.count++;
       width={860}
       destroyOnHidden
     >
-      <Spin spinning={loading} tip="Đang tải dữ liệu...">
+      <Spin spinning={loading} tip={t('sellerDashboard.aovDetail.loading', 'Đang tải dữ liệu...')}>
         {/* AOV summary */}
         <Row gutter={12} style={{ marginBottom: 20 }}>
           <Col span={8}>
@@ -189,7 +191,7 @@ bucket.count++;
               padding: '14px 16px',
             }}>
               <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                AOV kỳ này
+                {t('sellerDashboard.aovDetail.aovThisPeriod', 'AOV kỳ này')}
               </Text>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#3B82F6', marginTop: 6, lineHeight: 1.2 }}>
                 {currAov != null ? formatCurrency(currAov) : '—'}
@@ -204,7 +206,7 @@ bucket.count++;
               padding: '14px 16px',
             }}>
               <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                AOV kỳ trước
+                {t('sellerDashboard.aovDetail.aovPrevPeriod', 'AOV kỳ trước')}
               </Text>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#94A3B8', marginTop: 6, lineHeight: 1.2 }}>
                 {prevAov != null ? formatCurrency(prevAov) : '—'}
@@ -219,7 +221,7 @@ bucket.count++;
               padding: '14px 16px',
             }}>
               <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Tăng trưởng AOV
+                {t('sellerDashboard.aovDetail.aovGrowth', 'Tăng trưởng AOV')}
               </Text>
               <div style={{
                 fontSize: 20,
@@ -245,11 +247,11 @@ bucket.count++;
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BarChart2 size={14} color="#F97316" />
             <Text strong style={{ fontSize: 13, color: '#334155' }}>
-              Phân bố giá trị đơn hàng
+              {t('sellerDashboard.aovDetail.distributionTitle', 'Phân bố giá trị đơn hàng')}
             </Text>
           </div>
           <Text style={{ fontSize: 11, color: '#94A3B8' }}>
-            {recentOrders.length} đơn gần nhất
+            {recentOrders.length} {t('sellerDashboard.aovDetail.recentOrders', 'đơn gần nhất')}
           </Text>
         </div>
         <div style={{ height: 200, marginBottom: 24 }}>
@@ -260,7 +262,7 @@ bucket.count++;
                 <XAxis dataKey="range" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  formatter={(value) => [`${value} đơn`, 'Số đơn']}
+                  formatter={(value) => [`${value} ${t('sellerDashboard.ordersDetail.ordersUnit', 'đơn')}`, t('sellerDashboard.ordersDetail.items', 'Sản phẩm')]}
                   cursor={{ fill: '#F8FAFC' }}
                   contentStyle={{
                     borderRadius: 10,
@@ -278,7 +280,7 @@ bucket.count++;
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <Empty description="Không có dữ liệu phân bố" style={{ paddingTop: 40 }} />
+            <Empty description={t('sellerDashboard.aovDetail.noDistribution', 'Không có dữ liệu phân bố')} style={{ paddingTop: 40 }} />
           )}
         </div>
 
@@ -287,7 +289,7 @@ bucket.count++;
         {/* Top 5 highest-value orders */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <ShoppingCart size={14} color="#10B981" />
-          <Text strong style={{ fontSize: 13, color: '#334155' }}>Đơn giá trị cao nhất</Text>
+          <Text strong style={{ fontSize: 13, color: '#334155' }}>{t('sellerDashboard.aovDetail.topHighestValue', 'Đơn giá trị cao nhất')}</Text>
         </div>
         <Table
           columns={topOrderColumns}
@@ -295,7 +297,7 @@ bucket.count++;
           pagination={false}
           size="small"
           scroll={{ x: 560 }}
-          locale={{ emptyText: 'Không có đơn hàng' }}
+          locale={{ emptyText: t('sellerDashboard.aovDetail.noOrders', 'Không có đơn hàng') }}
         />
       </Spin>
     </Modal>

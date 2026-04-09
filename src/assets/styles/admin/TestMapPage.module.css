@@ -1,0 +1,248 @@
+.test-map-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.test-map-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 1200px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.test-map-page h1 {
+  margin: 0;
+  padding: 30px 30px 10px;
+  font-size: 28px;
+  color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.test-map-page .subtitle {
+  margin: 0;
+  padding: 0 30px 30px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.test-map-form {
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 30px;
+  align-items: start;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: 'Courier New', monospace;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: flex-start;
+  padding-top: 30px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+  border: 2px solid #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background: #e8e8e8;
+  border-color: #d0d0d0;
+}
+
+.coordinates-display {
+  grid-column: 4;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border-left: 4px solid #667eea;
+  font-size: 12px;
+  margin-top: 30px;
+}
+
+.coordinates-display .coord-label {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: #667eea;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.coordinates-display code {
+  display: block;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+  color: #333;
+  line-height: 1.5;
+  font-size: 11px;
+}
+
+.test-map-output {
+  padding: 30px;
+  border-top: 2px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.test-map-output h3 {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.map-wrapper {
+  width: 100%;
+  height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .test-map-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .form-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    padding-top: 0;
+  }
+
+  .coordinates-display {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .map-wrapper {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .test-map-page {
+    padding: 20px 10px;
+  }
+
+  .test-map-page h1 {
+    padding: 20px 20px 10px;
+    font-size: 22px;
+  }
+
+  .test-map-page .subtitle {
+    padding: 0 20px 20px;
+  }
+
+  .test-map-form {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .form-actions {
+    grid-column: 1;
+    flex-direction: row;
+  }
+
+  .btn {
+    flex: 1;
+  }
+
+  .coordinates-display {
+    grid-column: 1;
+  }
+
+  .test-map-output {
+    padding: 20px;
+  }
+
+  .map-wrapper {
+    height: 300px;
+  }
+}

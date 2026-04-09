@@ -24,15 +24,17 @@ const calculateDiscount = (originalPrice, salePrice) => {
 
 // Helper to get product image
 const getProductImage = (product) => {
+  // Prefer active model's image (variant-specific)
+  const activeModel = product?.models?.find(m => m.isActive) || product?.models?.[0];
+  if (activeModel?.image) {
+return activeModel.image;
+}
   if (product?.images?.length > 0) {
-    return product.images[0];
-  }
+return product.images[0];
+}
   if (product?.image) {
-    return product.image;
-  }
-  if (product?.models?.length > 0 && product.models[0]?.image) {
-    return product.models[0].image;
-  }
+return product.image;
+}
   return 'https://via.placeholder.com/400x400?text=No+Image';
 };
 

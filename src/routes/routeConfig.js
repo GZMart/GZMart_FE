@@ -27,6 +27,7 @@ const PaymentCancelledPage = lazy(() => import('@/pages/buyer/order/PaymentCance
 // BuyerDashboard removed — buyer does not need a dashboard
 // const OrdersPage = lazy(() => import('@pages/buyer/OrdersPage')); // Removed: Use ProfilePage tab=orders
 const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
+const BuyerDisputesPage = lazy(() => import('@pages/buyer/DisputesPage'));
 const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
 const BuyerReturnStatusPage = lazy(() => import('@/pages/buyer/order/BuyerReturnStatusPage'));
@@ -56,6 +57,7 @@ const ListingsPage = lazy(() => import('@pages/seller/ListingsPage'));
 const ReturnsPage = lazy(() => import('@pages/seller/ReturnsPage'));
 const SellerOrdersPage = lazy(() => import('@/pages/seller/Order/OrdersPage'));
 const OrderDetailsPage = lazy(() => import('@pages/seller/OrderDetailsPage'));
+const SellerDisputesPage = lazy(() => import('@pages/seller/DisputesPage'));
 const FlashSalesPage = lazy(() => import('@pages/seller/FlashSalesPage'));
 const VoucherDashboard = lazy(() => import('@pages/seller/vouchers/VoucherDashboard'));
 const VoucherCreatePage = lazy(() => import('@pages/seller/vouchers/VoucherCreatePage'));
@@ -76,6 +78,7 @@ const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationP
 // Admin Pages
 const AdminDashboard = lazy(() => import('@pages/admin/AdminDashboard'));
 const UsersPage = lazy(() => import('@pages/admin/UsersPage'));
+const AdminDisputesPage = lazy(() => import('@pages/admin/DisputesPage'));
 const SellerApplicationsPage = lazy(() => import('@pages/admin/SellerApplicationsPage'));
 const SystemConfigPage = lazy(() => import('@pages/admin/SystemConfigPage'));
 const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
@@ -83,6 +86,7 @@ const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
 const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouchersPage'));
 const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
 const AdminBannerAdsPage = lazy(() => import('@pages/admin/AdminBannerAdsPage'));
+const TestMapPage = lazy(() => import('@pages/admin/TestMapPage'));
 
 // Error Pages
 const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
@@ -285,6 +289,13 @@ export const routeConfig = [
     layout: 'main',
   },
   {
+    path: '/buyer/disputes',
+    element: BuyerDisputesPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
     path: '/buyer/notifications',
     element: NotificationPage,
     protected: true,
@@ -458,6 +469,13 @@ export const routeConfig = [
     layout: 'erp',
   },
   {
+    path: '/seller/disputes',
+    element: SellerDisputesPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
     path: '/seller/messages',
     element: ChatPage,
     protected: true,
@@ -600,6 +618,13 @@ export const routeConfig = [
     layout: 'admin',
   },
   {
+    path: '/admin/disputes',
+    element: AdminDisputesPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
     path: '/admin/seller-applications',
     element: SellerApplicationsPage,
     protected: true,
@@ -654,6 +679,14 @@ export const routeConfig = [
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',
+  },
+
+  // Test Routes (Public - No Authentication)
+  {
+    path: '/admin/test-map',
+    element: TestMapPage,
+    public: true,
+    layout: 'none',
   },
 
   // Error Routes

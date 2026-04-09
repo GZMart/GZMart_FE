@@ -24,6 +24,17 @@ import ProfileAddressTab from '@/components/buyer/ProfilePage/ProfileAddressTab'
 import ProfileOrdersTab from '@/components/buyer/ProfilePage/ProfileOrdersTab';
 import ProfileCoinTab from '@/components/buyer/ProfilePage/ProfileCoinTab';
 import ProfileAddressDrawer from '@/components/buyer/ProfilePage/ProfileAddressDrawer';
+import DisputeCenter from '@/components/disputes/DisputeCenter';
+import { geocodeAddressForSave } from '@utils/addressGeocoding';
+
+const sanitizeOrderId = (value = '') => {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  return raw.split('?')[0].split('&')[0].trim();
+};
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -44,6 +55,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'account');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showMyAccountDropdown, setShowMyAccountDropdown] = useState(true); // For My Account dropdown
+  const missingReturnRequestOrderIdsRef = useRef(new Set());
 
   // Order API State
   const [orders, setOrders] = useState([]);
@@ -215,19 +227,19 @@ const ProfilePage = () => {
     const ids = new Set(orders.map((order) => order?._id).filter(Boolean));
 
     if (selectedOrder?.id) {
-      ids.add(selectedOrder.id);
+      ids.add(sanitizeOrderId(selectedOrder.id));
     }
 
     if (selectedOrderDetails?._id) {
-      ids.add(selectedOrderDetails._id);
+      ids.add(sanitizeOrderId(selectedOrderDetails._id));
     }
 
     const queryOrderId = searchParams.get('orderId');
     if (queryOrderId) {
-      ids.add(queryOrderId);
+      ids.add(sanitizeOrderId(queryOrderId));
     }
 
-    return Array.from(ids);
+    return Array.from(ids).filter(Boolean);
   }, [orders, searchParams, selectedOrder, selectedOrderDetails]);
 
   const trackedOrderIdsKey = useMemo(
@@ -417,8 +429,16 @@ const ProfilePage = () => {
 
   const handleSaveAddress = async () => {
     try {
-      // Prepare data with location object if lat/lng exist
       const addressData = { ...addressForm };
+      const geocodedAddress = await geocodeAddressForSave(addressData);
+
+      if (geocodedAddress) {
+        addressData.location = geocodedAddress.location;
+        addressData.formattedAddress = geocodedAddress.formattedAddress;
+      } else if (editingAddress?.location) {
+        addressData.location = editingAddress.location;
+        addressData.formattedAddress = editingAddress.formattedAddress;
+      }
 
       if (editingAddress) {
         await addressService.updateAddress(editingAddress._id, addressData);
@@ -464,7 +484,7 @@ const ProfilePage = () => {
   };
 
   const formatAddressString = (addr) =>
-    [addr.details, addr.wardName, addr.provinceName]
+    [addr.formattedAddress, addr.details, addr.street, addr.wardName, addr.provinceName]
       .filter((part) => part && part.trim() !== '')
       .join(', ');
 
@@ -521,18 +541,23 @@ const ProfilePage = () => {
   const handleOrderClick = useCallback(
     async (orderId, options = {}) => {
       const { syncUrl = true } = options;
+      const safeOrderId = sanitizeOrderId(orderId);
+
+      if (!safeOrderId) {
+        return;
+      }
 
       if (syncUrl) {
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set('tab', 'orders');
-        nextParams.set('orderId', orderId);
+        nextParams.set('orderId', safeOrderId);
         setSearchParams(nextParams);
       }
 
-      setSelectedOrder({ id: orderId }); // Using object wrapper to match original prop structure if needed, or just ID
+      setSelectedOrder({ id: safeOrderId });
       setDetailsLoading(true);
       try {
-        const response = await orderService.getOrderById(orderId);
+        const response = await orderService.getOrderById(safeOrderId);
         if (response.success) {
           setSelectedOrderDetails(response.data);
         }
@@ -559,16 +584,42 @@ const ProfilePage = () => {
         return;
       }
 
+      const orderStatus = String(selectedOrderDetails?.status || '').toLowerCase();
+      const canOrderShowReturnAction = [
+        'delivered',
+        'delivered_pending_confirmation',
+        'completed',
+        'return_requested',
+        'return_approved',
+        'return_in_transit',
+        'returned',
+        'refunded',
+        'exchange_requested',
+      ].includes(orderStatus);
+
+      if (!canOrderShowReturnAction) {
+        setActiveReturnRequest(null);
+        return;
+      }
+
+      if (missingReturnRequestOrderIdsRef.current.has(selectedOrderDetails._id)) {
+        setActiveReturnRequest(null);
+        return;
+      }
+
       try {
         const response = await rmaService.getOrderReturnRequest(selectedOrderDetails._id);
         setActiveReturnRequest(response.data || null);
-      } catch (_error) {
+      } catch (error) {
+        if (error?.response?.status === 404) {
+          missingReturnRequestOrderIdsRef.current.add(selectedOrderDetails._id);
+        }
         setActiveReturnRequest(null);
       }
     };
 
     fetchActiveReturnRequest();
-  }, [selectedOrderDetails?._id]);
+  }, [selectedOrderDetails?._id, selectedOrderDetails?.status]);
 
   // Open order details directly from URL: /buyer/profile?tab=orders&orderId=<id>
   useEffect(() => {
@@ -576,8 +627,23 @@ const ProfilePage = () => {
       return;
     }
 
-    const orderIdFromUrl = searchParams.get('orderId');
+    const rawOrderIdFromUrl = searchParams.get('orderId');
+    if (!rawOrderIdFromUrl) {
+      return;
+    }
+
+    const orderIdFromUrl = sanitizeOrderId(rawOrderIdFromUrl);
     if (!orderIdFromUrl) {
+      return;
+    }
+
+    if (rawOrderIdFromUrl !== orderIdFromUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('orderId', orderIdFromUrl);
+      if (rawOrderIdFromUrl.includes('trackingDebug=1') && !nextParams.get('trackingDebug')) {
+        nextParams.set('trackingDebug', '1');
+      }
+      setSearchParams(nextParams);
       return;
     }
 
@@ -925,6 +991,10 @@ const ProfilePage = () => {
       );
     }
 
+    if (activeTab === 'reports') {
+      return <DisputeCenter mode="buyer" embedded />;
+    }
+
     return (
       <ProfileCoinTab
         coinBalance={coinBalance}
@@ -949,6 +1019,7 @@ const ProfilePage = () => {
               userAvatar={userAvatar}
               userDisplayName={userDisplayName}
               showMyAccountDropdown={showMyAccountDropdown}
+              onToggleMyAccountDropdown={() => setShowMyAccountDropdown((prev) => !prev)}
               setShowMyAccountDropdown={setShowMyAccountDropdown}
               onTabChange={handleTabChange}
               onBecomeSeller={() => navigate(BUYER_ROUTES.SELLER_APPLICATION)}
@@ -972,6 +1043,7 @@ const ProfilePage = () => {
         editingAddress={editingAddress}
         addressForm={addressForm}
         onAddressFormChange={handleAddressFormChange}
+        savedAddresses={addresses}
         provinces={provinces}
         wards={wards}
         onProvinceChange={handleProvinceChange}
@@ -998,6 +1070,9 @@ const ProfilePage = () => {
         onSuccess={(_returnRequest) => {
           toast.success('Return request submitted successfully!');
           setActiveReturnRequest(_returnRequest || null);
+          if (selectedOrderDetails?._id) {
+            missingReturnRequestOrderIdsRef.current.delete(selectedOrderDetails._id);
+          }
           setShowReturnModal(false);
           // Optionally refresh order details
           if (selectedOrderDetails?._id) {

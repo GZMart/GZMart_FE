@@ -6,6 +6,7 @@ import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/common/Layouts/ERPLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
+import LanguageSwitcher from '@components/common/LanguageSwitcher';
 
 const NAV_GROUPS = [
   {
@@ -13,10 +14,12 @@ const NAV_GROUPS = [
     items: [
       { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
       { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
+      { to: SELLER_ROUTES.DISPUTES, icon: 'bi-shield-exclamation', label: 'Disputes' },
       { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
       { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
+      { to: SELLER_ROUTES.LIVE, icon: 'bi-broadcast', label: 'Live' },
       { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
     ],
   },
@@ -154,6 +157,9 @@ const ERPLayout = ({ children }) => {
           </div>
 
           <div className={styles.topbarRight}>
+            <div className={styles.topbarAction}>
+              <LanguageSwitcher />
+            </div>
             {/* Notification bell */}
             <div className={styles.topbarAction}>
               <NotificationBell

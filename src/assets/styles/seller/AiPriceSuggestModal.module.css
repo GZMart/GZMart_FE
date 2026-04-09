@@ -26,7 +26,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(860px, calc(100vw - 32px));
+  width: min(940px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
@@ -316,7 +316,11 @@
 .thCurrent { width: 110px; text-align: right !important; }
 .thSuggested { width: 120px; text-align: right !important; }
 .thDiff { width: 90px; text-align: right !important; }
-.thRisk { width: 80px; text-align: center !important; }
+.thRisk {
+  min-width: 200px;
+  max-width: 280px;
+  text-align: left !important;
+}
 .thAction { width: 80px; text-align: center !important; }
 
 /* Table body */
@@ -407,7 +411,44 @@
   color: #64748b;
 }
 
-/* Risk badges */
+/* Risk column — full sentence, not only Cao/TB */
+.riskCell {
+  text-align: left;
+  vertical-align: top;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+.riskNote {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border-left: 3px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.riskNoteSafe {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.riskNoteModerate {
+  border-left-color: #ca8a04;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.riskNoteHigh {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+/* Legacy pill styles — kept if reused elsewhere */
 .riskBadge {
   display: inline-flex;
   align-items: center;
