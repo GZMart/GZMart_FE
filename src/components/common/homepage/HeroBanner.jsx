@@ -12,8 +12,8 @@ const styles = {
   heroBannerWrapper: {
     position: 'relative',
     width: '100%',
-    maxWidth: '1300px',
-    height: '450px',
+    maxWidth: '1200px',
+    height: '600px',
     margin: '0 auto',
     zIndex: 1,
     fontFamily: "'Poppins', sans-serif",
@@ -115,15 +115,10 @@ const styles = {
 
 function resolveBannerHref(banner) {
   const lt = banner.linkType || 'none';
-  if (!lt || lt === 'none') {
-    return null;
-  }
 
   if (lt === 'external' && banner.link) {
     const u = String(banner.link).trim();
-    if (!u) {
-      return null;
-    }
+    if (!u) return null;
     return /^https?:\/\//i.test(u) ? u : `https://${u}`;
   }
 
@@ -133,14 +128,19 @@ function resolveBannerHref(banner) {
         ? banner.productId._id
         : banner.productId;
     const id = pid || banner.link;
-    if (id) {
-      return `/product/${id}`;
-    }
+    if (id) return `/product/${id}`;
   }
 
   if (banner.link) {
     const path = String(banner.link).trim();
     return path.startsWith('/') ? path : `/${path}`;
+  }
+
+  // Seller banner fallback: navigate to the seller's shop page
+  if (banner.ownerType === 'SELLER' && banner.sellerId) {
+    const sid =
+      typeof banner.sellerId === 'object' ? banner.sellerId._id : banner.sellerId;
+    if (sid) return `/shop/${sid}`;
   }
 
   return null;
@@ -189,16 +189,51 @@ const HeroBanner = () => {
 
   const handleSlideClick = useCallback(
     (slide) => {
-      if (!slide?.linkHref) {
-        return;
-      }
+      // Always track click if they clicked the banner, even if it has no global link
       if (slide?.raw?._id) {
         bannerAdsService.trackClick(slide.raw._id).catch(() => {});
+      }
+      if (!slide?.linkHref) {
+        return;
       }
       if (/^https?:\/\//i.test(slide.linkHref)) {
         window.open(slide.linkHref, '_blank', 'noopener,noreferrer');
       } else {
         navigate(slide.linkHref);
+      }
+    },
+    [navigate]
+  );
+
+  const handleHotspotClick = useCallback(
+    (e, banner, hotspot) => {
+      e.stopPropagation(); // prevent triggering handleSlideClick
+      
+      if (banner?.raw?._id) {
+        bannerAdsService.trackClick(banner.raw._id).catch(() => {});
+      }
+
+      const lt = hotspot.linkType || 'none';
+      
+      if (lt === 'external' && hotspot.link) {
+        let u = String(hotspot.link).trim();
+        u = /^https?:\/\//i.test(u) ? u : `https://${u}`;
+        window.open(u, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      
+      if (lt === 'product') {
+        const pid = typeof hotspot.productId === 'object' && hotspot.productId ? hotspot.productId._id : hotspot.productId;
+        const id = pid || hotspot.link;
+        if (id) {
+          navigate(`/product/${id}`);
+          return;
+        }
+      }
+      
+      if (hotspot.link) {
+        const path = String(hotspot.link).trim();
+        navigate(path.startsWith('/') ? path : `/${path}`);
       }
     },
     [navigate]
@@ -275,8 +310,38 @@ const HeroBanner = () => {
                       ...styles.heroBannerSlide,
                       backgroundImage: `url(${banner.image})`,
                       cursor: banner.linkHref ? 'pointer' : 'default',
+                      position: 'relative',
                     }}
-                  />
+                  >
+                    {/* Render Hotspots */}
+                    {banner.raw?.hotspots && banner.raw.hotspots.length > 0 && 
+                      banner.raw.hotspots.map((hotspot, idx) => (
+                        <div
+                          key={idx}
+                          role="button"
+                          tabIndex={0}
+                          title={hotspot.label || 'Banner Link'}
+                          onClick={(e) => handleHotspotClick(e, banner, hotspot)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleHotspotClick(e, banner, hotspot);
+                            }
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: `${hotspot.x - hotspot.width / 2}%`,
+                            top: `${hotspot.y - hotspot.height / 2}%`,
+                            width: `${hotspot.width}%`,
+                            height: `${hotspot.height}%`,
+                            cursor: 'pointer',
+                            zIndex: 10,
+                            // Uncomment next line to debug hotspot zones visually:
+                            // border: '1px solid rgba(255,0,0,0.5)', background: 'rgba(255,255,255,0.1)'
+                          }}
+                        />
+                      ))}
+                  </div>
               ))}
             </div>
           </div>

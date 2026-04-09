@@ -35,6 +35,7 @@ import {
   Row,
   Col,
   Progress,
+  Segmented,
 } from 'antd';
 import {
   PlusOutlined,
@@ -73,13 +74,14 @@ const { Dragger } = Upload;
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  DRAFT: { color: 'default', label: 'Nháp', icon: <ClockCircleOutlined /> },
-  PENDING_REVIEW: { color: 'processing', label: 'Chờ Duyệt', icon: <ClockCircleOutlined /> },
-  APPROVED: { color: 'cyan', label: 'Đã Duyệt', icon: <CheckCircleOutlined /> },
-  RUNNING: { color: 'success', label: 'Đang Chạy', icon: <ThunderboltOutlined /> },
-  COMPLETED: { color: 'default', label: 'Đã Kết Thúc', icon: <CheckCircleOutlined /> },
-  REJECTED: { color: 'error', label: 'Từ Chối', icon: <CloseCircleOutlined /> },
-  CANCELLED: { color: 'default', label: 'Đã Huỷ', icon: <StopOutlined /> },
+  DRAFT:          { color: 'default',    label: 'Draft',          icon: <ClockCircleOutlined /> },
+  PENDING_REVIEW: { color: 'processing', label: 'Pending Review', icon: <ClockCircleOutlined /> },
+  APPROVED:       { color: 'cyan',       label: 'Approved',       icon: <CheckCircleOutlined /> },
+  RUNNING:        { color: 'success',    label: 'Running',        icon: <ThunderboltOutlined /> },
+  COMPLETED:      { color: 'default',    label: 'Completed',      icon: <CheckCircleOutlined /> },
+  REJECTED:       { color: 'error',      label: 'Rejected',       icon: <CloseCircleOutlined /> },
+  CANCELLED:      { color: 'default',    label: 'Cancelled',      icon: <StopOutlined /> },
+  PAUSED:         { color: 'warning',    label: 'Paused',         icon: <StopOutlined /> },
 };
 
 // ─── Reusable section header ──────────────────────────────────────────────────
@@ -119,10 +121,10 @@ const BannerCard = ({ banner, onCancel }) => {
 
         <div className={styles.bannerCardMeta}>
           <span>
-            <CalendarOutlined /> {dayjs(banner.startDate).format('DD/MM')} –{' '}
+            <CalendarOutlined /> {dayjs(banner.startDate).format('DD/MM')} &ndash;{' '}
             {dayjs(banner.endDate).format('DD/MM/YYYY')}
           </span>
-          <span>{totalDays} ngày</span>
+          <span>{totalDays} day{totalDays !== 1 ? 's' : ''}</span>
         </div>
 
         {banner.status === 'RUNNING' && (
@@ -146,16 +148,16 @@ const BannerCard = ({ banner, onCancel }) => {
 
         <div className={styles.bannerCardFooter}>
           <div className={styles.feeDisplay}>
-            <DollarOutlined /> {(banner.pricing?.totalFee || 0).toLocaleString()} xu
+            <DollarOutlined /> {(banner.pricing?.totalFee || 0).toLocaleString()} credits
           </div>
-          {['PENDING_REVIEW', 'APPROVED'].includes(banner.status) && (
+          {['PENDING_REVIEW', 'APPROVED', 'RUNNING'].includes(banner.status) && (
             <Button
               danger
               size="small"
               icon={<StopOutlined />}
-              onClick={() => onCancel(banner._id)}
+              onClick={() => onCancel(banner._id, banner.status)}
             >
-              Huỷ
+              {banner.status === 'RUNNING' ? 'Stop' : 'Cancel'}
             </Button>
           )}
         </div>
@@ -215,7 +217,7 @@ const Step1Upload = ({ imageUrl, setImageUrl, onNext }) => {
         <InfoCircleOutlined style={{ color: '#1677ff', flexShrink: 0, marginTop: 2 }} />
         <span>
           Chuẩn bị <strong>ảnh quảng cáo</strong> của bạn — có thể là ảnh chứa nhiều sản phẩm,
-          khuyến mãi, thương hiệu... Khuyến nghị kích thước <strong>1300×450px</strong> (tỷ lệ
+          khuyến mãi, thương hiệu... Khuyến nghị kích thước <strong>1200×600px</strong> (tỷ lệ
           chuẩn). Bước tiếp theo bạn sẽ vẽ vùng click dẫn đến từng sản phẩm.
         </span>
       </div>
@@ -223,7 +225,7 @@ const Step1Upload = ({ imageUrl, setImageUrl, onNext }) => {
       <div className={styles.uploadSection}>
         <div className={styles.uploadLabel}>Chọn ảnh tải lên</div>
 
-        <ImgCrop aspect={1300 / 450} quality={1} modalTitle="Cắt ảnh Banner (1300x450)">
+        <ImgCrop aspect={1200 / 600} quality={1} modalTitle="Cắt ảnh Banner (1200x600)">
           <Dragger
             beforeUpload={handleUpload}
             showUploadList={false}
@@ -264,7 +266,7 @@ const Step1Upload = ({ imageUrl, setImageUrl, onNext }) => {
             )}
             {!imgErr && (
               <div className={styles.imageDimHint}>
-                💡 Tỷ lệ lý tưởng: 1300×450px · Banner sẽ hiện nổi bật trên trang chủ GZMart
+                💡 Tỷ lệ lý tưởng: 1200×600px · Banner sẽ hiện nổi bật trên trang chủ GZMart
               </div>
             )}
           </div>
@@ -440,6 +442,8 @@ const Step3Schedule = ({
   onSubmit,
   onBack,
   walletBalance,
+  bannerTitle,
+  setBannerTitle,
 }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -499,75 +503,87 @@ const Step3Schedule = ({
   // No longer checking bannerValues
   // const bannerValues = form.getFieldsValue(['title', 'subtitle']);
 
+  const isReadyFull = isReady && !!bannerTitle?.trim();
+
   return (
     <div className={styles.stepPanel}>
-      {/* Calendar legend */}
-      <div className={styles.calLegend}>
-        <span>
-          <span className={styles.calDot} style={{ background: '#22c55e' }} />
-          Còn slot
-        </span>
-        <span>
-          <span className={styles.calDot} style={{ background: '#f97316' }} />
-          Gần đầy
-        </span>
-        <span>
-          <span className={styles.calDot} style={{ background: '#ef4444' }} />
-          Hết slot
-        </span>
+      <Alert type="info" showIcon
+        message={<span>Credits are <strong>held immediately</strong> upon submission. If rejected, they are <strong>fully refunded</strong>.</span>}
+      />
+
+      {/* Banner Title */}
+      <div className={styles.configSection}>
+        <div className={styles.configSectionTitle}>
+          Banner Title <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>
+        </div>
+        <Input
+          value={bannerTitle}
+          onChange={(e) => setBannerTitle(e.target.value)}
+          placeholder="e.g. Grand Opening Summer Sale"
+          size="large"
+          status={!bannerTitle?.trim() ? 'warning' : ''}
+        />
+        <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8' }}>
+          💡 Give your banner a recognizable name for easy campaign tracking
+        </div>
       </div>
 
-      <Form layout="vertical">
-        <Form.Item label="Thời gian chạy banner" required>
-          <RangePicker
-            style={{ width: '100%' }}
-            size="large"
-            disabledDate={disabledDate}
-            cellRender={cellRender}
-            onChange={handleDateChange}
-            format="DD/MM/YYYY"
-            minDate={dayjs()}
-          />
-        </Form.Item>
-      </Form>
+      {/* Schedule */}
+      <div className={styles.configSection}>
+        <div className={styles.configSectionTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div><CalendarOutlined style={{ color: '#1677ff' }} /> Display Schedule <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span></div>
+          <div style={{ fontSize: 12, fontWeight: 400, display: 'flex', gap: 12 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }}/> Available</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f97316' }}/> Almost Full</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }}/> Full</span>
+          </div>
+        </div>
+        <RangePicker
+          style={{ width: '100%' }}
+          size="large"
+          disabledDate={disabledDate}
+          cellRender={cellRender}
+          onChange={handleDateChange}
+          format="DD/MM/YYYY"
+          minDate={dayjs()}
+        />
+      </div>
 
-      {loadingSlots && <Spin tip="Đang kiểm tra slot..." />}
+      {loadingSlots && <Spin tip="Checking slot availability..." />}
 
       {slotInfo && (
-        <div
-          className={`${styles.pricingCard} ${slotInfo.isAvailable ? styles.pricingAvailable : styles.pricingFull}`}
-        >
+        <div className={`${styles.configSection} ${slotInfo.isAvailable ? styles.pricingAvailable : styles.pricingFull}`}>
           {slotInfo.isAvailable ? (
             <>
               <div className={styles.pricingRow}>
-                <span>Slot còn trống</span>
+                <span>Available Slots</span>
                 <span className={styles.pricingHighlight}>{slotInfo.availableSlots} / 5</span>
               </div>
               <div className={styles.pricingRow}>
-                <span>Số ngày chạy</span>
-                <strong>{slotInfo.pricing?.totalDays} ngày</strong>
+                <span>Campaign Duration</span>
+                <strong>{slotInfo.pricing?.totalDays} days</strong>
               </div>
               <div className={styles.pricingRow}>
-                <span>Đơn giá</span>
-                <span>{pricePerDay.toLocaleString()} xu/ngày</span>
+                <span>Price per Day</span>
+                <span>{pricePerDay.toLocaleString()} credits/day</span>
               </div>
               <Divider style={{ margin: '10px 0' }} />
               <div className={`${styles.pricingRow} ${styles.pricingTotal}`}>
-                <span>Tổng phí quảng cáo</span>
-                <strong className={styles.pricingFee}>{estimatedFee.toLocaleString()} xu</strong>
+                <span>Total Ad Fee</span>
+                <strong className={styles.pricingFee}>{estimatedFee.toLocaleString()} credits</strong>
               </div>
               <div className={styles.pricingRow}>
-                <span>Số xu hiện có</span>
+                <span>Your Balance</span>
                 <span style={{ color: canAfford ? '#22c55e' : '#ef4444', fontWeight: 700 }}>
-                  {walletBalance.toLocaleString()} xu
-                  {!canAfford && ` (thiếu ${(estimatedFee - walletBalance).toLocaleString()} xu)`}
+                  {walletBalance.toLocaleString()} credits
+                  {!canAfford && ` (short by ${(estimatedFee - walletBalance).toLocaleString()})`}
                 </span>
               </div>
               {!canAfford && (
                 <Alert
                   type="warning"
                   showIcon
-                  message="Số xu trong ví không đủ. Vui lòng nạp thêm xu trước khi đặt banner."
+                  message="Insufficient credits. Please top up your wallet before placing a banner."
                   style={{ marginTop: 8 }}
                 />
               )}
@@ -577,61 +593,52 @@ const Step3Schedule = ({
               type="error"
               showIcon
               icon={<CloseCircleOutlined />}
-              message="Tất cả slot đã được đặt trong khoảng thời gian này. Vui lòng chọn ngày khác."
+              message="All slots are booked for this period. Please select different dates."
             />
           )}
         </div>
       )}
 
-      {/* Info box */}
-      <div className={styles.infoBox}>
-        <div className={styles.infoItem}>
-          <div className={styles.infoStep}>1</div>
-          <span>
-            Xu bị <strong>giữ tạm</strong> ngay khi gửi yêu cầu
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <div className={styles.infoStep}>2</div>
-          <span>
-            Admin xét duyệt trong <strong>1–3 ngày làm việc</strong>
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <div className={styles.infoStep}>3</div>
-          <span>Nếu duyệt → Banner tự động chạy đúng ngày</span>
-        </div>
-        <div className={styles.infoItem}>
-          <div className={styles.infoStep}>4</div>
-          <span>
-            Nếu từ chối → Xu được <strong>hoàn lại ngay</strong>
-          </span>
+      {/* How it works */}
+      <div className={styles.configSection}>
+        <div className={styles.configSectionTitle}>How It Works</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[
+            ['1', <span>Credits are <strong>held immediately</strong> upon submission</span>],
+            ['2', <span>Admin reviews within <strong>1–3 business days</strong></span>],
+            ['3', <span>If approved → Banner <strong>runs automatically</strong> on schedule</span>],
+            ['4', <span>If rejected → Credits are <strong>fully refunded</strong> instantly</span>],
+          ].map(([num, text]) => (
+            <div key={num} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{num}</div>
+              <span>{text}</span>
+            </div>
+          ))}
         </div>
       </div>
 
       <div className={styles.stepActions}>
-        <Button onClick={onBack} icon={<ArrowLeftOutlined />}>
-          Quay lại
-        </Button>
+        <Button onClick={onBack} icon={<ArrowLeftOutlined />}>Back</Button>
         <Space>
           {imageUrl && (
             <Button
               icon={<EyeOutlined />}
               onClick={() => setPreviewOpen(true)}
-              style={{ borderColor: '#1677ff', color: '#1677ff' }}
+              style={{ borderColor: '#1677ff', color: '#1677ff', borderRadius: 10, fontWeight: 600 }}
             >
-              Xem thử trên Trang Chủ
+              Preview on Home
             </Button>
           )}
           <Button
             type="primary"
             icon={<SendOutlined />}
+            size="large"
             className={styles.primaryBtn}
             loading={submitting}
-            disabled={!isReady}
+            disabled={!isReadyFull}
             onClick={onSubmit}
           >
-            Thanh Toán & Gửi Duyệt {estimatedFee > 0 ? `(${estimatedFee.toLocaleString()} xu)` : ''}
+            {submitting ? 'Submitting...' : `Pay & Submit${estimatedFee > 0 ? ` (${estimatedFee.toLocaleString()} credits)` : ''}`}
           </Button>
         </Space>
       </div>
@@ -666,6 +673,9 @@ const SellerBannerAdsPage = () => {
 
   // Wizard state
   const [imageUrl, setImageUrl] = useState('');
+  const [linkMode, setLinkMode] = useState('global');
+  const [bannerLink, setBannerLink] = useState('');
+  const [bannerTitle, setBannerTitle] = useState('');
   const [hotspots, setHotspots] = useState([]);
   const [dateRange, setDateRange] = useState(null);
   const [slotInfo, setSlotInfo] = useState(null);
@@ -674,6 +684,7 @@ const SellerBannerAdsPage = () => {
 
   // Cancel modal
   const [cancelId, setCancelId] = useState(null);
+  const [cancelStatus, setCancelStatus] = useState(null); // track if it's RUNNING
   const [cancelling, setCancelling] = useState(false);
 
   const dispatch = useDispatch();
@@ -687,7 +698,7 @@ const SellerBannerAdsPage = () => {
       const res = await bannerAdsService.getMyRequests();
       setMyBanners(res?.banners || []);
     } catch {
-      message.error('Không tải được danh sách banner');
+      message.error('Failed to load banners');
     } finally {
       setLoadingBanners(false);
     }
@@ -734,11 +745,13 @@ const SellerBannerAdsPage = () => {
 
       setSubmitting(true);
       await bannerAdsService.createRequest({
+        title: bannerTitle,
         image: imageUrl,
-        hotspots,
+        hotspots: linkMode === 'hotspot' ? hotspots : [],
+        link: linkMode === 'global' ? bannerLink : null,
+        linkType: linkMode === 'global' ? (bannerLink.startsWith('http') ? 'external' : 'deal') : 'none',
         startDate: dateRange[0].toISOString(),
         endDate: dateRange[1].toISOString(),
-        linkType: 'none',
       });
 
       message.success('Gửi yêu cầu thành công! Admin sẽ xét duyệt trong 1–3 ngày làm việc.');
@@ -749,6 +762,9 @@ const SellerBannerAdsPage = () => {
       setHotspots([]);
       setDateRange(null);
       setSlotInfo(null);
+      setLinkMode('global');
+      setBannerLink('');
+      setBannerTitle('');
       form.resetFields();
       await fetchMyBanners();
       try {
@@ -769,16 +785,20 @@ const SellerBannerAdsPage = () => {
     setCancelling(true);
     try {
       await bannerAdsService.cancelRequest(cancelId);
-      message.success('Đã huỷ banner. Xu sẽ được hoàn lại vào ví.');
+      const isRunning = cancelStatus === 'RUNNING';
+      message.success(
+        isRunning
+          ? 'Banner stopped. Unused days will be refunded to your wallet.'
+          : 'Banner cancelled. All credits have been refunded to your wallet.'
+      );
       setCancelId(null);
+      setCancelStatus(null);
       await fetchMyBanners();
       try {
         await dispatch(getCurrentUser()).unwrap();
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Huỷ thất bại');
+      message.error(err?.response?.data?.message || 'Cancellation failed');
     } finally {
       setCancelling(false);
     }
@@ -791,6 +811,9 @@ const SellerBannerAdsPage = () => {
     setHotspots([]);
     setDateRange(null);
     setSlotInfo(null);
+    setLinkMode('global');
+    setBannerLink('');
+    setBannerTitle('');
     form.resetFields();
   };
 
@@ -803,9 +826,9 @@ const SellerBannerAdsPage = () => {
   };
 
   const STEPS = [
-    { title: 'Upload Ảnh', icon: <UploadOutlined /> },
-    { title: 'Hotspot & Nội dung', icon: <AimOutlined /> },
-    { title: 'Lên lịch & Gửi', icon: <CalendarOutlined /> },
+    { title: 'Upload Image', icon: <UploadOutlined /> },
+    { title: 'Link & Hotspots', icon: <AimOutlined /> },
+    { title: 'Schedule & Submit', icon: <CalendarOutlined /> },
   ];
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -814,23 +837,21 @@ const SellerBannerAdsPage = () => {
       {/* ── Page header ── */}
       <div className={styles.pageHeader}>
         <div className={styles.pageHeaderLeft}>
-          {view === 'create' && (
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => setView('list')}
-              className={styles.backBtn}
-            >
-              Quay lại
-            </Button>
+          {view === 'create' ? (
+            <button onClick={() => setView('list')} className={styles.backIconBtn} title="Back to list"><ArrowLeftOutlined /></button>
+          ) : (
+            <div className={styles.pageIconWrap}>
+              <ThunderboltOutlined style={{ color: '#fff', fontSize: 22 }} />
+            </div>
           )}
           <div>
             <div className={styles.pageTitle}>
-              {view === 'list' ? 'Quảng Cáo Banner' : 'Tạo Banner Quảng Cáo'}
+              {view === 'list' ? 'Banner Ads' : 'Create Banner Ad'}
             </div>
             <div className={styles.pageSub}>
               {view === 'list'
-                ? 'Quản lý và theo dõi các chiến dịch banner quảng cáo trên trang chủ GZMart'
-                : 'Upload ảnh, thiết lập hotspot, chọn lịch chạy và gửi yêu cầu'}
+                ? 'Manage and track your banner advertising campaigns on GZMart homepage'
+                : 'Upload image · Set links or hotspots · Schedule and submit for review'}
             </div>
           </div>
         </div>
@@ -839,7 +860,7 @@ const SellerBannerAdsPage = () => {
             <DollarOutlined />
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               <span className={styles.walletAmt}>{walletBalance.toLocaleString()}</span>
-              <span className={styles.walletLabel}>xu trong ví</span>
+              <span className={styles.walletLabel}>credits</span>
             </div>
           </div>
           {view === 'list' && (
@@ -850,7 +871,7 @@ const SellerBannerAdsPage = () => {
               onClick={openCreate}
               size="large"
             >
-              Tạo Banner Mới
+              Create Banner Ads
             </Button>
           )}
         </div>
@@ -864,27 +885,23 @@ const SellerBannerAdsPage = () => {
             <div className={styles.infoStripItem}>
               <span className={styles.infoStripIcon}>💰</span>
               <span>
-                <strong>{pricePerDay.toLocaleString()} xu</strong> / ngày
+                <strong>{pricePerDay.toLocaleString()} credits</strong> / day
               </span>
             </div>
             <div className={styles.infoStripDot} />
             <div className={styles.infoStripItem}>
               <span className={styles.infoStripIcon}>🎯</span>
-              <span>
-                Tối đa <strong>1 slot</strong> tại 1 thời điểm
-              </span>
+              <span>Max <strong>1 slot</strong> per seller at a time</span>
             </div>
             <div className={styles.infoStripDot} />
             <div className={styles.infoStripItem}>
               <span className={styles.infoStripIcon}>📊</span>
-              <span>View & Click tracking thời gian thực</span>
+              <span>Real-time view &amp; click tracking</span>
             </div>
             <div className={styles.infoStripDot} />
             <div className={styles.infoStripItem}>
               <span className={styles.infoStripIcon}>✅</span>
-              <span>
-                Admin duyệt trong <strong>1–3 ngày</strong>
-              </span>
+              <span>Admin reviews within <strong>1–3 days</strong></span>
             </div>
           </div>
 
@@ -892,25 +909,25 @@ const SellerBannerAdsPage = () => {
           <div className={styles.statsGrid}>
             {[
               {
-                label: 'Đang Chạy',
+                label: 'Running',
                 value: stats.running,
                 color: '#22c55e',
                 icon: <ThunderboltOutlined />,
               },
               {
-                label: 'Chờ Duyệt',
+                label: 'Pending Review',
                 value: stats.pending,
                 color: '#1677ff',
                 icon: <ClockCircleOutlined />,
               },
               {
-                label: 'Đã Duyệt',
+                label: 'Approved',
                 value: stats.approved,
                 color: '#06b6d4',
                 icon: <CheckCircleOutlined />,
               },
               {
-                label: 'Tổng Lượt Xem',
+                label: 'Total Views',
                 value: stats.views,
                 color: '#8b5cf6',
                 icon: <EyeOutlined />,
@@ -932,7 +949,7 @@ const SellerBannerAdsPage = () => {
 
           {/* Banner list */}
           <div className={styles.listSection}>
-            <SectionHeader title="Danh sách Banner" sub="Tất cả chiến dịch quảng cáo của bạn" />
+            <SectionHeader title="My Banners" sub="All your banner advertising campaigns" />
             {loadingBanners ? (
               <div className={styles.loadingCenter}>
                 <Spin size="large" />
@@ -944,23 +961,23 @@ const SellerBannerAdsPage = () => {
                   description={
                     <div>
                       <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
-                        Bạn chưa có banner quảng cáo nào
+                        You don't have any banner ads yet
                       </div>
                       <div style={{ color: '#64748b', fontSize: 13 }}>
-                        Tạo banner ngay để đưa sản phẩm lên trang chủ và tăng doanh số!
+                        Create a banner to get your products featured on the GZMart homepage!
                       </div>
                     </div>
                   }
                 >
                   <Button type="primary" className={styles.primaryBtn} onClick={openCreate}>
-                    Tạo Banner Đầu Tiên
+                    Create Your First Banner
                   </Button>
                 </Empty>
               </div>
             ) : (
               <div className={styles.bannerGrid}>
                 {myBanners.map((b) => (
-                  <BannerCard key={b._id} banner={b} onCancel={setCancelId} />
+                <BannerCard key={b._id} banner={b} onCancel={(id, status) => { setCancelId(id); setCancelStatus(status); }} />
                 ))}
               </div>
             )}
@@ -994,9 +1011,11 @@ const SellerBannerAdsPage = () => {
                 imageUrl={imageUrl}
                 hotspots={hotspots}
                 setHotspots={setHotspots}
-                form={form}
                 products={products}
-                loadingProducts={loadingProducts}
+                linkMode={linkMode}
+                setLinkMode={setLinkMode}
+                bannerLink={bannerLink}
+                setBannerLink={setBannerLink}
                 onBack={() => setCurrentStep(0)}
                 onNext={() => setCurrentStep(2)}
               />
@@ -1018,6 +1037,8 @@ const SellerBannerAdsPage = () => {
                 onSubmit={handleSubmit}
                 onBack={() => setCurrentStep(1)}
                 walletBalance={walletBalance}
+                bannerTitle={bannerTitle}
+                setBannerTitle={setBannerTitle}
               />
             )}
           </div>
@@ -1026,17 +1047,30 @@ const SellerBannerAdsPage = () => {
 
       {/* Cancel confirm modal */}
       <Modal
-        title="Xác nhận huỷ banner"
+        title={cancelStatus === 'RUNNING' ? 'Stop Running Banner?' : 'Cancel Banner?'}
         open={!!cancelId}
         onOk={handleCancel}
-        onCancel={() => setCancelId(null)}
-        okText="Huỷ Banner & Hoàn Xu"
-        cancelText="Giữ lại"
+        onCancel={() => { setCancelId(null); setCancelStatus(null); }}
+        okText={cancelStatus === 'RUNNING' ? 'Stop & Refund Unused Credits' : 'Cancel & Refund All Credits'}
+        cancelText="Keep Running"
         okButtonProps={{ danger: true, loading: cancelling }}
       >
-        <Paragraph>
-          Bạn có chắc muốn huỷ banner này? Xu sẽ được hoàn lại vào ví ngay lập tức.
-        </Paragraph>
+        {cancelStatus === 'RUNNING' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Paragraph>
+              Are you sure you want to <strong>stop this banner early</strong>?
+            </Paragraph>
+            <ul style={{ margin: 0, paddingLeft: 20, color: '#374151', fontSize: 13 }}>
+              <li>The banner will be <strong>removed from the homepage immediately</strong>.</li>
+              <li>Credits for <strong>remaining unused days</strong> will be <strong>pro-rated and refunded</strong> to your wallet.</li>
+              <li>Credits for days already run <strong>will not be refunded</strong>.</li>
+            </ul>
+          </div>
+        ) : (
+          <Paragraph>
+            Are you sure you want to cancel this banner? <strong>All credits</strong> will be immediately refunded to your wallet since it hasn't run yet.
+          </Paragraph>
+        )}
       </Modal>
     </div>
   );

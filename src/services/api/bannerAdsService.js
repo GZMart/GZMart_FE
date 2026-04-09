@@ -82,6 +82,10 @@ const bannerAdsService = {
   /** Admin: delete a banner */
   adminDelete: (bannerId) =>
     axiosClient.delete(`/api/banners/admin/${bannerId}`).then((r) => r.data),
+
+  /** Admin: bulk reorder banners */
+  adminReorder: (banners) =>
+    axiosClient.put("/api/banners/admin/reorder", { banners }).then((r) => r.data),
 };
 
 export default bannerAdsService;
