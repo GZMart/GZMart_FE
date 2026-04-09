@@ -204,9 +204,12 @@ const Step1Upload = ({ imageUrl, setImageUrl, onNext }) => {
   };
 
   const handleConfirm = () => {
-    if (!preview || imgErr) return message.warning('Vui lòng chọn ảnh hợp lệ trước');
-    if (preview.startsWith('data:'))
-      return message.warning('Đang xử lý ảnh, vui lòng chờ giây lát...');
+    if (!preview || imgErr) {
+return message.warning('Vui lòng chọn ảnh hợp lệ trước');
+}
+    if (preview.startsWith('data:')) {
+return message.warning('Đang xử lý ảnh, vui lòng chờ giây lát...');
+}
     setImageUrl(preview);
     onNext();
   };
@@ -448,7 +451,9 @@ const Step3Schedule = ({
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const disabledDate = (current) => {
-    if (current < dayjs().startOf('day')) return true;
+    if (current < dayjs().startOf('day')) {
+return true;
+}
     const dateStr = current.format('YYYY-MM-DD');
     return calendar[dateStr]?.isFull || false;
   };
@@ -479,7 +484,9 @@ const Step3Schedule = ({
   const cellRender = (current) => {
     const dateStr = current.format('YYYY-MM-DD');
     const info = calendar[dateStr];
-    if (!info) return <div className="ant-picker-cell-inner">{current.date()}</div>;
+    if (!info) {
+return <div className="ant-picker-cell-inner">{current.date()}</div>;
+}
     const color = info.isFull ? '#ef4444' : info.status === 'almost_full' ? '#f97316' : '#22c55e';
     return (
       <div className="ant-picker-cell-inner" style={{ position: 'relative' }}>
@@ -604,10 +611,10 @@ const Step3Schedule = ({
         <div className={styles.configSectionTitle}>How It Works</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            ['1', <span>Credits are <strong>held immediately</strong> upon submission</span>],
-            ['2', <span>Admin reviews within <strong>1–3 business days</strong></span>],
-            ['3', <span>If approved → Banner <strong>runs automatically</strong> on schedule</span>],
-            ['4', <span>If rejected → Credits are <strong>fully refunded</strong> instantly</span>],
+            ['1', <span key="1">Credits are <strong>held immediately</strong> upon submission</span>],
+            ['2', <span key="2">Admin reviews within <strong>1–3 business days</strong></span>],
+            ['3', <span key="3">If approved → Banner <strong>runs automatically</strong> on schedule</span>],
+            ['4', <span key="4">If rejected → Credits are <strong>fully refunded</strong> instantly</span>],
           ].map(([num, text]) => (
             <div key={num} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
               <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{num}</div>
@@ -738,10 +745,15 @@ const SellerBannerAdsPage = () => {
   // ─── Submit ──────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     try {
-      if (!imageUrl) return message.error('Vui lòng chọn ảnh banner');
-      if (!dateRange?.[0] || !dateRange?.[1])
-        return message.error('Vui lòng chọn khoảng thời gian');
-      if (!slotInfo?.isAvailable) return message.error('Khoảng thời gian này đã hết slot');
+      if (!imageUrl) {
+return message.error('Vui lòng chọn ảnh banner');
+}
+      if (!dateRange?.[0] || !dateRange?.[1]) {
+return message.error('Vui lòng chọn khoảng thời gian');
+}
+      if (!slotInfo?.isAvailable) {
+return message.error('Khoảng thời gian này đã hết slot');
+}
 
       setSubmitting(true);
       await bannerAdsService.createRequest({
@@ -781,7 +793,9 @@ const SellerBannerAdsPage = () => {
 
   // ─── Cancel ──────────────────────────────────────────────────────────────
   const handleCancel = async () => {
-    if (!cancelId) return;
+    if (!cancelId) {
+return;
+}
     setCancelling(true);
     try {
       await bannerAdsService.cancelRequest(cancelId);
@@ -977,7 +991,9 @@ const SellerBannerAdsPage = () => {
             ) : (
               <div className={styles.bannerGrid}>
                 {myBanners.map((b) => (
-                <BannerCard key={b._id} banner={b} onCancel={(id, status) => { setCancelId(id); setCancelStatus(status); }} />
+                <BannerCard key={b._id} banner={b} onCancel={(id, status) => {
+ setCancelId(id); setCancelStatus(status); 
+}} />
                 ))}
               </div>
             )}
@@ -1050,7 +1066,9 @@ const SellerBannerAdsPage = () => {
         title={cancelStatus === 'RUNNING' ? 'Stop Running Banner?' : 'Cancel Banner?'}
         open={!!cancelId}
         onOk={handleCancel}
-        onCancel={() => { setCancelId(null); setCancelStatus(null); }}
+        onCancel={() => {
+ setCancelId(null); setCancelStatus(null); 
+}}
         okText={cancelStatus === 'RUNNING' ? 'Stop & Refund Unused Credits' : 'Cancel & Refund All Credits'}
         cancelText="Keep Running"
         okButtonProps={{ danger: true, loading: cancelling }}

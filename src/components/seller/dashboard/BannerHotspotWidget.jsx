@@ -35,8 +35,9 @@ const BannerHotspotWidget = () => {
         const calData = calRes?.data || calRes;
         setCalendar(calData?.calendar || {});
         setMyBanners(myRes?.banners || []);
-      } catch { /* silent */ }
-      finally { setLoading(false); }
+      } catch { /* silent */ } finally {
+ setLoading(false); 
+}
     };
     load();
   }, []);
@@ -50,11 +51,17 @@ const BannerHotspotWidget = () => {
 
   // Build slot display
   const slots = Array.from({ length: MAX_SLOTS }).map((_, i) => {
-    if (i < runningBanners.length) return 'mine_running';
-    if (i - runningBanners.length < pendingBanners.length) return 'mine_pending';
+    if (i < runningBanners.length) {
+return 'mine_running';
+}
+    if (i - runningBanners.length < pendingBanners.length) {
+return 'mine_pending';
+}
     const occupied = todayInfo.bookedSlots - runningBanners.length - pendingBanners.length;
     const myTotal = runningBanners.length + pendingBanners.length;
-    if (i - myTotal < Math.max(0, occupied)) return 'other';
+    if (i - myTotal < Math.max(0, occupied)) {
+return 'other';
+}
     return 'free';
   });
 

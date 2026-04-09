@@ -84,7 +84,9 @@ const ADMIN_STATUS_OPTIONS = [
 ];
 
 const formatDate = (value) => {
-  if (!value) return 'N/A';
+  if (!value) {
+return 'N/A';
+}
   return new Date(value).toLocaleString('vi-VN', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -98,7 +100,9 @@ const parseEvidenceUrls = (value) =>
     .filter(Boolean);
 
 const buildDisplayLabel = (report) => {
-  if (!report) return 'Report';
+  if (!report) {
+return 'Report';
+}
   return report.reportNumber || report.title || report._id;
 };
 
@@ -246,8 +250,12 @@ MediaUploader.propTypes = {
 };
 
 const getActorName = (actor) => {
-  if (!actor) return 'System';
-  if (typeof actor === 'string') return actor;
+  if (!actor) {
+return 'System';
+}
+  if (typeof actor === 'string') {
+return actor;
+}
   return actor.fullName || actor.email || actor._id || 'System';
 };
 
@@ -494,7 +502,9 @@ const DisputeCenter = ({ mode, embedded = false }) => {
 
   const filteredReports = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    if (!q) return reports;
+    if (!q) {
+return reports;
+}
 
     return reports.filter((report) => {
       const haystack = [
@@ -540,7 +550,9 @@ const DisputeCenter = ({ mode, embedded = false }) => {
       closeCreateDrawer();
       await loadReports(1, pageSize);
     } catch (error) {
-      if (error?.errorFields) return;
+      if (error?.errorFields) {
+return;
+}
       console.error('[DisputeCenter] Create report failed:', error);
       message.error(error?.message || 'Failed to create report');
     } finally {
@@ -567,7 +579,9 @@ const DisputeCenter = ({ mode, embedded = false }) => {
         await openDetail(actionTarget);
       }
     } catch (error) {
-      if (error?.errorFields) return;
+      if (error?.errorFields) {
+return;
+}
       console.error('[DisputeCenter] Counter-report failed:', error);
       message.error(error?.message || 'Failed to submit counter-report');
     } finally {
@@ -594,7 +608,9 @@ const DisputeCenter = ({ mode, embedded = false }) => {
         await openDetail(actionTarget);
       }
     } catch (error) {
-      if (error?.errorFields) return;
+      if (error?.errorFields) {
+return;
+}
       console.error('[DisputeCenter] Status update failed:', error);
       message.error(error?.message || 'Failed to update report');
     } finally {

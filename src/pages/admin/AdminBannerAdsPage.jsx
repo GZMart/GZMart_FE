@@ -48,22 +48,33 @@ const AdminStep1Upload = ({ imageUrl, setImageUrl, onNext }) => {
   const [imgErr, setImgErr] = useState(false);
 
   const handleUpload = async (file) => {
-    if (!file.type.startsWith('image/')) { message.error('Invalid file type.'); return Upload.LIST_IGNORE; }
+    if (!file.type.startsWith('image/')) {
+ message.error('Invalid file type.'); return Upload.LIST_IGNORE; 
+}
     setUploading(true); setImgErr(false);
     try {
       const reader = new FileReader();
       reader.onload = (e) => setPreview(e.target.result);
       reader.readAsDataURL(file);
       const res = await uploadService.uploadMedia(file);
-      if (res?.url) setPreview(res.url);
-    } catch { message.error('Upload failed.'); setImgErr(true); }
-    finally { setUploading(false); }
+      if (res?.url) {
+setPreview(res.url);
+}
+    } catch {
+ message.error('Upload failed.'); setImgErr(true); 
+} finally {
+ setUploading(false); 
+}
     return false;
   };
 
   const handleConfirm = () => {
-    if (!preview || imgErr) return message.warning('Please select a valid image first');
-    if (preview.startsWith('data:')) return message.warning('Processing image, please wait...');
+    if (!preview || imgErr) {
+return message.warning('Please select a valid image first');
+}
+    if (preview.startsWith('data:')) {
+return message.warning('Processing image, please wait...');
+}
     setImageUrl(preview); onNext();
   };
 
@@ -252,7 +263,9 @@ const AdminStep2Hotspot = ({ imageUrl, hotspots, setHotspots, linkMode, setLinkM
 
       {showEditor && (
         <HotspotEditor image={imageUrl} hotspots={hotspots}
-          onSave={(h) => { setShowEditor(false); setHotspots(h); }} />
+          onSave={(h) => {
+ setShowEditor(false); setHotspots(h); 
+}} />
       )}
     </div>
   );
@@ -263,14 +276,18 @@ const AdminStep3Config = ({ imageUrl, hotspots, calendar = {}, onBack, onSubmit,
   const [previewOpen, setPreviewOpen] = useState(false);
   
   const disabledDate = (current) => {
-    if (current < dayjs().startOf('day')) return true;
+    if (current < dayjs().startOf('day')) {
+return true;
+}
     return false;
   };
 
   const cellRender = (current) => {
     const dateStr = current.format('YYYY-MM-DD');
     const info = calendar[dateStr];
-    if (!info) return <div className="ant-picker-cell-inner">{current.date()}</div>;
+    if (!info) {
+return <div className="ant-picker-cell-inner">{current.date()}</div>;
+}
     
     // Only Green (Còn slot) and Red (Hết slot)
     const color = info.isFull ? '#ef4444' : '#22c55e';
@@ -461,15 +478,22 @@ const AdminBannerAdsPage = () => {
     setLoading(true);
     try {
       const params = { page, limit: 20 };
-      if (statusFilter && statusFilter !== 'ALL') params.status = statusFilter;
-      if (ownerFilter) params.ownerType = ownerFilter;
+      if (statusFilter && statusFilter !== 'ALL') {
+params.status = statusFilter;
+}
+      if (ownerFilter) {
+params.ownerType = ownerFilter;
+}
       const res = await bannerAdsService.adminGetAll(params);
       const data = res?.data || res;
       const list = (data?.banners || data || []);
       setBanners([...list].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)));
       setTotal(data?.pagination?.total || list.length);
-    } catch { message.error('Không tải được dữ liệu banner'); }
-    finally { setLoading(false); }
+    } catch {
+ message.error('Không tải được dữ liệu banner'); 
+} finally {
+ setLoading(false); 
+}
   }, [statusFilter, ownerFilter, page]);
 
   const fetchAllStats = useCallback(async () => {
@@ -488,9 +512,15 @@ const AdminBannerAdsPage = () => {
     } catch { /* silent */ }
   }, []);
 
-  useEffect(() => { fetchBanners(); }, [fetchBanners]);
-  useEffect(() => { fetchAllStats(); }, [fetchAllStats]);
-  useEffect(() => { fetchCalendar(); }, [fetchCalendar]);
+  useEffect(() => {
+ fetchBanners(); 
+}, [fetchBanners]);
+  useEffect(() => {
+ fetchAllStats(); 
+}, [fetchAllStats]);
+  useEffect(() => {
+ fetchCalendar(); 
+}, [fetchCalendar]);
 
   // ─── Wizard submit ────────────────────────────────────────────────────────
   const resetWizard = () => { 
@@ -516,7 +546,9 @@ const AdminBannerAdsPage = () => {
       await bannerAdsService.adminUpdate(banner._id, { status: newStatus, isActive: newStatus === 'RUNNING' });
       message.success(`Banner đã được ${newStatus === 'RUNNING' ? 'phát hành lại' : 'tạm dừng'}`);
       fetchBanners(); fetchAllStats();
-    } catch { message.error('Lỗi cập nhật trạng thái'); }
+    } catch {
+ message.error('Lỗi cập nhật trạng thái'); 
+}
   };
 
   const handleEdit = (banner) => {
@@ -537,7 +569,9 @@ const AdminBannerAdsPage = () => {
   };
 
   const handleWizardSubmit = async () => {
-    if (!imageUrl) return message.error('Vui lòng chọn ảnh banner');
+    if (!imageUrl) {
+return message.error('Vui lòng chọn ảnh banner');
+}
     setSubmitting(true);
     try {
       const payload = {
@@ -561,8 +595,11 @@ const AdminBannerAdsPage = () => {
       }
       
       resetWizard(); fetchBanners(); fetchAllStats();
-    } catch (err) { message.error(err?.response?.data?.message || 'Failed to save banner'); }
-    finally { setSubmitting(false); }
+    } catch (err) {
+ message.error(err?.response?.data?.message || 'Failed to save banner'); 
+} finally {
+ setSubmitting(false); 
+}
   };
 
   // ─── Approve / Reject ─────────────────────────────────────────────────────
@@ -572,8 +609,11 @@ const AdminBannerAdsPage = () => {
       await bannerAdsService.adminApprove(id);
       message.success('✅ Banner approved successfully');
       fetchBanners(); fetchAllStats();
-    } catch (err) { message.error(err?.response?.data?.message || 'Approval failed'); }
-    finally { setApproving(p => ({ ...p, [id]: false })); }
+    } catch (err) {
+ message.error(err?.response?.data?.message || 'Approval failed'); 
+} finally {
+ setApproving(p => ({ ...p, [id]: false })); 
+}
   };
 
   const handleReject = async () => {
@@ -584,8 +624,13 @@ const AdminBannerAdsPage = () => {
       message.success('Banner rejected. Seller coins have been refunded.');
       setRejectId(null); rejectForm.resetFields();
       fetchBanners(); fetchAllStats();
-    } catch (err) { if (err?.response) message.error(err.response.data?.message || 'Rejection failed'); }
-    finally { setRejecting(false); }
+    } catch (err) {
+ if (err?.response) {
+message.error(err.response.data?.message || 'Rejection failed');
+} 
+} finally {
+ setRejecting(false); 
+}
   };
 
   const handleDelete = async (id) => {
@@ -593,8 +638,11 @@ const AdminBannerAdsPage = () => {
     try {
       await bannerAdsService.adminDelete(id);
       message.success('Banner deleted'); fetchBanners(); fetchAllStats();
-    } catch (err) { message.error(err?.response?.data?.message || 'Delete failed'); }
-    finally { setDeleting(p => ({ ...p, [id]: false })); }
+    } catch (err) {
+ message.error(err?.response?.data?.message || 'Delete failed'); 
+} finally {
+ setDeleting(p => ({ ...p, [id]: false })); 
+}
   };
 
   // ─── Reorder ──────────────────────────────────────────────────────────────
@@ -602,9 +650,15 @@ const AdminBannerAdsPage = () => {
     // Sort ALL active banners by their current order to get the full list
     const sortedAll = [...banners].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
     const idx = sortedAll.findIndex(b => b._id === bannerId);
-    if (idx < 0) return;
-    if (direction === 'up' && idx === 0) return;
-    if (direction === 'down' && idx === sortedAll.length - 1) return;
+    if (idx < 0) {
+return;
+}
+    if (direction === 'up' && idx === 0) {
+return;
+}
+    if (direction === 'down' && idx === sortedAll.length - 1) {
+return;
+}
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     const newList = [...sortedAll];
     [newList[idx], newList[swapIdx]] = [newList[swapIdx], newList[idx]];
@@ -614,8 +668,11 @@ const AdminBannerAdsPage = () => {
       await bannerAdsService.adminReorder(updates);
       await fetchBanners();
       message.success('Banner order updated');
-    } catch { message.error('Failed to update order'); }
-    finally { setReordering(false); }
+    } catch {
+ message.error('Failed to update order'); 
+} finally {
+ setReordering(false); 
+}
   };
 
   // ─── Stats ────────────────────────────────────────────────────────────────
@@ -877,14 +934,18 @@ const AdminBannerAdsPage = () => {
                 <div className={styles.listCardSub}>{total} banners total · Sorted by display order</div>
               </div>
               <div className={styles.filterBar}>
-                <Segmented value={ownerFilter} onChange={v => { setOwnerFilter(v); setPage(1); }}
+                <Segmented value={ownerFilter} onChange={v => {
+ setOwnerFilter(v); setPage(1); 
+}}
                   options={[
                     { label: 'All Types', value: '' },
                     { label: '🔵 System', value: 'ADMIN' },
                     { label: '🟠 Seller', value: 'SELLER' },
                   ]}
                 />
-                <Segmented value={statusFilter} onChange={v => { setStatusFilter(v); setPage(1); }}
+                <Segmented value={statusFilter} onChange={v => {
+ setStatusFilter(v); setPage(1); 
+}}
                   options={[
                     { label: 'All Status', value: 'ALL' },
                     { label: '⏳ Pending', value: 'PENDING_REVIEW' },
@@ -958,7 +1019,9 @@ const AdminBannerAdsPage = () => {
 
       {/* ── Reject Modal ── */}
       <Modal title="❌ Reject Seller Banner" open={!!rejectId}
-        onOk={handleReject} onCancel={() => { setRejectId(null); rejectForm.resetFields(); }}
+        onOk={handleReject} onCancel={() => {
+ setRejectId(null); rejectForm.resetFields(); 
+}}
         okText="Confirm Reject & Refund Coins" okButtonProps={{ danger: true, loading: rejecting }} cancelText="Cancel">
         <Form form={rejectForm} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item name="rejectionReason" label="Rejection Reason"
@@ -983,9 +1046,13 @@ const AdminBannerAdsPage = () => {
           <Space>
             <Button type="primary" icon={<CheckCircleOutlined />} loading={approving[previewBanner?._id]}
               style={{ background: '#22c55e', borderColor: '#22c55e' }}
-              onClick={() => { handleApprove(previewBanner._id); setPreviewBanner(null); }}>Approve</Button>
+              onClick={() => {
+ handleApprove(previewBanner._id); setPreviewBanner(null); 
+}}>Approve</Button>
             <Button danger icon={<CloseCircleOutlined />}
-              onClick={() => { setRejectId(previewBanner._id); setPreviewBanner(null); }}>Reject</Button>
+              onClick={() => {
+ setRejectId(previewBanner._id); setPreviewBanner(null); 
+}}>Reject</Button>
           </Space>
         )}>
         {previewBanner && (

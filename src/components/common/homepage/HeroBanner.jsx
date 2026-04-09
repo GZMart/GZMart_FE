@@ -118,7 +118,9 @@ function resolveBannerHref(banner) {
 
   if (lt === 'external' && banner.link) {
     const u = String(banner.link).trim();
-    if (!u) return null;
+    if (!u) {
+return null;
+}
     return /^https?:\/\//i.test(u) ? u : `https://${u}`;
   }
 
@@ -128,7 +130,9 @@ function resolveBannerHref(banner) {
         ? banner.productId._id
         : banner.productId;
     const id = pid || banner.link;
-    if (id) return `/product/${id}`;
+    if (id) {
+return `/product/${id}`;
+}
   }
 
   if (banner.link) {
@@ -140,7 +144,9 @@ function resolveBannerHref(banner) {
   if (banner.ownerType === 'SELLER' && banner.sellerId) {
     const sid =
       typeof banner.sellerId === 'object' ? banner.sellerId._id : banner.sellerId;
-    if (sid) return `/shop/${sid}`;
+    if (sid) {
+return `/shop/${sid}`;
+}
   }
 
   return null;

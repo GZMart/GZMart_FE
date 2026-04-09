@@ -26,7 +26,9 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [],
   // ── Index tier positions ─────────────────────────────────────────────
   const tierIndexMap = useMemo(() => {
     const m = {};
-    productTiers.forEach((t, i) => { m[t.name.toLowerCase()] = i; });
+    productTiers.forEach((t, i) => {
+ m[t.name.toLowerCase()] = i; 
+});
     return m;
   }, [productTiers]);
 
@@ -37,11 +39,17 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [],
   const fullStockMap = useMemo(() => {
     const map = {};
     for (const model of resolvedProduct?.models ?? []) {
-      if (!model.tierIndex || colorIdx < 0 || sizeIdx < 0) continue;
+      if (!model.tierIndex || colorIdx < 0 || sizeIdx < 0) {
+continue;
+}
       const c = model.tierIndex[colorIdx];
       const s = model.tierIndex[sizeIdx];
-      if (c == null || s == null) continue;
-      if (!map[c]) map[c] = {};
+      if (c == null || s == null) {
+continue;
+}
+      if (!map[c]) {
+map[c] = {};
+}
       map[c][s] = Math.max(0, Number(model.stock) || 0);
     }
     return map;
@@ -49,9 +57,13 @@ export default function OrderSyntaxPanel({ sessionId, isLive, liveProducts = [],
 
   // ── Cascaded stock: filter by previously selected tiers ───────────
   const getCascadedStock = useCallback((tierName, optIdx, selectedTierStates) => {
-    if (colorIdx < 0 || sizeIdx < 0) return null;
+    if (colorIdx < 0 || sizeIdx < 0) {
+return null;
+}
     const tierPos = tierIndexMap[tierName.toLowerCase()];
-    if (tierPos == null) return null;
+    if (tierPos == null) {
+return null;
+}
 
     const prevColorIdx = selectedTierStates[colorIdx];
     const prevSizeIdx = selectedTierStates[sizeIdx];
@@ -85,7 +97,9 @@ return;
       .getSessionConfig(sessionId)
       .then((res) => {
         const cfg = res?.data?.orderSyntax;
-        if (!cfg) return;
+        if (!cfg) {
+return;
+}
         setEnabled(cfg.enabled ?? false);
         setPrefix(cfg.prefix ?? 'muangay');
         const cfgPid = cfg.productId != null && cfg.productId !== '' ? String(cfg.productId) : null;
@@ -111,7 +125,9 @@ return;
     const pinChanged = prev !== undefined && prev !== pinStr;
     prevPinForSyntaxRef.current = pinStr;
 
-    if (!variantMode || !pinStr || !pinChanged) return;
+    if (!variantMode || !pinStr || !pinChanged) {
+return;
+}
 
     setSelectedTierStates({});
     const p = liveProducts.find((x) => String(x._id) === pinStr);
@@ -130,7 +146,9 @@ return;
   const toggleTier = useCallback((tierName, checked) => {
     setVariantTiers((prev) => {
       if (checked) {
-        if (prev.some((t) => t.name === tierName)) return prev;
+        if (prev.some((t) => t.name === tierName)) {
+return prev;
+}
         const tier = resolvedProduct?.tiers?.find((t) => t.name === tierName);
         return [...prev, { name: tierName, options: [...(tier?.options ?? [])] }];
       } else {
@@ -138,7 +156,9 @@ return;
         const pos = tierIndexMap[tierName.toLowerCase()];
         setSelectedTierStates((prev2) => {
           const next = { ...prev2 };
-          if (pos != null) delete next[pos];
+          if (pos != null) {
+delete next[pos];
+}
           return next;
         });
         return prev.filter((t) => t.name !== tierName);
@@ -161,7 +181,9 @@ return;
     }));
     setVariantTiers((prev) =>
       prev.map((t) => {
-        if (t.name !== tierName) return t;
+        if (t.name !== tierName) {
+return t;
+}
         const opts = checked ? [...t.options, option] : t.options.filter((o) => o !== option);
         return { ...t, options: opts };
       }),
@@ -169,14 +191,18 @@ return;
   }, [tierIndexMap]);
 
   const handleDisableAllOOS = useCallback(() => {
-    if (!resolvedProduct) return;
+    if (!resolvedProduct) {
+return;
+}
     setVariantTiers((prev) => {
       const newTiers = prev.map((t) => {
         const pos = tierIndexMap[t.name.toLowerCase()];
         const validOpts = [];
         t.options.forEach((opt, idx) => {
           const stock = getCascadedStock(t.name, idx, selectedTierStates);
-          if (stock > 0) validOpts.push(opt);
+          if (stock > 0) {
+validOpts.push(opt);
+}
         });
         return { ...t, options: validOpts };
       });
@@ -186,12 +212,16 @@ return;
 
   const handleDisableAllOOSInTier = useCallback((tierName) => {
     const tier = variantTiers.find((t) => t.name === tierName);
-    if (!tier) return;
+    if (!tier) {
+return;
+}
     const pos = tierIndexMap[tierName.toLowerCase()];
     const validOpts = [];
     tier.options.forEach((opt, idx) => {
       const stock = getCascadedStock(tierName, idx, selectedTierStates);
-      if (stock > 0) validOpts.push(opt);
+      if (stock > 0) {
+validOpts.push(opt);
+}
     });
     setVariantTiers((prev) =>
       prev.map((t) => (t.name === tierName ? { ...t, options: validOpts } : t)),
@@ -200,7 +230,9 @@ return;
 
   const handleReenableAllInTier = useCallback((tierName) => {
     const productTier = productTiers.find((t) => t.name === tierName);
-    if (!productTier) return;
+    if (!productTier) {
+return;
+}
     setVariantTiers((prev) =>
       prev.map((t) =>
         t.name === tierName ? { ...t, options: [...(productTier.options ?? [])] } : t,
@@ -246,7 +278,9 @@ return;
     const pos = tierIndexMap[t.name.toLowerCase()];
     if (pos != null && selectedTierStates[pos] != null) {
       const label = t.options[selectedTierStates[pos]];
-      if (label) filterHints.push(`${t.name}: ${label}`);
+      if (label) {
+filterHints.push(`${t.name}: ${label}`);
+}
     }
   });
 
