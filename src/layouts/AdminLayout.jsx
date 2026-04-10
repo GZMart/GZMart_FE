@@ -33,6 +33,12 @@ const NAV_ITEMS = [
         label: 'System Vouchers',
         matchPrefix: true,
       },
+      {
+        to: ADMIN_ROUTES.BANNER_ADS,
+        icon: 'bi bi-layout-wtf',
+        label: 'Banner Ads',
+        matchPrefix: true,
+      },
     ],
   },
   {
@@ -85,6 +91,7 @@ const PAGE_TITLES = {
   [ADMIN_ROUTES.PAYMENT_SETTINGS]: 'Payment Settings',
   [ADMIN_ROUTES.PAGES]: 'Pages',
   [ADMIN_ROUTES.BANNERS]: 'Banners',
+  [ADMIN_ROUTES.BANNER_ADS]: 'Banner Ads Management',
   [ADMIN_ROUTES.DISPUTES]: 'Disputes',
   [ADMIN_ROUTES.ACTIVITY_LOGS]: 'Activity Logs',
   [ADMIN_ROUTES.SYSTEM_HEALTH]: 'System Health',

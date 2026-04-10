@@ -126,7 +126,9 @@ const TestMapPage = () => {
   const handleAddressChange = (value, type) => {
     updateLocation(type, { address: value });
 
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    if (typingTimeoutRef.current) {
+clearTimeout(typingTimeoutRef.current);
+}
 
     if (!value.trim()) {
       updateLocation(type, { suggestions: [] });

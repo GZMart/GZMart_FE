@@ -31,6 +31,8 @@ export default function HotspotEditor({ image, hotspots = [], onSave }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [editingLinkIndex, setEditingLinkIndex] = useState(null);
   const [linkInput, setLinkInput] = useState('');
+  const [tooSmallWarning, setTooSmallWarning] = useState(false);
+  const overlayRef = useRef(null);
   const imageRef = useRef(null);
 
   useEffect(() => {
@@ -174,6 +176,17 @@ return;
       destroyOnHidden
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 16 }}>
+        {/* Too-small warning */}
+        {tooSmallWarning && (
+          <div style={{
+            background: '#fff3cd', border: '1px solid #ffc107',
+            borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#856404',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            ⚠️ Vùng bạn vẽ quá nhỏ (tối thiểu {MIN_HOTSPOT_SIZE}×{MIN_HOTSPOT_SIZE}px). Hãy <strong>nhấn và kéo</strong> để tạo vùng lớn hơn.
+          </div>
+        )}
+
         {/* Instructions */}
         <div style={{
           background: '#fff8f7',
@@ -189,24 +202,23 @@ return;
         </div>
 
         {/* Image + hotspot canvas */}
-        <div style={{
-          position: 'relative',
-          display: 'inline-block',
-          maxWidth: '100%',
-          cursor: drawing ? 'crosshair' : 'default',
-          borderRadius: 8,
-          overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            position: 'relative',
+            display: 'block',
+            width: '100%',
+            cursor: 'crosshair',
+            borderRadius: 8,
+            overflow: 'hidden',
+            userSelect: 'none',
+          }}
+        >
           {image ? (
             <img
               ref={imageRef}
               src={image}
               alt="Hotspot background"
-              style={{ display: 'block', maxWidth: '100%', userSelect: 'none' }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none', pointerEvents: 'none' }}
               draggable={false}
             />
           ) : (
@@ -224,6 +236,19 @@ return;
               Vui lòng tải ảnh nền trước
             </div>
           )}
+
+          {/* Transparent overlay — captures all mouse events without image native drag interference */}
+          <div
+            ref={overlayRef}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 10,
+              cursor: 'crosshair',
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          />
 
           {localHotspots.map((h, i) => (
             <div

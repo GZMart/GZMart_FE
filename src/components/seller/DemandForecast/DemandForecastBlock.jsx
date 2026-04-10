@@ -36,7 +36,9 @@ const DemandForecastBlock = () => {
   const CACHE_KEY = `demandForecast_${sellerId}`;
 
   const loadForecast = useCallback(async (bypassCache = false) => {
-    if (!sellerId) return;
+    if (!sellerId) {
+return;
+}
     setLoading(true);
     setIsFromCache(false);
     
@@ -151,20 +153,40 @@ const DemandForecastBlock = () => {
   );
 
   const getTrendLabel = (item) => {
-    if (item.restockPriority === 'urgent') return 'Urgent';
-    if (item.restockPriority === 'moderate') return 'Restock Soon';
-    if (item.restockPriority === 'opportunity') return 'Trending Up';
-    if (item.trendCategory === 'trending_up') return 'Hot';
-    if (item.trendCategory === 'trending_down') return 'Slow';
+    if (item.restockPriority === 'urgent') {
+return 'Urgent';
+}
+    if (item.restockPriority === 'moderate') {
+return 'Restock Soon';
+}
+    if (item.restockPriority === 'opportunity') {
+return 'Trending Up';
+}
+    if (item.trendCategory === 'trending_up') {
+return 'Hot';
+}
+    if (item.trendCategory === 'trending_down') {
+return 'Slow';
+}
     return 'Stable';
   };
 
   const getTrendClass = (item) => {
-    if (item.restockPriority === 'urgent') return styles.trendBadgeUrgent;
-    if (item.restockPriority === 'moderate') return styles.trendBadgeModerate;
-    if (item.restockPriority === 'opportunity') return styles.trendBadgeOpportunity;
-    if (item.trendCategory === 'trending_up') return styles.trendBadgeUp;
-    if (item.trendCategory === 'trending_down') return styles.trendBadgeDown;
+    if (item.restockPriority === 'urgent') {
+return styles.trendBadgeUrgent;
+}
+    if (item.restockPriority === 'moderate') {
+return styles.trendBadgeModerate;
+}
+    if (item.restockPriority === 'opportunity') {
+return styles.trendBadgeOpportunity;
+}
+    if (item.trendCategory === 'trending_up') {
+return styles.trendBadgeUp;
+}
+    if (item.trendCategory === 'trending_down') {
+return styles.trendBadgeDown;
+}
     return styles.trendBadgeStable;
   };
 
