@@ -6,7 +6,7 @@ import ProductListItem from '@components/common/ProductListItem';
 import LoadingSpinner from '@components/common/LoadingSpinner';
 import Pagination from '@components/common/Pagination';
 import styles from '@assets/styles/buyer/Product/ProductsPage.module.css';
-import { dealService, flashsaleService } from '../../services/api';
+import { dealService, campaignService } from '../../services/api';
 
 const dealTypes = [
   { id: 'flash_sale', name: 'Flash Sale', icon: 'lightning-fill' },
@@ -22,6 +22,28 @@ const discountOptions = [
   { id: '20', name: '20% trở lên' },
   { id: '10', name: '10% trở lên' },
 ];
+
+/**
+ * Same rule as ProductCard discount badge: round((original - price) / original * 100).
+ * Sorting must use this so "Giảm nhiều" order matches the % shown on each card.
+ */
+function getEffectiveDiscountPercent(product) {
+  const orig = Number(product?.originalPrice) || 0;
+  const price = Number(product?.price) || 0;
+  if (orig > 0 && price >= 0 && orig > price) {
+    return Math.round(((orig - price) / orig) * 100);
+  }
+  return Number(product?.discount) || 0;
+}
+
+// Tạo key duy nhất cho deal bằng cách kết hợp id, dealId, dealType và endDate
+// dealType giúp phân biệt các deal types khác nhau cho cùng 1 product
+function getDealSortKey(product) {
+  const dealId = product.flashSaleId || product.dealId || '';
+  const dealType = product.dealType || '';
+  const end = product.dealEndDate || '';
+  return `${product.id}_${dealId}_${dealType}_${end}`;
+}
 
 const FlashDealsPage = () => {
   const viewMode = 'grid';
@@ -50,7 +72,7 @@ const FlashDealsPage = () => {
         setLoading(true);
 
         const [flashSaleRes, dealsRes] = await Promise.allSettled([
-          flashsaleService.getActive(),
+          campaignService.getActive(),
           dealService.getActiveDeals({ limit: 100 }),
         ]);
 
@@ -60,9 +82,8 @@ const FlashDealsPage = () => {
           if (Array.isArray(response)) {
             flashSalesData = response;
           } else if (response?.data) {
-            flashSalesData = Array.isArray(response.data)
-              ? response.data
-              : response.data?.data || [];
+            // API /api/campaigns/active trả về { data: [...] }
+            flashSalesData = Array.isArray(response.data) ? response.data : [];
           }
         }
 
@@ -147,17 +168,15 @@ const FlashDealsPage = () => {
           if (Array.isArray(response)) {
             dealsData = response;
           } else if (response?.data) {
-            dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+            // API /api/deals trả về { data: [...] } → lấy response.data trực tiếp
+            dealsData = Array.isArray(response.data) ? response.data : [];
           }
         }
 
-        const flashSaleProductIds = new Set(productsFromFlashSales.map((p) => p.id));
+        // Lấy deals từ deal service (type != flash_sale)
+        // Không deduplicate theo productId vì cùng 1 product có thể có nhiều deal types
         const productsFromDeals = dealsData
           .filter((deal) => deal && deal.productId && deal.type !== 'flash_sale')
-          .filter((deal) => {
-            const pid = typeof deal.productId === 'object' ? deal.productId._id : deal.productId;
-            return !flashSaleProductIds.has(pid);
-          })
           .map((deal) => {
             const product = deal.productId;
             const pid = typeof product === 'object' ? product._id : product;
@@ -166,7 +185,7 @@ const FlashDealsPage = () => {
               name: product.name,
               description: product.description,
               image:
-                (product.models?.find(m => m.isActive) || product.models?.[0])?.image ||
+                (product.models?.find((m) => m.isActive) || product.models?.[0])?.image ||
                 product.images?.[0] ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               images: product.images || [],
@@ -197,6 +216,7 @@ const FlashDealsPage = () => {
             };
           });
 
+        // Merge tất cả deals từ cả 2 services
         setProducts([...productsFromFlashSales, ...productsFromDeals]);
       } catch (error) {
         console.error('Error fetching deals:', error);
@@ -242,8 +262,8 @@ const FlashDealsPage = () => {
           }
         }
         if (selectedDiscounts.length > 0) {
-          const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
-          if (product.discount < minDiscount) {
+          const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d, 10)));
+          if (getEffectiveDiscountPercent(product) < minDiscount) {
             return false;
           }
         }
@@ -254,20 +274,28 @@ const FlashDealsPage = () => {
 
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
+    const tieBreak = (a, b, primary) => {
+      if (primary !== 0) {
+        return primary;
+      }
+      return getDealSortKey(a).localeCompare(getDealSortKey(b));
+    };
     switch (sortBy) {
       case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        return sorted.sort((a, b) => tieBreak(a, b, a.name.localeCompare(b.name)));
       case 'price-asc':
-        return sorted.sort((a, b) => a.price - b.price);
+        return sorted.sort((a, b) => tieBreak(a, b, a.price - b.price));
       case 'price-desc':
-        return sorted.sort((a, b) => b.price - a.price);
+        return sorted.sort((a, b) => tieBreak(a, b, b.price - a.price));
       case 'discount':
-        return sorted.sort((a, b) => b.discount - a.discount);
+        return sorted.sort((a, b) =>
+          tieBreak(a, b, getEffectiveDiscountPercent(b) - getEffectiveDiscountPercent(a))
+        );
       case 'ending-soon':
         return sorted.sort((a, b) => {
-          const aEnd = new Date(a.dealEndDate).getTime();
-          const bEnd = new Date(b.dealEndDate).getTime();
-          return aEnd - bEnd;
+          const aEnd = a.dealEndDate ? new Date(a.dealEndDate).getTime() : Number.POSITIVE_INFINITY;
+          const bEnd = b.dealEndDate ? new Date(b.dealEndDate).getTime() : Number.POSITIVE_INFINITY;
+          return tieBreak(a, b, aEnd - bEnd);
         });
       default:
         return sorted;
@@ -649,9 +677,9 @@ const FlashDealsPage = () => {
               <div className={styles.productGrid}>
                 {displayedProducts.map((product) => (
                   <Link
-                    key={product.id}
+                    key={getDealSortKey(product)}
                     to={`/product/${product.id}`}
-                    style={{ textDecoration: 'none' }}
+                    className={styles.productGridCardLink}
                   >
                     <ProductCard product={product} />
                   </Link>

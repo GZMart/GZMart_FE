@@ -1032,6 +1032,292 @@
   padding: 2rem;
 }
 
+/* ─── Balance Section ──────────────────────────────────────────── */
+.balanceSectionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+/* Main Balance Card */
+.balanceMainCard {
+  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
+  border-radius: 16px;
+  padding: 1.375rem 1.5rem 1.25rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  box-shadow: 0 8px 24px rgba(22, 119, 255, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+
+.balanceMainCard::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.balanceMainCard::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: -10px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+.balanceMainCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.balanceMainCardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.balanceMainCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.balanceMainCardLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0.9;
+}
+
+.balanceMainCardHint {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.balanceMainCardAmount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.balanceMainCardCurrency {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+
+.balanceMainCardValue {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.balanceMainCardFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.balanceMainCardFooterItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 500;
+}
+
+.balanceMainCardFooterItem strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Progress bar */
+.balanceProgressWrap {
+  margin-top: 0.25rem;
+}
+
+.balanceProgressLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.balanceProgressBar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.balanceProgressFill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+.balanceProgressPercents {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.balanceProgressPercentAvailable {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+}
+
+.balanceProgressPercentPending {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+/* Sub-cards grid */
+.balanceSubCardsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.balanceSubCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #e8ecf0;
+  background: var(--bg, #f8fafc);
+  transition: all 0.2s ease;
+  cursor: default;
+  min-height: 0;
+}
+
+.balanceSubCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+  border-color: var(--accent, #1677ff);
+}
+
+.balanceSubCardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--bg, #eff6ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.balanceSubCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.balanceSubCardLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.balanceSubCardValue {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.balanceSubCardSub {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Skeleton */
+.skeletonBalanceCard {
+  height: 200px;
+  border-radius: 16px;
+}
+
+.skeletonSubCard {
+  height: 88px;
+  border-radius: 12px;
+}
+
+/* Refresh button */
+.balanceRefreshBtn {
+  font-size: 0.8125rem;
+  color: #94a3b8 !important;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.balanceRefreshBtn:hover {
+  color: #1677ff !important;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 1400px) {
   .chartAndStats {
@@ -1061,6 +1347,10 @@
   .statCardsGrid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .balanceSectionGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1087,6 +1377,10 @@
   }
 
   .lowStockGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .balanceSubCardsGrid {
     grid-template-columns: 1fr;
   }
 }

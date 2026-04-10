@@ -13,7 +13,7 @@ import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import CartSuccessModal from '../../components/buyer/CartSuccessModal';
 import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
 import { productService, livestreamService } from '../../services/api';
-import { flashsaleService } from '../../services/api/flashsaleService';
+import { campaignService } from '../../services/api/campaignService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 import * as wishlistService from '../../services/api/wishlistService';
 import { formatCurrency } from '../../utils/formatters';
@@ -308,7 +308,7 @@ setActiveLive(null);
           }
           try {
             // First try to fetch from getActive
-            const response = await flashsaleService.getActive();
+            const response = await campaignService.getActive();
             const allFlashSales = Array.isArray(response)
               ? response
               : response.data?.data || response.data || [];
@@ -1016,7 +1016,14 @@ setActiveLive(null);
               <div className={styles.flashSaleContainer}>
                 <div className={styles.flashSaleInfo}>
                   <i className={`bi bi-lightning-fill ${styles.flashSaleIcon}`}></i>
-                  <span className={styles.flashSaleLabel}>FLASH SALE</span>
+                  <div>
+                    <span className={styles.flashSaleLabel}>
+                      {flashSale.campaignTitle || 'FLASH SALE'}
+                    </span>
+                    {flashSale.campaignTitle && (
+                      <div className={styles.flashSaleSub}>Flash Deal — limited time only</div>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.flashSaleTimer}>
                   {countdown.days}d : {countdown.hours}h : {countdown.minutes}m :{' '}

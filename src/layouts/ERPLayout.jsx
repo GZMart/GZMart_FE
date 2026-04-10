@@ -18,7 +18,7 @@ const NAV_GROUPS = [
       { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
-      { to: '/seller/flash-sales', icon: 'bi-lightning-charge-fill', label: 'Flash Sales' },
+      { to: SELLER_ROUTES.CAMPAIGNS, icon: 'bi-lightning-charge-fill', label: 'Campaigns' },
       { to: SELLER_ROUTES.LIVE, icon: 'bi-broadcast', label: 'Live' },
       { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
     ],
@@ -45,7 +45,7 @@ const NAV_GROUPS = [
     items: [
       { to: SELLER_ROUTES.PROFILE, icon: 'bi-person', label: 'Profile' },
       { to: SELLER_ROUTES.SHOP_DECORATION, icon: 'bi-palette', label: 'Shop Decoration' },
-      { to: '/seller/billing', icon: 'bi-credit-card', label: 'Billing' },
+      { to: SELLER_ROUTES.FINANCE, icon: 'bi-wallet2', label: 'Finance & Topup' },
     ],
   },
 ];
@@ -184,11 +184,11 @@ const ERPLayout = ({ children }) => {
                     <i className="bi bi-person me-2" /> Profile
                   </Link>
                   <Link
-                    to="/seller/billing"
+                    to={SELLER_ROUTES.FINANCE}
                     className={styles.dropdownItem}
                     onClick={() => setProfileOpen(false)}
                   >
-                    <i className="bi bi-credit-card me-2" /> Billing
+                    <i className="bi bi-wallet2 me-2" /> Finance & Topup
                   </Link>
                   <div className={styles.dropdownDivider} />
                   <button
