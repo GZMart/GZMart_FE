@@ -671,7 +671,9 @@ const ChatWidget = () => {
     activeConversation && activeChatId !== 'ai'
       ? (() => {
           const raw = pendingProducts[activeConversation._id];
-          if (raw == null) return [];
+          if (raw == null) {
+return [];
+}
           return Array.isArray(raw) ? raw : [raw];
         })()
       : [];

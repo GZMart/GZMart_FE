@@ -221,7 +221,9 @@ class SocketService {
     // Queue: retry once when connected, then clean up the listener
     let fired = false;
     const retry = () => {
-      if (fired) return;
+      if (fired) {
+return;
+}
       fired = true;
       if (this.socket?.connected) {
         this.socket.emit(event, data);

@@ -630,6 +630,26 @@
       "quarter": "Quarter",
       "year": "Year"
     },
+    "balance": {
+      "title": "Account Balance",
+      "available": "Available Balance",
+      "availableTooltip": "Funds from completed orders, available for withdrawal or use",
+      "pending": "Pending",
+      "pendingTooltip": "Funds from orders being processed, unpaid or in transit",
+      "totalEarning": "Total Earnings",
+      "totalEarningSub": "From completed orders",
+      "totalEarningTooltip": "Total revenue from completed orders",
+      "totalRefund": "Total Refunds",
+      "totalRefundSub": "From cancelled/returned orders",
+      "totalRefundTooltip": "Total amount refunded to customers",
+      "completedOrders": "Completed Orders",
+      "totalOrders": "{{count}} orders",
+      "pendingOrders": "Orders In Progress",
+      "pendingOrdersSub": "Unpaid / in delivery",
+      "refresh": "Refresh",
+      "error": "Unable to load balance information",
+      "retry": "Retry"
+    },
     "overallSales": {
       "title": "Revenue Over Time",
       "vsPrevious": "vs. previous period",

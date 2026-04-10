@@ -34,14 +34,18 @@ const DemandForecastBlock = () => {
   const ITEMS_PER_PAGE = 5;
 
   const loadForecast = useCallback(async () => {
-    if (!sellerId) return;
+    if (!sellerId) {
+return;
+}
     setLoading(true);
     try {
       const res = await inventoryService.getDemandForecast({ trendDays });
       setData(res.data);
     } catch (err) {
       const status = err?.response?.status;
-      if (status === 401 || status === 403) setData(null);
+      if (status === 401 || status === 403) {
+setData(null);
+}
     } finally {
       setLoading(false);
     }
@@ -69,20 +73,40 @@ const DemandForecastBlock = () => {
   );
 
   const getTrendLabel = (item) => {
-    if (item.restockPriority === 'urgent') return 'Urgent';
-    if (item.restockPriority === 'moderate') return 'Restock Soon';
-    if (item.restockPriority === 'opportunity') return 'Trending Up';
-    if (item.trendCategory === 'trending_up') return 'Hot';
-    if (item.trendCategory === 'trending_down') return 'Slow';
+    if (item.restockPriority === 'urgent') {
+return 'Urgent';
+}
+    if (item.restockPriority === 'moderate') {
+return 'Restock Soon';
+}
+    if (item.restockPriority === 'opportunity') {
+return 'Trending Up';
+}
+    if (item.trendCategory === 'trending_up') {
+return 'Hot';
+}
+    if (item.trendCategory === 'trending_down') {
+return 'Slow';
+}
     return 'Stable';
   };
 
   const getTrendClass = (item) => {
-    if (item.restockPriority === 'urgent') return styles.trendBadgeUrgent;
-    if (item.restockPriority === 'moderate') return styles.trendBadgeModerate;
-    if (item.restockPriority === 'opportunity') return styles.trendBadgeOpportunity;
-    if (item.trendCategory === 'trending_up') return styles.trendBadgeUp;
-    if (item.trendCategory === 'trending_down') return styles.trendBadgeDown;
+    if (item.restockPriority === 'urgent') {
+return styles.trendBadgeUrgent;
+}
+    if (item.restockPriority === 'moderate') {
+return styles.trendBadgeModerate;
+}
+    if (item.restockPriority === 'opportunity') {
+return styles.trendBadgeOpportunity;
+}
+    if (item.trendCategory === 'trending_up') {
+return styles.trendBadgeUp;
+}
+    if (item.trendCategory === 'trending_down') {
+return styles.trendBadgeDown;
+}
     return styles.trendBadgeStable;
   };
 

@@ -210,6 +210,25 @@ export const dashboardService = {
    */
   getSellerRecentOrders: async (params = {}) =>
     await axiosClient.get(`${BASE_URL}/seller-recent-orders`, { params }),
+
+  // ============= SELLER WALLET / BALANCE =============
+
+  /**
+   * Get seller wallet balance and earnings summary
+   * @returns {Promise} { availableBalance, pendingBalance, totalBalance, totalEarning, totalRefund, totalPayout, totalOrders, completedOrders, pendingOrders }
+   */
+  getSellerBalance: async () =>
+    await axiosClient.get(`${BASE_URL}/seller-balance`),
+
+  /**
+   * Get seller wallet transaction history
+   * @param {object} params - Query parameters
+   * @param {number} [params.limit=10] - Number of transactions to retrieve
+   * @param {number} [params.skip=0] - Number of transactions to skip
+   * @returns {Promise} { data: transactions[], total: number }
+   */
+  getSellerWalletTransactions: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/seller-wallet-transactions`, { params }),
 };
 
 export default dashboardService;

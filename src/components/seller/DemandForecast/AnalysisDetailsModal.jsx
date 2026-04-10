@@ -37,12 +37,12 @@ const VelocityChart = ({ data, trendDays }) => {
   const ys = data.map((d) => PAD.top + plotH - (d.quantity / maxQty) * plotH);
 
   const areaPath =
-    `M ${xs[0]} ${PAD.top + plotH}` +
-    xs.map((x, i) => ` L ${x} ${ys[i]}`).join('') +
-    ` L ${xs[xs.length - 1]} ${PAD.top + plotH} Z`;
+    `M ${xs[0]} ${PAD.top + plotH}${ 
+    xs.map((x, i) => ` L ${x} ${ys[i]}`).join('') 
+    } L ${xs[xs.length - 1]} ${PAD.top + plotH} Z`;
 
   const linePath =
-    'M ' + xs[0] + ' ' + ys[0] + xs.map((x, i) => ` L ${x} ${ys[i]}`).join('');
+    `M ${  xs[0]  } ${  ys[0]  }${xs.map((x, i) => ` L ${x} ${ys[i]}`).join('')}`;
 
   const first = data[0]?.quantity || 0;
   const last = data[data.length - 1]?.quantity || 0;
@@ -51,7 +51,9 @@ const VelocityChart = ({ data, trendDays }) => {
   const labelIndices = [0, Math.floor(data.length / 2), data.length - 1];
   const labels = labelIndices.map((i) => {
     const d = data[i];
-    if (!d) return '';
+    if (!d) {
+return '';
+}
     const parts = d.date.split('-');
     return `${parts[1]}/${parts[2]}`;
   });
@@ -103,7 +105,9 @@ const VelocityChart = ({ data, trendDays }) => {
             const origIdx = data.indexOf(d);
             const x = xs[origIdx];
             const y = ys[origIdx];
-            if (d.quantity === 0) return null;
+            if (d.quantity === 0) {
+return null;
+}
             return (
               <circle
                 key={`point-${origIdx}`}
@@ -170,7 +174,9 @@ const AnalysisDetailsModal = ({ item, trendDays, onClose }) => {
     inventoryService
       .getProductDemandDetails(item.productId, { days: trendDays })
       .then((res) => {
-        if (!cancelled) setDetails(res.data);
+        if (!cancelled) {
+setDetails(res.data);
+}
       })
       .catch((err) => {
         if (!cancelled) {
@@ -178,13 +184,21 @@ const AnalysisDetailsModal = ({ item, trendDays, onClose }) => {
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+setLoading(false);
+}
       });
-    return () => { cancelled = true; };
+    return () => {
+ cancelled = true; 
+};
   }, [item.productId, trendDays]);
 
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e) => {
+ if (e.key === 'Escape') {
+onClose();
+} 
+};
     document.addEventListener('keydown', handler);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -429,7 +443,9 @@ const AnalysisDetailsModal = ({ item, trendDays, onClose }) => {
                   <p className={styles.analysisCardLabel}>Summary</p>
                   <div className={styles.aiInsight}>
                     {details.aiInsight.split('\n').map((line, i) => {
-                      if (!line.trim()) return <br key={i} />;
+                      if (!line.trim()) {
+return <br key={i} />;
+}
                       const bold = line.startsWith('**') && line.endsWith('**');
                       const isBullet = line.startsWith('- ');
                       if (bold) {

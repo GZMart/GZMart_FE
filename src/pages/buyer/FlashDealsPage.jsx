@@ -23,6 +23,25 @@ const discountOptions = [
   { id: '10', name: '10% trở lên' },
 ];
 
+/**
+ * Same rule as ProductCard discount badge: round((original - price) / original * 100).
+ * Sorting must use this so "Giảm nhiều" order matches the % shown on each card.
+ */
+function getEffectiveDiscountPercent(product) {
+  const orig = Number(product?.originalPrice) || 0;
+  const price = Number(product?.price) || 0;
+  if (orig > 0 && price >= 0 && orig > price) {
+    return Math.round(((orig - price) / orig) * 100);
+  }
+  return Number(product?.discount) || 0;
+}
+
+function getDealSortKey(product) {
+  const dealId = product.flashSaleId || product.dealId || '';
+  const end = product.dealEndDate || '';
+  return `${product.id}_${dealId}_${end}`;
+}
+
 const FlashDealsPage = () => {
   const viewMode = 'grid';
   const itemsPerPage = 24;
@@ -242,8 +261,8 @@ const FlashDealsPage = () => {
           }
         }
         if (selectedDiscounts.length > 0) {
-          const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d)));
-          if (product.discount < minDiscount) {
+          const minDiscount = Math.min(...selectedDiscounts.map((d) => parseInt(d, 10)));
+          if (getEffectiveDiscountPercent(product) < minDiscount) {
             return false;
           }
         }
@@ -254,20 +273,28 @@ const FlashDealsPage = () => {
 
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
+    const tieBreak = (a, b, primary) => {
+      if (primary !== 0) {
+return primary;
+}
+      return getDealSortKey(a).localeCompare(getDealSortKey(b));
+    };
     switch (sortBy) {
       case 'name':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        return sorted.sort((a, b) => tieBreak(a, b, a.name.localeCompare(b.name)));
       case 'price-asc':
-        return sorted.sort((a, b) => a.price - b.price);
+        return sorted.sort((a, b) => tieBreak(a, b, a.price - b.price));
       case 'price-desc':
-        return sorted.sort((a, b) => b.price - a.price);
+        return sorted.sort((a, b) => tieBreak(a, b, b.price - a.price));
       case 'discount':
-        return sorted.sort((a, b) => b.discount - a.discount);
+        return sorted.sort((a, b) =>
+          tieBreak(a, b, getEffectiveDiscountPercent(b) - getEffectiveDiscountPercent(a))
+        );
       case 'ending-soon':
         return sorted.sort((a, b) => {
-          const aEnd = new Date(a.dealEndDate).getTime();
-          const bEnd = new Date(b.dealEndDate).getTime();
-          return aEnd - bEnd;
+          const aEnd = a.dealEndDate ? new Date(a.dealEndDate).getTime() : Number.POSITIVE_INFINITY;
+          const bEnd = b.dealEndDate ? new Date(b.dealEndDate).getTime() : Number.POSITIVE_INFINITY;
+          return tieBreak(a, b, aEnd - bEnd);
         });
       default:
         return sorted;
@@ -649,9 +676,9 @@ const FlashDealsPage = () => {
               <div className={styles.productGrid}>
                 {displayedProducts.map((product) => (
                   <Link
-                    key={product.id}
+                    key={getDealSortKey(product)}
                     to={`/product/${product.id}`}
-                    style={{ textDecoration: 'none' }}
+                    className={styles.productGridCardLink}
                   >
                     <ProductCard product={product} />
                   </Link>

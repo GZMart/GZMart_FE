@@ -29,6 +29,7 @@ import { formatCurrency } from '../../utils/formatters';
 import dashboardService from '../../services/api/dashboardService';
 import { chatService } from '../../services/api/chatService';
 import { OverallSalesCard } from '../../components/seller/dashboard/OverallSalesCard';
+import SellerBalanceSection from '../../components/seller/dashboard/SellerBalanceSection';
 import { RevenueDetailModal } from '../../components/seller/dashboard/modals/RevenueDetailModal';
 import { OrdersDetailModal } from '../../components/seller/dashboard/modals/OrdersDetailModal';
 import { AOVDetailModal } from '../../components/seller/dashboard/modals/AOVDetailModal';
@@ -777,6 +778,9 @@ const SellerDashboard = () => {
             )}
           </div>
         </Card>
+
+        {/* ── Balance Section ── */}
+        <SellerBalanceSection />
 
         {/* ── 2) Revenue Trend Chart + Comparison KPIs ── */}
         <div className={styles.chartAndStats}>

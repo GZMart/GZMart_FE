@@ -630,6 +630,26 @@
       "quarter": "Quý",
       "year": "Năm"
     },
+    "balance": {
+      "title": "Số dư tài khoản",
+      "available": "Số dư khả dụng",
+      "availableTooltip": "Số tiền từ các đơn hàng đã hoàn thành, có thể rút hoặc sử dụng",
+      "pending": "Chờ xử lý",
+      "pendingTooltip": "Số tiền từ đơn hàng đang xử lý, chưa thanh toán hoặc đang vận chuyển",
+      "totalEarning": "Tổng thu nhập",
+      "totalEarningSub": "Từ đơn hoàn thành",
+      "totalEarningTooltip": "Tổng doanh thu từ các đơn hàng đã hoàn thành",
+      "totalRefund": "Tổng hoàn tiền",
+      "totalRefundSub": "Từ đơn hủy/trả",
+      "totalRefundTooltip": "Tổng số tiền đã hoàn cho khách hàng",
+      "completedOrders": "Đơn hoàn thành",
+      "totalOrders": "{{count}} đơn hàng",
+      "pendingOrders": "Đơn đang xử lý",
+      "pendingOrdersSub": "Chưa thanh toán / đang giao",
+      "refresh": "Làm mới",
+      "error": "Không thể tải thông tin số dư",
+      "retry": "Thử lại"
+    },
     "overallSales": {
       "title": "Doanh thu theo thời gian",
       "vsPrevious": "So với kỳ trước",
