@@ -18,6 +18,7 @@ export { default as reviewService } from './reviewService';
 export { default as followService } from './follow.service';
 export { default as uploadService } from './uploadService';
 export { default as livestreamService } from './livestreamService';
+export { default as disputeService } from './disputeService';
 export {
   MODULE_TYPES,
   MODULE_LABELS,
@@ -34,6 +35,7 @@ export {
 export { shopDecorationApi } from './shopDecorationApi';
 export * as sellerApplicationService from './sellerApplicationService';
 export { default as notificationAPI } from './notificationAPI';
+export { default as bannerAdsService } from './bannerAdsService';
 
 // TODO: Add more services as needed
 // export { default as orderService } from './orderService';

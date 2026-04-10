@@ -14,6 +14,7 @@ const NAV_GROUPS = [
     items: [
       { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
       { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
+      { to: SELLER_ROUTES.DISPUTES, icon: 'bi-shield-exclamation', label: 'Disputes' },
       { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
       { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
       { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
@@ -28,6 +29,7 @@ const NAV_GROUPS = [
       { to: '/seller/vouchers', icon: 'bi-ticket-perforated', label: 'Vouchers' },
       { to: '/seller/promotions', icon: 'bi-megaphone', label: 'Promotions' },
       { to: '/seller/notifications', icon: 'bi-bell', label: 'Notifications' },
+      { to: '/seller/banner-ads', icon: 'bi-layout-wtf', label: 'Banner Ads' },
     ],
   },
   {

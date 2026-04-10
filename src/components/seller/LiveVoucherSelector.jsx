@@ -19,7 +19,17 @@ return;
       .getVouchers({ limit: 100, type: 'live', status: 'active' })
       .then((res) => {
         const list = res?.data?.data || res?.data || [];
-        setVouchers(Array.isArray(list) ? list.filter((v) => v.status === 'active') : []);
+        const now = new Date();
+        setVouchers(
+          Array.isArray(list)
+            ? list.filter(
+                (v) =>
+                  v.status === 'active' &&
+                  new Date(v.startTime) <= now &&
+                  new Date(v.endTime) >= now,
+              )
+            : [],
+        );
       })
       .catch(() => setVouchers([]))
       .finally(() => setLoadingVouchers(false));

@@ -14,6 +14,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectUser, getCurrentUser } from '@store/slices/authSlice';
 import * as sellerApplicationService from '@services/api/sellerApplicationService';
 import locationService from '@services/api/locationService';
+import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
+import AddressAutocompleteDropdown from '@components/common/AddressAutocompleteDropdown';
+import { applyGoongSuggestion } from '@utils/addressAutocomplete';
 import styles from '@assets/styles/buyer/SellerApplicationPage.module.css';
 
 const STATUS_CONFIG = {
@@ -31,6 +34,26 @@ const SellerApplicationPage = () => {
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
   const [form] = Form.useForm();
+
+  const watchedAddress = Form.useWatch('address', form);
+  const watchedProvinceName = Form.useWatch('provinceName', form);
+  const watchedWardName = Form.useWatch('wardName', form);
+
+  const {
+    activeField: addressSuggestionField,
+    setActiveField: setAddressSuggestionField,
+    suggestions: addressSuggestions,
+    showSuggestions: showAddressSuggestions,
+    resolveSuggestionDetails,
+  } = useAddressAutocomplete({
+    addresses: [],
+    formValues: {
+      street: watchedAddress || '',
+      details: '',
+      provinceName: watchedProvinceName || '',
+      wardName: watchedWardName || '',
+    },
+  });
 
   useEffect(() => {
     fetchApplications();
@@ -83,6 +106,36 @@ const SellerApplicationPage = () => {
     });
   };
 
+  const handleAddressSuggestionSelect = async (suggestion) => {
+    const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
+    const currentValues = form.getFieldsValue(true);
+
+    const addressPatch = applyGoongSuggestion({
+      suggestion: resolvedSuggestion,
+      activeField: 'street',
+      provinces,
+      wards,
+      currentFormValues: {
+        street: currentValues.address || '',
+        details: '',
+        provinceCode: currentValues.provinceCode,
+        provinceName: currentValues.provinceName,
+        wardCode: currentValues.wardCode,
+        wardName: currentValues.wardName,
+      },
+    });
+
+    form.setFieldsValue({
+      address: addressPatch.street || currentValues.address || '',
+      provinceCode: addressPatch.provinceCode ? String(addressPatch.provinceCode) : undefined,
+      provinceName: addressPatch.provinceName || currentValues.provinceName || '',
+      wardCode: addressPatch.wardCode ? String(addressPatch.wardCode) : undefined,
+      wardName: addressPatch.wardName || currentValues.wardName || '',
+    });
+
+    setAddressSuggestionField(null);
+  };
+
   const hasPending = applications.some((app) => app.status === 'pending');
 
   const handleSubmit = async (values) => {
@@ -116,7 +169,11 @@ const SellerApplicationPage = () => {
           status="success"
           title="You are already a seller!"
           subTitle="You can access your seller dashboard to manage your shop."
-          extra={<Button type="primary" href="/seller/dashboard">Go to Dashboard</Button>}
+          extra={
+            <Button type="primary" href="/seller/dashboard">
+              Go to Dashboard
+            </Button>
+          }
         />
       </div>
     );
@@ -133,12 +190,14 @@ const SellerApplicationPage = () => {
           </div>
 
           <h1 className={styles.heroTitle}>
-            Take your business<br />
+            Take your business
+            <br />
             to the next level.
           </h1>
 
           <p className={styles.heroSubtitle}>
-            Join our elite fashion community in Guangzhou. Reach thousands of style-conscious customers globally.
+            Join our elite fashion community in Guangzhou. Reach thousands of style-conscious
+            customers globally.
           </p>
 
           <div className={styles.benefitsList}>
@@ -146,7 +205,9 @@ const SellerApplicationPage = () => {
               <div className={styles.benefitIconBox}>✨</div>
               <div>
                 <h4 className={styles.benefitTitle}>0% Commission for 3 Months</h4>
-                <p className={styles.benefitDesc}>Keep 100% of your profits while you grow your store.</p>
+                <p className={styles.benefitDesc}>
+                  Keep 100% of your profits while you grow your store.
+                </p>
               </div>
             </div>
 
@@ -154,7 +215,9 @@ const SellerApplicationPage = () => {
               <div className={styles.benefitIconBox}>🚀</div>
               <div>
                 <h4 className={styles.benefitTitle}>Global Exposure</h4>
-                <p className={styles.benefitDesc}>Access millions of active shoppers looking for unique styles.</p>
+                <p className={styles.benefitDesc}>
+                  Access millions of active shoppers looking for unique styles.
+                </p>
               </div>
             </div>
 
@@ -162,7 +225,9 @@ const SellerApplicationPage = () => {
               <div className={styles.benefitIconBox}>🛡️</div>
               <div>
                 <h4 className={styles.benefitTitle}>Seller Protection</h4>
-                <p className={styles.benefitDesc}>Comprehensive tools to protect your brand and transactions.</p>
+                <p className={styles.benefitDesc}>
+                  Comprehensive tools to protect your brand and transactions.
+                </p>
               </div>
             </div>
           </div>
@@ -176,7 +241,6 @@ const SellerApplicationPage = () => {
       {/* RIGHT PANEL - Form & History */}
       <div className={styles.rightPanel}>
         <div className={styles.formContainer}>
-
           {loading && (
             <div className={styles.loadingContainer}>
               <Spin size="large" />
@@ -196,13 +260,13 @@ const SellerApplicationPage = () => {
                       <div className={styles.applicationInfo}>
                         <div className={styles.appHeaderRow}>
                           <span className={styles.appDate}>
-                            {new Date(app.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            {new Date(app.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
                           </span>
-                          <Tag
-                            icon={config.icon}
-                            color={config.color}
-                            className={styles.statusTag}
-                          >
+                          <Tag icon={config.icon} color={config.color} className={styles.statusTag}>
                             {config.label.toUpperCase()}
                           </Tag>
                         </div>
@@ -265,7 +329,12 @@ const SellerApplicationPage = () => {
                         { pattern: /^[0-9]{10,11}$/, message: 'Invalid phone' },
                       ]}
                     >
-                      <Input prefix={<PhoneOutlined className={styles.inputIcon} />} placeholder="0901234567" size="large" />
+                      <Input
+                        prefix={<PhoneOutlined className={styles.inputIcon} />}
+                        placeholder="0901234567"
+                        autoComplete="tel"
+                        size="large"
+                      />
                     </Form.Item>
 
                     <Form.Item
@@ -273,7 +342,11 @@ const SellerApplicationPage = () => {
                       label="Citizen ID"
                       rules={[{ required: true, message: 'Required' }]}
                     >
-                      <Input prefix={<IdcardOutlined className={styles.inputIcon} />} placeholder="079200001234" size="large" />
+                      <Input
+                        prefix={<IdcardOutlined className={styles.inputIcon} />}
+                        placeholder="079200001234"
+                        size="large"
+                      />
                     </Form.Item>
                   </div>
 
@@ -282,7 +355,11 @@ const SellerApplicationPage = () => {
                     label="Tax ID (Mã số thuế)"
                     rules={[{ required: true, message: 'Required' }]}
                   >
-                    <Input prefix={<BankOutlined className={styles.inputIcon} />} placeholder="0123456789" size="large" />
+                    <Input
+                      prefix={<BankOutlined className={styles.inputIcon} />}
+                      placeholder="0123456789"
+                      size="large"
+                    />
                   </Form.Item>
                 </div>
 
@@ -327,17 +404,31 @@ const SellerApplicationPage = () => {
                     label="Detailed Address"
                     rules={[{ required: true, message: 'Required' }]}
                   >
-                    <Input.TextArea
-                      placeholder="Floor 4, Bitexco Tower, District 1..."
-                      rows={3}
-                      autoSize={{ minRows: 3, maxRows: 5 }}
-                      size="large"
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <Input.TextArea
+                        placeholder="Floor 4, Bitexco Tower, District 1..."
+                        rows={3}
+                        autoSize={{ minRows: 3, maxRows: 5 }}
+                        autoComplete="street-address"
+                        size="large"
+                        onFocus={() => setAddressSuggestionField('street')}
+                        onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
+                      />
+                      <AddressAutocompleteDropdown
+                        show={showAddressSuggestions && addressSuggestionField === 'street'}
+                        suggestions={addressSuggestions}
+                        onSelect={handleAddressSuggestionSelect}
+                      />
+                    </div>
                   </Form.Item>
 
                   {/* Hidden fields */}
-                  <Form.Item name="provinceName" hidden><Input /></Form.Item>
-                  <Form.Item name="wardName" hidden><Input /></Form.Item>
+                  <Form.Item name="provinceName" hidden>
+                    <Input />
+                  </Form.Item>
+                  <Form.Item name="wardName" hidden>
+                    <Input />
+                  </Form.Item>
                 </div>
 
                 <Form.Item style={{ marginTop: 40, marginBottom: 0 }}>

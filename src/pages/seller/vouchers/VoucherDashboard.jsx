@@ -49,12 +49,6 @@ const VOUCHER_TYPES = [
     icon: 'bi-broadcast',
   },
   {
-    id: 'video',
-    title: 'Video Voucher',
-    description: 'Exclusive voucher for products in Shop Video to boost sales',
-    icon: 'bi-play-circle',
-  },
-  {
     id: 'new_buyer',
     title: 'New Customer Voucher',
     description: 'Attract new customers who have not ordered from your shop yet',

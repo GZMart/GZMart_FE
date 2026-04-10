@@ -59,6 +59,20 @@ const getUserIdFromToken = (token) => {
   return payload._id || payload.id || payload.userId || payload.sub || null;
 };
 
+const normalizeSocketEventName = (event) => {
+  const raw = String(event || '').trim();
+  if (!raw) {
+    return raw;
+  }
+
+  if (!raw.startsWith('order:')) {
+    return raw;
+  }
+
+  // Defensive: handles malformed events like order:status:<id>?trackingDebug=1
+  return raw.replace(/\?.*$/, '');
+};
+
 /**
  * Socket.io Client Service
  * For real-time notifications and updates
@@ -79,15 +93,15 @@ class SocketService {
     const token = getAuthToken();
     this.userId = userId || this.userId || getUserIdFromToken(token);
 
-    console.log(
-      '[SocketService] connect() called, userId:',
-      this.userId,
-      'socketURL:',
-      this.socketURL
-    );
+    // console.log(
+    //   '[SocketService] connect() called, userId:',
+    //   this.userId,
+    //   'socketURL:',
+    //   this.socketURL
+    // );
 
     if (this.socket?.connected) {
-      console.log('[SocketService] Already connected, socket.id:', this.socket.id);
+      // console.log('[SocketService] Already connected, socket.id:', this.socket.id);
       if (this.userId) {
         this.joinUserRoom(this.userId);
       }
@@ -95,13 +109,13 @@ class SocketService {
     }
 
     if (this.socket) {
-      console.log('[SocketService] Socket exists but disconnected, reconnecting...');
+      // console.log('[SocketService] Socket exists but disconnected, reconnecting...');
       this.socket.auth = { token };
       this.socket.connect();
       return this.socket;
     }
 
-    console.log('[SocketService] Creating new socket connection to:', this.socketURL);
+    // console.log('[SocketService] Creating new socket connection to:', this.socketURL);
     this.socket = io(this.socketURL, {
       auth: {
         token,
@@ -131,7 +145,7 @@ class SocketService {
 
     this.socket.on(SOCKET_EVENTS.CONNECT, () => {
       this.isConnected = true;
-      console.log('[SocketService] ✅ Connected! socket.id:', this.socket.id);
+      // console.log('[SocketService] ✅ Connected! socket.id:', this.socket.id);
 
       if (this.userId) {
         this.joinUserRoom(this.userId);
@@ -140,15 +154,15 @@ class SocketService {
 
     this.socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
       this.isConnected = false;
-      console.log('[SocketService] ❌ Disconnected, reason:', reason);
+      // console.log('[SocketService] ❌ Disconnected, reason:', reason);
     });
 
     this.socket.on(SOCKET_EVENTS.ERROR, (error) => {
-      console.error('[SocketService] Socket error:', error);
+      // console.error('[SocketService] Socket error:', error);
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[SocketService] Connection error:', error.message);
+      // console.error('[SocketService] Connection error:', error.message);
     });
   }
 
@@ -221,7 +235,9 @@ class SocketService {
     // Queue: retry once when connected, then clean up the listener
     let fired = false;
     const retry = () => {
-      if (fired) return;
+      if (fired) {
+return;
+}
       fired = true;
       if (this.socket?.connected) {
         this.socket.emit(event, data);
@@ -238,13 +254,15 @@ class SocketService {
    */
   on(event, callback) {
     const socket = this.getSocket();
-    console.log(
-      '[SocketService] Registering listener for:',
-      event,
-      'socket connected:',
-      socket?.connected
-    );
-    socket?.on(event, callback);
+    const normalizedEvent = normalizeSocketEventName(event);
+    // console.log(
+    //   '[SocketService] Registering listener for:',
+    //   normalizedEvent,
+    //   'socket connected:',
+    //   socket?.connected
+    // );
+    socket?.off(normalizedEvent, callback);
+    socket?.on(normalizedEvent, callback);
   }
 
   /**
@@ -254,10 +272,11 @@ class SocketService {
    */
   off(event, callback) {
     if (this.socket) {
+      const normalizedEvent = normalizeSocketEventName(event);
       if (callback) {
-        this.socket.off(event, callback);
+        this.socket.off(normalizedEvent, callback);
       } else {
-        this.socket.off(event);
+        this.socket.off(normalizedEvent);
       }
     }
   }

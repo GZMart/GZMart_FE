@@ -34,6 +34,7 @@ export const PUBLIC_ROUTES = {
 export const BUYER_ROUTES = {
   DASHBOARD: '/buyer/dashboard',
   PROFILE: '/buyer/profile?tab=account',
+  DISPUTES: '/buyer/disputes',
   ORDERS: '/buyer/profile?tab=orders',
   ORDER_DETAILS: '/buyer/profile?tab=orders',
   WISHLIST: '/buyer/wishlist',
@@ -56,6 +57,7 @@ export const SELLER_ROUTES = {
   PROFILE: '/seller/profile',
   SHOP_DECORATION: '/seller/shop-decoration',
   ORDERS: '/seller/orders',
+  DISPUTES: '/seller/disputes',
 
   // Purchase Orders
   PO_LIST: '/seller/purchase-orders',
@@ -74,6 +76,9 @@ export const SELLER_ROUTES = {
   // Returns
   RETURNS: '/seller/returns',
 
+  // Banner Ads
+  BANNER_ADS: '/seller/banner-ads',
+
   // Live stream (seller studio)
   LIVE: '/seller/live',
 };
@@ -82,6 +87,7 @@ export const SELLER_ROUTES = {
 export const ADMIN_ROUTES = {
   DASHBOARD: '/admin/dashboard',
   PROFILE: '/admin/profile',
+  DISPUTES: '/admin/disputes',
 
   // User Management
   USERS: '/admin/users',
@@ -103,6 +109,9 @@ export const ADMIN_ROUTES = {
   SYSTEM_VOUCHERS: '/admin/system-vouchers',
   SYSTEM_VOUCHER_CREATE: '/admin/system-vouchers/create',
   SYSTEM_VOUCHER_EDIT: '/admin/system-vouchers/:id/edit',
+  VOUCHER_CAMPAIGNS: '/admin/voucher-campaigns',
+  VOUCHER_CAMPAIGN_CREATE: '/admin/voucher-campaigns/create',
+  VOUCHER_CAMPAIGN_EDIT: '/admin/voucher-campaigns/:id/edit',
 
   // Content
   PAGES: '/admin/pages',
@@ -111,6 +120,9 @@ export const ADMIN_ROUTES = {
   // Monitoring
   ACTIVITY_LOGS: '/admin/activity-logs',
   SYSTEM_HEALTH: '/admin/system-health',
+
+  // Banner Ads Management
+  BANNER_ADS: '/admin/banner-ads',
 };
 
 // Error Routes

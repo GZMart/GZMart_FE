@@ -31,21 +31,90 @@ const DemandForecastBlock = () => {
   const [collapsed, setCollapsed] = useState(true);
   const [detailsTarget, setDetailsTarget] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isFromCache, setIsFromCache] = useState(false);
   const ITEMS_PER_PAGE = 5;
+  const CACHE_KEY = `demandForecast_${sellerId}`;
 
-  const loadForecast = useCallback(async () => {
-    if (!sellerId) return;
+  const loadForecast = useCallback(async (bypassCache = false) => {
+    if (!sellerId) {
+return;
+}
     setLoading(true);
+    setIsFromCache(false);
+    
+    // Clear old cache to force fresh fetch
     try {
-      const res = await inventoryService.getDemandForecast({ trendDays });
+      localStorage.removeItem(CACHE_KEY);
+    } catch (e) {
+      console.warn('[DemandForecast] Failed to clear cache:', e);
+    }
+    
+    try {
+      const res = await inventoryService.getDemandForecast({ trendDays, bypassCache });
       setData(res.data);
+      // Save to localStorage with timestamp
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          data: res.data,
+          trendDays,
+          timestamp: Date.now(),
+        }));
+      } catch (storageErr) {
+        console.warn('[DemandForecast] Failed to save to cache:', storageErr);
+      }
     } catch (err) {
       const status = err?.response?.status;
-      if (status === 401 || status === 403) setData(null);
+      const rateLimitReason = err?.response?.data?._rateLimit?.reason;
+      
+      // If rate limited or error, try to load from cache
+      if (status === 429 || rateLimitReason === 'daily_limit') {
+        try {
+          const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+          if (cached?.data) {
+            setData(cached.data);
+            setIsFromCache(true);
+          } else {
+            setData(null);
+          }
+        } catch (cacheErr) {
+          setData(null);
+        }
+      } else if (status === 401 || status === 403) {
+        setData(null);
+      } else {
+        // For other errors, try to show cached data if available
+        try {
+          const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+          if (cached?.data) {
+            setData(cached.data);
+            setIsFromCache(true);
+          } else {
+            setData(null);
+          }
+        } catch (cacheErr) {
+          setData(null);
+        }
+      }
     } finally {
       setLoading(false);
     }
-  }, [sellerId, trendDays]);
+  }, [sellerId, trendDays, CACHE_KEY]);
+
+  // Check cache validity on component mount (30 min TTL)
+  useEffect(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached?.timestamp) {
+        const cacheAgeMinutes = (Date.now() - cached.timestamp) / (1000 * 60);
+        if (cacheAgeMinutes >= 30) {
+          // Cache expired, remove it and fetch fresh data
+          localStorage.removeItem(CACHE_KEY);
+        }
+      }
+    } catch (err) {
+      console.warn('[DemandForecast] Cache validation error:', err);
+    }
+  }, [CACHE_KEY]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -62,27 +131,62 @@ const DemandForecastBlock = () => {
       ? '7-day forecast (higher accuracy)'
       : '30-day forecast (standard accuracy)';
 
-  const totalPages = Math.ceil(trendingProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = trendingProducts.slice(
+  // Sort by trend % descending (highest trend first), then by web trend score
+  const sortedTrendingProducts = [...trendingProducts].sort((a, b) => {
+    const aTrend = a.displayTrendPct || 0;
+    const bTrend = b.displayTrendPct || 0;
+    
+    if (aTrend !== bTrend) {
+      return bTrend - aTrend;  // Descending: highest trend first
+    }
+    
+    // Tie-breaker: web trend score
+    const aWebScore = a.globalTrendScore || 0;
+    const bWebScore = b.globalTrendScore || 0;
+    return bWebScore - aWebScore;
+  });
+
+  const totalPages = Math.ceil(sortedTrendingProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = sortedTrendingProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
   const getTrendLabel = (item) => {
-    if (item.restockPriority === 'urgent') return 'Urgent';
-    if (item.restockPriority === 'moderate') return 'Restock Soon';
-    if (item.restockPriority === 'opportunity') return 'Trending Up';
-    if (item.trendCategory === 'trending_up') return 'Hot';
-    if (item.trendCategory === 'trending_down') return 'Slow';
+    if (item.restockPriority === 'urgent') {
+return 'Urgent';
+}
+    if (item.restockPriority === 'moderate') {
+return 'Restock Soon';
+}
+    if (item.restockPriority === 'opportunity') {
+return 'Trending Up';
+}
+    if (item.trendCategory === 'trending_up') {
+return 'Hot';
+}
+    if (item.trendCategory === 'trending_down') {
+return 'Slow';
+}
     return 'Stable';
   };
 
   const getTrendClass = (item) => {
-    if (item.restockPriority === 'urgent') return styles.trendBadgeUrgent;
-    if (item.restockPriority === 'moderate') return styles.trendBadgeModerate;
-    if (item.restockPriority === 'opportunity') return styles.trendBadgeOpportunity;
-    if (item.trendCategory === 'trending_up') return styles.trendBadgeUp;
-    if (item.trendCategory === 'trending_down') return styles.trendBadgeDown;
+    if (item.restockPriority === 'urgent') {
+return styles.trendBadgeUrgent;
+}
+    if (item.restockPriority === 'moderate') {
+return styles.trendBadgeModerate;
+}
+    if (item.restockPriority === 'opportunity') {
+return styles.trendBadgeOpportunity;
+}
+    if (item.trendCategory === 'trending_up') {
+return styles.trendBadgeUp;
+}
+    if (item.trendCategory === 'trending_down') {
+return styles.trendBadgeDown;
+}
     return styles.trendBadgeStable;
   };
 
@@ -106,6 +210,7 @@ const DemandForecastBlock = () => {
             {collapsed && data && (
               <span className={styles.demandSubtitle}>
                 {totalProducts} products tracked · {forecastAccuracy}
+                {isFromCache && <span style={{ marginLeft: '8px', opacity: 0.7 }}>📦 (Cached)</span>}
               </span>
             )}
             {!collapsed && data && (
@@ -129,7 +234,7 @@ const DemandForecastBlock = () => {
             </select>
             <button
               className={styles.iconBtnSm}
-              onClick={loadForecast}
+              onClick={() => loadForecast(true)}
               disabled={loading}
               title="Refresh"
             >
@@ -167,8 +272,9 @@ const DemandForecastBlock = () => {
             ) : data ? (
               <span className={styles.collapsedDoneText}>
                 {trendingProducts.length > 0
-                  ? `${trendingProducts.length} trending products ready`
+                  ? `${trendingProducts.length} trending products ready${isFromCache ? ' (from cache)' : ''}`
                   : 'Analysis complete — no urgent trends detected'}
+                {isFromCache && ' — Data may be outdated'}
               </span>
             ) : (
               <span className={styles.collapsedErrorText}>
@@ -180,20 +286,35 @@ const DemandForecastBlock = () => {
 
         {/* ── Summary Chips ─────────────────────────────────────────────── */}
         {data && !collapsed && (
-          <div className={styles.chipRow}>
-            <span className={styles.chip}>
-              <TrendingUp size={12} />
-              {data.summary?.trendingUp || 0} Trending Up
-            </span>
-            <span className={styles.chipWarn}>
-              <AlertTriangle size={12} />
-              {data.summary?.urgentRestock || 0} Urgent Restock
-            </span>
-            <span className={styles.chip}>
-              <TrendingDown size={12} />
-              {data.summary?.trendingDown || 0} Slow
-            </span>
-          </div>
+          <>
+            {isFromCache && (
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: '#fef08a',
+                border: '1px solid #fde047',
+                borderRadius: '6px',
+                marginBottom: '12px',
+                fontSize: '13px',
+                color: '#713f12',
+              }}>
+                📦 <strong>Showing cached data:</strong> Unable to fetch fresh forecast (daily limit reached). This data may be outdated. Try again tomorrow.
+              </div>
+            )}
+            <div className={styles.chipRow}>
+              <span className={styles.chip}>
+                <TrendingUp size={12} />
+                {data.summary?.trendingUp || 0} Trending Up
+              </span>
+              <span className={styles.chipWarn}>
+                <AlertTriangle size={12} />
+                {data.summary?.urgentRestock || 0} Urgent Restock
+              </span>
+              <span className={styles.chip}>
+                <TrendingDown size={12} />
+                {data.summary?.trendingDown || 0} Slow
+              </span>
+            </div>
+          </>
         )}
 
         {/* ── Trending Product List ─────────────────────────────────────── */}
@@ -232,15 +353,10 @@ const DemandForecastBlock = () => {
                   const isUp = pct >= 0;
                   const rowKey = item.productId;
                   const isLowStock = item.currentStock <= 10;
-                  const suggestedQty =
-                    item.suggestedQuantity ||
-                    Math.max(Math.ceil(item.avgWeeklyQty * (trendDays === 7 ? 1 : 4)), 0);
-                  const soldPeriodLabel = trendDays === 7 ? '7 days' : '30 days';
+                  const suggestedQty = item.suggestedQty || 0;
 
                   const handleCreatePO = () => {
-                    const qty =
-                      item.suggestedQuantity ||
-                      Math.max(Math.ceil(item.avgWeeklyQty * (trendDays === 7 ? 1 : 4)), 10);
+                    const qty = item.suggestedQty || 0;
                     window.open(
                       `/seller/erp/purchase-orders?add=${encodeURIComponent(
                         JSON.stringify({ productId: item.productId, name: item.name, qty })
@@ -285,10 +401,9 @@ const DemandForecastBlock = () => {
                         </span>
                       </div>
 
-                      {/* Quantity sold (with period label) */}
+                      {/* Quantity sold */}
                       <div className={styles.trendColQty}>
                         <span className={styles.trendQty}>{item.displayQty}</span>
-                        <span className={styles.trendQtyPeriod}>{soldPeriodLabel}</span>
                       </div>
 
                       {/* Current stock */}
@@ -303,11 +418,10 @@ const DemandForecastBlock = () => {
 
                       {/* Suggested PO qty */}
                       <div className={styles.trendColSuggest}>
-                        <span className={styles.suggestedQty}>
-                          {suggestedQty > 0 ? `+${suggestedQty}` : '—'}
-                        </span>
-                        {suggestedQty === 0 && (
-                          <span className={styles.noRestockHint}>No restock needed</span>
+                        {suggestedQty > 0 ? (
+                          <span className={styles.suggestedQty}>+{suggestedQty}</span>
+                        ) : (
+                          <span className={styles.noRestockLabel}>No restock needed</span>
                         )}
                       </div>
 

@@ -20,6 +20,26 @@ const statusLabelMap = {
   cancelled: 'Cancelled',
 };
 
+const normalizeAddressText = (value, fallback = '') => {
+  if (!value) {
+    return fallback;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() || fallback;
+  }
+
+  if (typeof value === 'object') {
+    const candidates = [value.fullAddress, value.formattedAddress, value.address, value.street];
+    const selected = candidates.find((item) => typeof item === 'string' && item.trim());
+    if (selected) {
+      return selected.trim();
+    }
+  }
+
+  return String(value).trim() || fallback;
+};
+
 const BuyerReturnStatusPage = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
@@ -32,6 +52,10 @@ const BuyerReturnStatusPage = () => {
   const [exchangeLegOneCompleted, setExchangeLegOneCompleted] = useState(false);
   const [exchangeLegTwoCompleted, setExchangeLegTwoCompleted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [refundLegOneStartTime, setRefundLegOneStartTime] = useState(null);
+  const [refundLegTwoStartTime, setRefundLegTwoStartTime] = useState(null);
+  const [exchangeLegOneStartTime, setExchangeLegOneStartTime] = useState(null);
+  const [exchangeLegTwoStartTime, setExchangeLegTwoStartTime] = useState(null);
 
   const fetchReturnRequest = async ({ silent = false } = {}) => {
     try {
@@ -41,7 +65,6 @@ const BuyerReturnStatusPage = () => {
       const response = await rmaService.getReturnRequestById(requestId);
       setReturnRequest(response.data);
     } catch (error) {
-      console.error('[BuyerReturnStatusPage] Failed to fetch return request:', error);
       toast.error(error?.response?.data?.message || 'Failed to load return status');
     } finally {
       if (!silent) {
@@ -80,6 +103,88 @@ const BuyerReturnStatusPage = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId, user?._id]);
+
+  // Memoize key properties to use in dependency array
+  const logisticsStepsStr = returnRequest?.logistics?.steps?.map((s) => s.code).join(',');
+
+  // Calculate startTime for map animations and sync leg completion flags
+  useEffect(() => {
+    if (!returnRequest) {
+      return;
+    }
+
+    const logistics = returnRequest.logistics || {};
+    const logisticsSteps = Array.isArray(logistics.steps) ? logistics.steps : [];
+
+    const isStepCompleted = (code) =>
+      logisticsSteps.some((step) => step.code === code && step.completed);
+
+    const refundLegs = {
+      legOne: ['seller_to_buyer_in_transit', 'buyer_confirmed_handover'],
+      legTwo: ['buyer_to_seller_in_transit', 'seller_confirmed_faulty_received'],
+    };
+    const exchangeLegs = {
+      legOne: ['seller_pack_and_handover', 'shipper_deliver_and_collect'],
+      legTwo: ['shipper_return_to_seller', 'exchange_completed'],
+    };
+
+    const findLegStartTime = (legCodes) => {
+      const stepsInLeg = logisticsSteps.filter((s) => legCodes.includes(s.code));
+      const earliestWithTime = stepsInLeg
+        .filter((s) => s.completedAt)
+        .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))[0];
+      return earliestWithTime?.completedAt ? new Date(earliestWithTime.completedAt) : null;
+    };
+
+    const resolutionType = returnRequest.type;
+    const isRefundFlow =
+      resolutionType === 'refund' || !resolutionType || resolutionType === 'undetermined';
+    const isExchangeFlow = resolutionType === 'exchange';
+
+    // Calculate start times
+    if (isRefundFlow) {
+      setRefundLegOneStartTime(findLegStartTime(refundLegs.legOne));
+      setRefundLegTwoStartTime(findLegStartTime(refundLegs.legTwo));
+    }
+    if (isExchangeFlow) {
+      setExchangeLegOneStartTime(findLegStartTime(exchangeLegs.legOne));
+      setExchangeLegTwoStartTime(findLegStartTime(exchangeLegs.legTwo));
+    }
+
+    // Sync leg completion flags
+    const refundLegOneDone =
+      isStepCompleted('seller_to_buyer_in_transit') ||
+      isStepCompleted('buyer_confirmed_handover') ||
+      ['items_returned', 'processing', 'completed'].includes(returnRequest?.status);
+
+    const refundLegTwoDone =
+      isStepCompleted('buyer_to_seller_in_transit') ||
+      isStepCompleted('seller_confirmed_faulty_received') ||
+      ['processing', 'completed'].includes(returnRequest?.status);
+
+    const exchangeLegOneDone =
+      isStepCompleted('seller_pack_and_handover') ||
+      isStepCompleted('shipper_deliver_and_collect') ||
+      ['items_returned', 'processing', 'completed'].includes(returnRequest?.status);
+
+    const exchangeLegTwoDone =
+      isStepCompleted('shipper_return_to_seller') ||
+      isStepCompleted('exchange_completed') ||
+      ['processing', 'completed'].includes(returnRequest?.status);
+
+    if (refundLegOneDone) {
+      setLegOneCompleted(true);
+    }
+    if (refundLegTwoDone) {
+      setLegTwoCompleted(true);
+    }
+    if (exchangeLegOneDone) {
+      setExchangeLegOneCompleted(true);
+    }
+    if (exchangeLegTwoDone) {
+      setExchangeLegTwoCompleted(true);
+    }
+  }, [returnRequest?.status, logisticsStepsStr]);
 
   if (loading) {
     return (
@@ -230,7 +335,6 @@ const BuyerReturnStatusPage = () => {
       );
       await fetchReturnRequest({ silent: true });
     } catch (error) {
-      console.error('[BuyerReturnStatusPage] Confirm handover failed:', error);
       toast.error(error?.response?.data?.message || 'Failed to confirm handover');
     } finally {
       setSubmitting(false);
@@ -239,16 +343,39 @@ const BuyerReturnStatusPage = () => {
   const getTrackingCoordinates = () => {
     const order = returnRequest?.orderId || {};
 
-    const seller = order?.trackingCoordinates?.seller || {
-      lat: 16.0471,
-      lng: 108.2062,
-      address: 'Seller warehouse (Demo)',
+    const sellerFromTracking = order?.trackingCoordinates?.seller || {};
+    const buyerFromTracking =
+      order?.trackingCoordinates?.buyer ||
+      order?.trackingCoordinates?.user ||
+      order?.trackingCoordinates?.customer ||
+      {};
+    const sellerProfile =
+      returnRequest?.items?.[0]?.productId?.sellerId ||
+      returnRequest?.items?.[0]?.orderItemId?.productId?.sellerId ||
+      {};
+
+    const sellerAddress =
+      normalizeAddressText(sellerProfile?.location?.address) ||
+      normalizeAddressText(sellerProfile?.address) ||
+      'Địa chỉ người bán chưa cập nhật';
+
+    const buyerAddress =
+      normalizeAddressText(order?.userId?.location?.address) ||
+      normalizeAddressText(order?.userId?.address) ||
+      'Địa chỉ người mua chưa cập nhật';
+
+    const seller = {
+      lat: sellerFromTracking?.lat ?? sellerProfile?.location?.lat ?? 16.0471,
+      lng: sellerFromTracking?.lng ?? sellerProfile?.location?.lng ?? 108.2062,
+      address: sellerAddress,
+      formattedAddress: sellerProfile?.location?.formattedAddress || sellerAddress,
     };
 
-    const buyer = order?.trackingCoordinates?.buyer || {
-      lat: 16.0678,
-      lng: 108.2208,
-      address: order?.shippingAddress || 'Buyer address (Demo)',
+    const buyer = {
+      lat: buyerFromTracking?.lat ?? order?.userId?.location?.lat ?? 16.0678,
+      lng: buyerFromTracking?.lng ?? order?.userId?.location?.lng ?? 108.2208,
+      address: buyerAddress,
+      formattedAddress: order?.userId?.location?.formattedAddress || buyerAddress,
     };
 
     return { seller, buyer };
@@ -351,7 +478,7 @@ const BuyerReturnStatusPage = () => {
 
                     return {
                       title: step.title,
-                      description: step.description,
+                      content: step.description,
                       icon: step.icon,
                       status: completed
                         ? 'finish'
@@ -372,6 +499,7 @@ const BuyerReturnStatusPage = () => {
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
                     duration={10}
+                    startTime={exchangeLegOneStartTime}
                     syncRoom={returnRequest._id}
                     onDeliveryComplete={() => setExchangeLegOneCompleted(true)}
                   />
@@ -399,6 +527,7 @@ const BuyerReturnStatusPage = () => {
                     sellerCoords={getTrackingCoordinates().buyer}
                     buyerCoords={getTrackingCoordinates().seller}
                     duration={10}
+                    startTime={exchangeLegTwoStartTime}
                     syncRoom={returnRequest._id}
                     onDeliveryComplete={() => setExchangeLegTwoCompleted(true)}
                   />
@@ -442,7 +571,7 @@ const BuyerReturnStatusPage = () => {
                   const completed = isStepCompleted(step.code);
                   return {
                     title: step.title,
-                    description: step.description,
+                    content: step.description,
                     icon: step.icon,
                     status: completed
                       ? 'finish'
@@ -463,6 +592,7 @@ const BuyerReturnStatusPage = () => {
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
                     duration={10}
+                    startTime={refundLegOneStartTime}
                     syncRoom={returnRequest._id}
                     onDeliveryComplete={() => setLegOneCompleted(true)}
                   />
@@ -490,6 +620,7 @@ const BuyerReturnStatusPage = () => {
                   sellerCoords={getTrackingCoordinates().buyer}
                   buyerCoords={getTrackingCoordinates().seller}
                   duration={10}
+                  startTime={refundLegTwoStartTime}
                   syncRoom={returnRequest._id}
                   onDeliveryComplete={() => setLegTwoCompleted(true)}
                 />

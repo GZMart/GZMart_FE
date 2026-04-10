@@ -14,6 +14,47 @@ import styles from '@assets/styles/buyer/Order/OrderTrackingEnhanced.module.css'
 
 const { TextArea } = Input;
 
+const isTrackingDebugEnabled = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('trackingDebug');
+    if (fromQuery === '1' || fromQuery === 'true') {
+      return true;
+    }
+
+    const fromStorage = window.localStorage.getItem('gzm_tracking_debug');
+    return fromStorage === '1' || fromStorage === 'true';
+  } catch (_err) {
+    return false;
+  }
+};
+
+const debugTracking = () => {};
+
+const normalizeAddressText = (value, fallback = '') => {
+  if (!value) {
+    return fallback;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() || fallback;
+  }
+
+  if (typeof value === 'object') {
+    const candidates = [value.fullAddress, value.formattedAddress, value.address, value.street];
+    const selected = candidates.find((item) => typeof item === 'string' && item.trim());
+    if (selected) {
+      return selected.trim();
+    }
+  }
+
+  return String(value).trim() || fallback;
+};
+
 const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   const [currentStatus, setCurrentStatus] = useState(order?.status || 'pending');
   const [showMap, setShowMap] = useState(false);
@@ -80,8 +121,8 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
       setShowMap(true);
 
       // Start map animation
-      if (data.coordinates) {
-        startMapAnimation(data.coordinates, data.duration || 10, data.startTime);
+      if (data?.coordinates?.seller && data?.coordinates?.buyer) {
+        startMapAnimation(data.coordinates, data.duration || 20, data.startTime);
       }
     };
 
@@ -125,7 +166,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   }, [showMap, mapAnimation]);
 
   // Store animation metadata so map can resume based on server start time.
-  const startMapAnimation = (coordinates, durationSeconds = 10, startedAt = null) => {
+  const startMapAnimation = (coordinates, durationSeconds = 20, startedAt = null) => {
     const { seller, buyer } = coordinates;
 
     const animationData = {
@@ -150,7 +191,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
         onOrderUpdate(response.data);
       }
     } catch (error) {
-      console.error('Error confirming receipt:', error);
+      void error;
       message.error('Unable to confirm receipt. Please try again!');
     } finally {
       setLoading(false);
@@ -165,7 +206,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
       message.success('Thank you for your review!');
       setShowReviewModal(false);
     } catch (error) {
-      console.error('Error submitting review:', error);
+      void error;
       message.error('Unable to submit review. Please try again!');
     } finally {
       setLoading(false);
@@ -177,53 +218,75 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
   // Memoize coordinates to prevent re-triggering map initialization
   const memoizedCoordinates = useMemo(() => {
     const hasSellerGPS =
-      order?.trackingCoordinates?.seller?.lat && order?.trackingCoordinates?.seller?.lng;
+      order?.items?.[0]?.productId?.sellerId?.location?.lat &&
+      order?.items?.[0]?.productId?.sellerId?.location?.lng;
     const hasBuyerGPS = order?.userId?.location?.lat && order?.userId?.location?.lng;
+
+    const sellerProfileAddress =
+      normalizeAddressText(order?.items?.[0]?.productId?.sellerId?.location?.address) ||
+      normalizeAddressText(order?.items?.[0]?.productId?.sellerId?.address) ||
+      'Địa chỉ người bán chưa cập nhật';
+
+    const buyerProfileAddress =
+      normalizeAddressText(order?.userId?.location?.address) ||
+      normalizeAddressText(order?.userId?.address) ||
+      'Địa chỉ người mua chưa cập nhật';
+
+    const sellerAddressFallback = sellerProfileAddress;
+    const buyerAddressFallback = buyerProfileAddress;
 
     return {
       seller: hasSellerGPS
         ? {
-            lat: order.trackingCoordinates.seller.lat,
-            lng: order.trackingCoordinates.seller.lng,
-            address: order.trackingCoordinates.seller.address || 'Seller Address',
+            lat: order.items[0].productId.sellerId.location.lat,
+            lng: order.items[0].productId.sellerId.location.lng,
+            address: sellerAddressFallback,
           }
         : {
             lat: 16.0471,
             lng: 108.2062,
-            address: 'Hai Chau District, Da Nang (Demo)',
+            address: sellerAddressFallback,
           },
       buyer: hasBuyerGPS
         ? {
             lat: order.userId.location.lat,
             lng: order.userId.location.lng,
-            address: order.userId.location.address || order.shippingAddress || 'Buyer Address',
+            address: order.userId.location.address || buyerAddressFallback,
           }
         : {
             lat: 16.0878,
             lng: 108.2429,
-            address: order?.shippingAddress || 'Son Tra District, Da Nang (Demo)',
+            address: buyerAddressFallback,
           },
       usingRealGPS: hasSellerGPS && hasBuyerGPS,
     };
   }, [
-    order?.trackingCoordinates?.seller?.lat,
-    order?.trackingCoordinates?.seller?.lng,
-    order?.trackingCoordinates?.seller?.address,
+    order?.items,
     order?.userId?.location?.lat,
     order?.userId?.location?.lng,
     order?.userId?.location?.address,
-    order?.shippingAddress,
+    order?.userId?.address,
   ]);
+
+  const resolvedTrackingCoordinates = useMemo(() => {
+    const seller = {
+      lat: memoizedCoordinates.seller.lat,
+      lng: memoizedCoordinates.seller.lng,
+      address: memoizedCoordinates.seller.address,
+    };
+
+    const buyer = {
+      lat: memoizedCoordinates.buyer.lat,
+      lng: memoizedCoordinates.buyer.lng,
+      address: memoizedCoordinates.buyer.address,
+    };
+
+    return { seller, buyer };
+  }, [memoizedCoordinates, order?._id, order?.trackingCoordinates]);
 
   // Check if map should be shown — guarded to run only once per shipping session
   useEffect(() => {
     if (currentStatus === 'shipped') {
-      if (hasInitializedMap.current) {
-        return;
-      }
-      hasInitializedMap.current = true;
-
-      const coordinates = order?.trackingCoordinates || memoizedCoordinates;
       const durationFromEstimate =
         order?.shippingStartedAt && order?.shippingEstimatedArrival
           ? Math.max(
@@ -234,24 +297,33 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
                   1000
               )
             )
-          : 10;
+          : 20;
+
+      // If shipping window already expired but order is still shipped,
+      // replay the client animation from now so the vehicle marker does not look frozen.
+      const hasExpiredShippingWindow =
+        order?.shippingEstimatedArrival &&
+        Number.isFinite(new Date(order.shippingEstimatedArrival).getTime()) &&
+        new Date(order.shippingEstimatedArrival).getTime() <= Date.now();
+
+      const animationStartTime = hasExpiredShippingWindow ? null : order?.shippingStartedAt || null;
 
       setShowMap(true);
       startMapAnimation(
         {
-          seller: coordinates.seller,
-          buyer: coordinates.buyer,
+          seller: resolvedTrackingCoordinates.seller,
+          buyer: resolvedTrackingCoordinates.buyer,
         },
         durationFromEstimate,
-        order?.shippingStartedAt || null
+        animationStartTime
       );
+      hasInitializedMap.current = true;
     } else {
       hasInitializedMap.current = false;
     }
   }, [
     currentStatus,
-    memoizedCoordinates,
-    order?.trackingCoordinates,
+    resolvedTrackingCoordinates,
     order?.shippingEstimatedArrival,
     order?.shippingStartedAt,
   ]);
@@ -340,7 +412,7 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
           current={getCurrentStep()}
           items={steps.map((step, index) => ({
             title: step.title,
-            description: step.description,
+            content: step.description,
             icon: step.icon,
             status: getStepStatus(index),
           }))}

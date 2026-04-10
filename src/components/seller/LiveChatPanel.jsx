@@ -27,7 +27,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
 
   // ── Session persistence: save/restore on mount/unmount ──────────────
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+return;
+}
     try {
       const saved = sessionStorage.getItem('gzmart_seller_session');
       if (saved) {
@@ -46,7 +48,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
   }, [sessionId]);
 
   const persistSession = useCallback((msgList) => {
-    if (!sessionId) return;
+    if (!sessionId) {
+return;
+}
     try {
       sessionStorage.setItem(
         'gzmart_seller_session',
@@ -66,7 +70,9 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
 
   // ── Refresh chat history ──────────────────────────────────────────────
   const handleRefreshChat = useCallback(async () => {
-    if (!isLive || !sessionId) return;
+    if (!isLive || !sessionId) {
+return;
+}
     setRefreshing(true);
     try {
       const res = await livestreamService.getSessionMessages(sessionId, 100);
@@ -132,7 +138,9 @@ return;
 return;
 }
       if (msg.id) {
-        if (existingIdsRef.current.has(msg.id)) return;
+        if (existingIdsRef.current.has(msg.id)) {
+return;
+}
         existingIdsRef.current.add(msg.id);
         const newMsg = {
           id: msg.id,
@@ -294,8 +302,14 @@ return;
                   opacity: isLive ? 1 : 0.5,
                   transition: 'color 0.15s',
                 }}
-                onMouseEnter={(e) => { if (isLive) e.currentTarget.style.color = '#8f2e29'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = isLive ? '#B13C36' : '#ccc'; }}
+                onMouseEnter={(e) => {
+ if (isLive) {
+e.currentTarget.style.color = '#8f2e29';
+} 
+}}
+                onMouseLeave={(e) => {
+ e.currentTarget.style.color = isLive ? '#B13C36' : '#ccc'; 
+}}
               >
                 <i className={`bi bi-arrow-clockwise ${refreshing ? styles.spinning : ''}`} style={{ fontSize: '13px', display: 'inline-block' }} />
               </button>

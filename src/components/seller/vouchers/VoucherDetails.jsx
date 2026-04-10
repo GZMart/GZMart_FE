@@ -62,7 +62,7 @@ const VoucherDetails = ({ formData, voucherType, selectedProducts, navigate }) =
             >
               <div className="bg-white p-2 rounded shadow-sm me-3 border">
                 <i
-                  className={`bi ${voucherType === 'product' ? 'bi-box-seam' : voucherType === 'private' ? 'bi-incognito' : voucherType === 'live' ? 'bi-camera-video' : voucherType === 'video' ? 'bi-play-circle' : voucherType === 'new_buyer' ? 'bi-person-plus' : voucherType === 'repeat_buyer' ? 'bi-arrow-repeat' : voucherType === 'follower' ? 'bi-heart' : 'bi-shop'} text-primary fs-5`}
+                  className={`bi ${voucherType === 'product' ? 'bi-box-seam' : voucherType === 'private' ? 'bi-incognito' : voucherType === 'live' ? 'bi-camera-video' : voucherType === 'new_buyer' ? 'bi-person-plus' : voucherType === 'repeat_buyer' ? 'bi-arrow-repeat' : voucherType === 'follower' ? 'bi-heart' : 'bi-shop'} text-primary fs-5`}
                 ></i>
               </div>
               <div>

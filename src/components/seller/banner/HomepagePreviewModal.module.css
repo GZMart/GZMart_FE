@@ -1,0 +1,419 @@
+/* HomepagePreviewModal.module.css */
+
+/* ─── Modal Title ───────────────────────────────────────── */
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.previewBadge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ─── Notice bar ────────────────────────────────────────── */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff7ed;
+  border-bottom: 1px solid #fed7aa;
+  padding: 10px 16px;
+  font-size: 0.8125rem;
+  color: #9a3412;
+}
+
+/* ─── Browser chrome ─────────────────────────────────────── */
+.browser {
+  background: #1e293b;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.browserBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #0f172a;
+  gap: 10px;
+}
+
+.browserDots {
+  display: flex;
+  gap: 6px;
+}
+.browserDots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: block;
+}
+
+.browserURL {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e293b;
+  border-radius: 6px;
+  padding: 4px 14px;
+  font-size: 12px;
+  color: #94a3b8;
+  flex: 1;
+  max-width: 400px;
+}
+
+/* ─── Homepage mock ──────────────────────────────────────── */
+.homepage {
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Fake nav */
+.fakeNav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fakeNavLogo {
+  font-size: 14px;
+  color: #ee4d2d;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.fakeSearchBar {
+  flex: 1;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.fakeSearchIcon { font-size: 13px; }
+
+.fakeNavRight {
+  display: flex;
+  gap: 14px;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ─── Banner section ─────────────────────────────────────── */
+.bannerSection {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.carouselWrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.bannerFrame {
+  border-radius: 20px;
+  overflow: hidden;
+  background: #e2e8f0;
+  aspect-ratio: 1200 / 600;
+  position: relative;
+}
+
+/* Add side notches to match HeroBanner look */
+.bannerFrame::before,
+.bannerFrame::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  background: #f8fafc;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.bannerFrame::before {
+  left: -24px;
+}
+
+.bannerFrame::after {
+  right: -24px;
+}
+
+.bannerImgWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.bannerImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Hotspot overlay ────────────────────────────────────── */
+.hotspot {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid rgba(249, 115, 22, 0.8);
+  background: rgba(249, 115, 22, 0.1);
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.hotspot:hover {
+  background: rgba(249, 115, 22, 0.25);
+}
+.hotspot:hover .hotspotTooltip {
+  display: block;
+}
+
+.hotspotPulseRing {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid rgba(249, 115, 22, 0.4);
+  border-radius: 8px;
+  animation: ringPulse 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.08); }
+}
+
+.hotspotDot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.5);
+  position: relative;
+  z-index: 2;
+}
+
+.hotspotTooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Ad badge */
+.adBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.6);
+  color: #ffd700;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.05em;
+  z-index: 5;
+}
+
+/* Text overlay */
+.textOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  padding: 24px 20px 16px;
+  z-index: 4;
+}
+
+.bannerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  margin-bottom: 4px;
+}
+
+.bannerSubtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 10px;
+}
+
+.ctaBtn {
+  background: #ee4d2d;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.ctaBtn:hover { background: #d44000; }
+
+.bannerEmpty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Carousel dots */
+.carouselDots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 0 2px;
+}
+
+.dotActive {
+  width: 16px;
+  height: 5px;
+  border-radius: 3px;
+  background: #ee4d2d;
+  display: block;
+}
+
+.dotInactive {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  display: block;
+}
+
+/* Side thumbnails */
+.sideThumb {
+  width: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.thumbItem {
+  flex: 1;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+}
+
+/* ─── Hotspot legend ─────────────────────────────────────── */
+.hotspotLegend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #fff7ed;
+  border-top: 1px solid #fed7aa;
+  font-size: 0.75rem;
+}
+
+.hotspotLegendTitle {
+  font-weight: 700;
+  color: #9a3412;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hotspotLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hotspotLegendNum {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hotspotLegendLink {
+  color: #1d4ed8;
+  font-size: 11px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Fake sections ──────────────────────────────────────── */
+.fakeSections {
+  padding: 12px;
+}
+
+.fakeSectionTitle {
+  height: 14px;
+  width: 160px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.fakeProductGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.fakeProduct {
+  aspect-ratio: 3/4;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  border-radius: 8px;
+}

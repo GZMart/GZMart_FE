@@ -12,4 +12,10 @@ export const paymentService = {
 
   // Cancel pending payment
   cancelPayment: async (orderCode) => await api.put(`/api/payments/cancel/${orderCode}`),
+
+  // Top up Wallet via PayOS
+  createTopupLink: async (payload) => await api.post('/api/payments/wallet/create-link', payload),
+
+  // Check topup status
+  checkTopupStatus: async (orderCode) => await api.get(`/api/payments/wallet/check/${orderCode}`),
 };

@@ -233,7 +233,9 @@ const SyntaxGuideCard = ({ guide }) => {
   const { prefix, product, variantTiers } = guide ?? { prefix: '', product: null, variantTiers: [] };
 
   const oosMap = useMemo(() => {
-    if (!guide) return {};
+    if (!guide) {
+return {};
+}
     const map = {};
     for (const tier of variantTiers) {
       map[tier.name] = {};
@@ -247,13 +249,19 @@ const SyntaxGuideCard = ({ guide }) => {
       const sizeIdx = tiers.findIndex((t) => /size|kích|kich/i.test(t.name));
       if (colorIdx >= 0 && sizeIdx >= 0) {
         for (const model of product.models) {
-          if (!model.tierIndex) continue;
+          if (!model.tierIndex) {
+continue;
+}
           const colorOpt = tiers[colorIdx].options?.[model.tierIndex[colorIdx]];
           const sizeOpt = tiers[sizeIdx].options?.[model.tierIndex[sizeIdx]];
           if (colorOpt && sizeOpt) {
             if (model.stock > 0) {
-              if (!map[variantTiers[colorIdx]?.name]) map[variantTiers[colorIdx]?.name] = {};
-              if (!map[variantTiers[sizeIdx]?.name]) map[variantTiers[sizeIdx]?.name] = {};
+              if (!map[variantTiers[colorIdx]?.name]) {
+map[variantTiers[colorIdx]?.name] = {};
+}
+              if (!map[variantTiers[sizeIdx]?.name]) {
+map[variantTiers[sizeIdx]?.name] = {};
+}
               map[variantTiers[colorIdx]?.name][colorOpt] = false;
               map[variantTiers[sizeIdx]?.name][sizeOpt] = false;
             }
@@ -275,7 +283,9 @@ const SyntaxGuideCard = ({ guide }) => {
   ];
   const example = `#${exampleParts.join(' ')}`;
 
-  if (!guide) return null;
+  if (!guide) {
+return null;
+}
 
   return (
     <div className={styles['ls-syntax-guide']}>
@@ -583,7 +593,9 @@ export default function LiveViewerPage() {
   // ── Fullscreen toggle ───────────────────────────────────────────────
   const handleToggleFullscreen = useCallback(() => {
     const el = fullscreenVideoRef.current;
-    if (!el) return;
+    if (!el) {
+return;
+}
     if (!document.fullscreenElement) {
       el.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
     } else {
@@ -614,13 +626,19 @@ export default function LiveViewerPage() {
   }, [handleToggleFullscreen]);
 
   useEffect(() => {
-    if (!emotePickerOpen) return;
+    if (!emotePickerOpen) {
+return;
+}
     const onPointerDown = (e) => {
-      if (emotePickerRef.current?.contains(e.target)) return;
+      if (emotePickerRef.current?.contains(e.target)) {
+return;
+}
       setEmotePickerOpen(false);
     };
     const onKey = (e) => {
-      if (e.key === 'Escape') setEmotePickerOpen(false);
+      if (e.key === 'Escape') {
+setEmotePickerOpen(false);
+}
     };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKey);
@@ -798,6 +816,16 @@ return;
         if (vouchersRes?.data) {
           setVouchers(vouchersRes.data.vouchers || []);
         }
+
+        // Load buyer's saved voucher IDs so saved state survives page refresh
+        voucherService
+          .getSavedVoucherIds()
+          .then((res) => {
+            // axios interceptor returns response.data — body is { success, data: { ids } }
+            const ids = (res?.data?.ids || []).map((id) => String(id));
+            setSavedVoucherIds(new Set(ids));
+          })
+          .catch(() => {});
 
         livestreamService.getSessionConfig(sessionId).then((res) => {
           const cfg = res?.data?.orderSyntax;
@@ -1126,7 +1154,9 @@ return;
   const sendChatContent = useCallback(
     (rawText, { runOrderSyntax = true } = {}) => {
       const text = typeof rawText === 'string' ? rawText.trim() : '';
-      if (!text || !user) return false;
+      if (!text || !user) {
+return false;
+}
 
       setIsSending(true);
       const localMsg = {
@@ -1162,12 +1192,16 @@ return;
 
   const sendChat = () => {
     const text = input.trim();
-    if (!sendChatContent(text, { runOrderSyntax: true })) return;
+    if (!sendChatContent(text, { runOrderSyntax: true })) {
+return;
+}
     setInput('');
   };
 
   const sendEmote = (emoji) => {
-    if (!user) return;
+    if (!user) {
+return;
+}
     sendChatContent(emoji, { runOrderSyntax: false });
     setEmotePickerOpen(false);
   };
@@ -1202,7 +1236,9 @@ return;
 
   // ── Like via REST API ──────────────────────────────────────────────
   const handleLike = () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+return;
+}
 
     spawnHeart();
     setLikeCount((c) => c + 1);
@@ -1210,7 +1246,9 @@ return;
 
     livestreamService.likeSession(sessionId)
       .then((res) => {
-        if (res?.data?.likeCount !== undefined) setLikeCount(res.data.likeCount);
+        if (res?.data?.likeCount !== undefined) {
+setLikeCount(res.data.likeCount);
+}
       })
       .catch(() => {
         setLikeCount((c) => Math.max(0, c - 1));
@@ -1234,7 +1272,7 @@ return;
   const handleSaveVoucher = async (voucherId) => {
     try {
       await voucherService.saveVoucher(voucherId);
-      setSavedVoucherIds((prev) => new Set([...prev, voucherId]));
+      setSavedVoucherIds((prev) => new Set([...prev, String(voucherId)]));
     } catch (e) {
       if (e.response?.status === 401) {
         navigate('/login');
@@ -1599,7 +1637,9 @@ return `${(count / 1000).toFixed(1)}k`;
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
- if (e.key === 'Enter') handleQuickBuy(product);
+ if (e.key === 'Enter') {
+handleQuickBuy(product);
+}
 }}
                         >
                           {/* Image */}
@@ -1690,7 +1730,7 @@ return `${(count / 1000).toFixed(1)}k`;
                 ) : (
                   <div className={styles['ls-vouchers-list']}>
                     {vouchers.map((voucher) => {
-                      const isSaved = savedVoucherIds.has(voucher._id);
+                      const isSaved = savedVoucherIds.has(String(voucher._id));
                       const discountLabel =
                         voucher.discountType === 'percent'
                           ? `${voucher.discountValue}% OFF`
@@ -1722,7 +1762,7 @@ return `${(count / 1000).toFixed(1)}k`;
                               </button>
                               <button
                                 className={`${styles['ls-voucher-save-btn']}${isSaved ? ` ${styles['ls-voucher-save-btn--saved']}` : ''}`}
-                                onClick={() => handleSaveVoucher(voucher._id)}
+                                onClick={() => handleSaveVoucher(String(voucher._id))}
                                 disabled={isSaved}
                                 type="button"
                               >
