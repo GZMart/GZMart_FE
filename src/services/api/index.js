@@ -35,6 +35,7 @@ export {
 export { shopDecorationApi } from './shopDecorationApi';
 export * as sellerApplicationService from './sellerApplicationService';
 export { default as notificationAPI } from './notificationAPI';
+export { default as bannerAdsService } from './bannerAdsService';
 
 // TODO: Add more services as needed
 // export { default as orderService } from './orderService';

@@ -26,6 +26,7 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@vercel/analytics": "^2.0.1",
     "antd": "^6.1.1",
+    "antd-img-crop": "^4.30.0",
     "axios": "^1.7.7",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
