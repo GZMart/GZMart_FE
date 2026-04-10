@@ -115,8 +115,8 @@ const Step2 = ({
           (r) => r.product._id === product._id && variantConfigs[r.key]
         );
         if (rows.length === 0) {
-return null;
-}
+          return null;
+        }
 
         const tiers = getProductTiers(product);
         const hasMultipleTiers = tiers.length >= 2;

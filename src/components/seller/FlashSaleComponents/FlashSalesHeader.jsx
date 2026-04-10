@@ -1,6 +1,15 @@
 import styles from '@assets/styles/seller/FlashSales.module.css';
 
-const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => (
+const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => {
+  // Count campaigns by type
+  const flashSaleCount = groupedFlashSales.filter(g => g.type === 'flash_sale').length;
+  const dailyDealCount = groupedFlashSales.filter(g => g.type === 'daily_deal').length;
+  const weeklyDealCount = groupedFlashSales.filter(g => g.type === 'weekly_deal').length;
+  const otherCount = groupedFlashSales.length - flashSaleCount - dailyDealCount - weeklyDealCount;
+
+  const activeCount = groupedFlashSales.filter(g => g.status === 'active').length;
+
+  return (
     <div className={styles.header}>
       <div className={styles.headerLeft}>
         <div className={styles.titleRow}>
@@ -18,13 +27,13 @@ const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => (
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
           </div>
-          <h1 className={styles.title}>Flash Sale Management</h1>
+          <h1 className={styles.title}>Campaign Management</h1>
         </div>
         <div className={styles.titleDesc}>
           <span className={styles.activeDot} />
           {groupedFlashSales.length > 0
-            ? `${groupedFlashSales.length} campaign${groupedFlashSales.length > 1 ? 's' : ''} running right now`
-            : 'Manage and track your flash sale campaigns'}
+            ? `${activeCount > 0 ? `${activeCount} active · ` : ''}${flashSaleCount > 0 ? `⚡${flashSaleCount} ` : ''}${dailyDealCount > 0 ? `📅${dailyDealCount} ` : ''}${weeklyDealCount > 0 ? `📆${weeklyDealCount} ` : ''}${otherCount > 0 ? `+${otherCount}` : ''}campaigns`
+            : 'Create and manage your promotional campaigns'}
         </div>
       </div>
       <button className={styles.btnCreate} onClick={onCreateClick}>
@@ -32,9 +41,10 @@ const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => (
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-        Create Flash Sale
+        Create Campaign
       </button>
     </div>
   );
+};
 
 export default FlashSalesHeader;

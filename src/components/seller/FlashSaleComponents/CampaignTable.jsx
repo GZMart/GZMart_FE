@@ -3,6 +3,7 @@ import { EditOutlined, DeleteOutlined, EllipsisOutlined, EyeOutlined } from '@an
 import dayjs from 'dayjs';
 import styles from '@assets/styles/seller/FlashSales.module.css';
 
+// Status config
 const statusConfig = {
   pending: { color: 'blue', label: 'Upcoming' },
   upcoming: { color: 'blue', label: 'Upcoming' },
@@ -12,38 +13,62 @@ const statusConfig = {
   cancelled: { color: 'red', label: 'Cancelled' },
 };
 
+// Campaign type config
+const CAMPAIGN_TYPE_CONFIG = {
+  flash_sale: { label: '⚡ Flash Sale', color: '#ff4757', bgColor: '#fef2f2' },
+  daily_deal: { label: '📅 Daily Deal', color: '#ffa502', bgColor: '#fff7e6' },
+  weekly_deal: { label: '📆 Weekly Deal', color: '#2ed573', bgColor: '#f0fdf4' },
+  limited_time: { label: '⏳ Limited Time', color: '#1e90ff', bgColor: '#eff6ff' },
+  clearance: { label: '🏷️ Clearance', color: '#a55eea', bgColor: '#faf5ff' },
+  special: { label: '🎯 Special', color: '#ff6b81', bgColor: '#fff1f2' },
+};
+
 // Campaign-level (parent) columns
 const campaignColumns = (handleViewCampaign, handleEditCampaign, handleDeleteCampaign) => [
   {
     title: 'Campaign',
     key: 'campaign',
-    width: 240,
+    width: 280,
     sorter: (a, b) => {
       const aName = a.campaignTitle || a.productId?.name || '';
       const bName = b.campaignTitle || b.productId?.name || '';
       return aName.localeCompare(bName);
     },
     showSorterTooltip: false,
-    render: (_, group) => (
-      <div className={styles.campaignRow}>
-        <div className={styles.campaignImage}>
-          {group.productId?.images?.[0] ? (
-            <img src={group.productId.images[0]} alt={group.productId?.name || 'product'} loading="lazy" />
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg>
-          )}
+    render: (_, group) => {
+      const typeConfig = CAMPAIGN_TYPE_CONFIG[group.type] || CAMPAIGN_TYPE_CONFIG.flash_sale;
+      return (
+        <div className={styles.campaignRow}>
+          <div className={styles.campaignImage}>
+            {group.productId?.images?.[0] ? (
+              <img src={group.productId.images[0]} alt={group.productId?.name || 'product'} loading="lazy" />
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+            )}
+          </div>
+          <div className={styles.campaignInfo}>
+            {/* Type Badge */}
+            <span
+              className={styles.campaignTypeBadge}
+              style={{
+                color: typeConfig.color,
+                backgroundColor: typeConfig.bgColor,
+                borderColor: typeConfig.color,
+              }}
+            >
+              {typeConfig.label}
+            </span>
+            <span className={styles.campaignName}>{group.campaignTitle || group.productId?.name}</span>
+            {group.campaignTitle && <span className={styles.campaignProduct}>{group.productId?.name}</span>}
+            <span className={styles.skuTag}>{group.skuCount} SKU{group.skuCount > 1 ? 's' : ''}</span>
+          </div>
         </div>
-        <div className={styles.campaignInfo}>
-          <span className={styles.campaignName}>{group.campaignTitle || group.productId?.name}</span>
-          {group.campaignTitle && <span className={styles.campaignProduct}>{group.productId?.name}</span>}
-          <span className={styles.skuTag}>{group.skuCount} SKU{group.skuCount > 1 ? 's' : ''}</span>
-        </div>
-      </div>
-    ),
+      );
+    },
   },
   {
     title: 'Price',

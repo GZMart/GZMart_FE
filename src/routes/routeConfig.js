@@ -487,6 +487,14 @@ export const routeConfig = [
     layout: 'erp',
   },
   {
+    path: '/seller/campaigns',
+    element: FlashSalesPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+    alias: '/seller/flash-sales',
+  },
+  {
     path: '/seller/vouchers',
     element: VoucherDashboard,
     protected: true,

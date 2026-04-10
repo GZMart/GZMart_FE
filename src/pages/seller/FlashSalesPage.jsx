@@ -60,6 +60,7 @@ const FlashSalesPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [campaignInfo, setCampaignInfo] = useState({
     title: '',
+    type: 'flash_sale', // Default campaign type
     timeSlot: null,
     startTime: null,
     endTime: null,
@@ -87,19 +88,13 @@ return products;
   const variantTableData = useMemo(() => {
     const data = selectedProducts.flatMap((product) => {
       if (!product.models) {
-        if (import.meta.env.DEV) {
-console.warn('⚠️ Product has no models:', {
-            productId: product._id,
-            productName: product.name,
-          });
-}
         return [];
       }
       const seenSkus = new Set();
       const uniqueModels = product.models.filter((model) => {
         if (!model.sku || seenSkus.has(model.sku)) {
-return false;
-}
+          return false;
+        }
         seenSkus.add(model.sku);
         return true;
       });
@@ -202,14 +197,38 @@ return cur > 0 ? 100 : 0;
     try {
       setProductsLoading(true);
       const res = await productService.getMyProducts({ page: 1, limit: 100, status: 'active' });
+      
+      // Debug: Log response structure
+      if (import.meta.env.DEV) {
+        console.log('📦 [fetchProducts] Raw response:', res);
+        console.log('📦 [fetchProducts] Response keys:', Object.keys(res || {}));
+        console.log('📦 [fetchProducts] res.data type:', typeof res?.data, Array.isArray(res?.data));
+      }
+
       let productsData = [];
       if (Array.isArray(res)) {
-productsData = res;
-} else if (res?.data) {
-productsData = Array.isArray(res.data) ? res.data : [];
-}
+        productsData = res;
+      } else if (res?.data) {
+        productsData = Array.isArray(res.data) ? res.data : [];
+      }
+
+      // Debug: Log parsed products
+      if (import.meta.env.DEV) {
+        console.log('📦 [fetchProducts] Parsed products count:', productsData.length);
+        if (productsData.length > 0) {
+          console.log('📦 [fetchProducts] First product sample:', {
+            _id: productsData[0]._id,
+            name: productsData[0].name,
+            hasModels: Array.isArray(productsData[0].models),
+            modelsCount: productsData[0].models?.length,
+            modelsSample: productsData[0].models?.slice(0, 2),
+          });
+        }
+      }
+
       setProducts(productsData);
     } catch (error) {
+      console.error('❌ [fetchProducts] Error:', error);
       message.error('Failed to fetch products');
       setProducts([]);
     } finally {
@@ -257,6 +276,7 @@ fetchProducts();
     setIsDetailModalVisible(false);
     setCampaignInfo({
       title: group.campaignTitle || '',
+      type: group.type || group.records?.[0]?.type || 'flash_sale',
       timeSlot: null,
       startTime: dayjs(group.startAt),
       endTime: dayjs(group.endAt),
@@ -317,6 +337,7 @@ fetchProducts();
     setSelectedFlashSale(record);
     setCampaignInfo({
       title: record.campaignTitle || `Flash Sale - ${record.productId?.name || 'Product'}`,
+      type: record.type || 'flash_sale',
       timeSlot: null,
       startTime: dayjs(record.startAt),
       endTime: dayjs(record.endAt),
@@ -393,7 +414,7 @@ fetchProducts();
   const handleOpenCreateModal = () => {
     setSelectedFlashSale(null);
     setCurrentStep(0);
-    setCampaignInfo({ title: '', timeSlot: null, startTime: null, endTime: null });
+    setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
     setSelectedProducts([]);
     setVariantConfigs({});
     setSelectedVariantKeys([]);
@@ -405,7 +426,7 @@ fetchProducts();
     form.resetFields();
     setSelectedFlashSale(null);
     setCurrentStep(0);
-    setCampaignInfo({ title: '', timeSlot: null, startTime: null, endTime: null });
+    setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
     setSelectedProducts([]);
     setVariantConfigs({});
     setSelectedVariantKeys([]);
@@ -414,8 +435,8 @@ fetchProducts();
   const handleAddProduct = (productId) => {
     const product = products.find((p) => p._id === productId);
     if (!product) {
-return;
-}
+      return;
+    }
     if (selectedProducts.find((p) => p._id === productId)) {
       message.warning('Product already added');
       return;
@@ -427,8 +448,8 @@ return;
       const configs = {};
       product.models.forEach((model) => {
         if (!model.sku) {
-return;
-}
+          return;
+        }
         const key = `${productId}_${model.sku}`;
         configs[key] = {
           productId,
@@ -659,6 +680,7 @@ acc[pid] = [];
           flashsaleService.createBatch({
             productId,
             campaignTitle: campaignInfo.title,
+            type: campaignInfo.type || 'flash_sale', // Pass campaign type
             startAt: campaignInfo.startTime.toISOString(),
             endAt: campaignInfo.endTime.toISOString(),
             variants: variants.map((v) => {
@@ -678,7 +700,7 @@ item.tierIndex = v.tierIndex;
       );
 
       message.success(
-        `Created ${Object.keys(variantsByProduct).length} flash sale campaign(s) with ${enabledVariants.length} variant(s) successfully`
+        `Created ${Object.keys(variantsByProduct).length} campaign(s) with ${enabledVariants.length} variant(s) successfully`
       );
       handleCloseModal();
       fetchFlashSales(pagination.page);
@@ -737,6 +759,7 @@ item.tierIndex = v.tierIndex;
           key,
           productId: record.productId,
           campaignTitle: record.campaignTitle,
+          type: record.type || 'flash_sale', // Include type from record
           startAt: record.startAt,
           endAt: record.endAt,
           records: [],
