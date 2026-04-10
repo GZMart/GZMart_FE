@@ -41,15 +41,13 @@ const VoucherPreview = ({ voucherType, formData }) => (
               ? 'Private'
               : voucherType === 'live'
                 ? 'Live'
-                : voucherType === 'video'
-                  ? 'Video'
-                  : voucherType === 'new_buyer'
-                    ? 'New Buyer'
-                    : voucherType === 'repeat_buyer'
-                      ? 'Repeat Buyer'
-                      : voucherType === 'follower'
-                        ? 'Follower'
-                        : 'Shop'}{' '}
+                : voucherType === 'new_buyer'
+                  ? 'New Buyer'
+                  : voucherType === 'repeat_buyer'
+                    ? 'Repeat Buyer'
+                    : voucherType === 'follower'
+                      ? 'Follower'
+                      : 'Shop'}{' '}
           Voucher
           <i className="bi bi-three-dots position-absolute end-0 me-3"></i>
         </div>
@@ -107,67 +105,6 @@ const VoucherPreview = ({ voucherType, formData }) => (
                   <div style={{ fontSize: 12, marginBottom: 4 }}>Cotton T-Shirt Premium</div>
                   <div style={{ color: '#ee4d2d', fontWeight: 600 }}>₫150.000</div>
                 </div>
-              </div>
-            </div>
-          </div>
-        ) : voucherType === 'video' ? (
-          /* VIDEO PREVIEW MODE */
-          <div className={styles.videoPreviewContainer}>
-            <div className={styles.videoPlaceholder}>VIDEO</div>
-            <div className={styles.videoOverlay}>
-              <div className={styles.videoRightSidebar}>
-                <div className={styles.videoActionBtn}>
-                  <i
-                    className={`bi bi-heart-fill ${styles.videoIcon}`}
-                    style={{ color: 'white' }}
-                  ></i>
-                  <span className={styles.videoLabel}>1.2K</span>
-                </div>
-                <div className={styles.videoActionBtn}>
-                  <i
-                    className={`bi bi-chat-dots-fill ${styles.videoIcon}`}
-                    style={{ color: 'white' }}
-                  ></i>
-                  <span className={styles.videoLabel}>342</span>
-                </div>
-                <div className={styles.videoActionBtn}>
-                  <i
-                    className={`bi bi-share-fill ${styles.videoIcon}`}
-                    style={{ color: 'white' }}
-                  ></i>
-                  <span className={styles.videoLabel}>Share</span>
-                </div>
-              </div>
-
-              <div className={styles.videoBottomInfo}>
-                <div className={styles.videoAccountName}>@gzmart.official</div>
-                <div className={styles.videoCaption}>
-                  Introducing our new summer collection! ☀️ #fashion #summer #sale
-                </div>
-              </div>
-
-              {/* Voucher Popup */}
-              <div className={styles.videoVoucherPopup}>
-                <div className={styles.videoVoucherIcon}>%</div>
-                <div style={{ lineHeight: 1.2 }}>
-                  <div style={{ fontSize: 11, fontWeight: 'bold' }}>
-                    {formData.discountType === 'percent'
-                      ? `${formData.discountValue || '0'}% OFF`
-                      : `₫${parseInt(formData.discountValue || 0).toLocaleString()} OFF`}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#555' }}>
-                    Min. Spend ₫{parseInt(formData.minBasketPrice || 0).toLocaleString()}
-                  </div>
-                </div>
-                <Button size="sm" variant="danger" style={{ fontSize: 10, padding: '2px 8px' }}>
-                  Claim
-                </Button>
-              </div>
-
-              {/* Product Anchor */}
-              <div className={styles.videoProductAnchor}>
-                <i className="bi bi-bag-check-fill text-warning"></i>
-                <span className={styles.videoAnchorText}>Summer T-Shirt Video Exclusive</span>
               </div>
             </div>
           </div>

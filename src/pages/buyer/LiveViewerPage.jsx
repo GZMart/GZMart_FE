@@ -799,6 +799,16 @@ return;
           setVouchers(vouchersRes.data.vouchers || []);
         }
 
+        // Load buyer's saved voucher IDs so saved state survives page refresh
+        voucherService
+          .getSavedVoucherIds()
+          .then((res) => {
+            // axios interceptor returns response.data — body is { success, data: { ids } }
+            const ids = (res?.data?.ids || []).map((id) => String(id));
+            setSavedVoucherIds(new Set(ids));
+          })
+          .catch(() => {});
+
         livestreamService.getSessionConfig(sessionId).then((res) => {
           const cfg = res?.data?.orderSyntax;
           setOrderSyntax({
@@ -1234,7 +1244,7 @@ return;
   const handleSaveVoucher = async (voucherId) => {
     try {
       await voucherService.saveVoucher(voucherId);
-      setSavedVoucherIds((prev) => new Set([...prev, voucherId]));
+      setSavedVoucherIds((prev) => new Set([...prev, String(voucherId)]));
     } catch (e) {
       if (e.response?.status === 401) {
         navigate('/login');
@@ -1690,7 +1700,7 @@ return `${(count / 1000).toFixed(1)}k`;
                 ) : (
                   <div className={styles['ls-vouchers-list']}>
                     {vouchers.map((voucher) => {
-                      const isSaved = savedVoucherIds.has(voucher._id);
+                      const isSaved = savedVoucherIds.has(String(voucher._id));
                       const discountLabel =
                         voucher.discountType === 'percent'
                           ? `${voucher.discountValue}% OFF`
@@ -1722,7 +1732,7 @@ return `${(count / 1000).toFixed(1)}k`;
                               </button>
                               <button
                                 className={`${styles['ls-voucher-save-btn']}${isSaved ? ` ${styles['ls-voucher-save-btn--saved']}` : ''}`}
-                                onClick={() => handleSaveVoucher(voucher._id)}
+                                onClick={() => handleSaveVoucher(String(voucher._id))}
                                 disabled={isSaved}
                                 type="button"
                               >

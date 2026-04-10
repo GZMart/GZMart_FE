@@ -84,6 +84,8 @@ const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
 const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouchersPage'));
 const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
+const VoucherCampaignsPage = lazy(() => import('@pages/admin/marketing/VoucherCampaignsPage'));
+const VoucherCampaignForm = lazy(() => import('@pages/admin/marketing/VoucherCampaignForm'));
 const TestMapPage = lazy(() => import('@pages/admin/TestMapPage'));
 
 // Error Pages
@@ -660,6 +662,27 @@ export const routeConfig = [
   {
     path: '/admin/system-vouchers/:id/edit',
     element: SystemVoucherForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/voucher-campaigns',
+    element: VoucherCampaignsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/voucher-campaigns/create',
+    element: VoucherCampaignForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/voucher-campaigns/:id/edit',
+    element: VoucherCampaignForm,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',

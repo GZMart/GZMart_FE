@@ -887,7 +887,7 @@ const ShopProfilePage = () => {
       fetchShopVouchers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   useEffect(() => {
     if (!id) {
@@ -1087,7 +1087,10 @@ const ShopProfilePage = () => {
 
   const fetchShopVouchers = async () => {
     try {
-      const res = await voucherService.getShopVouchers(id);
+      // Use endpoint with eligibility check for logged-in users
+      const res = isAuthenticated
+        ? await voucherService.getShopVouchersWithEligibility(id)
+        : await voucherService.getShopVouchers(id);
       setVouchers(res.data?.data || res.data || []);
     } catch {
       // Silent fail - vouchers are optional
@@ -1102,6 +1105,13 @@ const ShopProfilePage = () => {
     }
     try {
       const voucher = vouchers.find((v) => v._id === voucherId);
+
+      // Check eligibility before saving
+      if (voucher && voucher.eligible === false) {
+        toast.info(voucher.ineligibleReason || 'Bạn chưa đủ điều kiện sử dụng voucher này');
+        return;
+      }
+
       if (voucher?.isSaved) {
         await voucherService.unsaveVoucher(voucherId);
         setVouchers((prev) =>
@@ -1328,6 +1338,21 @@ const ShopProfilePage = () => {
                   const endDate = new Date(v.endTime);
                   const formattedEnd = `${String(endDate.getDate()).padStart(2, '0')}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${endDate.getFullYear()}`;
                   const isSecondary = v.discountType !== 'percent' && v.discountValue >= 50000;
+
+                  // Voucher type display
+                  const voucherTypeLabels = {
+                    shop: 'Mã Giảm Giá',
+                    product: 'Mã Sản Phẩm',
+                    private: 'Mã Riêng Tư',
+                    live: 'Mã Live',
+                    new_buyer: 'Người Mới',
+                    repeat_buyer: 'Khách Quen',
+                    follower: 'Follower',
+                  };
+                  const voucherTypeLabel = voucherTypeLabels[v.type] || 'Mã Giảm Giá';
+                  const isEligible = v.eligible !== false;
+                  const showEligibility = ['new_buyer', 'repeat_buyer', 'follower'].includes(v.type);
+
                   return (
                     <div key={v._id} className={styles.voucherCard}>
                       <div
@@ -1345,9 +1370,17 @@ const ShopProfilePage = () => {
                               : `Giảm ${formatCurrency(v.discountValue)}`}
                           </p>
                           <p className={styles.voucherCondition}>
-                            Đơn tối thiểu {formatCurrency(v.minBasketPrice)}
-                            {v.maxDiscountAmount &&
-                              ` | Tối đa ${formatCurrency(v.maxDiscountAmount)}`}
+                            {showEligibility && !isEligible ? (
+                              <span style={{ color: '#999', fontSize: '11px' }}>
+                                {v.ineligibleReason || voucherTypeLabel}
+                              </span>
+                            ) : (
+                              <>
+                                Đơn tối thiểu {formatCurrency(v.minBasketPrice)}
+                                {v.maxDiscountAmount &&
+                                  ` | Tối đa ${formatCurrency(v.maxDiscountAmount)}`}
+                              </>
+                            )}
                           </p>
                         </div>
                         <p className={styles.voucherExpiry}>HSD: {formattedEnd}</p>
@@ -1356,6 +1389,15 @@ const ShopProfilePage = () => {
                         {v.isSaved ? (
                           <button type="button" onClick={() => handleUseVoucher(v)}>
                             Dùng Ngay
+                          </button>
+                        ) : showEligibility && !isEligible ? (
+                          <button
+                            type="button"
+                            className={styles.ineligibleBtn}
+                            disabled
+                            title={v.ineligibleReason}
+                          >
+                            {v.ineligibleReason || 'Chưa Đủ Điều Kiện'}
                           </button>
                         ) : (
                           <button

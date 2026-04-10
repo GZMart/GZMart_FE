@@ -33,6 +33,12 @@ const NAV_ITEMS = [
         label: 'System Vouchers',
         matchPrefix: true,
       },
+      {
+        to: ADMIN_ROUTES.VOUCHER_CAMPAIGNS,
+        icon: 'bi bi-calendar-heart',
+        label: 'Voucher Campaigns',
+        matchPrefix: true,
+      },
     ],
   },
   {

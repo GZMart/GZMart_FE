@@ -106,6 +106,9 @@ export const ADMIN_ROUTES = {
   SYSTEM_VOUCHERS: '/admin/system-vouchers',
   SYSTEM_VOUCHER_CREATE: '/admin/system-vouchers/create',
   SYSTEM_VOUCHER_EDIT: '/admin/system-vouchers/:id/edit',
+  VOUCHER_CAMPAIGNS: '/admin/voucher-campaigns',
+  VOUCHER_CAMPAIGN_CREATE: '/admin/voucher-campaigns/create',
+  VOUCHER_CAMPAIGN_EDIT: '/admin/voucher-campaigns/:id/edit',
 
   // Content
   PAGES: '/admin/pages',
