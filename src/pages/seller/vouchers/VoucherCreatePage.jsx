@@ -54,9 +54,6 @@ const VoucherCreatePage = () => {
       } else if (type === 'live') {
         setApplyTo('all');
         setFormData((prev) => ({ ...prev, displaySetting: 'live' }));
-      } else if (type === 'video') {
-        setApplyTo('all');
-        setFormData((prev) => ({ ...prev, displaySetting: 'video' }));
       } else if (['new_buyer', 'repeat_buyer', 'follower'].includes(type)) {
         setApplyTo('all');
         setFormData((prev) => ({ ...prev, displaySetting: 'public' }));
@@ -213,9 +210,7 @@ const VoucherCreatePage = () => {
                   ? 'Private'
                   : voucherType === 'live'
                     ? 'Live'
-                    : voucherType === 'video'
-                      ? 'Video'
-                      : voucherType === 'new_buyer'
+                    : voucherType === 'new_buyer'
                         ? 'New Buyer'
                         : voucherType === 'repeat_buyer'
                           ? 'Repeat Buyer'

@@ -94,20 +94,18 @@ const VoucherForm = ({
             >
               <div className="bg-white p-2 rounded shadow-sm me-3 border">
                 <i
-                  className={`bi ${voucherType === 'product' ? 'bi-box-seam' : voucherType === 'private' ? 'bi-incognito' : voucherType === 'live' ? 'bi-camera-video' : voucherType === 'video' ? 'bi-play-circle' : voucherType === 'new_buyer' ? 'bi-person-plus' : voucherType === 'repeat_buyer' ? 'bi-arrow-repeat' : voucherType === 'follower' ? 'bi-heart' : 'bi-shop'} text-primary fs-5`}
+                  className={`bi ${voucherType === 'product' ? 'bi-box-seam' : voucherType === 'private' ? 'bi-incognito' : voucherType === 'live' ? 'bi-camera-video' : voucherType === 'new_buyer' ? 'bi-person-plus' : voucherType === 'repeat_buyer' ? 'bi-arrow-repeat' : voucherType === 'follower' ? 'bi-heart' : 'bi-shop'} text-primary fs-5`}
                 ></i>
               </div>
               <div>
                 <div className="fw-bold text-dark text-capitalize">
                   {voucherType === 'live'
                     ? 'Shopee Live'
-                    : voucherType === 'video'
-                      ? 'Shopee Video'
-                      : voucherType === 'new_buyer'
-                        ? 'New Buyer'
-                        : voucherType === 'repeat_buyer'
-                          ? 'Repeat Buyer'
-                          : voucherType}{' '}
+                    : voucherType === 'new_buyer'
+                      ? 'New Buyer'
+                      : voucherType === 'repeat_buyer'
+                        ? 'Repeat Buyer'
+                        : voucherType}{' '}
                   Voucher
                 </div>
                 <div className="small text-muted">
@@ -117,15 +115,13 @@ const VoucherForm = ({
                       ? 'Hidden voucher, shared via code'
                       : voucherType === 'live'
                         ? 'Exclusive to Livestream'
-                        : voucherType === 'video'
-                          ? 'Exclusive to Shopee Video'
-                          : voucherType === 'new_buyer'
-                            ? 'Exclusive to new customers'
-                            : voucherType === 'repeat_buyer'
-                              ? 'Reward for returning customers'
-                              : voucherType === 'follower'
-                                ? 'Reward for new followers'
-                                : 'Applicable to all products'}
+                        : voucherType === 'new_buyer'
+                          ? 'Exclusive to new customers'
+                          : voucherType === 'repeat_buyer'
+                            ? 'Reward for returning customers'
+                            : voucherType === 'follower'
+                              ? 'Reward for new followers'
+                              : 'Applicable to all products'}
                 </div>
               </div>
             </div>
@@ -213,15 +209,14 @@ const VoucherForm = ({
       {/* Section: Applicable Products */}
       {(voucherType === 'product' ||
         voucherType === 'private' ||
-        voucherType === 'live' ||
-        voucherType === 'video') && (
+        voucherType === 'live') && (
         <div className={styles.formSection}>
           <h5 className={styles.sectionTitle} style={{ marginBottom: '24px' }}>
             <i className="bi bi-box-seam me-2 text-primary"></i>
             Applicable Products
           </h5>
 
-          {(voucherType === 'private' || voucherType === 'live' || voucherType === 'video') && (
+          {(voucherType === 'private' || voucherType === 'live') && (
             <Form.Group as={Row} className="mb-4">
               <Form.Label column sm={3} className={styles.formLabel}>
                 Product Scope
@@ -415,7 +410,7 @@ const VoucherForm = ({
           <Col sm={9}>
             <div className="d-flex flex-column gap-3">
               <div
-                className={`p-3 border rounded ${formData.displaySetting === 'public' ? 'border-primary bg-primary-subtle' : ''} ${voucherType === 'private' || voucherType === 'live' || voucherType === 'video' ? 'opacity-50' : ''}`}
+                className={`p-3 border rounded ${formData.displaySetting === 'public' ? 'border-primary bg-primary-subtle' : ''} ${voucherType === 'private' || voucherType === 'live' ? 'opacity-50' : ''}`}
               >
                 <Form.Check
                   type="radio"
@@ -426,7 +421,7 @@ const VoucherForm = ({
                   checked={formData.displaySetting === 'public'}
                   onChange={handleChange}
                   disabled={
-                    voucherType === 'private' || voucherType === 'live' || voucherType === 'video'
+                    voucherType === 'private' || voucherType === 'live'
                   }
                 />
                 <div className="ms-4 small text-muted mt-1">
@@ -435,7 +430,7 @@ const VoucherForm = ({
               </div>
 
               <div
-                className={`p-3 border rounded ${formData.displaySetting === 'private' || formData.displaySetting === 'live' || formData.displaySetting === 'video' ? 'border-primary bg-primary-subtle' : ''}`}
+                className={`p-3 border rounded ${formData.displaySetting === 'private' || formData.displaySetting === 'live' ? 'border-primary bg-primary-subtle' : ''}`}
               >
                 <Form.Check
                   type="radio"
@@ -443,24 +438,21 @@ const VoucherForm = ({
                     <span className="fw-medium">
                       {voucherType === 'live'
                         ? 'Live Stream Only'
-                        : voucherType === 'video'
-                          ? 'Shopee Video Only'
-                          : 'Do not display'}
+                        : 'Do not display'}
                     </span>
                   }
                   name="displaySetting"
                   id="disp-private"
                   value={
-                    voucherType === 'live' ? 'live' : voucherType === 'video' ? 'video' : 'private'
+                    voucherType === 'live' ? 'live' : 'private'
                   }
                   checked={
                     formData.displaySetting === 'private' ||
-                    formData.displaySetting === 'live' ||
-                    formData.displaySetting === 'video'
+                    formData.displaySetting === 'live'
                   }
                   onChange={handleChange}
                   disabled={
-                    voucherType === 'private' || voucherType === 'live' || voucherType === 'video'
+                    voucherType === 'private' || voucherType === 'live'
                   }
                 />
                 <div className="ms-4 small text-muted mt-1">
@@ -468,9 +460,7 @@ const VoucherForm = ({
                     ? 'Private Vouchers are always hidden. Share custom code with specific buyers.'
                     : voucherType === 'live'
                       ? "Only displayed during Shop's Livestream on Shopee Live."
-                      : voucherType === 'video'
-                        ? "Only displayed on Shop's Video content."
-                        : 'Voucher will not be shown publicly. You can share format via code only.'}
+                      : 'Voucher will not be shown publicly. You can share format via code only.'}
                 </div>
               </div>
             </div>
