@@ -1,7 +1,7 @@
 import { DatePicker } from 'antd';
 import { BarChartOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 const statIcons = [
   <svg key="r" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e84949" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

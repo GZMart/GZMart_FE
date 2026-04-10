@@ -1,11 +1,8 @@
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
-const Step3 = ({ campaignInfo, selectedProducts, variantConfigs, selectedFlashSale, onBack, onSubmit, loading, onCancel }) => {
-  const isEditMode = !!selectedFlashSale;
-
-  return (
+const Step3 = ({ campaignInfo, selectedProducts, variantConfigs, isEditMode, onBack, onSubmit, loading, onCancel }) => (
     <div className={styles.step3Container}>
       <h3 className={styles.step1Title}>Review &amp; Confirm</h3>
       <p className={styles.step1Desc}>Review your campaign details before pushing live.</p>
@@ -129,7 +126,7 @@ return <span style={{ color: '#94a3b8' }}>N/A</span>;
             text: 'Discount range: 5% – 90%',
           },
           {
-            ok: !campaignInfo.startTime?.isBefore(dayjs()) || !!selectedFlashSale,
+            ok: !campaignInfo.startTime?.isBefore(dayjs()) || isEditMode,
             text: 'Start time is in the future',
           },
           {
@@ -198,6 +195,5 @@ return <span style={{ color: '#94a3b8' }}>N/A</span>;
       </div>
     </div>
   );
-};
 
 export default Step3;

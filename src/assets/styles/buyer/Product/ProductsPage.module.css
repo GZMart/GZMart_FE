@@ -592,7 +592,12 @@
 .skeletonImage {
   width: 100%;
   padding-top: 100%;
-  background: linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-border) 50%, var(--color-gray-100) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-border) 50%,
+    var(--color-gray-100) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -607,7 +612,12 @@
 .skeletonLine {
   height: 12px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-border) 50%, var(--color-gray-100) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-border) 50%,
+    var(--color-gray-100) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

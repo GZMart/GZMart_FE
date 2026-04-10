@@ -2,7 +2,7 @@ import { Drawer, Spin } from 'antd';
 import Step1 from './Step1';
 import Step2 from './Step2';
 import Step3 from './Step3';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 // Campaign type configuration for dynamic labels and icons
 const CAMPAIGN_TYPE_CONFIG = {
@@ -82,16 +82,16 @@ const CAMPAIGN_TYPE_CONFIG = {
 const DEFAULT_TYPE = 'flash_sale';
 
 /**
- * FlashSaleDrawer - Modal tạo/chỉnh sửa Campaign
+ * CampaignDrawer - Modal tạo/chỉnh sửa Campaign
  * @description Giao diện Drawer với 3 bước: Basic Info → Products Setup → Review
  * @design Dynamic UI based on campaign type
  */
-const FlashSaleDrawer = ({
+const CampaignDrawer = ({
   open,
   onClose,
   currentStep,
   setCurrentStep,
-  selectedFlashSale,
+  selectedCampaign,
   campaignInfo,
   setCampaignInfo,
   selectedProducts,
@@ -111,8 +111,8 @@ const FlashSaleDrawer = ({
   onSubmit,
   loading,
 }) => {
-  // Xác định chế độ chỉnh sửa dựa trên việc có selectedFlashSale hay không
-  const isEditMode = !!selectedFlashSale;
+  // Xác định chế độ chỉnh sửa dựa trên việc có selectedCampaign hay không
+  const isEditMode = !!selectedCampaign;
 
   // Get current type config for dynamic UI
   const currentType = campaignInfo?.type || DEFAULT_TYPE;
@@ -256,7 +256,7 @@ const FlashSaleDrawer = ({
         <Step1
           campaignInfo={campaignInfo}
           setCampaignInfo={setCampaignInfo}
-          selectedFlashSale={selectedFlashSale}
+          isEditMode={isEditMode}
           onNext={() => setCurrentStep(1)}
           onCancel={onClose}
         />
@@ -282,7 +282,7 @@ const FlashSaleDrawer = ({
             setProductSearchText={setProductSearchText}
             filteredProducts={filteredProducts}
             variantTableData={variantTableData}
-            selectedFlashSale={selectedFlashSale}
+            isEditMode={isEditMode}
             onBack={() => setCurrentStep(0)}
             onNext={() => setCurrentStep(2)}
             onAddProduct={onAddProduct}
@@ -302,7 +302,7 @@ const FlashSaleDrawer = ({
           campaignInfo={campaignInfo}
           selectedProducts={selectedProducts}
           variantConfigs={variantConfigs}
-          selectedFlashSale={selectedFlashSale}
+          isEditMode={isEditMode}
           onBack={() => setCurrentStep(1)}
           onSubmit={onSubmit}
           loading={loading}
@@ -313,4 +313,4 @@ const FlashSaleDrawer = ({
   );
 };
 
-export default FlashSaleDrawer;
+export default CampaignDrawer;

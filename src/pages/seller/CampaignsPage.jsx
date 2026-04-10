@@ -1,20 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Form, message, Spin } from 'antd';
 import dayjs from 'dayjs';
-import { flashsaleService } from '../../services/api/flashsaleService';
+import { campaignService } from '../../services/api/campaignService';
 import { productService } from '../../services/api';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 import {
-  FlashSalesHeader,
+  CampaignHeader,
   OverviewStats,
   Toolbar,
   CampaignTable,
   EmptyState,
-  FlashSaleDrawer,
-  FlashSaleDetailDrawer,
+  CampaignDrawer,
+  CampaignDetailDrawer,
   campaignColumns,
   variantColumns,
-} from '../../components/seller/FlashSaleComponents';
+} from '../../components/seller/CampaignComponents';
 
 /** Product models use `tierIndex` from API; support legacy `tier_index`. */
 const modelTierIndex = (model) => {
@@ -30,17 +30,18 @@ const modelTierIndex = (model) => {
   return [];
 };
 
-const FlashSalesPage = () => {
+const CampaignsPage = () => {
   // ── State ────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
-  const [flashSales, setFlashSales] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [dateRangeFilter, setDateRangeFilter] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-  const [selectedFlashSale, setSelectedFlashSale] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [selectedCampaignGroup, setSelectedCampaignGroup] = useState(null);
   const [form] = Form.useForm();
   const [statsLoading, setStatsLoading] = useState(false);
@@ -125,8 +126,8 @@ return products;
       total: list.reduce((s, fs) => s + (fs.totalQuantity || 0), 0),
     });
 
-    const current = calcMetrics(flashSales.filter((fs) => inRange(fs, from, to)));
-    const prev = calcMetrics(flashSales.filter((fs) => inRange(fs, prevFrom, prevTo)));
+    const current = calcMetrics(campaigns.filter((fs) => inRange(fs, from, to)));
+    const prev = calcMetrics(campaigns.filter((fs) => inRange(fs, prevFrom, prevTo)));
 
     const pctChange = (cur, pre) => {
       if (pre === 0) {
@@ -149,42 +150,45 @@ return cur > 0 ? 100 : 0;
       sellRate: avgSellRate,
       sellRatePct: pctChange(avgSellRate, prevSellRate),
     };
-  }, [flashSales, overviewRange]);
+  }, [campaigns, overviewRange]);
 
   // ── Data fetching ─────────────────────────────────────────────────────────
-  const fetchFlashSales = async (page = 1, limit = 10) => {
+  const fetchCampaigns = async (page = 1, limit = 10) => {
     try {
       setLoading(true);
-      const res = await flashsaleService.getAll({ page, limit });
+      const res = await campaignService.getAll({ page, limit });
 
-      let flashSalesData = [];
+      let campaignsData = [];
       let pageInfo = { page, limit, total: 0 };
 
       if (Array.isArray(res)) {
-        flashSalesData = res;
+        // Backend trả về array trực tiếp (legacy)
+        campaignsData = res;
+        pageInfo.total = res.length;
       } else if (res?.data) {
-        flashSalesData = Array.isArray(res.data) ? res.data : [];
+        // Backend trả về object với data đã được group
+        campaignsData = Array.isArray(res.data) ? res.data : [];
         pageInfo = {
-          page: res.page ?? res.pagination?.page ?? page,
-          limit: res.limit ?? res.pagination?.limit ?? limit,
-          total: res.total ?? res.pagination?.total ?? flashSalesData.length,
+          page: res.page ?? page,
+          limit: res.limit ?? limit,
+          total: res.total ?? 0,
         };
       }
 
-      setFlashSales(flashSalesData);
+      setCampaigns(campaignsData);
       setPagination(pageInfo);
     } catch (error) {
-      message.error(`Failed to fetch flash sales: ${error?.message || 'Unknown error'}`);
-      setFlashSales([]);
+      message.error(`Failed to fetch campaigns: ${error?.message || 'Unknown error'}`);
+      setCampaigns([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchStats = async (flashSaleId) => {
+  const fetchStats = async (campaignId) => {
     try {
       setStatsLoading(true);
-      const res = await flashsaleService.getStats(flashSaleId);
+      const res = await campaignService.getStats(campaignId);
       setStats(res.data ?? res);
     } catch (error) {
       message.error('Failed to load statistics');
@@ -237,7 +241,7 @@ return cur > 0 ? 100 : 0;
   };
 
   useEffect(() => {
-    fetchFlashSales();
+    fetchCampaigns();
   }, []);
   useEffect(() => {
     if (isModalVisible) {
@@ -249,9 +253,9 @@ fetchProducts();
   const handleDelete = async (id) => {
     try {
       setLoading(true);
-      await flashsaleService.delete(id);
+      await campaignService.delete(id);
       message.success('Flash sale deleted successfully');
-      fetchFlashSales(pagination.page);
+      fetchCampaigns(pagination.page);
     } catch (error) {
       message.error('Failed to delete flash sale');
     } finally {
@@ -262,9 +266,9 @@ fetchProducts();
   const handleDeleteCampaign = async (group) => {
     try {
       setLoading(true);
-      await Promise.all(group.records.map((r) => flashsaleService.delete(r._id)));
-      message.success(`Deleted campaign with ${group.records.length} variant(s)`);
-      fetchFlashSales(pagination.page);
+      await Promise.all(group.variants.map((r) => campaignService.delete(r._id)));
+      message.success(`Deleted campaign with ${group.variants.length} variant(s)`);
+      fetchCampaigns(pagination.page);
     } catch (error) {
       message.error('Failed to delete campaign');
     } finally {
@@ -276,7 +280,7 @@ fetchProducts();
     setIsDetailModalVisible(false);
     setCampaignInfo({
       title: group.campaignTitle || '',
-      type: group.type || group.records?.[0]?.type || 'flash_sale',
+      type: group.type || group.variants?.[0]?.type || 'flash_sale',
       timeSlot: null,
       startTime: dayjs(group.startAt),
       endTime: dayjs(group.endAt),
@@ -299,7 +303,7 @@ fetchProducts();
       const configs = {};
       const keys = [];
 
-      group.records.forEach((record) => {
+      group.variants.forEach((record) => {
         const variantModel = fullProduct.models.find((m) => m.sku === record.variantSku);
         if (variantModel) {
           const k = `${fullProduct._id}_${variantModel.sku}`;
@@ -316,7 +320,7 @@ fetchProducts();
             stock: variantModel.stock,
             purchaseLimit: record.purchaseLimit || 1,
             enabled: true,
-            _flashSaleId: record._id,
+            _campaignId: record._id,
           };
           keys.push(k);
         }
@@ -324,7 +328,7 @@ fetchProducts();
 
       setVariantConfigs(configs);
       setSelectedVariantKeys(keys);
-      setSelectedFlashSale({ isCampaign: true, records: group.records });
+      setSelectedCampaign({ isCampaign: true, variants: group.variants });
       setCurrentStep(0);
       setIsModalVisible(true);
     } catch (error) {
@@ -334,7 +338,7 @@ fetchProducts();
 
   const handleEdit = async (record) => {
     setIsDetailModalVisible(false);
-    setSelectedFlashSale(record);
+    setSelectedCampaign(record);
     setCampaignInfo({
       title: record.campaignTitle || `Flash Sale - ${record.productId?.name || 'Product'}`,
       type: record.type || 'flash_sale',
@@ -366,7 +370,7 @@ fetchProducts();
 
       if (variantModel) {
         const key = `${fullProduct._id}_${variantModel.sku}`;
-        setSelectedFlashSale({ ...record, variantSku: variantModel.sku });
+        setSelectedCampaign({ ...record, variantSku: variantModel.sku });
         setVariantConfigs({
           [key]: {
             productId: fullProduct._id,
@@ -381,7 +385,7 @@ fetchProducts();
             stock: variantModel.stock,
             purchaseLimit: record.purchaseLimit || 1,
             enabled: true,
-            _flashSaleId: record._id,
+            _campaignId: record._id,
           },
         });
         setSelectedVariantKeys([key]);
@@ -396,23 +400,79 @@ fetchProducts();
   };
 
   const handleViewDetail = (record) => {
-    setSelectedFlashSale(record);
+    setSelectedCampaign(record);
     setSelectedCampaignGroup(null);
     setIsModalVisible(false);
     setIsDetailModalVisible(true);
     fetchStats(record._id);
   };
 
+  // Lấy campaign ID từ group hoặc record đơn lẻ
+  const resolveCampaignId = (group, record) => {
+    if (group?._id) {
+return { id: group._id, status: group.status };
+}
+    if (record?._id) {
+return { id: record._id, status: record.status };
+}
+    return null;
+  };
+
+  const handlePause = async (group, record) => {
+    const resolved = resolveCampaignId(group, record);
+    if (!resolved) {
+return;
+}
+    try {
+      await campaignService.pause(resolved.id);
+      message.success('Campaign paused successfully');
+      setIsDetailModalVisible(false);
+      fetchCampaigns(pagination.page);
+    } catch (error) {
+      message.error(error?.message || 'Failed to pause campaign');
+    }
+  };
+
+  const handleStop = async (group, record) => {
+    const resolved = resolveCampaignId(group, record);
+    if (!resolved) {
+return;
+}
+    try {
+      await campaignService.stop(resolved.id);
+      message.success('Campaign stopped successfully');
+      setIsDetailModalVisible(false);
+      fetchCampaigns(pagination.page);
+    } catch (error) {
+      message.error(error?.message || 'Failed to stop campaign');
+    }
+  };
+
+  const handleResume = async (group, record) => {
+    const resolved = resolveCampaignId(group, record);
+    if (!resolved) {
+return;
+}
+    try {
+      await campaignService.resume(resolved.id);
+      message.success('Campaign resumed successfully');
+      setIsDetailModalVisible(false);
+      fetchCampaigns(pagination.page);
+    } catch (error) {
+      message.error(error?.message || 'Failed to resume campaign');
+    }
+  };
+
   const handleViewCampaign = (group) => {
     setSelectedCampaignGroup(group);
-    setSelectedFlashSale(group.records[0]);
+    setSelectedCampaign((group.variants || group.records)?.[0]);
     setIsModalVisible(false);
     setIsDetailModalVisible(true);
     setStats(null);
   };
 
   const handleOpenCreateModal = () => {
-    setSelectedFlashSale(null);
+    setSelectedCampaign(null);
     setCurrentStep(0);
     setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
     setSelectedProducts([]);
@@ -424,7 +484,7 @@ fetchProducts();
   const handleCloseModal = () => {
     setIsModalVisible(false);
     form.resetFields();
-    setSelectedFlashSale(null);
+    setSelectedCampaign(null);
     setCurrentStep(0);
     setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
     setSelectedProducts([]);
@@ -505,13 +565,13 @@ return;
       setSelectedVariantKeys((prev) => prev.filter((k) => k !== variantKey));
     };
 
-    if (config._flashSaleId) {
+    if (config._campaignId) {
       try {
         setLoading(true);
-        await flashsaleService.delete(config._flashSaleId);
+        await campaignService.delete(config._campaignId);
         message.success('Variant removed from flash sale');
         applyLocalRemove();
-        fetchFlashSales(pagination.page);
+        fetchCampaigns(pagination.page);
       } catch (error) {
         message.error('Failed to remove variant');
       } finally {
@@ -582,7 +642,7 @@ return prev;
         setLoading(false);
         return;
       }
-      if (!selectedFlashSale && campaignInfo.startTime.isBefore(dayjs().subtract(1, 'minute'))) {
+      if (!selectedCampaign && campaignInfo.startTime.isBefore(dayjs().subtract(1, 'minute'))) {
         message.error('Start time cannot be in the past');
         setLoading(false);
         return;
@@ -595,7 +655,7 @@ return prev;
 
       const enabledVariants = Object.entries(variantConfigs)
         .filter(([key]) => {
-          if (selectedFlashSale) {
+          if (selectedCampaign) {
             return true;
           }
           if (selectedVariantKeys.length > 0) {
@@ -612,13 +672,13 @@ return prev;
       }
 
       // EDIT CAMPAIGN MODE
-      if (selectedFlashSale?.isCampaign) {
+      if (selectedCampaign?.isCampaign) {
         await Promise.all(
           enabledVariants.map((variant) => {
-            if (!variant._flashSaleId) {
+            if (!variant._campaignId) {
 return Promise.resolve();
 }
-            return flashsaleService.update(variant._flashSaleId, {
+            return campaignService.update(variant._campaignId, {
               salePrice: variant.salePrice,
               totalQuantity: variant.quantity,
               purchaseLimit: variant.purchaseLimit,
@@ -630,12 +690,12 @@ return Promise.resolve();
         );
         message.success(`Campaign updated (${enabledVariants.length} variant(s))`);
         handleCloseModal();
-        fetchFlashSales(pagination.page);
+        fetchCampaigns(pagination.page);
         return;
       }
 
       // EDIT SINGLE MODE
-      if (selectedFlashSale) {
+      if (selectedCampaign) {
         if (enabledVariants.length !== 1) {
           message.warning('Edit mode only supports 1 variant.');
           setLoading(false);
@@ -643,15 +703,15 @@ return Promise.resolve();
         }
         const variant = enabledVariants[0];
         const isSameVariant =
-          variant.variantSku === selectedFlashSale.variantSku ||
-          (!variant.variantSku && !selectedFlashSale.variantSku);
+          variant.variantSku === selectedCampaign.variantSku ||
+          (!variant.variantSku && !selectedCampaign.variantSku);
         if (!isSameVariant) {
           message.warning('Cannot change variant in edit mode.');
           setLoading(false);
           return;
         }
 
-        await flashsaleService.update(selectedFlashSale._id, {
+        await campaignService.update(selectedCampaign._id, {
           salePrice: variant.salePrice,
           totalQuantity: variant.quantity,
           purchaseLimit: variant.purchaseLimit,
@@ -661,7 +721,7 @@ return Promise.resolve();
         });
         message.success('Flash sale updated successfully');
         handleCloseModal();
-        fetchFlashSales(pagination.page);
+        fetchCampaigns(pagination.page);
         return;
       }
 
@@ -677,7 +737,7 @@ acc[pid] = [];
 
       await Promise.all(
         Object.entries(variantsByProduct).map(([productId, variants]) =>
-          flashsaleService.createBatch({
+          campaignService.createBatch({
             productId,
             campaignTitle: campaignInfo.title,
             type: campaignInfo.type || 'flash_sale', // Pass campaign type
@@ -703,11 +763,11 @@ item.tierIndex = v.tierIndex;
         `Created ${Object.keys(variantsByProduct).length} campaign(s) with ${enabledVariants.length} variant(s) successfully`
       );
       handleCloseModal();
-      fetchFlashSales(pagination.page);
+      fetchCampaigns(pagination.page);
     } catch (error) {
       const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
       message.error(
-        selectedFlashSale
+        selectedCampaign
           ? `Failed to update flash sale: ${errorMsg}`
           : `Failed to create flash sale campaign: ${errorMsg}`
       );
@@ -717,14 +777,14 @@ item.tierIndex = v.tierIndex;
   };
 
   // ── Filtered & grouped data ───────────────────────────────────────────────
-  const filteredFlashSales = useMemo(
+  // Backend trả về campaigns đã được group sẵn
+  const filteredCampaigns = useMemo(
     () =>
-      flashSales.filter((item) => {
+      campaigns.filter((item) => {
         const searchLower = searchText.toLowerCase();
         const matchesSearch =
           !searchLower ||
           item.productId?.name?.toLowerCase().includes(searchLower) ||
-          item.variantSku?.toLowerCase().includes(searchLower) ||
           item.campaignTitle?.toLowerCase().includes(searchLower);
 
         const matchesStatus =
@@ -744,69 +804,27 @@ item.tierIndex = v.tierIndex;
           matchesDate = itemStart.isBefore(filterEnd) && itemEnd.isAfter(filterStart);
         }
 
-        return matchesSearch && matchesStatus && matchesDate;
+        // Filter by campaign type
+        const matchesType = typeFilter === 'all' || item.type === typeFilter;
+
+        return matchesSearch && matchesStatus && matchesDate && matchesType;
       }),
-    [flashSales, searchText, statusFilter, dateRangeFilter]
+    [campaigns, searchText, statusFilter, typeFilter, dateRangeFilter]
   );
 
-  const groupedFlashSales = useMemo(() => {
-    const groups = {};
-    filteredFlashSales.forEach((record) => {
-      const pid = typeof record.productId === 'object' ? record.productId?._id : record.productId;
-      const key = `${pid}_${record.campaignTitle || ''}_${record.startAt}_${record.endAt}`;
-      if (!groups[key]) {
-        groups[key] = {
-          key,
-          productId: record.productId,
-          campaignTitle: record.campaignTitle,
-          type: record.type || 'flash_sale', // Include type from record
-          startAt: record.startAt,
-          endAt: record.endAt,
-          records: [],
-        };
-      }
-      groups[key].records.push(record);
-    });
-
-    return Object.values(groups).map((g) => {
-      const totalQty = g.records.reduce((s, r) => s + (r.totalQuantity || 0), 0);
-      const totalSold = g.records.reduce((s, r) => s + (r.soldQuantity || 0), 0);
-      const priceMin = Math.min(...g.records.map((r) => r.salePrice || 0));
-      const priceMax = Math.max(...g.records.map((r) => r.salePrice || 0));
-      const statusOrder = {
-        active: 3,
-        pending: 2,
-        upcoming: 2,
-        expired: 1,
-        ended: 1,
-        cancelled: 0,
-      };
-      const topStatus = g.records.reduce(
-        (best, r) => ((statusOrder[r.status] || 0) > (statusOrder[best] || 0) ? r.status : best),
-        g.records[0]?.status
-      );
-      return {
-        ...g,
-        totalQuantity: totalQty,
-        soldQuantity: totalSold,
-        salePrice: priceMin,
-        salePriceMax: priceMax,
-        status: topStatus,
-        skuCount: g.records.length,
-      };
-    });
-  }, [filteredFlashSales]);
+  // Backend trả về dữ liệu đã group, dùng trực tiếp
+  const groupedCampaigns = filteredCampaigns;
 
   // ── Table handlers ───────────────────────────────────────────────────────
   const handleTableChange = (newPagination) =>
-    fetchFlashSales(newPagination.current, newPagination.pageSize);
-  const hasActiveFilters = searchText || statusFilter !== 'all' || dateRangeFilter;
+    fetchCampaigns(newPagination.current, newPagination.pageSize);
+  const hasActiveFilters = searchText || statusFilter !== 'all' || typeFilter !== 'all' || dateRangeFilter;
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className={styles.container}>
-      <FlashSalesHeader
-        groupedFlashSales={groupedFlashSales}
+      <CampaignHeader
+        groupedCampaigns={groupedCampaigns}
         onCreateClick={handleOpenCreateModal}
       />
 
@@ -821,15 +839,17 @@ item.tierIndex = v.tierIndex;
         setSearchText={setSearchText}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
         dateRangeFilter={dateRangeFilter}
         setDateRangeFilter={setDateRangeFilter}
-        flashSales={flashSales}
+        campaigns={campaigns}
       />
 
       <Spin spinning={loading}>
-        {filteredFlashSales.length > 0 || loading ? (
+        {filteredCampaigns.length > 0 || loading ? (
           <CampaignTable
-            groupedFlashSales={groupedFlashSales}
+            groupedCampaigns={groupedCampaigns}
             pagination={pagination}
             loading={loading}
             campaignColumns={campaignColumns(
@@ -847,12 +867,12 @@ item.tierIndex = v.tierIndex;
         )}
       </Spin>
 
-      <FlashSaleDrawer
+      <CampaignDrawer
         open={isModalVisible}
         onClose={handleCloseModal}
         currentStep={currentStep}
         setCurrentStep={setCurrentStep}
-        selectedFlashSale={selectedFlashSale}
+        selectedCampaign={selectedCampaign}
         campaignInfo={campaignInfo}
         setCampaignInfo={setCampaignInfo}
         selectedProducts={selectedProducts}
@@ -873,13 +893,13 @@ item.tierIndex = v.tierIndex;
         loading={loading}
       />
 
-      <FlashSaleDetailDrawer
+      <CampaignDetailDrawer
         open={isDetailModalVisible}
         onClose={() => {
           setIsDetailModalVisible(false);
           setSelectedCampaignGroup(null);
         }}
-        selectedFlashSale={selectedFlashSale}
+        selectedCampaign={selectedCampaign}
         selectedCampaignGroup={selectedCampaignGroup}
         stats={stats}
         statsLoading={statsLoading}
@@ -887,9 +907,12 @@ item.tierIndex = v.tierIndex;
         onDeleteCampaign={handleDeleteCampaign}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onPause={handlePause}
+        onStop={handleStop}
+        onResume={handleResume}
       />
     </div>
   );
 };
 
-export default FlashSalesPage;
+export default CampaignsPage;

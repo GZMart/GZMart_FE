@@ -2,7 +2,7 @@ import { Form, Input, DatePicker, Button, Tooltip } from 'antd';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import CollapsibleHelpBox from './CollapsibleHelpBox';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 // Deal type configuration with icons and labels
 const DEAL_TYPES = [
@@ -74,8 +74,7 @@ return null;
   return endTime.diff(startTime, 'hour', true);
 };
 
-const Step1 = ({ campaignInfo, setCampaignInfo, selectedFlashSale, onNext, onCancel }) => {
-  const isEditMode = !!selectedFlashSale;
+const Step1 = ({ campaignInfo, setCampaignInfo, isEditMode, onNext, onCancel }) => {
   const currentType = campaignInfo.type || 'flash_sale';
   const selectedTypeConfig = DEAL_TYPES.find(t => t.value === currentType) || DEAL_TYPES[0];
 

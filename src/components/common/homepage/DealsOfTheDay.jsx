@@ -2,12 +2,25 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { dealService, flashsaleService } from '../../../services/api';
+import { dealService, campaignService } from '../../../services/api';
 import { PUBLIC_ROUTES } from '../../../constants/routes';
 
 // Helper function to format price
 const formatPrice = (price) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+
+// Helper to map deal type to human-readable label
+const TYPE_LABELS = {
+  flash_sale: 'Flash Sale',
+  daily_deal: 'Daily Deal',
+  weekly_deal: 'Weekly Deal',
+  limited_time: 'Limited Time',
+  clearance: 'Clearance',
+  special: 'Special Deal',
+};
+
+// Map deal type key to Vietnamese label
+const getDealTypeLabel = (type) => TYPE_LABELS[type] || type || 'Deal';
 
 // Helper to calculate time remaining
 const getTimeRemaining = (endDate) => {
@@ -56,6 +69,7 @@ const dealsProductShape = PropTypes.shape({
   image: PropTypes.string,
   name: PropTypes.string,
   dealEndsIn: PropTypes.string,
+  dealType: PropTypes.string,
   price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 });
 
@@ -115,7 +129,7 @@ const ProductCard = ({ product }) => (
         <div className="mb-2">
           <div className="d-flex justify-content-between align-items-center mb-1">
             <small className="fw-medium" style={{ color: 'var(--color-primary)' }}>
-              Flash Deal Ends in {product.dealEndsIn} !
+              {getDealTypeLabel(product.dealType)} Ends in {product.dealEndsIn} !
             </small>
           </div>
 
@@ -127,7 +141,7 @@ const ProductCard = ({ product }) => (
               className="progress-bar"
               role="progressbar"
               style={{
-                width: product.dealEndsIn.includes('1 Hour') ? '85%' : '40%',
+                width: product.dealType === 'flash_sale' ? '85%' : '40%',
                 backgroundColor: 'var(--color-primary)',
               }}
               aria-valuenow="50"
@@ -182,8 +196,8 @@ const DealsOfTheDay = () => {
         setLoading(true);
 
         const [flashSaleRes, dealsRes] = await Promise.allSettled([
-          flashsaleService.getActive(),
-          dealService.getActiveDeals({ limit: 20 }),
+          campaignService.getActive(),
+          dealService.getActiveDeals({ limit: 12 }), // Chỉ cần 12 deals cho carousel
         ]);
 
         // ── Parse flash sales ────────────────────────────────────
@@ -205,11 +219,17 @@ const DealsOfTheDay = () => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const todayFlashSales = flashSalesData.filter((fs) => {
-          const startDate = new Date(fs.startAt);
-          const endDate = new Date(fs.endAt);
-          return startDate < tomorrow && endDate > today;
-        });
+        const todayFlashSales = flashSalesData
+          .filter((fs) => {
+            // Lọc bỏ các flash sale không có productId hợp lệ
+            const pid = typeof fs.productId === 'object' ? fs.productId?._id : fs.productId;
+            return pid && String(pid).trim().length > 0;
+          })
+          .filter((fs) => {
+            const startDate = new Date(fs.startAt);
+            const endDate = new Date(fs.endAt);
+            return startDate < tomorrow && endDate > today;
+          });
 
         const transformedFlashSales = todayFlashSales.map((flashSale) => {
           const product = flashSale.productId;
@@ -233,6 +253,7 @@ const DealsOfTheDay = () => {
             dealEndsIn: getTimeRemaining(flashSale.endAt),
             endDate: flashSale.endAt,
             isNew: product?.isNew || false,
+            dealType: 'flash_sale',
           };
         });
 
@@ -243,17 +264,17 @@ const DealsOfTheDay = () => {
           if (Array.isArray(response)) {
             dealsData = response;
           } else if (response?.data) {
-            dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+            // API /api/deals trả về { data: [...] } → lấy response.data trực tiếp
+            dealsData = Array.isArray(response.data) ? response.data : [];
           }
         }
 
-        const flashSaleProductIds = new Set(transformedFlashSales.map((p) => String(p.productId)));
-
         const transformedDeals = dealsData
-          .filter((deal) => deal && deal.productId && deal.type !== 'flash_sale')
           .filter((deal) => {
-            const pid = typeof deal.productId === 'object' ? deal.productId._id : deal.productId;
-            return !flashSaleProductIds.has(String(pid));
+            // Chỉ lấy deals không phải flash_sale, không deduplicate theo productId
+            // vì cùng 1 product có thể có nhiều deal types khác nhau
+            const pid = typeof deal.productId === 'object' ? deal.productId?._id : deal.productId;
+            return deal && pid && String(pid).trim().length > 0 && deal.type !== 'flash_sale';
           })
           .map((deal) => {
             const product = deal.productId;
@@ -263,22 +284,50 @@ const DealsOfTheDay = () => {
               id: deal._id,
               productId: pid,
               name: product?.name || 'Product',
-              image: (product?.models?.find(m => m.isActive) || product?.models?.[0])?.image || product?.images?.[0] || '',
+              image:
+                (product?.models?.find((m) => m.isActive) || product?.models?.[0])?.image ||
+                product?.images?.[0] ||
+                '',
               price: formatPrice(salePrice),
               originalPrice: product?.originalPrice || product?.price,
               discount: deal.discountPercent || 0,
               dealEndsIn: getTimeRemaining(deal.endDate),
               endDate: deal.endDate,
               isNew: product?.isNew || false,
+              dealType: deal.type || 'limited_time',
             };
           });
 
+        // ── Smart sort & limit: 20 deals tối đa ─────────────────────────
+        // Ưu tiên discount cao, đảm bảo variety giữa các deal types
         const allDeals = [...transformedFlashSales, ...transformedDeals];
-        setDeals(allDeals);
 
-        // Find nearest end date for countdown
-        if (allDeals.length > 0) {
-          const sortedByEndDate = [...allDeals].sort(
+        const DEAL_TYPE_PRIORITY = {
+          flash_sale: 1,
+          daily_deal: 2,
+          weekly_deal: 3,
+          limited_time: 4,
+          clearance: 5,
+          special: 6,
+        };
+
+        const sortedDeals = [...allDeals].sort((a, b) => {
+          // Ưu tiên discount cao nhất
+          const discountDiff = (b.discount || 0) - (a.discount || 0);
+          if (discountDiff !== 0) {
+return discountDiff;
+}
+          // Sau đó ưu tiên deal type
+          return (DEAL_TYPE_PRIORITY[a.dealType] || 99) - (DEAL_TYPE_PRIORITY[b.dealType] || 99);
+        });
+
+        // Giới hạn 12 deals cho carousel homepage
+        const topDeals = sortedDeals.slice(0, 20);
+        setDeals(topDeals);
+
+        // Find nearest end date for countdown từ topDeals
+        if (topDeals.length > 0) {
+          const sortedByEndDate = [...topDeals].sort(
             (a, b) => new Date(a.endDate) - new Date(b.endDate)
           );
           setNearestEndDate(sortedByEndDate[0].endDate);
@@ -318,16 +367,13 @@ const DealsOfTheDay = () => {
     const handleResize = () => {
       if (window.innerWidth < 576) {
         setItemsPerSlide(1);
-      } // Mobile
-      else if (window.innerWidth < 768) {
+      } else if (window.innerWidth < 768) {
         setItemsPerSlide(2);
-      } // Tablet
-      else if (window.innerWidth < 992) {
+      } else if (window.innerWidth < 992) {
         setItemsPerSlide(3);
-      } // Small Laptop
-      else {
+      } else {
         setItemsPerSlide(4);
-      } // Desktop
+      }
     };
 
     handleResize(); // Initial check

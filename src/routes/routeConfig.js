@@ -58,7 +58,7 @@ const ReturnsPage = lazy(() => import('@pages/seller/ReturnsPage'));
 const SellerOrdersPage = lazy(() => import('@/pages/seller/Order/OrdersPage'));
 const OrderDetailsPage = lazy(() => import('@pages/seller/OrderDetailsPage'));
 const SellerDisputesPage = lazy(() => import('@pages/seller/DisputesPage'));
-const FlashSalesPage = lazy(() => import('@pages/seller/FlashSalesPage'));
+const CampaignsPage = lazy(() => import('@pages/seller/CampaignsPage'));
 const VoucherDashboard = lazy(() => import('@pages/seller/vouchers/VoucherDashboard'));
 const VoucherCreatePage = lazy(() => import('@pages/seller/vouchers/VoucherCreatePage'));
 const ShopPromotionsPage = lazy(() => import('@pages/seller/promotions/ShopPromotionsPage'));
@@ -70,6 +70,7 @@ const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage'));
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
+const SellerFinancePage = lazy(() => import('@pages/seller/SellerFinancePage'));
 
 // Buyer - Seller Application
 const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
@@ -480,19 +481,11 @@ export const routeConfig = [
     layout: 'erp',
   },
   {
-    path: '/seller/flash-sales',
-    element: FlashSalesPage,
-    protected: true,
-    allowedRoles: [USER_ROLES.SELLER],
-    layout: 'erp',
-  },
-  {
     path: '/seller/campaigns',
-    element: FlashSalesPage,
+    element: CampaignsPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
-    alias: '/seller/flash-sales',
   },
   {
     path: '/seller/vouchers',
@@ -595,6 +588,13 @@ export const routeConfig = [
   {
     path: '/seller/notifications',
     element: ShopNotificationsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/finance',
+    element: SellerFinancePage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

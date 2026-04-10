@@ -6,7 +6,7 @@ import ProductListItem from '@components/common/ProductListItem';
 import LoadingSpinner from '@components/common/LoadingSpinner';
 import Pagination from '@components/common/Pagination';
 import styles from '@assets/styles/buyer/Product/ProductsPage.module.css';
-import { dealService, flashsaleService } from '../../services/api';
+import { dealService, campaignService } from '../../services/api';
 
 const dealTypes = [
   { id: 'flash_sale', name: 'Flash Sale', icon: 'lightning-fill' },
@@ -36,10 +36,13 @@ function getEffectiveDiscountPercent(product) {
   return Number(product?.discount) || 0;
 }
 
+// Tạo key duy nhất cho deal bằng cách kết hợp id, dealId, dealType và endDate
+// dealType giúp phân biệt các deal types khác nhau cho cùng 1 product
 function getDealSortKey(product) {
   const dealId = product.flashSaleId || product.dealId || '';
+  const dealType = product.dealType || '';
   const end = product.dealEndDate || '';
-  return `${product.id}_${dealId}_${end}`;
+  return `${product.id}_${dealId}_${dealType}_${end}`;
 }
 
 const FlashDealsPage = () => {
@@ -69,7 +72,7 @@ const FlashDealsPage = () => {
         setLoading(true);
 
         const [flashSaleRes, dealsRes] = await Promise.allSettled([
-          flashsaleService.getActive(),
+          campaignService.getActive(),
           dealService.getActiveDeals({ limit: 100 }),
         ]);
 
@@ -79,9 +82,8 @@ const FlashDealsPage = () => {
           if (Array.isArray(response)) {
             flashSalesData = response;
           } else if (response?.data) {
-            flashSalesData = Array.isArray(response.data)
-              ? response.data
-              : response.data?.data || [];
+            // API /api/campaigns/active trả về { data: [...] }
+            flashSalesData = Array.isArray(response.data) ? response.data : [];
           }
         }
 
@@ -166,17 +168,15 @@ const FlashDealsPage = () => {
           if (Array.isArray(response)) {
             dealsData = response;
           } else if (response?.data) {
-            dealsData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+            // API /api/deals trả về { data: [...] } → lấy response.data trực tiếp
+            dealsData = Array.isArray(response.data) ? response.data : [];
           }
         }
 
-        const flashSaleProductIds = new Set(productsFromFlashSales.map((p) => p.id));
+        // Lấy deals từ deal service (type != flash_sale)
+        // Không deduplicate theo productId vì cùng 1 product có thể có nhiều deal types
         const productsFromDeals = dealsData
           .filter((deal) => deal && deal.productId && deal.type !== 'flash_sale')
-          .filter((deal) => {
-            const pid = typeof deal.productId === 'object' ? deal.productId._id : deal.productId;
-            return !flashSaleProductIds.has(pid);
-          })
           .map((deal) => {
             const product = deal.productId;
             const pid = typeof product === 'object' ? product._id : product;
@@ -185,7 +185,7 @@ const FlashDealsPage = () => {
               name: product.name,
               description: product.description,
               image:
-                (product.models?.find(m => m.isActive) || product.models?.[0])?.image ||
+                (product.models?.find((m) => m.isActive) || product.models?.[0])?.image ||
                 product.images?.[0] ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               images: product.images || [],
@@ -216,6 +216,7 @@ const FlashDealsPage = () => {
             };
           });
 
+        // Merge tất cả deals từ cả 2 services
         setProducts([...productsFromFlashSales, ...productsFromDeals]);
       } catch (error) {
         console.error('Error fetching deals:', error);
@@ -275,8 +276,8 @@ const FlashDealsPage = () => {
     const sorted = [...filteredProducts];
     const tieBreak = (a, b, primary) => {
       if (primary !== 0) {
-return primary;
-}
+        return primary;
+      }
       return getDealSortKey(a).localeCompare(getDealSortKey(b));
     };
     switch (sortBy) {

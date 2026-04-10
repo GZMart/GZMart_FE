@@ -324,6 +324,46 @@
   flex-wrap: wrap;
 }
 
+/* Campaign type filter tabs — secondary row below status tabs */
+.typeTabsGroup {
+  display: flex;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 2px;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.typeTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fs-text-secondary);
+  cursor: pointer;
+  transition: all var(--fs-transition-fast);
+  white-space: nowrap;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.typeTab:hover:not(.typeTabActive) {
+  background: rgba(26, 86, 219, 0.07);
+  color: var(--fs-primary);
+}
+
+.typeTabActive {
+  background: #fff !important;
+  color: var(--fs-primary) !important;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
 .tab {
   display: inline-flex;
   align-items: center;
@@ -728,6 +768,20 @@
   padding: 4px 12px;
   border-radius: var(--fs-radius-full);
   border: 1px solid #fecaca;
+  white-space: nowrap;
+}
+
+.statusPaused {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fffbeb;
+  color: #d97706;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--fs-radius-full);
+  border: 1px solid #fde68a;
   white-space: nowrap;
 }
 
@@ -1167,6 +1221,16 @@
     overflow-x: auto;
     flex-wrap: nowrap;
     padding-bottom: 4px;
+  }
+
+  .typeTabsGroup {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .typeTab {
+    flex-shrink: 0;
   }
 
   .tab {
@@ -2837,6 +2901,48 @@
 
 .detailStopBtn:hover::before {
   left: 100%;
+}
+
+/* ─── Resume Button ──────────────────────────────────────────────── */
+.detailResumeBtn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px !important;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  border: none !important;
+  border-radius: var(--fs-radius-md) !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.detailResumeBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.detailResumeBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45) !important;
+}
+
+.detailResumeBtn:hover::before {
+  left: 100%;
+}
+
+.detailResumeBtn .material-symbols-outlined {
+  font-size: 18px !important;
 }
 
 /* ─── Hero Card ─────────────────────────────────────────────────── */

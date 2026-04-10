@@ -1,6 +1,6 @@
 import { Input, DatePicker } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 const STATUS_TABS_FS = [
   { label: 'All', value: 'all' },
@@ -10,8 +10,20 @@ const STATUS_TABS_FS = [
   { label: 'Cancelled', value: 'cancelled' },
 ];
 
-const Toolbar = ({ searchText, setSearchText, statusFilter, setStatusFilter, dateRangeFilter, setDateRangeFilter, flashSales }) => {
-  const hasActiveFilters = searchText || statusFilter !== 'all' || dateRangeFilter;
+// Campaign type filter tabs - display order matches deal creation flow
+const CAMPAIGN_TYPE_TABS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: '⚡ Flash Sale', value: 'flash_sale' },
+  { label: '📅 Deal Trong Ngày', value: 'daily_deal' },
+  { label: '📆 Deal Tuần', value: 'weekly_deal' },
+  { label: '⏳ Giới Hạn Thời Gian', value: 'limited_time' },
+  { label: '🏷️ Clearance', value: 'clearance' },
+  { label: '🎯 Special', value: 'special' },
+];
+
+const Toolbar = ({ searchText, setSearchText, statusFilter, setStatusFilter, typeFilter, setTypeFilter, dateRangeFilter, setDateRangeFilter, campaigns }) => {
+  // Type filter is active when not "all"
+  const hasActiveFilters = searchText || statusFilter !== 'all' || typeFilter !== 'all' || dateRangeFilter;
 
   return (
     <div className={styles.toolbar}>
@@ -19,13 +31,33 @@ const Toolbar = ({ searchText, setSearchText, statusFilter, setStatusFilter, dat
       <div className={styles.tabsGroup}>
         {STATUS_TABS_FS.map((tab) => {
           const count = tab.value === 'all'
-            ? flashSales.length
-            : flashSales.filter((s) => s.status === tab.value || (tab.value === 'pending' && s.status === 'upcoming')).length;
+            ? campaigns.length
+            : campaigns.filter((s) => s.status === tab.value || (tab.value === 'pending' && s.status === 'upcoming')).length;
           return (
             <button
               key={tab.value}
               className={`${styles.tab} ${statusFilter === tab.value ? styles.tabActive : ''}`}
               onClick={() => setStatusFilter(tab.value)}
+            >
+              {tab.label}
+              <span className={styles.tabCount}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Campaign type filter tabs */}
+      <div className={styles.typeTabsGroup}>
+        {CAMPAIGN_TYPE_TABS.map((tab) => {
+          const count = tab.value === 'all'
+            ? campaigns.length
+            : campaigns.filter((s) => s.type === tab.value).length;
+          return (
+            <button
+              key={tab.value}
+              className={`${styles.typeTab} ${typeFilter === tab.value ? styles.typeTabActive : ''}`}
+              onClick={() => setTypeFilter(tab.value)}
+              title={tab.label}
             >
               {tab.label}
               <span className={styles.tabCount}>{count}</span>
@@ -58,6 +90,7 @@ const Toolbar = ({ searchText, setSearchText, statusFilter, setStatusFilter, dat
             onClick={() => {
               setSearchText('');
               setStatusFilter('all');
+              setTypeFilter('all');
               setDateRangeFilter(null);
             }}
             className={styles.clearBtn}
@@ -74,4 +107,4 @@ const Toolbar = ({ searchText, setSearchText, statusFilter, setStatusFilter, dat
   );
 };
 
-export { Toolbar, STATUS_TABS_FS };
+export { Toolbar, STATUS_TABS_FS, CAMPAIGN_TYPE_TABS };

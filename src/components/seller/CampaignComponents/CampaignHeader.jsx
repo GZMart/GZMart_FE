@@ -1,13 +1,13 @@
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
-const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => {
+const CampaignHeader = ({ groupedCampaigns, onCreateClick }) => {
   // Count campaigns by type
-  const flashSaleCount = groupedFlashSales.filter(g => g.type === 'flash_sale').length;
-  const dailyDealCount = groupedFlashSales.filter(g => g.type === 'daily_deal').length;
-  const weeklyDealCount = groupedFlashSales.filter(g => g.type === 'weekly_deal').length;
-  const otherCount = groupedFlashSales.length - flashSaleCount - dailyDealCount - weeklyDealCount;
+  const flashSaleCount = groupedCampaigns.filter(g => g.type === 'flash_sale').length;
+  const dailyDealCount = groupedCampaigns.filter(g => g.type === 'daily_deal').length;
+  const weeklyDealCount = groupedCampaigns.filter(g => g.type === 'weekly_deal').length;
+  const otherCount = groupedCampaigns.length - flashSaleCount - dailyDealCount - weeklyDealCount;
 
-  const activeCount = groupedFlashSales.filter(g => g.status === 'active').length;
+  const activeCount = groupedCampaigns.filter(g => g.status === 'active').length;
 
   return (
     <div className={styles.header}>
@@ -31,7 +31,7 @@ const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => {
         </div>
         <div className={styles.titleDesc}>
           <span className={styles.activeDot} />
-          {groupedFlashSales.length > 0
+          {groupedCampaigns.length > 0
             ? `${activeCount > 0 ? `${activeCount} active · ` : ''}${flashSaleCount > 0 ? `⚡${flashSaleCount} ` : ''}${dailyDealCount > 0 ? `📅${dailyDealCount} ` : ''}${weeklyDealCount > 0 ? `📆${weeklyDealCount} ` : ''}${otherCount > 0 ? `+${otherCount}` : ''}campaigns`
             : 'Create and manage your promotional campaigns'}
         </div>
@@ -47,4 +47,4 @@ const FlashSalesHeader = ({ groupedFlashSales, onCreateClick }) => {
   );
 };
 
-export default FlashSalesHeader;
+export default CampaignHeader;

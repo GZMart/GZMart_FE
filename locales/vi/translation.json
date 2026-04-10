@@ -1059,5 +1059,152 @@
         "enterRejectReason": "Vui lòng nhập lý do từ chối"
       }
     }
+  },
+  "sellerFinance": {
+    "pageTitle": "Quản lý Tài chính / Nạp - Rút tiền",
+    "breadcrumb": {
+      "dashboard": "Dashboard",
+      "finance": "Finance"
+    },
+    "refresh": "Làm mới",
+    "balance": {
+      "availableBalance": "Số dư khả dụng",
+      "rewardPoints": "Điểm thưởng",
+      "totalEarnings": "Tổng thu nhập",
+      "totalWithdrawn": "Tổng đã rút",
+      "totalRefund": "Tổng hoàn tiền"
+    },
+    "actionTabs": {
+      "deposit": "Nạp tiền",
+      "convert": "Chuyển Reward Point",
+      "withdraw": "Rút tiền"
+    },
+    "deposit": {
+      "transferInfo": "Thông tin chuyển khoản",
+      "bank": "Ngân hàng",
+      "accountNumber": "Số tài khoản",
+      "accountName": "Tên tài khoản",
+      "amountToDeposit": "Số tiền muốn nạp (VND)",
+      "amountPlaceholder": "0",
+      "quickAmounts": "Số tiền nhanh",
+      "confirmBtn": "XÁC NHẬN NẠP TIỀN",
+      "processing": "Đang xử lý...",
+      "note": "Lưu ý",
+      "noteText": "Vui lòng nhập chính xác nội dung chuyển khoản được cung cấp sau khi nhấn xác nhận để hệ thống tự động ghi nhận trong 3-5 phút."
+    },
+    "depositModal": {
+      "title": "Thông tin chuyển khoản",
+      "transferAmount": "Số tiền nạp",
+      "transferContent": "Nội dung chuyển khoản",
+      "copyBtn": "Sao chép nội dung",
+      "copied": "Đã sao chép!",
+      "notice": "Vui lòng nhập chính xác nội dung chuyển khoản. Hệ thống sẽ tự động cập nhật trong 3-5 phút."
+    },
+    "convert": {
+      "title": "Chuyển đổi Reward Point",
+      "conversionRate": "Tỷ lệ quy đổi",
+      "rateValue": "1 VND = 1 RP",
+      "availableBalance": "Số dư khả dụng",
+      "currentRP": "RP hiện có",
+      "amountToConvert": "Số tiền muốn chuyển đổi (VND)",
+      "amountPlaceholder": "0",
+      "quickAmounts": "Số tiền nhanh",
+      "confirmBtn": "XÁC NHẬN CHUYỂN ĐỔI",
+      "processing": "Đang xử lý...",
+      "note": "Lưu ý",
+      "noteText": "Reward Point không thể chuyển ngược lại thành tiền. Hãy cân nhắc kỹ trước khi chuyển đổi.",
+      "successMsg": "Đã chuyển đổi {{amount}} thành {{points}} RP"
+    },
+    "withdraw": {
+      "recipientAccount": "Tài khoản nhận tiền",
+      "updateBtn": "Cập nhật",
+      "closeBtn": "Đóng",
+      "selectBank": "Chọn ngân hàng",
+      "accountNumber": "Số tài khoản",
+      "accountHolderName": "Tên chủ tài khoản (không dấu)",
+      "saveBtn": "LƯU THÔNG TIN",
+      "noBankAccount": "Chưa có tài khoản ngân hàng. Nhấn \"Cập nhật\" để thêm.",
+      "amountToWithdraw": "Số tiền muốn rút (VND)",
+      "amountPlaceholder": "0",
+      "availableBalance": "Số dư khả dụng",
+      "quickAmounts": "Số tiền nhanh",
+      "confirmBtn": "YÊU CẦU RÚT TIỀN",
+      "processing": "Đang xử lý...",
+      "note": "Lưu ý",
+      "noteText": "Yêu cầu rút tiền sẽ được xử lý trong 1-3 ngày làm việc. Phí rút tiền: Miễn phí."
+    },
+    "withdrawPin": {
+      "title": "Xác thực mã PIN",
+      "subtitle": "Security Verification",
+      "description": "Vui lòng nhập mã PIN 6 số để hoàn tất giao dịch rút tiền {{amount}}.",
+      "pinError": "Mã PIN không đúng. Vui lòng thử lại.",
+      "forgotPin": "Qu忘 mã PIN?",
+      "verifying": "Đang xác thực..."
+    },
+    "quickStats": {
+      "pendingApprovals": "Chờ duyệt",
+      "pendingUnit": "yêu cầu",
+      "approvedToday": "Đã duyệt hôm nay",
+      "approvedUnit": "thành công",
+      "totalTransactions": "Tổng giao dịch",
+      "transactionsUnit": "giao dịch"
+    },
+    "transactionHistory": {
+      "title": "Lịch sử giao dịch",
+      "searchPlaceholder": "Tìm ID giao dịch...",
+      "filterAll": "Tất cả loại giao dịch",
+      "filterDeposit": "Nạp tiền",
+      "filterWithdraw": "Rút tiền",
+      "filterConvertRp": "Chuyển RP",
+      "filterEarning": "Thu nhập",
+      "filterRefund": "Hoàn tiền",
+      "dateRange": "01/10/2023 - 31/10/2023",
+      "advancedFilter": "Bộ lọc nâng cao",
+      "table": {
+        "date": "Ngày",
+        "transactionId": "Mã giao dịch",
+        "type": "Loại",
+        "amount": "Số tiền",
+        "balanceAfter": "Số dư sau",
+        "status": "Trạng thái",
+        "action": "Thao tác"
+      },
+      "viewDetails": "Xem chi tiết",
+      "empty": "Không có giao dịch nào",
+      "showing": "Hiển thị {{shown}} / {{total}} giao dịch"
+    },
+    "txType": {
+      "deposit": "Nạp tiền",
+      "withdraw": "Rút tiền",
+      "convert_rp": "Chuyển RP",
+      "earning": "Thu nhập",
+      "refund": "Hoàn tiền"
+    },
+    "txStatus": {
+      "completed": "Hoàn thành",
+      "pending": "Chờ duyệt",
+      "rejected": "Từ chối",
+      "cancelled": "Đã hủy"
+    },
+    "validation": {
+      "minDeposit": "Số tiền nạp tối thiểu là 10,000 VND",
+      "minWithdraw": "Số tiền rút tối thiểu là 50,000 VND",
+      "minConvert": "Số tiền chuyển đổi tối thiểu là 10,000 VND",
+      "insufficientBalance": "Số dư khả dụng không đủ",
+      "incompleteBankInfo": "Vui lòng điền đầy đủ thông tin ngân hàng",
+      "incompleteForm": "Vui lòng điền đầy đủ thông tin"
+    },
+    "toast": {
+      "depositSuccess": "Đã tạo yêu cầu nạp tiền",
+      "depositFailed": "Tạo yêu cầu nạp tiền thất bại",
+      "withdrawSuccess": "Yêu cầu rút tiền đã được gửi. Vui lòng chờ duyệt.",
+      "withdrawFailed": "Tạo yêu cầu rút tiền thất bại",
+      "convertSuccess": "Đã chuyển đổi thành công",
+      "convertFailed": "Chuyển đổi thất bại",
+      "saveBankSuccess": "Đã lưu tài khoản ngân hàng",
+      "saveBankFailed": "Lưu thất bại",
+      "copyFailed": "Không thể sao chép",
+      "copied": "Đã sao chép"
+    }
   }
 }

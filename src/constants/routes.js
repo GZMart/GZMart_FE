@@ -76,8 +76,14 @@ export const SELLER_ROUTES = {
   // Returns
   RETURNS: '/seller/returns',
 
+  // Campaigns
+  CAMPAIGNS: '/seller/campaigns',
+
   // Live stream (seller studio)
   LIVE: '/seller/live',
+
+  // Finance & Topup
+  FINANCE: '/seller/finance',
 };
 
 // Admin Routes

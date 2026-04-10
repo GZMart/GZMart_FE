@@ -1,13 +1,14 @@
 import { Table, Tag, Tooltip, Dropdown, Button } from 'antd';
 import { EditOutlined, DeleteOutlined, EllipsisOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 // Status config
 const statusConfig = {
   pending: { color: 'blue', label: 'Upcoming' },
   upcoming: { color: 'blue', label: 'Upcoming' },
   active: { color: 'green', label: 'Active' },
+  paused: { color: 'orange', label: 'Paused' },
   ended: { color: 'default', label: 'Ended' },
   expired: { color: 'default', label: 'Ended' },
   cancelled: { color: 'red', label: 'Cancelled' },
@@ -181,7 +182,7 @@ const campaignColumns = (handleViewCampaign, handleEditCampaign, handleDeleteCam
     key: 'status',
     width: 120,
     sorter: (a, b) => {
-      const order = { active: 0, upcoming: 1, pending: 2, ended: 3, cancelled: 4, expired: 5 };
+      const order = { active: 0, paused: 1, upcoming: 2, pending: 3, ended: 4, cancelled: 5, expired: 6 };
       return (order[a.status] ?? 9) - (order[b.status] ?? 9);
     },
     showSorterTooltip: false,
@@ -189,14 +190,17 @@ const campaignColumns = (handleViewCampaign, handleEditCampaign, handleDeleteCam
       const s = group.status;
       const label = statusConfig[s]?.label || s;
       if (s === 'active') {
-return <span className={styles.statusActive}><span className={styles.statusDot} />Active</span>;
-}
+        return <span className={styles.statusActive}><span className={styles.statusDot} />Active</span>;
+      }
       if (s === 'pending' || s === 'upcoming') {
-return <span className={styles.statusUpcoming}>{label}</span>;
-}
+        return <span className={styles.statusUpcoming}>{label}</span>;
+      }
+      if (s === 'paused') {
+        return <span className={styles.statusPaused}>{label}</span>;
+      }
       if (s === 'cancelled') {
-return <span className={styles.statusCancelled}>{label}</span>;
-}
+        return <span className={styles.statusCancelled}>{label}</span>;
+      }
       return <span className={styles.statusEnded}>{label}</span>;
     },
   },
@@ -299,17 +303,17 @@ const variantColumns = (handleEdit, handleDelete) => [
   },
 ];
 
-const CampaignTable = ({ groupedFlashSales, pagination, loading, campaignColumns, variantColumns, handleTableChange, handleViewCampaign, handleViewDetail }) => (
+const CampaignTable = ({ groupedCampaigns, pagination, loading, campaignColumns, variantColumns, handleTableChange, handleViewCampaign, handleViewDetail }) => (
     <div className={styles.tableSection}>
       <Table
         columns={campaignColumns}
-        dataSource={groupedFlashSales}
-        rowKey="key"
+        dataSource={groupedCampaigns}
+        rowKey="_id"
         className={styles.fsTable}
         pagination={{
           current: pagination.page,
           pageSize: pagination.limit,
-          total: groupedFlashSales.length,
+          total: pagination.total,
           showSizeChanger: true,
           showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} campaigns`,
           style: { padding: '12px 16px', margin: 0 },
@@ -322,7 +326,7 @@ const CampaignTable = ({ groupedFlashSales, pagination, loading, campaignColumns
             <div className={styles.expandedContent}>
               <Table
                 columns={variantColumns}
-                dataSource={group.records}
+                dataSource={group.variants || group.records}
                 rowKey="_id"
                 pagination={false}
                 size="small"
@@ -330,7 +334,7 @@ const CampaignTable = ({ groupedFlashSales, pagination, loading, campaignColumns
               />
             </div>
           ),
-          rowExpandable: (group) => group.skuCount > 1,
+          rowExpandable: (group) => (group.variants || group.records || []).length > 1,
         }}
       />
     </div>

@@ -1,4 +1,4 @@
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 const EmptyState = ({ hasActiveFilters, onCreateClick }) => (
     <div className={styles.emptyState}>

@@ -1,7 +1,7 @@
 import { useMemo, useState, Fragment } from 'react';
 import { Input, Button, InputNumber } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 import vtStyles from '@assets/styles/seller/VariantsTable.module.css';
 
 /** Models from API use `tierIndex` (Mongoose); some payloads use `tier_index`. */
@@ -95,7 +95,7 @@ const Step2 = ({
   setProductSearchText,
   filteredProducts,
   variantTableData,
-  selectedFlashSale,
+  isEditMode,
   onBack,
   onNext,
   onAddProduct,
@@ -106,7 +106,6 @@ const Step2 = ({
   setSelectedVariantKeys,
   onCancel,
 }) => {
-  const isEditMode = !!selectedFlashSale;
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
   const variantSections = useMemo(() => selectedProducts

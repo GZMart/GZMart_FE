@@ -13,7 +13,7 @@ import ProductReviewSection from '../../components/buyer/ProductReviewSection';
 import CartSuccessModal from '../../components/buyer/CartSuccessModal';
 import { ComboPromotionBanner, AddOnDealCards } from '../../components/buyer/PromotionBadge';
 import { productService, livestreamService } from '../../services/api';
-import { flashsaleService } from '../../services/api/flashsaleService';
+import { campaignService } from '../../services/api/campaignService';
 import promotionBuyerService from '../../services/api/promotionBuyerService';
 import * as wishlistService from '../../services/api/wishlistService';
 import { formatCurrency } from '../../utils/formatters';
@@ -308,7 +308,7 @@ setActiveLive(null);
           }
           try {
             // First try to fetch from getActive
-            const response = await flashsaleService.getActive();
+            const response = await campaignService.getActive();
             const allFlashSales = Array.isArray(response)
               ? response
               : response.data?.data || response.data || [];

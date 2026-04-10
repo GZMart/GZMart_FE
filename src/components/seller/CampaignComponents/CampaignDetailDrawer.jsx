@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Drawer, Spin, Empty } from 'antd';
 import dayjs from 'dayjs';
-import styles from '@assets/styles/seller/FlashSales.module.css';
+import styles from '@assets/styles/seller/Campaigns.module.css';
 
 /**
  * CountdownTimer - Hiển thị thời gian đếm ngược cho campaign
@@ -83,13 +83,13 @@ return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
 };
 
 /**
- * FlashSaleDetailDrawer - Drawer hiển thị chi tiết Campaign/SKU
+ * CampaignDetailDrawer - Drawer hiển thị chi tiết Campaign/SKU
  * @description Drawer với design theo HTML sample: gradient header, stats cards, countdown, variants table
  */
-const FlashSaleDetailDrawer = ({
+const CampaignDetailDrawer = ({
   open,
   onClose,
-  selectedFlashSale,
+  selectedCampaign,
   selectedCampaignGroup,
   stats,
   statsLoading,
@@ -97,21 +97,24 @@ const FlashSaleDetailDrawer = ({
   onDeleteCampaign,
   onEdit,
   onDelete,
+  onPause,
+  onStop,
+  onResume,
 }) => {
   const isCampaign = !!selectedCampaignGroup;
 
   // Tính toán dữ liệu
-  const { records = [], soldQuantity = 0, totalQuantity = 0 } = selectedCampaignGroup || {};
-  const revenue = records.reduce((sum, r) => sum + (r.soldQuantity * r.salePrice), 0);
-  const uniqueBuyers = records.length * Math.floor(Math.random() * 500 + 100);
+  const { variants = [], soldQuantity = 0, totalQuantity = 0 } = selectedCampaignGroup || {};
+  const revenue = variants.reduce((sum, r) => sum + (r.soldQuantity * r.salePrice), 0);
+  const uniqueBuyers = variants.length * Math.floor(Math.random() * 500 + 100);
 
   // Campaign info
-  const campaignId = selectedCampaignGroup?._id || selectedFlashSale?._id || 'N/A';
+  const campaignId = selectedCampaignGroup?._id || selectedCampaign?._id || 'N/A';
   const displayId = `FS-${campaignId.slice(-4).toUpperCase()}`;
   const sellPercentage = totalQuantity ? Math.round((soldQuantity / totalQuantity) * 100) : 0;
   // Campaign title — hiện thực tế, fallback sang "Campaign Detail" nếu trùng product name hoặc null
   const campaignTitle = selectedCampaignGroup?.campaignTitle;
-  const productName = selectedFlashSale?.productId?.name || '';
+  const productName = selectedCampaign?.productId?.name || '';
   const showCampaignTitle = campaignTitle && campaignTitle !== productName;
 
   return (
@@ -183,10 +186,10 @@ const FlashSaleDetailDrawer = ({
         <div className={styles.detailDrawerContent}>
           {/* Product Hero Card */}
           <div className={styles.detailHeroCard}>
-            {selectedFlashSale?.productId?.images?.[0] ? (
+            {selectedCampaign?.productId?.images?.[0] ? (
               <img 
-                src={selectedFlashSale.productId.images[0]} 
-                alt={selectedFlashSale.productId.name}
+                src={selectedCampaign.productId.images[0]} 
+                alt={selectedCampaign.productId.name}
                 className={styles.detailHeroImg}
               />
             ) : (
@@ -196,7 +199,7 @@ const FlashSaleDetailDrawer = ({
             )}
             <div className={styles.detailHeroContent}>
               <h3 className={styles.detailHeroTitle}>
-                {selectedFlashSale?.productId?.name || 'Product Name'}
+                {selectedCampaign?.productId?.name || 'Product Name'}
               </h3>
               {showCampaignTitle && (
                 <div className={styles.detailCampaignTitleBadge}>
@@ -205,7 +208,7 @@ const FlashSaleDetailDrawer = ({
                 </div>
               )}
               <p className={styles.detailHeroDesc}>
-                {selectedFlashSale?.productId?.description || selectedFlashSale?.productId?.name || 'Product description not available'}
+                {selectedCampaign?.productId?.description || selectedCampaign?.productId?.name || 'Product description not available'}
               </p>
             </div>
             <div className={styles.detailHeroRight}>
@@ -325,11 +328,11 @@ const FlashSaleDetailDrawer = ({
           <CountdownTimer endTime={selectedCampaignGroup?.endAt || stats?.endAt} />
 
           {/* Variants Table */}
-          {isCampaign && records.length > 0 && (
+          {isCampaign && variants.length > 0 && (
             <div className={styles.detailVariantsSection}>
               <div className={styles.detailVariantsHeader}>
                 <h4 className={styles.detailVariantsTitle}>Stock Keeping Units (SKU)</h4>
-                <span className={styles.detailVariantsCount}>{records.length} Variants Active</span>
+                <span className={styles.detailVariantsCount}>{variants.length} Variants Active</span>
               </div>
               <div className={styles.detailVariantsTable}>
                 <table>
@@ -343,7 +346,7 @@ const FlashSaleDetailDrawer = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {records.map((variant, index) => {
+                    {variants.map((variant, index) => {
                       const remaining = variant.totalQuantity - variant.soldQuantity;
                       return (
                         <tr key={variant._id || index} className={index % 2 === 1 ? styles.detailVariantRowAlt : ''}>
@@ -427,12 +430,30 @@ const FlashSaleDetailDrawer = ({
             <span>Export Report</span>
           </button>
           <div className={styles.detailFooterActions}>
-            <button className={styles.detailPauseBtn}>
-              Pause Sale
-            </button>
-            <button className={styles.detailStopBtn}>
-              Stop Campaign
-            </button>
+            {/* Dynamic action buttons based on campaign status */}
+            {isCampaign && (() => {
+              const status = selectedCampaignGroup?.status;
+              if (status === 'paused') {
+                return (
+                  <button className={styles.detailResumeBtn} onClick={() => onResume(selectedCampaignGroup, null)}>
+                    <span className="material-symbols-outlined">play_arrow</span>
+                    Resume Campaign
+                  </button>
+                );
+              }
+              if (status === 'expired' || status === 'cancelled') {
+                return null; // No actions for ended campaigns
+              }
+              // active / pending
+              return (
+                <>
+                  <button className={styles.detailStopBtn} onClick={() => onStop(selectedCampaignGroup, null)}>
+                    <span className="material-symbols-outlined">stop</span>
+                    Stop Campaign
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       </Spin>
@@ -440,4 +461,4 @@ const FlashSaleDetailDrawer = ({
   );
 };
 
-export default FlashSaleDetailDrawer;
+export default CampaignDetailDrawer;
