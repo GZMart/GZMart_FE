@@ -71,6 +71,7 @@ const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage')
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
 const SellerFinancePage = lazy(() => import('@pages/seller/SellerFinancePage'));
+const SellerBannerAdsPage = lazy(() => import('@pages/seller/SellerBannerAdsPage'));
 
 // Buyer - Seller Application
 const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
@@ -85,6 +86,10 @@ const AdminCategoriesPage = lazy(() => import('@pages/admin/CategoriesPage'));
 const AttributesPage = lazy(() => import('@pages/admin/AttributesPage'));
 const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouchersPage'));
 const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
+const VoucherCampaignsPage = lazy(() => import('@pages/admin/marketing/VoucherCampaignsPage'));
+const VoucherCampaignForm = lazy(() => import('@pages/admin/marketing/VoucherCampaignForm'));
+const AdminBannerAdsPage = lazy(() => import('@pages/admin/AdminBannerAdsPage'));
+const TestMapPage = lazy(() => import('@pages/admin/TestMapPage'));
 
 // Error Pages
 const NotFoundPage = lazy(() => import('@pages/errors/NotFoundPage'));
@@ -593,13 +598,19 @@ export const routeConfig = [
     layout: 'erp',
   },
   {
+    path: '/seller/banner-ads',
+    element: SellerBannerAdsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
     path: '/seller/finance',
     element: SellerFinancePage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
-
   // Admin Routes
   {
     path: '/admin/dashboard',
@@ -625,6 +636,13 @@ export const routeConfig = [
   {
     path: '/admin/seller-applications',
     element: SellerApplicationsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/banner-ads',
+    element: AdminBannerAdsPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',
@@ -670,6 +688,35 @@ export const routeConfig = [
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',
+  },
+  {
+    path: '/admin/voucher-campaigns',
+    element: VoucherCampaignsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/voucher-campaigns/create',
+    element: VoucherCampaignForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/voucher-campaigns/:id/edit',
+    element: VoucherCampaignForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+
+  // Test Routes (Public - No Authentication)
+  {
+    path: '/admin/test-map',
+    element: TestMapPage,
+    public: true,
+    layout: 'none',
   },
 
   // Error Routes

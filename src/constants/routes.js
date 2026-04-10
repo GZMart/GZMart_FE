@@ -78,6 +78,8 @@ export const SELLER_ROUTES = {
 
   // Campaigns
   CAMPAIGNS: '/seller/campaigns',
+  // Banner Ads
+  BANNER_ADS: '/seller/banner-ads',
 
   // Live stream (seller studio)
   LIVE: '/seller/live',
@@ -112,6 +114,9 @@ export const ADMIN_ROUTES = {
   SYSTEM_VOUCHERS: '/admin/system-vouchers',
   SYSTEM_VOUCHER_CREATE: '/admin/system-vouchers/create',
   SYSTEM_VOUCHER_EDIT: '/admin/system-vouchers/:id/edit',
+  VOUCHER_CAMPAIGNS: '/admin/voucher-campaigns',
+  VOUCHER_CAMPAIGN_CREATE: '/admin/voucher-campaigns/create',
+  VOUCHER_CAMPAIGN_EDIT: '/admin/voucher-campaigns/:id/edit',
 
   // Content
   PAGES: '/admin/pages',
@@ -120,6 +125,9 @@ export const ADMIN_ROUTES = {
   // Monitoring
   ACTIVITY_LOGS: '/admin/activity-logs',
   SYSTEM_HEALTH: '/admin/system-health',
+
+  // Banner Ads Management
+  BANNER_ADS: '/admin/banner-ads',
 };
 
 // Error Routes

@@ -36,6 +36,7 @@ import { AOVDetailModal } from '../../components/seller/dashboard/modals/AOVDeta
 import { ProfitDetailModal } from '../../components/seller/dashboard/modals/ProfitDetailModal';
 import { TopProfitProductsModal } from '../../components/seller/dashboard/modals/TopProfitProductsModal';
 import styles from '../../assets/styles/seller/Dashboard.module.css';
+import BannerHotspotWidget from '../../components/seller/dashboard/BannerHotspotWidget';
 
 const EXPENSE_TYPE_TO_I18N = {
   'Goods Value (PO)': 'goodsValuePo',
@@ -781,6 +782,8 @@ const SellerDashboard = () => {
 
         {/* ── Balance Section ── */}
         <SellerBalanceSection />
+        {/* ── 1.5) Banner Hotspot Ads Widget ── */}
+        <BannerHotspotWidget />
 
         {/* ── 2) Revenue Trend Chart + Comparison KPIs ── */}
         <div className={styles.chartAndStats}>

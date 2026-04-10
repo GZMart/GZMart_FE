@@ -429,6 +429,18 @@
   background: var(--shop-secondary);
 }
 
+.voucherCardAction button.ineligibleBtn {
+  background: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+  font-size: 11px;
+  padding: 8px 10px;
+}
+
+.voucherCardAction button.ineligibleBtn:hover {
+  transform: none;
+}
+
 /* ═══ Tabs: sticky, solid surface, centered active indicator ═══ */
 .tabsContainer {
   position: sticky;

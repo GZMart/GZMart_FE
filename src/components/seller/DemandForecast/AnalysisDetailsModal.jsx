@@ -171,8 +171,9 @@ const AnalysisDetailsModal = ({ item, trendDays, onClose }) => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    // Always fetch 30 days of detailed data regardless of forecast period
     inventoryService
-      .getProductDemandDetails(item.productId, { days: trendDays })
+      .getProductDemandDetails(item.productId, { days: 30 })
       .then((res) => {
         if (!cancelled) {
 setDetails(res.data);
@@ -191,7 +192,7 @@ setLoading(false);
     return () => {
  cancelled = true; 
 };
-  }, [item.productId, trendDays]);
+  }, [item.productId]);
 
   useEffect(() => {
     const handler = (e) => {

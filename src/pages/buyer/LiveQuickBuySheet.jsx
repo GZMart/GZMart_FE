@@ -316,7 +316,7 @@ setQuantity(maxStock);
       if (selectedLiveVoucher.discountType === 'percent') {
         discount = Math.min(
           subtotal * (Number(selectedLiveVoucher.discountValue) / 100),
-          Number(selectedLiveVoucher.maxDiscount) || Infinity,
+          Number(selectedLiveVoucher.maxDiscountAmount) || Infinity,
         );
       } else {
         discount = Number(selectedLiveVoucher.discountValue) || 0;
