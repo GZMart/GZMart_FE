@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 
 const CampaignHeader = ({ groupedCampaigns, onCreateClick }) => {
@@ -45,6 +46,11 @@ const CampaignHeader = ({ groupedCampaigns, onCreateClick }) => {
       </button>
     </div>
   );
+};
+
+CampaignHeader.propTypes = {
+  groupedCampaigns: PropTypes.array.isRequired,
+  onCreateClick: PropTypes.func,
 };
 
 export default CampaignHeader;

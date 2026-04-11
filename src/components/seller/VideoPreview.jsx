@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LiveKitRoom, VideoTrack, RoomAudioRenderer, useLocalParticipant } from '@livekit/components-react';
 import { Room, Track } from 'livekit-client';
 import '@livekit/components-styles';
+
+/* eslint-disable react/prop-types */
 
 // ── Thin wrapper inside LiveKitRoom to grab Room from context ───────────────
 // useLocalParticipant() internally uses useEnsureRoom → RoomContext → RoomContext.Provider
@@ -13,8 +15,8 @@ function SellerLiveView({ isMicOn, isCamOn }) {
     if (!localParticipant) {
       return;
     }
-    localParticipant.setCameraEnabled(isCamOn).catch((e) => {
-      console.warn('[SellerLive] setCameraEnabled:', e?.message);
+    localParticipant.setCameraEnabled(isCamOn).catch(() => {
+      // ignore
     });
   }, [isCamOn, localParticipant]);
 
@@ -22,8 +24,8 @@ function SellerLiveView({ isMicOn, isCamOn }) {
     if (!localParticipant) {
       return;
     }
-    localParticipant.setMicrophoneEnabled(isMicOn).catch((e) => {
-      console.warn('[SellerLive] setMicrophoneEnabled:', e?.message);
+    localParticipant.setMicrophoneEnabled(isMicOn).catch(() => {
+      // ignore
     });
   }, [isMicOn, localParticipant]);
 
@@ -195,11 +197,9 @@ function SellerLiveController({
     }),
   );
 
-  const handleConnected = useCallback(() => {
-    console.log('[Seller LiveKit] Connected! room:', roomRef.current.name, ' sid:', roomRef.current.sid);
+  const handleConnected = () => {
     onRoomConnect?.(roomRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRoomConnect]);
+  };
 
   return (
     <div className={styles.videoCard}>
@@ -213,11 +213,10 @@ function SellerLiveController({
           room={roomRef.current}
           onConnected={handleConnected}
           onDisconnected={() => {
-            console.log('[Seller LiveKit] Disconnected');
             onRoomConnect?.(null);
           }}
-          onError={(e) => {
-            console.error('[Seller LiveKit] Error:', e);
+          onError={() => {
+            // ignore
           }}
           style={{ height: '100%', width: '100%' }}
         >

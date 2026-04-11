@@ -191,7 +191,7 @@ DepositModal.propTypes = {
   depositData: PropTypes.object,
   loading: PropTypes.bool,
   onConfirm: PropTypes.func,
-  't': PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 /* ================================================================
@@ -306,7 +306,7 @@ WithdrawPinModal.propTypes = {
   onClose: PropTypes.func,
   amount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSuccess: PropTypes.func,
-  't': PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 /* ================================================================

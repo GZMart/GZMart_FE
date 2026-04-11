@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Table, Tag, Tooltip, Dropdown, Button } from 'antd';
 import { EditOutlined, DeleteOutlined, EllipsisOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -303,7 +304,7 @@ const variantColumns = (handleEdit, handleDelete) => [
   },
 ];
 
-const CampaignTable = ({ groupedCampaigns, pagination, loading, campaignColumns, variantColumns, handleTableChange, handleViewCampaign, handleViewDetail }) => (
+const CampaignTable = ({ groupedCampaigns, pagination, loading: _loading, campaignColumns, variantColumns, handleTableChange, handleViewCampaign, handleViewDetail }) => (
     <div className={styles.tableSection}>
       <Table
         columns={campaignColumns}
@@ -340,4 +341,16 @@ const CampaignTable = ({ groupedCampaigns, pagination, loading, campaignColumns,
     </div>
   );
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { campaignColumns, variantColumns, CampaignTable, statusConfig };
+
+CampaignTable.propTypes = {
+  groupedCampaigns: PropTypes.array.isRequired,
+  pagination: PropTypes.object,
+  loading: PropTypes.bool,
+  campaignColumns: PropTypes.array,
+  variantColumns: PropTypes.array,
+  handleTableChange: PropTypes.func,
+  handleViewCampaign: PropTypes.func,
+  handleViewDetail: PropTypes.func,
+};

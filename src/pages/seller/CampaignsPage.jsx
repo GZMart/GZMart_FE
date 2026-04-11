@@ -201,13 +201,6 @@ return cur > 0 ? 100 : 0;
     try {
       setProductsLoading(true);
       const res = await productService.getMyProducts({ page: 1, limit: 100, status: 'active' });
-      
-      // Debug: Log response structure
-      if (import.meta.env.DEV) {
-        console.log('📦 [fetchProducts] Raw response:', res);
-        console.log('📦 [fetchProducts] Response keys:', Object.keys(res || {}));
-        console.log('📦 [fetchProducts] res.data type:', typeof res?.data, Array.isArray(res?.data));
-      }
 
       let productsData = [];
       if (Array.isArray(res)) {
@@ -216,23 +209,8 @@ return cur > 0 ? 100 : 0;
         productsData = Array.isArray(res.data) ? res.data : [];
       }
 
-      // Debug: Log parsed products
-      if (import.meta.env.DEV) {
-        console.log('📦 [fetchProducts] Parsed products count:', productsData.length);
-        if (productsData.length > 0) {
-          console.log('📦 [fetchProducts] First product sample:', {
-            _id: productsData[0]._id,
-            name: productsData[0].name,
-            hasModels: Array.isArray(productsData[0].models),
-            modelsCount: productsData[0].models?.length,
-            modelsSample: productsData[0].models?.slice(0, 2),
-          });
-        }
-      }
-
       setProducts(productsData);
     } catch (error) {
-      console.error('❌ [fetchProducts] Error:', error);
       message.error('Failed to fetch products');
       setProducts([]);
     } finally {
@@ -245,8 +223,8 @@ return cur > 0 ? 100 : 0;
   }, []);
   useEffect(() => {
     if (isModalVisible) {
-fetchProducts();
-}
+      fetchProducts();
+    }
   }, [isModalVisible]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────

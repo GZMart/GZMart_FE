@@ -300,7 +300,16 @@ const DealsOfTheDay = () => {
 
         // ── Smart sort & limit: 20 deals tối đa ─────────────────────────
         // Ưu tiên discount cao, đảm bảo variety giữa các deal types
-        const allDeals = [...transformedFlashSales, ...transformedDeals];
+        // Deduplicate by productId — keep the first occurrence (flash sales have priority)
+        const seenProductIds = new Set();
+        const allDeals = [...transformedFlashSales, ...transformedDeals].filter((deal) => {
+          const pid = String(deal.productId);
+          if (seenProductIds.has(pid)) {
+return false;
+}
+          seenProductIds.add(pid);
+          return true;
+        });
 
         const DEAL_TYPE_PRIORITY = {
           flash_sale: 1,
@@ -480,9 +489,9 @@ return discountDiff;
                 animate={{ x: `-${currentSlide * 100}%` }}
                 transition={{ type: 'tween', ease: 'easeInOut', duration: 0.5 }}
               >
-                {deals.map((product) => (
+                {deals.map((product, index) => (
                   <div
-                    key={product.id}
+                    key={`${product.id}-${index}`}
                     style={{
                       minWidth: `${100 / itemsPerSlide}%`,
                       padding: '0 12px', // Simulates Bootstrap's standard gutter spacing

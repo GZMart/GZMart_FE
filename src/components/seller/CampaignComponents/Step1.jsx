@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Form, Input, DatePicker, Button, Tooltip } from 'antd';
 import { message } from 'antd';
 import dayjs from 'dayjs';
@@ -88,18 +89,6 @@ return null;
 return null;
 } // Không giới hạn
     return startTime.add(typeConfig.maxDurationHours, 'hour');
-  };
-
-  // Tính min end date dựa trên type và start time
-  const getMinEndTime = (startTime) => {
-    if (!startTime) {
-return null;
-}
-    const typeConfig = DEAL_TYPES.find(t => t.value === currentType);
-    if (!typeConfig) {
-return null;
-}
-    return startTime.add(typeConfig.minDurationHours, 'hour');
   };
 
   // Validation state cho duration warning
@@ -358,6 +347,14 @@ return null;
       </div>
     </div>
   );
+};
+
+Step1.propTypes = {
+  campaignInfo: PropTypes.object.isRequired,
+  setCampaignInfo: PropTypes.func.isRequired,
+  isEditMode: PropTypes.bool,
+  onNext: PropTypes.func.isRequired,
+  onCancel: PropTypes.func,
 };
 
 export default Step1;
