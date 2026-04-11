@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useMemo, useState, Fragment } from 'react';
 import { Input, Button, InputNumber } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
@@ -765,6 +766,27 @@ return;
       </div>
     </div>
   );
+};
+
+Step2.propTypes = {
+  campaignInfo: PropTypes.object,
+  selectedProducts: PropTypes.array.isRequired,
+  variantConfigs: PropTypes.object.isRequired,
+  selectedVariantKeys: PropTypes.array,
+  productSearchText: PropTypes.string,
+  setProductSearchText: PropTypes.func,
+  filteredProducts: PropTypes.array,
+  variantTableData: PropTypes.array,
+  isEditMode: PropTypes.bool,
+  onBack: PropTypes.func.isRequired,
+  onNext: PropTypes.func.isRequired,
+  onAddProduct: PropTypes.func,
+  onRemoveProduct: PropTypes.func,
+  onUpdateVariantConfig: PropTypes.func,
+  onBulkUpdate: PropTypes.func,
+  onRemoveVariant: PropTypes.func,
+  setSelectedVariantKeys: PropTypes.func,
+  onCancel: PropTypes.func,
 };
 
 export default Step2;

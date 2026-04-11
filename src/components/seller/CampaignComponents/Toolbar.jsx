@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Input, DatePicker } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import styles from '@assets/styles/seller/Campaigns.module.css';
@@ -105,6 +106,18 @@ const Toolbar = ({ searchText, setSearchText, statusFilter, setStatusFilter, typ
       </div>
     </div>
   );
+};
+
+Toolbar.propTypes = {
+  searchText: PropTypes.string,
+  setSearchText: PropTypes.func.isRequired,
+  statusFilter: PropTypes.string,
+  setStatusFilter: PropTypes.func.isRequired,
+  typeFilter: PropTypes.string,
+  setTypeFilter: PropTypes.func.isRequired,
+  dateRangeFilter: PropTypes.object,
+  setDateRangeFilter: PropTypes.func.isRequired,
+  campaigns: PropTypes.array,
 };
 
 export { Toolbar, STATUS_TABS_FS, CAMPAIGN_TYPE_TABS };

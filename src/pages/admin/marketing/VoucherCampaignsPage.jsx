@@ -60,7 +60,9 @@ const VoucherCampaignsPage = () => {
     setLoading(true);
     try {
       const params = {};
-      if (filterType !== 'all') params.triggerType = filterType;
+      if (filterType !== 'all') {
+params.triggerType = filterType;
+}
       const res = await voucherCampaignService.getAll(params);
       setCampaigns(res.data || []);
     } catch (err) {
@@ -70,10 +72,14 @@ const VoucherCampaignsPage = () => {
     }
   };
 
-  useEffect(() => { fetchCampaigns(); }, [filterType]);
+  useEffect(() => {
+ fetchCampaigns(); 
+}, [filterType]);
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteId) {
+return;
+}
     setDeleting(true);
     try {
       await voucherCampaignService.delete(deleteId);
@@ -88,7 +94,9 @@ const VoucherCampaignsPage = () => {
   };
 
   const handleTrigger = async () => {
-    if (!triggerId) return;
+    if (!triggerId) {
+return;
+}
     setTriggering(true);
     setTriggerResult(null);
     try {
@@ -295,7 +303,9 @@ const VoucherCampaignsPage = () => {
       {/* Trigger Modal */}
       <Modal
         show={!!triggerId}
-        onHide={() => { setTriggerId(null); setTriggerResult(null); }}
+        onHide={() => {
+ setTriggerId(null); setTriggerResult(null); 
+}}
         centered
       >
         <Modal.Header closeButton>
@@ -327,7 +337,9 @@ const VoucherCampaignsPage = () => {
         <Modal.Footer>
           <Button
             variant="secondary"
-            onClick={() => { setTriggerId(null); setTriggerResult(null); }}
+            onClick={() => {
+ setTriggerId(null); setTriggerResult(null); 
+}}
           >
             Close
           </Button>

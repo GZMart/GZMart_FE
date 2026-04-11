@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
 import styles from '@assets/styles/seller/Campaigns.module.css';
@@ -197,3 +198,14 @@ return <span style={{ color: '#94a3b8' }}>N/A</span>;
   );
 
 export default Step3;
+
+Step3.propTypes = {
+  campaignInfo: PropTypes.object,
+  selectedProducts: PropTypes.array,
+  variantConfigs: PropTypes.object,
+  isEditMode: PropTypes.bool,
+  onBack: PropTypes.func,
+  onSubmit: PropTypes.func,
+  loading: PropTypes.bool,
+  onCancel: PropTypes.func,
+};

@@ -62,7 +62,9 @@ const VoucherCampaignForm = () => {
 
   // Load existing campaign
   useEffect(() => {
-    if (!isEditMode) return;
+    if (!isEditMode) {
+return;
+}
     voucherCampaignService.getById(id)
       .then((res) => {
         const d = res.data;

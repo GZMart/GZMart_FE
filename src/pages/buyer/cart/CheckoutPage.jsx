@@ -1464,7 +1464,9 @@ const CheckoutPage = () => {
                           className="bi bi-x-circle-fill text-muted"
                           style={{ cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }}
                           onMouseEnter={(e) => (e.target.style.color = info.color)}
-                          onMouseLeave={(e) => { e.target.style.color = '#6c757d'; }}
+                          onMouseLeave={(e) => {
+ e.target.style.color = '#6c757d'; 
+}}
                           onClick={() => setSelectedBuyerVoucherId(null)}
                           title="Deselect"
                         ></i>
@@ -2152,7 +2154,9 @@ const CheckoutPage = () => {
                             overflow: 'hidden',
                           }}
                           onClick={() => {
-                            if (!cartOk) return;
+                            if (!cartOk) {
+return;
+}
                             setSelectedShopVoucherId(
                               selectedShopVoucherId === v._id ? null : v._id
                             );
@@ -2294,8 +2298,12 @@ const CheckoutPage = () => {
                             overflow: 'hidden',
                           }}
                           onClick={() => {
-                            if (!isEligible || !cartOk) return;
-                            if (!v.isSaved) return;
+                            if (!isEligible || !cartOk) {
+return;
+}
+                            if (!v.isSaved) {
+return;
+}
                             setSelectedBuyerVoucherId(
                               selectedBuyerVoucherId === v._id ? null : v._id
                             );

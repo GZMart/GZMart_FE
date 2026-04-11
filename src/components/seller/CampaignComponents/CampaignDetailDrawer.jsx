@@ -1,5 +1,6 @@
+import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
-import { Drawer, Spin, Empty } from 'antd';
+import { Drawer, Spin } from 'antd';
 import dayjs from 'dayjs';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 
@@ -33,6 +34,7 @@ return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
     return { days, hours, minutes, seconds, expired: false };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endTime, tick]);
   
   if (timeLeft.expired) {
@@ -93,11 +95,11 @@ const CampaignDetailDrawer = ({
   selectedCampaignGroup,
   stats,
   statsLoading,
-  onEditCampaign,
-  onDeleteCampaign,
+  onEditCampaign: _onEditCampaign,
+  onDeleteCampaign: _onDeleteCampaign,
   onEdit,
   onDelete,
-  onPause,
+  onPause: _onPause,
   onStop,
   onResume,
 }) => {
@@ -459,6 +461,23 @@ const CampaignDetailDrawer = ({
       </Spin>
     </Drawer>
   );
+};
+
+CountdownTimer.propTypes = {
+  endTime: PropTypes.oneOfType([PropTypes.string, PropTypes.object, PropTypes.number]),
+};
+
+CampaignDetailDrawer.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  selectedCampaign: PropTypes.object,
+  selectedCampaignGroup: PropTypes.object,
+  stats: PropTypes.object,
+  statsLoading: PropTypes.bool,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  onStop: PropTypes.func,
+  onResume: PropTypes.func,
 };
 
 export default CampaignDetailDrawer;

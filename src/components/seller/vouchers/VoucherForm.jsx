@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import PropTypes from 'prop-types';
+import { useState } from 'react';
 import { Form, Row, Col, InputGroup, Button } from 'react-bootstrap';
 import { DatePicker, Table, Avatar, Button as AntButton } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -502,6 +503,21 @@ const VoucherForm = ({
       </div>
     </>
   );
+};
+
+VoucherForm.propTypes = {
+  formData: PropTypes.object.isRequired,
+  handleChange: PropTypes.func.isRequired,
+  handleDateChange: PropTypes.func.isRequired,
+  voucherType: PropTypes.string,
+  applyTo: PropTypes.string,
+  setApplyTo: PropTypes.func.isRequired,
+  selectedProducts: PropTypes.array.isRequired,
+  handleProductSelect: PropTypes.func.isRequired,
+  handleRemoveProduct: PropTypes.func.isRequired,
+  isEdit: PropTypes.bool,
+  handleSubmit: PropTypes.func.isRequired,
+  navigate: PropTypes.func,
 };
 
 export default VoucherForm;

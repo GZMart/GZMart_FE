@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Drawer, Spin } from 'antd';
 import Step1 from './Step1';
 import Step2 from './Step2';
@@ -311,6 +312,32 @@ const CampaignDrawer = ({
       )}
     </Drawer>
   );
+};
+
+CampaignDrawer.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  currentStep: PropTypes.number.isRequired,
+  setCurrentStep: PropTypes.func.isRequired,
+  selectedCampaign: PropTypes.object,
+  campaignInfo: PropTypes.object,
+  setCampaignInfo: PropTypes.func,
+  selectedProducts: PropTypes.array,
+  variantConfigs: PropTypes.object,
+  selectedVariantKeys: PropTypes.array,
+  setSelectedVariantKeys: PropTypes.func,
+  productSearchText: PropTypes.string,
+  setProductSearchText: PropTypes.func,
+  filteredProducts: PropTypes.array,
+  variantTableData: PropTypes.array,
+  productsLoading: PropTypes.bool,
+  onAddProduct: PropTypes.func,
+  onRemoveProduct: PropTypes.func,
+  onUpdateVariantConfig: PropTypes.func,
+  onBulkUpdate: PropTypes.func,
+  onRemoveVariant: PropTypes.func,
+  onSubmit: PropTypes.func,
+  loading: PropTypes.bool,
 };
 
 export default CampaignDrawer;

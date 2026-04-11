@@ -304,7 +304,9 @@ const DealsOfTheDay = () => {
         const seenProductIds = new Set();
         const allDeals = [...transformedFlashSales, ...transformedDeals].filter((deal) => {
           const pid = String(deal.productId);
-          if (seenProductIds.has(pid)) return false;
+          if (seenProductIds.has(pid)) {
+return false;
+}
           seenProductIds.add(pid);
           return true;
         });

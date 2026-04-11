@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
 import {
   X,
   TrendingUp,
@@ -519,6 +520,17 @@ return <br key={i} />;
       </div>
     </>
   );
+};
+
+VelocityChart.propTypes = {
+  data: PropTypes.array,
+  trendDays: PropTypes.number,
+};
+
+AnalysisDetailsModal.propTypes = {
+  item: PropTypes.object,
+  trendDays: PropTypes.number,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default AnalysisDetailsModal;

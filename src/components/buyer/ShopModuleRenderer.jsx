@@ -5,7 +5,7 @@
  * Each module type has its own render component.
  */
 
-import React from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { MODULE_TYPES } from '@services/api/shopDecorationService';
 import styles from '@assets/styles/buyer/ShopModuleRenderer.module.css';
@@ -317,7 +317,6 @@ export default function ShopModuleRenderer({ modules = [], isMobile = false }) {
       {renderableModules.map((module) => {
         const Renderer = MODULE_RENDERERS[module.type];
         if (!Renderer) {
-          console.warn(`No renderer for module type: ${module.type}`);
           return null;
         }
         return <Renderer key={module.id || module._id} module={module} isMobile={isMobile} />;
@@ -325,6 +324,11 @@ export default function ShopModuleRenderer({ modules = [], isMobile = false }) {
     </div>
   );
 }
+
+ShopModuleRenderer.propTypes = {
+  modules: PropTypes.array,
+  isMobile: PropTypes.bool,
+};
 
 // Export individual module components for flexibility
 export { BannerCarouselModule, BannerMultiModule, BannerSingleModule, BannerHotspotModule };

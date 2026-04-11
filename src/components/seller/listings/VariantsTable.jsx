@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import { useState, useMemo } from 'react';
 import styles from '../../../assets/styles/seller/VariantsTable.module.css';
 
 const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, showShippingColumns = false }) => {
@@ -6,7 +7,7 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, 
   const [selectedRows, setSelectedRows] = useState(new Set());
 
   /* ── Helpers ──────────────────────────────────────────────── */
-  const getVariantLabel = (model) =>
+  const _getVariantLabel = (model) =>
     model.tierIndex.map((idx, tierIdx) => tiers[tierIdx]?.options[idx]?.value || '?').join(' / ');
 
   const getTierName = (tierIdx) => tiers[tierIdx]?.name || `Tier ${tierIdx + 1}`;
@@ -601,6 +602,15 @@ return null;
       </div>
     </div>
   );
+};
+
+VariantsTable.propTypes = {
+  tiers: PropTypes.array.isRequired,
+  models: PropTypes.array.isRequired,
+  onChange: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  isEditMode: PropTypes.bool,
+  showShippingColumns: PropTypes.bool,
 };
 
 export default VariantsTable;

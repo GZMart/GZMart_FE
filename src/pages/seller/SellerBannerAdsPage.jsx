@@ -9,18 +9,17 @@
  *    Step 3: Schedule + preview on homepage mock
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+/* eslint-disable react/prop-types */
+
+/* eslint-disable react/prop-types */
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Card,
   Steps,
   Button,
   Form,
   Input,
-  Select,
   DatePicker,
-  Table,
   Tag,
-  Statistic,
   Modal,
   message,
   Spin,
@@ -28,14 +27,8 @@ import {
   Typography,
   Space,
   Divider,
-  Tooltip,
-  Badge,
   Empty,
   Upload,
-  Row,
-  Col,
-  Progress,
-  Segmented,
 } from 'antd';
 import {
   PlusOutlined,
@@ -45,8 +38,6 @@ import {
   CloseCircleOutlined,
   StopOutlined,
   ClockCircleOutlined,
-  BarChartOutlined,
-  DeleteOutlined,
   ThunderboltOutlined,
   ArrowLeftOutlined,
   UploadOutlined,
@@ -58,30 +49,28 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import bannerAdsService from '@services/api/bannerAdsService';
-import { productService } from '@services/api';
 import uploadService from '@services/api/uploadService';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '@store/slices/authSlice';
-import { paymentService } from '@services/api/paymentService';
 import ImgCrop from 'antd-img-crop';
 import HotspotEditor from '@components/seller/ShopEditor/ConfigComponents/HotspotEditor';
 import HomepagePreviewModal from '@components/seller/banner/HomepagePreviewModal';
 import styles from './SellerBannerAdsPage.module.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 const { Dragger } = Upload;
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  DRAFT:          { color: 'default',    label: 'Draft',          icon: <ClockCircleOutlined /> },
+  DRAFT: { color: 'default', label: 'Draft', icon: <ClockCircleOutlined /> },
   PENDING_REVIEW: { color: 'processing', label: 'Pending Review', icon: <ClockCircleOutlined /> },
-  APPROVED:       { color: 'cyan',       label: 'Approved',       icon: <CheckCircleOutlined /> },
-  RUNNING:        { color: 'success',    label: 'Running',        icon: <ThunderboltOutlined /> },
-  COMPLETED:      { color: 'default',    label: 'Completed',      icon: <CheckCircleOutlined /> },
-  REJECTED:       { color: 'error',      label: 'Rejected',       icon: <CloseCircleOutlined /> },
-  CANCELLED:      { color: 'default',    label: 'Cancelled',      icon: <StopOutlined /> },
-  PAUSED:         { color: 'warning',    label: 'Paused',         icon: <StopOutlined /> },
+  APPROVED: { color: 'cyan', label: 'Approved', icon: <CheckCircleOutlined /> },
+  RUNNING: { color: 'success', label: 'Running', icon: <ThunderboltOutlined /> },
+  COMPLETED: { color: 'default', label: 'Completed', icon: <CheckCircleOutlined /> },
+  REJECTED: { color: 'error', label: 'Rejected', icon: <CloseCircleOutlined /> },
+  CANCELLED: { color: 'default', label: 'Cancelled', icon: <StopOutlined /> },
+  PAUSED: { color: 'warning', label: 'Paused', icon: <StopOutlined /> },
 };
 
 // ─── Reusable section header ──────────────────────────────────────────────────
@@ -124,7 +113,9 @@ const BannerCard = ({ banner, onCancel }) => {
             <CalendarOutlined /> {dayjs(banner.startDate).format('DD/MM')} &ndash;{' '}
             {dayjs(banner.endDate).format('DD/MM/YYYY')}
           </span>
-          <span>{totalDays} day{totalDays !== 1 ? 's' : ''}</span>
+          <span>
+            {totalDays} day{totalDays !== 1 ? 's' : ''}
+          </span>
         </div>
 
         {banner.status === 'RUNNING' && (
@@ -205,11 +196,11 @@ const Step1Upload = ({ imageUrl, setImageUrl, onNext }) => {
 
   const handleConfirm = () => {
     if (!preview || imgErr) {
-return message.warning('Vui lòng chọn ảnh hợp lệ trước');
-}
+      return message.warning('Vui lòng chọn ảnh hợp lệ trước');
+    }
     if (preview.startsWith('data:')) {
-return message.warning('Đang xử lý ảnh, vui lòng chờ giây lát...');
-}
+      return message.warning('Đang xử lý ảnh, vui lòng chờ giây lát...');
+    }
     setImageUrl(preview);
     onNext();
   };
@@ -294,29 +285,13 @@ return message.warning('Đang xử lý ảnh, vui lòng chờ giây lát...');
 };
 
 // ─── Step 2: Hotspot & Title editor ──────────────────────────────────────────
-const Step2Hotspot = ({
-  imageUrl,
-  hotspots,
-  setHotspots,
-  form,
-  products,
-  loadingProducts,
-  onBack,
-  onNext,
-}) => {
+const Step2Hotspot = ({ imageUrl, hotspots, setHotspots, onBack, onNext }) => {
   const [showEditor, setShowEditor] = useState(false);
 
   const handleHotspotSave = (newHotspots) => {
     setShowEditor(false);
-    // Map product links back
     setHotspots(newHotspots);
   };
-
-  // Build preset links from seller's products
-  const productLinks = products.map((p) => ({
-    value: `/product/${p._id}`,
-    label: `🛍️ ${p.name}`,
-  }));
 
   return (
     <div className={styles.stepPanel}>
@@ -431,7 +406,6 @@ const Step2Hotspot = ({
 // ─── Step 3: Schedule + preview + submit ──────────────────────────────────────
 const Step3Schedule = ({
   imageUrl,
-  form,
   hotspots,
   calendar,
   pricePerDay,
@@ -452,8 +426,8 @@ const Step3Schedule = ({
 
   const disabledDate = (current) => {
     if (current < dayjs().startOf('day')) {
-return true;
-}
+      return true;
+    }
     const dateStr = current.format('YYYY-MM-DD');
     return calendar[dateStr]?.isFull || false;
   };
@@ -485,8 +459,8 @@ return true;
     const dateStr = current.format('YYYY-MM-DD');
     const info = calendar[dateStr];
     if (!info) {
-return <div className="ant-picker-cell-inner">{current.date()}</div>;
-}
+      return <div className="ant-picker-cell-inner">{current.date()}</div>;
+    }
     const color = info.isFull ? '#ef4444' : info.status === 'almost_full' ? '#f97316' : '#22c55e';
     return (
       <div className="ant-picker-cell-inner" style={{ position: 'relative' }}>
@@ -514,8 +488,15 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
 
   return (
     <div className={styles.stepPanel}>
-      <Alert type="info" showIcon
-        message={<span>Credits are <strong>held immediately</strong> upon submission. If rejected, they are <strong>fully refunded</strong>.</span>}
+      <Alert
+        type="info"
+        showIcon
+        message={
+          <span>
+            Credits are <strong>held immediately</strong> upon submission. If rejected, they are{' '}
+            <strong>fully refunded</strong>.
+          </span>
+        }
       />
 
       {/* Banner Title */}
@@ -537,12 +518,27 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
 
       {/* Schedule */}
       <div className={styles.configSection}>
-        <div className={styles.configSectionTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div><CalendarOutlined style={{ color: '#1677ff' }} /> Display Schedule <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span></div>
+        <div
+          className={styles.configSectionTitle}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <div>
+            <CalendarOutlined style={{ color: '#1677ff' }} /> Display Schedule{' '}
+            <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>
+          </div>
           <div style={{ fontSize: 12, fontWeight: 400, display: 'flex', gap: 12 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }}/> Available</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f97316' }}/> Almost Full</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }}/> Full</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />{' '}
+              Available
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f97316' }} />{' '}
+              Almost Full
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />{' '}
+              Full
+            </span>
           </div>
         </div>
         <RangePicker
@@ -559,7 +555,9 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
       {loadingSlots && <Spin tip="Checking slot availability..." />}
 
       {slotInfo && (
-        <div className={`${styles.configSection} ${slotInfo.isAvailable ? styles.pricingAvailable : styles.pricingFull}`}>
+        <div
+          className={`${styles.configSection} ${slotInfo.isAvailable ? styles.pricingAvailable : styles.pricingFull}`}
+        >
           {slotInfo.isAvailable ? (
             <>
               <div className={styles.pricingRow}>
@@ -577,7 +575,9 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
               <Divider style={{ margin: '10px 0' }} />
               <div className={`${styles.pricingRow} ${styles.pricingTotal}`}>
                 <span>Total Ad Fee</span>
-                <strong className={styles.pricingFee}>{estimatedFee.toLocaleString()} credits</strong>
+                <strong className={styles.pricingFee}>
+                  {estimatedFee.toLocaleString()} credits
+                </strong>
               </div>
               <div className={styles.pricingRow}>
                 <span>Your Balance</span>
@@ -611,13 +611,60 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
         <div className={styles.configSectionTitle}>How It Works</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            ['1', <span key="1">Credits are <strong>held immediately</strong> upon submission</span>],
-            ['2', <span key="2">Admin reviews within <strong>1–3 business days</strong></span>],
-            ['3', <span key="3">If approved → Banner <strong>runs automatically</strong> on schedule</span>],
-            ['4', <span key="4">If rejected → Credits are <strong>fully refunded</strong> instantly</span>],
+            [
+              '1',
+              <span key="1">
+                Credits are <strong>held immediately</strong> upon submission
+              </span>,
+            ],
+            [
+              '2',
+              <span key="2">
+                Admin reviews within <strong>1–3 business days</strong>
+              </span>,
+            ],
+            [
+              '3',
+              <span key="3">
+                If approved → Banner <strong>runs automatically</strong> on schedule
+              </span>,
+            ],
+            [
+              '4',
+              <span key="4">
+                If rejected → Credits are <strong>fully refunded</strong> instantly
+              </span>,
+            ],
           ].map(([num, text]) => (
-            <div key={num} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0f172a', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{num}</div>
+            <div
+              key={num}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                fontSize: 13,
+                color: '#374151',
+                lineHeight: 1.5,
+              }}
+            >
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: '#0f172a',
+                  color: '#fff',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: 1,
+                }}
+              >
+                {num}
+              </div>
               <span>{text}</span>
             </div>
           ))}
@@ -625,13 +672,20 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
       </div>
 
       <div className={styles.stepActions}>
-        <Button onClick={onBack} icon={<ArrowLeftOutlined />}>Back</Button>
+        <Button onClick={onBack} icon={<ArrowLeftOutlined />}>
+          Back
+        </Button>
         <Space>
           {imageUrl && (
             <Button
               icon={<EyeOutlined />}
               onClick={() => setPreviewOpen(true)}
-              style={{ borderColor: '#1677ff', color: '#1677ff', borderRadius: 10, fontWeight: 600 }}
+              style={{
+                borderColor: '#1677ff',
+                color: '#1677ff',
+                borderRadius: 10,
+                fontWeight: 600,
+              }}
             >
               Preview on Home
             </Button>
@@ -645,7 +699,9 @@ return <div className="ant-picker-cell-inner">{current.date()}</div>;
             disabled={!isReadyFull}
             onClick={onSubmit}
           >
-            {submitting ? 'Submitting...' : `Pay & Submit${estimatedFee > 0 ? ` (${estimatedFee.toLocaleString()} credits)` : ''}`}
+            {submitting
+              ? 'Submitting...'
+              : `Pay & Submit${estimatedFee > 0 ? ` (${estimatedFee.toLocaleString()} credits)` : ''}`}
           </Button>
         </Space>
       </div>
@@ -675,9 +731,6 @@ const SellerBannerAdsPage = () => {
   const [loadingBanners, setLoadingBanners] = useState(false);
   const [calendar, setCalendar] = useState({});
   const [pricePerDay, setPricePerDay] = useState(5000);
-  const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
-
   // Wizard state
   const [imageUrl, setImageUrl] = useState('');
   const [linkMode, setLinkMode] = useState('global');
@@ -722,38 +775,24 @@ const SellerBannerAdsPage = () => {
     }
   }, []);
 
-  const fetchProducts = useCallback(async () => {
-    setLoadingProducts(true);
-    try {
-      const res = await productService.getMyProducts({ limit: 200 });
-      const raw = res?.data?.products || res?.data || [];
-      setProducts(Array.isArray(raw) ? raw : []);
-    } catch {
-      /* silent */
-    } finally {
-      setLoadingProducts(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchMyBanners();
     fetchCalendar();
-    fetchProducts();
     dispatch(getCurrentUser()); // Tải lại thông tin user để update số xu mới nhất từ DB
-  }, [fetchMyBanners, fetchCalendar, fetchProducts, dispatch]);
+  }, [fetchMyBanners, fetchCalendar, dispatch]);
 
   // ─── Submit ──────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     try {
       if (!imageUrl) {
-return message.error('Vui lòng chọn ảnh banner');
-}
+        return message.error('Vui lòng chọn ảnh banner');
+      }
       if (!dateRange?.[0] || !dateRange?.[1]) {
-return message.error('Vui lòng chọn khoảng thời gian');
-}
+        return message.error('Vui lòng chọn khoảng thời gian');
+      }
       if (!slotInfo?.isAvailable) {
-return message.error('Khoảng thời gian này đã hết slot');
-}
+        return message.error('Khoảng thời gian này đã hết slot');
+      }
 
       setSubmitting(true);
       await bannerAdsService.createRequest({
@@ -761,7 +800,8 @@ return message.error('Khoảng thời gian này đã hết slot');
         image: imageUrl,
         hotspots: linkMode === 'hotspot' ? hotspots : [],
         link: linkMode === 'global' ? bannerLink : null,
-        linkType: linkMode === 'global' ? (bannerLink.startsWith('http') ? 'external' : 'deal') : 'none',
+        linkType:
+          linkMode === 'global' ? (bannerLink.startsWith('http') ? 'external' : 'deal') : 'none',
         startDate: dateRange[0].toISOString(),
         endDate: dateRange[1].toISOString(),
       });
@@ -794,8 +834,8 @@ return message.error('Khoảng thời gian này đã hết slot');
   // ─── Cancel ──────────────────────────────────────────────────────────────
   const handleCancel = async () => {
     if (!cancelId) {
-return;
-}
+      return;
+    }
     setCancelling(true);
     try {
       await bannerAdsService.cancelRequest(cancelId);
@@ -810,7 +850,9 @@ return;
       await fetchMyBanners();
       try {
         await dispatch(getCurrentUser()).unwrap();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       message.error(err?.response?.data?.message || 'Cancellation failed');
     } finally {
@@ -852,7 +894,13 @@ return;
       <div className={styles.pageHeader}>
         <div className={styles.pageHeaderLeft}>
           {view === 'create' ? (
-            <button onClick={() => setView('list')} className={styles.backIconBtn} title="Back to list"><ArrowLeftOutlined /></button>
+            <button
+              onClick={() => setView('list')}
+              className={styles.backIconBtn}
+              title="Back to list"
+            >
+              <ArrowLeftOutlined />
+            </button>
           ) : (
             <div className={styles.pageIconWrap}>
               <ThunderboltOutlined style={{ color: '#fff', fontSize: 22 }} />
@@ -905,7 +953,9 @@ return;
             <div className={styles.infoStripDot} />
             <div className={styles.infoStripItem}>
               <span className={styles.infoStripIcon}>🎯</span>
-              <span>Max <strong>1 slot</strong> per seller at a time</span>
+              <span>
+                Max <strong>1 slot</strong> per seller at a time
+              </span>
             </div>
             <div className={styles.infoStripDot} />
             <div className={styles.infoStripItem}>
@@ -915,7 +965,9 @@ return;
             <div className={styles.infoStripDot} />
             <div className={styles.infoStripItem}>
               <span className={styles.infoStripIcon}>✅</span>
-              <span>Admin reviews within <strong>1–3 days</strong></span>
+              <span>
+                Admin reviews within <strong>1–3 days</strong>
+              </span>
             </div>
           </div>
 
@@ -975,7 +1027,7 @@ return;
                   description={
                     <div>
                       <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
-                        You don't have any banner ads yet
+                        You do not have any banner ads yet
                       </div>
                       <div style={{ color: '#64748b', fontSize: 13 }}>
                         Create a banner to get your products featured on the GZMart homepage!
@@ -991,9 +1043,14 @@ return;
             ) : (
               <div className={styles.bannerGrid}>
                 {myBanners.map((b) => (
-                <BannerCard key={b._id} banner={b} onCancel={(id, status) => {
- setCancelId(id); setCancelStatus(status); 
-}} />
+                  <BannerCard
+                    key={b._id}
+                    banner={b}
+                    onCancel={(id, status) => {
+                      setCancelId(id);
+                      setCancelStatus(status);
+                    }}
+                  />
                 ))}
               </div>
             )}
@@ -1027,11 +1084,6 @@ return;
                 imageUrl={imageUrl}
                 hotspots={hotspots}
                 setHotspots={setHotspots}
-                products={products}
-                linkMode={linkMode}
-                setLinkMode={setLinkMode}
-                bannerLink={bannerLink}
-                setBannerLink={setBannerLink}
                 onBack={() => setCurrentStep(0)}
                 onNext={() => setCurrentStep(2)}
               />
@@ -1067,9 +1119,14 @@ return;
         open={!!cancelId}
         onOk={handleCancel}
         onCancel={() => {
- setCancelId(null); setCancelStatus(null); 
-}}
-        okText={cancelStatus === 'RUNNING' ? 'Stop & Refund Unused Credits' : 'Cancel & Refund All Credits'}
+          setCancelId(null);
+          setCancelStatus(null);
+        }}
+        okText={
+          cancelStatus === 'RUNNING'
+            ? 'Stop & Refund Unused Credits'
+            : 'Cancel & Refund All Credits'
+        }
         cancelText="Keep Running"
         okButtonProps={{ danger: true, loading: cancelling }}
       >
@@ -1079,14 +1136,22 @@ return;
               Are you sure you want to <strong>stop this banner early</strong>?
             </Paragraph>
             <ul style={{ margin: 0, paddingLeft: 20, color: '#374151', fontSize: 13 }}>
-              <li>The banner will be <strong>removed from the homepage immediately</strong>.</li>
-              <li>Credits for <strong>remaining unused days</strong> will be <strong>pro-rated and refunded</strong> to your wallet.</li>
-              <li>Credits for days already run <strong>will not be refunded</strong>.</li>
+              <li>
+                The banner will be <strong>removed from the homepage immediately</strong>.
+              </li>
+              <li>
+                Credits for <strong>remaining unused days</strong> will be{' '}
+                <strong>pro-rated and refunded</strong> to your wallet.
+              </li>
+              <li>
+                Credits for days already run <strong>will not be refunded</strong>.
+              </li>
             </ul>
           </div>
         ) : (
           <Paragraph>
-            Are you sure you want to cancel this banner? <strong>All credits</strong> will be immediately refunded to your wallet since it hasn't run yet.
+            Are you sure you want to cancel this banner? <strong>All credits</strong> will be
+            immediately refunded to your wallet since it has not run yet.
           </Paragraph>
         )}
       </Modal>

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { DatePicker } from 'antd';
 import { BarChartOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -100,5 +101,11 @@ const OverviewStats = ({ overviewRange, setOverviewRange, overviewStats }) => (
       </div>
     </div>
   );
+
+OverviewStats.propTypes = {
+  overviewRange: PropTypes.object,
+  setOverviewRange: PropTypes.func.isRequired,
+  overviewStats: PropTypes.object,
+};
 
 export default OverviewStats;

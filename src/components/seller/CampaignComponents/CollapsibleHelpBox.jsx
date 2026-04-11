@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 
@@ -51,5 +52,7 @@ const CollapsibleHelpBox = () => {
     </div>
   );
 };
+
+CollapsibleHelpBox.propTypes = {};
 
 export default CollapsibleHelpBox;
