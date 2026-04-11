@@ -1,4 +1,4 @@
-import React from 'react';
+import PropTypes from 'prop-types';
 import { Row, Col, Button, Table, Badge } from 'react-bootstrap';
 import { Avatar } from 'antd';
 import styles from '@assets/styles/seller/VoucherCreate.module.css';
@@ -227,6 +227,13 @@ const VoucherDetails = ({ formData, voucherType, selectedProducts, navigate }) =
       </div>
     </>
   );
+};
+
+VoucherDetails.propTypes = {
+  formData: PropTypes.object.isRequired,
+  voucherType: PropTypes.string,
+  selectedProducts: PropTypes.array,
+  navigate: PropTypes.func,
 };
 
 export default VoucherDetails;

@@ -729,6 +729,7 @@ categoryIdsWithProducts.add(String(cat));
 // ─── Discount Module Config (merged with VOUCHER) ───────────────────────────
 
 function DiscountModuleConfig({ module, onUpdate }) {
+  const { t } = useTranslation();
   const { props = {} } = module;
   const update = (propsUpdate) => onUpdate(propsUpdate);
 
@@ -1335,6 +1336,7 @@ return;
 // ─── Cover Photo Editor Panel ──────────────────────────────────────────────────
 
 function CoverPhotoPanel({ coverUrl, onChangeCoverUrl, onClose }) {
+  const { t } = useTranslation();
   const [cropEditorOpen, setCropEditorOpen] = useState(false);
 
   const handleUploadSuccess = useCallback(
@@ -1560,7 +1562,7 @@ return;
         dispatch(clearSelection());
       }
     },
-    [dispatch, rawModules, selectedModule]
+    [dispatch, rawModules, selectedModule, t]
   );
 
   useEffect(() => {

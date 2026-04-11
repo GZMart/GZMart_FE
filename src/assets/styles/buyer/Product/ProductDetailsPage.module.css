@@ -298,6 +298,15 @@
 .flashSaleLabel {
   font-weight: 600;
   color: #ee4d2d;
+  display: block;
+}
+
+.flashSaleSub {
+  font-size: 11px;
+  color: #ee4d2d;
+  font-weight: 500;
+  margin-top: 1px;
+  opacity: 0.75;
 }
 
 .flashSaleIcon {

@@ -630,6 +630,26 @@
       "quarter": "Quarter",
       "year": "Year"
     },
+    "balance": {
+      "title": "Account Balance",
+      "available": "Available Balance",
+      "availableTooltip": "Funds from completed orders, available for withdrawal or use",
+      "pending": "Pending",
+      "pendingTooltip": "Funds from orders being processed, unpaid or in transit",
+      "totalEarning": "Total Earnings",
+      "totalEarningSub": "From completed orders",
+      "totalEarningTooltip": "Total revenue from completed orders",
+      "totalRefund": "Total Refunds",
+      "totalRefundSub": "From cancelled/returned orders",
+      "totalRefundTooltip": "Total amount refunded to customers",
+      "completedOrders": "Completed Orders",
+      "totalOrders": "{{count}} orders",
+      "pendingOrders": "Orders In Progress",
+      "pendingOrdersSub": "Unpaid / in delivery",
+      "refresh": "Refresh",
+      "error": "Unable to load balance information",
+      "retry": "Retry"
+    },
     "overallSales": {
       "title": "Revenue Over Time",
       "vsPrevious": "vs. previous period",
@@ -1038,6 +1058,153 @@
         "cannotLoad": "Cannot load request list",
         "enterRejectReason": "Please enter rejection reason"
       }
+    }
+  },
+  "sellerFinance": {
+    "pageTitle": "Finance Management / Deposit - Withdraw",
+    "breadcrumb": {
+      "dashboard": "Dashboard",
+      "finance": "Finance"
+    },
+    "refresh": "Refresh",
+    "balance": {
+      "availableBalance": "Available Balance",
+      "rewardPoints": "Reward Points",
+      "totalEarnings": "Total Earnings",
+      "totalWithdrawn": "Total Withdrawn",
+      "totalRefund": "Total Refund"
+    },
+    "actionTabs": {
+      "deposit": "Deposit",
+      "convert": "Convert to Reward Point",
+      "withdraw": "Withdraw"
+    },
+    "deposit": {
+      "transferInfo": "Transfer Information",
+      "bank": "Bank",
+      "accountNumber": "Account Number",
+      "accountName": "Account Name",
+      "amountToDeposit": "Amount to Deposit (VND)",
+      "amountPlaceholder": "0",
+      "quickAmounts": "Quick Amounts",
+      "confirmBtn": "CONFIRM DEPOSIT",
+      "processing": "Processing...",
+      "note": "Note",
+      "noteText": "Please enter the exact transfer content provided after clicking confirm so the system can automatically record it within 3-5 minutes."
+    },
+    "depositModal": {
+      "title": "Transfer Information",
+      "transferAmount": "Deposit Amount",
+      "transferContent": "Transfer Content",
+      "copyBtn": "Copy Content",
+      "copied": "Copied!",
+      "notice": "Please enter the exact transfer content. The system will automatically update within 3-5 minutes."
+    },
+    "convert": {
+      "title": "Convert to Reward Point",
+      "conversionRate": "Conversion Rate",
+      "rateValue": "1 VND = 1 RP",
+      "availableBalance": "Available Balance",
+      "currentRP": "Current RP",
+      "amountToConvert": "Amount to Convert (VND)",
+      "amountPlaceholder": "0",
+      "quickAmounts": "Quick Amounts",
+      "confirmBtn": "CONFIRM CONVERSION",
+      "processing": "Processing...",
+      "note": "Note",
+      "noteText": "Reward Point cannot be converted back to money. Please consider carefully before converting.",
+      "successMsg": "Converted {{amount}} to {{points}} RP successfully"
+    },
+    "withdraw": {
+      "recipientAccount": "Recipient Account",
+      "updateBtn": "Update",
+      "closeBtn": "Close",
+      "selectBank": "Select Bank",
+      "accountNumber": "Account Number",
+      "accountHolderName": "Account Holder Name (no accents)",
+      "saveBtn": "SAVE INFORMATION",
+      "noBankAccount": "No bank account added yet. Click \"Update\" to add.",
+      "amountToWithdraw": "Amount to Withdraw (VND)",
+      "amountPlaceholder": "0",
+      "availableBalance": "Available Balance",
+      "quickAmounts": "Quick Amounts",
+      "confirmBtn": "REQUEST WITHDRAWAL",
+      "processing": "Processing...",
+      "note": "Note",
+      "noteText": "Withdrawal requests will be processed within 1-3 business days. Withdrawal fee: Free."
+    },
+    "withdrawPin": {
+      "title": "PIN Verification",
+      "subtitle": "Security Verification",
+      "description": "Please enter your 6-digit PIN to complete the withdrawal of {{amount}}.",
+      "pinError": "Incorrect PIN. Please try again.",
+      "forgotPin": "Forgot PIN?",
+      "verifying": "Verifying..."
+    },
+    "quickStats": {
+      "pendingApprovals": "Pending",
+      "pendingUnit": "requests",
+      "approvedToday": "Approved Today",
+      "approvedUnit": "successful",
+      "totalTransactions": "Total Transactions",
+      "transactionsUnit": "transactions"
+    },
+    "transactionHistory": {
+      "title": "Transaction History",
+      "searchPlaceholder": "Search transaction ID...",
+      "filterAll": "All Transaction Types",
+      "filterDeposit": "Deposit",
+      "filterWithdraw": "Withdraw",
+      "filterConvertRp": "Convert RP",
+      "filterEarning": "Earnings",
+      "filterRefund": "Refund",
+      "dateRange": "01/10/2023 - 31/10/2023",
+      "advancedFilter": "Advanced Filter",
+      "table": {
+        "date": "Date",
+        "transactionId": "Transaction ID",
+        "type": "Type",
+        "amount": "Amount",
+        "balanceAfter": "Balance After",
+        "status": "Status",
+        "action": "Action"
+      },
+      "viewDetails": "View Details",
+      "empty": "No transactions found",
+      "showing": "Showing {{shown}} / {{total}} transactions"
+    },
+    "txType": {
+      "deposit": "Deposit",
+      "withdraw": "Withdraw",
+      "convert_rp": "Convert RP",
+      "earning": "Earnings",
+      "refund": "Refund"
+    },
+    "txStatus": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "validation": {
+      "minDeposit": "Minimum deposit amount is 10,000 VND",
+      "minWithdraw": "Minimum withdrawal amount is 50,000 VND",
+      "minConvert": "Minimum conversion amount is 10,000 VND",
+      "insufficientBalance": "Insufficient available balance",
+      "incompleteBankInfo": "Please fill in all bank information",
+      "incompleteForm": "Please fill in all required information"
+    },
+    "toast": {
+      "depositSuccess": "Deposit request created",
+      "depositFailed": "Failed to create deposit request",
+      "withdrawSuccess": "Withdrawal request submitted. Please wait for approval.",
+      "withdrawFailed": "Failed to create withdrawal request",
+      "convertSuccess": "Conversion successful",
+      "convertFailed": "Conversion failed",
+      "saveBankSuccess": "Bank account saved",
+      "saveBankFailed": "Failed to save",
+      "copyFailed": "Cannot copy",
+      "copied": "Copied"
     }
   }
 }
