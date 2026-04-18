@@ -31,7 +31,7 @@ jobs:
 
       # Bước 2: Cài đặt Vercel CLI phiên bản mới nhất
       - name: Install latest Vercel CLI
-        run: npm install -g vercel@latest
+        run: npm install -g vercel@v42.2.0
 
       # Bước 3: Deploy dự án lên Vercel
       - name: Deploy GZMart to Vercel
