@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Form, Row, Col } from 'react-bootstrap';
+import Select from 'react-select';
 import { productService } from '../../../services/api/productService';
 import { categoryService } from '../../../services/api/categoryService';
 import { attributeService } from '../../../services/api/attributeService';
@@ -10,7 +11,40 @@ import AiPriceSuggest from './AiPriceSuggest';
 import AiPriceSuggestModal from './AiPriceSuggestModal';
 import AiPriceDetailModal from './AiPriceDetailModal';
 import RichTextEditor from '../../common/RichTextEditor';
+import { getProductDrawerSelectStyles } from '../../../utils/productDrawerSelectStyles';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
+
+/** Sort sibling categories: featured → product count → order → name (tree order preserved per level). */
+function compareCategoryPeers(a, b) {
+  const fa = a.isFeatured ? 1 : 0;
+  const fb = b.isFeatured ? 1 : 0;
+  if (fb !== fa) {
+    return fb - fa;
+  }
+  const pa = a.productCount ?? 0;
+  const pb = b.productCount ?? 0;
+  if (pb !== pa) {
+    return pb - pa;
+  }
+  const oa = a.order ?? 0;
+  const ob = b.order ?? 0;
+  if (oa !== ob) {
+    return oa - ob;
+  }
+  return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+}
+
+function sortCategoryTree(nodes) {
+  if (!nodes?.length) {
+    return [];
+  }
+  return [...nodes]
+    .sort(compareCategoryPeers)
+    .map((n) => ({
+      ...n,
+      children: n.children?.length ? sortCategoryTree(n.children) : [],
+    }));
+}
 
 const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [loading, setLoading] = useState(false);
@@ -301,7 +335,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           });
         };
 
-        flatten(response.data || []);
+        flatten(sortCategoryTree(response.data || []));
         setCategories(flat);
       } else {
         setCategories([]);
@@ -311,7 +345,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       try {
         const fallback = await categoryService.getAll({ status: 'active' });
         if (fallback.success) {
-          setCategories((fallback.data || []).map((cat) => ({ ...cat, depth: 0 })));
+          const sorted = [...(fallback.data || [])].sort(compareCategoryPeers);
+          setCategories(sorted.map((cat) => ({ ...cat, depth: 0 })));
           return;
         }
       } catch {}
@@ -1063,6 +1098,25 @@ e.preventDefault();
         ? 'Add at least one product image to publish'
         : '';
 
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((cat) => ({
+        value: cat._id,
+        label: `${cat.depth > 0 ? `${'\u00A0'.repeat(cat.depth * 4)}› ` : ''}${cat.name}`,
+      })),
+    [categories]
+  );
+
+  const selectedCategoryOption = useMemo(
+    () => categoryOptions.find((o) => o.value === formData.categoryId) || null,
+    [categoryOptions, formData.categoryId]
+  );
+
+  const categorySelectStyles = useMemo(
+    () => getProductDrawerSelectStyles(!!errors.categoryId),
+    [errors.categoryId]
+  );
+
   return createPortal(
     <>
       {/* Backdrop */}
@@ -1194,25 +1248,43 @@ e.preventDefault();
                 </Col>
                 <Col md={3}>
                   <Form.Group className="mb-3">
-                    <label className={styles.formLabel}>
+                    <label className={styles.formLabel} htmlFor="product-category-select-input">
                       Category <span className={styles.required}>*</span>
                     </label>
-                    <Form.Select
-                      name="categoryId"
-                      value={formData.categoryId}
-                      onChange={handleChange}
-                      isInvalid={!!errors.categoryId}
-                      disabled={loading}
-                      className={`${styles.formControl} ${errors.categoryId ? styles.invalid : ''}`}
-                    >
-                      <option value="">Select category...</option>
-                      {categories.map((cat) => (
-                        <option key={cat._id} value={cat._id}>
-                          {cat.depth > 0 ? `${'  '.repeat(cat.depth * 2)}› ` : ''}
-                          {cat.name}
-                        </option>
-                      ))}
-                    </Form.Select>
+                    <div className={styles.categorySelectWrap}>
+                      <Select
+                        inputId="product-category-select-input"
+                        instanceId="product-drawer-category"
+                        name="categoryId"
+                        options={categoryOptions}
+                        value={selectedCategoryOption}
+                        onChange={(opt) =>
+                          handleChange({
+                            target: { name: 'categoryId', value: opt?.value ?? '' },
+                          })
+                        }
+                        placeholder="Search or select category..."
+                        isClearable
+                        isSearchable
+                        isDisabled={loading}
+                        styles={categorySelectStyles}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        menuPosition="fixed"
+                        menuPlacement="auto"
+                        noOptionsMessage={() => 'No categories match your search'}
+                        filterOption={(option, rawInput) => {
+                          const q = (rawInput || '').trim().toLowerCase();
+                          if (!q) {
+                            return true;
+                          }
+                          const label = String(option.label || '').toLowerCase();
+                          return label.includes(q);
+                        }}
+                        formatOptionLabel={(option) => (
+                          <span style={{ whiteSpace: 'pre' }}>{option.label}</span>
+                        )}
+                      />
+                    </div>
                     {errors.categoryId && (
                       <div className={styles.invalidFeedback}>{errors.categoryId}</div>
                     )}

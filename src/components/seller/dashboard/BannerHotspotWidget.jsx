@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Tag, Tooltip } from 'antd';
 import { ThunderboltOutlined, RightOutlined, DollarOutlined } from '@ant-design/icons';
 import bannerAdsService from '@services/api/bannerAdsService';
@@ -17,6 +18,7 @@ const SLOT_COLORS = ['#52c41a', '#52c41a', '#fa8c16', '#fa8c16', '#f5222d'];
 
 const BannerHotspotWidget = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const user = useSelector((s) => s.auth?.user);
   const walletBalance = user?.reward_point || 0;
 
@@ -75,10 +77,10 @@ return 'other';
   })[s] || '#94a3b8';
 
   const slotLabel = (s) => ({
-    free: 'Slot trống',
-    other: 'Đã có người đặt',
-    mine_running: 'Banner đang chạy của bạn',
-    mine_pending: 'Banner chờ duyệt của bạn',
+    free: t('sellerDashboard.bannerWidget.slotLabels.free', 'Slot trống'),
+    other: t('sellerDashboard.bannerWidget.slotLabels.other', 'Đã có người đặt'),
+    mine_running: t('sellerDashboard.bannerWidget.slotLabels.mineRunning', 'Banner đang chạy của bạn'),
+    mine_pending: t('sellerDashboard.bannerWidget.slotLabels.minePending', 'Banner chờ duyệt của bạn'),
   })[s] || '';
 
   return (
@@ -90,18 +92,20 @@ return 'other';
             <ThunderboltOutlined />
           </div>
           <div>
-            <div className={styles.widgetTitle}>Quảng Cáo Banner</div>
+            <div className={styles.widgetTitle}>{t('sellerDashboard.bannerWidget.title', 'Quảng Cáo Banner')}</div>
             <div className={styles.widgetSub}>
-              {loading ? 'Đang tải...' : freeSlotsCount > 0
-                ? `${freeSlotsCount} slot trống hôm nay`
-                : 'Hết slot hôm nay'}
+              {loading
+                ? t('sellerDashboard.bannerWidget.loading', 'Đang tải...')
+                : freeSlotsCount > 0
+                ? t('sellerDashboard.bannerWidget.freeSlots', '{{count}} slot trống hôm nay', { count: freeSlotsCount })
+                : t('sellerDashboard.bannerWidget.noSlotsToday', 'Hết slot hôm nay')}
             </div>
           </div>
         </div>
         <div className={styles.widgetRight}>
           <div className={styles.walletBadge}>
             <DollarOutlined />
-            <span>{walletBalance.toLocaleString()} xu</span>
+            <span>{walletBalance.toLocaleString()} {t('sellerDashboard.bannerWidget.coinUnit', 'xu')}</span>
           </div>
           <RightOutlined className={styles.arrowIcon} />
         </div>
@@ -111,7 +115,7 @@ return 'other';
       {!loading && (
         <div className={styles.slotsRow}>
           {slots.map((s, i) => (
-            <Tooltip key={i} title={`Slot ${i + 1}: ${slotLabel(s)}`}>
+            <Tooltip key={i} title={t('sellerDashboard.bannerWidget.slotTooltip', 'Slot {{number}}: {{label}}', { number: i + 1, label: slotLabel(s) })}>
               <div
                 className={`${styles.slotPill} ${s === 'free' ? styles.slotFree : ''}`}
                 style={{ background: slotColor(s) }}
@@ -119,7 +123,7 @@ return 'other';
             </Tooltip>
           ))}
           <span className={styles.slotsLabel}>
-            {MAX_SLOTS} slot · 200.000 xu/ngày
+            {t('sellerDashboard.bannerWidget.slotsMeta', '{{count}} slot · {{price}} xu/ngày', { count: MAX_SLOTS, price: '200.000' })}
           </span>
         </div>
       )}
@@ -129,12 +133,12 @@ return 'other';
         <div className={styles.activeTags}>
           {runningBanners.map((b) => (
             <Tag key={b._id} color="blue" icon={<ThunderboltOutlined />} style={{ fontSize: 11 }}>
-              Đang chạy
+              {t('sellerDashboard.bannerWidget.running', 'Đang chạy')}
             </Tag>
           ))}
           {pendingBanners.map((b) => (
             <Tag key={b._id} color="purple" style={{ fontSize: 11 }}>
-              Chờ duyệt
+              {t('sellerDashboard.bannerWidget.pending', 'Chờ duyệt')}
             </Tag>
           ))}
         </div>

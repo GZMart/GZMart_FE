@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -19,6 +20,29 @@ import {
   listingTierToFormState,
   buildTierSelectOptions,
 } from '../../../constants/tierTypes';
+
+import {
+  Package,
+  ChevronRight,
+  Info,
+  Settings,
+  Layers,
+  Trash2,
+  Pencil,
+  Plus,
+  X,
+  List,
+  Tag,
+  Search,
+  ChevronLeft,
+  Send,
+  RefreshCw,
+  Box,
+  AlertTriangle,
+  Check,
+  Inbox,
+  HelpCircle,
+} from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILITIES
@@ -80,7 +104,7 @@ const vndToCnyHint = (vnd, rate) => {
 
 /**
  * Low-stock URL prefill: keep only tier option rows used by the prefilled SKU(s),
- * so the classification UI matches the variant table (not full listing 4×4 vs 2 rows).
+ * so the classification UI matches the variant table (not full listing 4x4 vs 2 rows).
  */
 const subsetTiersToMatchVariantTierIndexes = (tiersForm, variants) => {
   if (
@@ -121,18 +145,7 @@ const LabelWithTooltip = ({ children, tooltip }) => (
   <span className={styles.labelWithTooltip}>
     {children}
     <span className={styles.tooltipIcon} title={tooltip}>
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
+      <HelpCircle size={14} />
     </span>
   </span>
 );
@@ -160,7 +173,6 @@ const cartesian = (...arrays) =>
 
 /** Generate variant rows from tiers */
 const generateVariants = (tiers, existingVariants = [], productName = '') => {
-  // Only tiers with at least one filled option
   const validTiers = tiers
     .map((t) => ({ ...t, options: t.options.filter((o) => o.value && o.value.trim()) }))
     .filter((t) => t.type && t.options.length > 0);
@@ -215,10 +227,9 @@ function computeStage1CostBasis(flatItems, importConfig = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 const MAX_OPTIONS = 20;
 
-const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, styles }) => {
+const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, styles: s, disabled }) => {
   const tierDef = TIER_TYPES[tier.type];
   const selectOptions = useMemo(() => buildTierSelectOptions(tierDef, tier), [tierDef, tier]);
-  // Show all type keys that are either this tier's current type OR not already used
   const availableTypes = TIER_TYPE_KEYS.filter((k) => k === tier.type || !usedTypes.includes(k));
 
   const addOption = () => {
@@ -247,13 +258,13 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, sty
   };
 
   return (
-    <div className={styles.tierRow}>
-      {/* Tier type selector */}
-      <div className={styles.tierNameRow}>
+    <div className={s.tierRow}>
+      <div className={s.tierNameRow}>
         <select
-          className={styles.tierTypeSelect}
+          className={s.tierTypeSelect}
           value={tier.type}
           onChange={(e) => onChangeType(e.target.value)}
+          disabled={disabled}
         >
           <option value="">-- Select classification type --</option>
           {availableTypes.map((k) => (
@@ -262,29 +273,36 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, sty
             </option>
           ))}
         </select>
-        <button type="button" className={styles.btnRemoveTier} onClick={onRemove}>
-          ✕
+        <button
+          type="button"
+          className={s.btnRemoveTier}
+          onClick={onRemove}
+          aria-label="Remove classification"
+          disabled={disabled}
+        >
+          <X />
         </button>
       </div>
 
-      {/* Options list — only shown once a tier type is selected */}
       {tier.type && tierDef && (
-        <div className={styles.tierOptionsList}>
+        <div className={s.tierOptionsList}>
           {tier.options.map((opt, i) => (
-            <div key={i} className={styles.optionRow}>
+            <div key={i} className={s.optionRow}>
               {opt.isCustom ? (
                 <input
-                  className={styles.customOptionInput}
+                  className={s.customOptionInput}
                   type="text"
                   placeholder="Enter custom value"
                   value={opt.value}
                   onChange={(e) => handleCustomInput(i, e.target.value)}
+                  disabled={disabled}
                 />
               ) : (
                 <select
-                  className={styles.optionSelect}
+                  className={s.optionSelect}
                   value={opt.value}
                   onChange={(e) => handleOptionSelect(i, e.target.value)}
+                  disabled={disabled}
                 >
                   <option value="">-- Select {tierDef.nameEn.toLowerCase()} --</option>
                   {selectOptions.map((o) => (
@@ -292,22 +310,24 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, sty
                       {o}
                     </option>
                   ))}
-                  <option value={CUSTOM_OPTION}>✏️ Other (manual entry)</option>
+                  <option value={CUSTOM_OPTION}>Other (manual entry)</option>
                 </select>
               )}
               {tier.options.length > 1 && (
                 <button
                   type="button"
-                  className={styles.btnRemoveOpt}
+                  className={s.btnRemoveOpt}
                   onClick={() => removeOption(i)}
+                  aria-label="Remove option"
+                  disabled={disabled}
                 >
-                  ×
+                  <X />
                 </button>
               )}
             </div>
           ))}
           {tier.options.length < MAX_OPTIONS && (
-            <button type="button" className={styles.btnAddOption} onClick={addOption}>
+            <button type="button" className={s.btnAddOption} onClick={addOption} disabled={disabled}>
               + Add option
             </button>
           )}
@@ -318,13 +338,12 @@ const TierRow = ({ tier, usedTypes, onChangeType, onChangeOptions, onRemove, sty
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LISTING PICKER MODAL
-// Let seller pick variants from their existing product listings
+// LISTING PICKER MODAL — grouped variants by tier-0 (like VariantsTable)
 // ─────────────────────────────────────────────────────────────────────────────
 const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate = 3500 }) => {
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null); // { productId, product }
-  const [checkedModels, setCheckedModels] = useState({}); // modelId → bool
+  const [selected, setSelected] = useState(null);
+  const [checkedModels, setCheckedModels] = useState({});
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -340,7 +359,6 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
 
   const handleSelectProduct = (product) => {
     setSelected(product);
-    // Pre-check all models
     const initial = {};
     (product.models || []).forEach((m) => {
       initial[m._id] = true;
@@ -351,137 +369,138 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
   const buildVariantLabel = (product, model) =>
     variantLabelFromRawTiers(product.tiers, model?.tierIndex || []);
 
+  /** Group models by tier-0 index — mirrors VariantsTable approach */
+  const tier0Groups = useMemo(() => {
+    if (!selected || !Array.isArray(selected.models)) {
+return [];
+}
+    const groupMap = new Map();
+    selected.models.forEach((model) => {
+      const t0Idx = model.tierIndex?.[0] ?? 0;
+      if (!groupMap.has(t0Idx)) {
+        groupMap.set(t0Idx, {
+          tier0Index: t0Idx,
+          tier0Label: selected.tiers?.[0]?.options?.[t0Idx] || `Option ${t0Idx + 1}`,
+          tier0Image: model.image || null,
+          models: [],
+        });
+      }
+      groupMap.get(t0Idx).models.push(model);
+    });
+    return Array.from(groupMap.values()).sort((a, b) => a.tier0Index - b.tier0Index);
+  }, [selected]);
+
+  /** Secondary label for multi-tier models (tier-1 onwards) */
+  const getSecondaryLabel = (model, hasMultiTier) => {
+    if (!hasMultiTier || !model.tierIndex || model.tierIndex.length < 2) {
+return null;
+}
+    return model.tierIndex
+      .slice(1)
+      .map((idx, i) => selected.tiers?.[i + 1]?.options?.[idx] || '?')
+      .join(' / ');
+  };
+
+  const hasMultiTier = selected && selected.tiers && selected.tiers.length >= 2;
+
   const handleConfirm = () => {
     if (!selected) {
-      return;
-    }
+return;
+}
     const pickedModels = (selected.models || []).filter((m) => checkedModels[m._id]);
     if (!pickedModels.length) {
-      return;
-    }
+return;
+}
 
     const rate = Number(exchangeRate) || 3500;
 
-    // One group per product, variants = all picked models
     const group = {
       _id: Math.random().toString(36).slice(2),
       productName: selected.name,
       productId: selected._id,
       tiers: listingTiersToPoFormTiers(selected.tiers),
-      variants: pickedModels.map((model) => ({
-        _variantLabel: buildVariantLabel(selected, model),
-        sku: model.sku,
-        quantity: 1,
-        unitPriceCny: vndToCnyHint(model.costPrice, rate) || vndToCnyHint(model.price, rate),
-        _productId: selected._id,
-        _modelId: model._id,
-      })),
+      variants: pickedModels.map((model) => {
+        const tIdx = model.tierIndex || [];
+        const tier0Label = selected.tiers?.[0]?.options?.[tIdx[0]] || '';
+        const tier1Label = selected.tiers?.[1]?.options?.[tIdx[1]] || '';
+        return {
+          _variantLabel: buildVariantLabel(selected, model),
+          _tier0Label: typeof tier0Label === 'string' ? tier0Label : tier0Label?.value || '',
+          _tier1Label: typeof tier1Label === 'string' ? tier1Label : tier1Label?.value || '',
+          _image: model.image || null,
+          sku: model.sku,
+          quantity: 1,
+          unitPriceCny: vndToCnyHint(model.costPrice, rate) || vndToCnyHint(model.price, rate),
+          _productId: selected._id,
+          _modelId: model._id,
+        };
+      }),
     };
     onSelect([group]);
     onClose();
   };
 
+  const selectedCount = Object.values(checkedModels).filter(Boolean).length;
+
   return (
-    <div style={pickerOverlayStyle} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={pickerPanelStyle}>
-        {/* Header */}
-        <div style={pickerHeaderStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={pickerIconBadgeStyle}>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-              </svg>
+    <div
+      className={styles.pickerOverlay}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className={styles.pickerPanel}>
+        <div className={styles.pickerHeader}>
+          <div className={styles.pickerHeaderLeft}>
+            <div className={styles.pickerIconBadge}>
+              <Box />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                Select product from listing
-              </div>
-              {selected && (
-                <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>
-                  {selected.name}
-                </div>
-              )}
+              <div className={styles.pickerTitle}>Select product from listing</div>
+              {selected && <div className={styles.pickerSubtitle}>{selected.name}</div>}
             </div>
           </div>
-          <button onClick={onClose} style={pickerCloseBtnStyle} title="Close">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+          <button
+            onClick={onClose}
+            className={styles.pickerCloseBtn}
+            title="Close"
+            aria-label="Close"
+          >
+            <X />
           </button>
         </div>
 
         {!selected ? (
           <>
-            {/* Search */}
-            <div style={pickerSearchWrapStyle}>
-              <svg
-                style={pickerSearchIconStyle}
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
+            <div className={styles.pickerSearchWrap}>
+              <span className={styles.pickerSearchIcon}>
+                <Search />
+              </span>
               <input
                 autoFocus
                 type="text"
                 placeholder="Search by name or SKU..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={pickerSearchStyle}
+                className={styles.pickerSearch}
               />
             </div>
 
-            {/* Product list */}
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: 13 }}>
-                Loading list...
-              </div>
+              <div className={styles.pickerLoading}>Loading list...</div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: 13 }}>
-                No products found
-              </div>
+              <div className={styles.pickerEmpty}>No products found</div>
             ) : (
-              <div style={pickerListStyle}>
+              <div className={styles.pickerList}>
                 {filtered.map((p) => (
                   <div
                     key={p._id}
-                    style={pickerItemStyle}
+                    className={styles.pickerItem}
                     onClick={() => handleSelectProduct(p)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#6366f1';
-                      e.currentTarget.style.background = '#fafbff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.background = '#ffffff';
-                    }}
                   >
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{p.name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <span style={pickerChipStyle}>{p.models?.length || 0} variants</span>
+                    <div className={styles.pickerItemName}>{p.name}</div>
+                    <div className={styles.pickerItemMeta}>
+                      <span className={styles.pickerChip}>{p.models?.length || 0} variants</span>
                       {p.models?.[0] && (
-                        <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
-                          SKU: {p.models[0].sku}
-                        </span>
+                        <span className={styles.pickerSku}>SKU: {p.models[0].sku}</span>
                       )}
                     </div>
                   </div>
@@ -491,31 +510,15 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
           </>
         ) : (
           <>
-            {/* Back */}
-            <button onClick={() => setSelected(null)} style={pickerBackBtnStyle}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
+            <button onClick={() => setSelected(null)} className={styles.pickerBackBtn}>
+              <ChevronLeft />
               Back
             </button>
 
-            {/* Select all */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                margin: '8px 0 6px',
-              }}
-            >
-              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Select variants to add:</p>
+            <div className={styles.pickerSelectAllRow}>
+              <p className={styles.pickerSelectAll}>
+                {selected.models?.length || 0} variants · select variants to add:
+              </p>
               <button
                 onClick={() => {
                   const allChecked = (selected.models || []).every((m) => checkedModels[m._id]);
@@ -525,15 +528,7 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
                   });
                   setCheckedModels(next);
                 }}
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#6366f1',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
+                className={styles.pickerSelectAllBtn}
               >
                 {(selected.models || []).every((m) => checkedModels[m._id])
                   ? 'Deselect all'
@@ -541,79 +536,65 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
               </button>
             </div>
 
-            {/* Variant list */}
-            <div style={pickerListStyle}>
-              {(selected.models || []).map((model) => (
-                <label
-                  key={model._id}
-                  style={{
-                    ...pickerVariantRowStyle,
-                    ...(checkedModels[model._id] ? pickerVariantCheckedStyle : {}),
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!checkedModels[model._id]) {
-                      e.currentTarget.style.borderColor = '#6366f1';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!checkedModels[model._id]) {
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                    }
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={!!checkedModels[model._id]}
-                    onChange={() => toggleModel(model._id)}
-                    style={{
-                      width: 15,
-                      height: 15,
-                      accentColor: '#6366f1',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: '#4338ca',
-                      fontWeight: 600,
-                      minWidth: 90,
-                    }}
-                  >
-                    {model.sku}
-                  </span>
-                  <span style={{ color: '#475569', fontSize: 13, flex: 1 }}>
-                    {buildVariantLabel(selected, model) || (
-                      <em style={{ color: '#cbd5e1' }}>No classification</em>
+            {/* Grouped variant list — mirrors VariantsTable tier-0 grouping */}
+            <div className={styles.pickerList}>
+              {tier0Groups.map((group) => (
+                <div key={group.tier0Index} className={styles.pickerTier0Group}>
+                  {/* Group header: tier-0 label + image */}
+                  <div className={styles.pickerTier0Header}>
+                    {group.tier0Image ? (
+                      <img
+                        src={group.tier0Image}
+                        alt={group.tier0Label}
+                        className={styles.pickerTier0Img}
+                      />
+                    ) : (
+                      <div className={styles.pickerTier0ImgPlaceholder}>
+                        <Box size={16} />
+                      </div>
                     )}
-                  </span>
-                  {model.weight > 0 && <span style={pickerWeightBadgeStyle}>{model.weight}kg</span>}
-                </label>
+                    <span className={styles.pickerTier0Label}>{group.tier0Label}</span>
+                    <span className={styles.pickerTier0Count}>
+                      {group.models.length} variant{group.models.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {/* Variant sub-rows */}
+                  {group.models.map((model) => {
+                    const secondary = getSecondaryLabel(model, hasMultiTier);
+                    return (
+                      <label
+                        key={model._id}
+                        className={`${styles.pickerVariantRow} ${checkedModels[model._id] ? styles.pickerVariantChecked : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!checkedModels[model._id]}
+                          onChange={() => toggleModel(model._id)}
+                          className={styles.pickerCheckbox}
+                        />
+                        {hasMultiTier && secondary && (
+                          <span className={styles.pickerSecondaryLabel}>{secondary}</span>
+                        )}
+                        <span className={styles.pickerSkuText}>{model.sku}</span>
+                        {model.weight > 0 && (
+                          <span className={styles.pickerWeight}>{model.weight}kg</span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
               ))}
             </div>
 
-            {/* Confirm */}
             <button
               onClick={handleConfirm}
-              disabled={!Object.values(checkedModels).some(Boolean)}
-              style={pickerConfirmBtnStyle}
+              disabled={selectedCount === 0}
+              className={styles.pickerConfirmBtn}
             >
               Add to Order
-              {Object.values(checkedModels).filter(Boolean).length > 0 && (
-                <span
-                  style={{
-                    marginLeft: 8,
-                    background: 'rgba(255,255,255,0.25)',
-                    borderRadius: 999,
-                    padding: '1px 7px',
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  {Object.values(checkedModels).filter(Boolean).length}
-                </span>
+              {selectedCount > 0 && (
+                <span className={styles.pickerConfirmBadge}>{selectedCount}</span>
               )}
             </button>
           </>
@@ -623,176 +604,42 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
   );
 };
 
-// ── Listing Picker Styles (light ERP theme) ──────────────────────────────────
-const pickerOverlayStyle = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(15,23,42,0.45)',
-  backdropFilter: 'blur(4px)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 9999,
-};
-const pickerPanelStyle = {
-  background: '#ffffff',
-  borderRadius: 16,
-  padding: '24px 24px 20px',
-  width: '90%',
-  maxWidth: 540,
-  maxHeight: '85vh',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 0,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)',
-  border: '1px solid #e2e8f0',
-};
-const pickerHeaderStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 16,
-  paddingBottom: 14,
-  borderBottom: '1px solid #f1f5f9',
-};
-const pickerIconBadgeStyle = {
-  width: 34,
-  height: 34,
-  background: '#eef2ff',
-  borderRadius: 8,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#6366f1',
-};
-const pickerCloseBtnStyle = {
-  background: '#f1f5f9',
-  border: 'none',
-  color: '#64748b',
-  width: 30,
-  height: 30,
-  borderRadius: 8,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  transition: 'background 0.15s',
-  flexShrink: 0,
-};
-const pickerSearchWrapStyle = {
-  position: 'relative',
-  marginBottom: 12,
-};
-const pickerSearchIconStyle = {
-  position: 'absolute',
-  left: 11,
-  top: '50%',
-  transform: 'translateY(-50%)',
-  color: '#94a3b8',
-  pointerEvents: 'none',
-};
-const pickerSearchStyle = {
-  width: '100%',
-  padding: '9px 12px 9px 36px',
-  border: '1.5px solid #e2e8f0',
-  borderRadius: 8,
-  background: '#f8fafc',
-  color: '#0f172a',
-  fontSize: 14,
-  boxSizing: 'border-box',
-  outline: 'none',
-  transition: 'border-color 0.15s',
-};
-const pickerListStyle = {
-  overflowY: 'auto',
-  flex: 1,
-  maxHeight: 360,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 5,
-  paddingRight: 2,
-};
-const pickerItemStyle = {
-  padding: '10px 14px',
-  borderRadius: 10,
-  cursor: 'pointer',
-  background: '#ffffff',
-  border: '1.5px solid #e2e8f0',
-  transition: 'border-color 0.15s, background 0.15s',
-};
-const pickerChipStyle = {
-  display: 'inline-block',
-  background: '#eef2ff',
-  color: '#6366f1',
-  borderRadius: 999,
-  fontSize: 11,
-  fontWeight: 600,
-  padding: '1px 7px',
-};
-const pickerVariantRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  padding: '9px 12px',
-  borderRadius: 8,
-  background: '#ffffff',
-  border: '1.5px solid #e2e8f0',
-  cursor: 'pointer',
-  userSelect: 'none',
-  transition: 'border-color 0.15s, background 0.15s',
-};
-const pickerVariantCheckedStyle = {
-  background: '#f0f4ff',
-  borderColor: '#6366f1',
-};
-const pickerWeightBadgeStyle = {
-  fontSize: 11,
-  color: '#64748b',
-  background: '#f1f5f9',
-  borderRadius: 6,
-  padding: '1px 6px',
-  fontWeight: 500,
-};
-const pickerBackBtnStyle = {
-  background: 'none',
-  border: 'none',
-  color: '#6366f1',
-  fontSize: 12,
-  cursor: 'pointer',
-  padding: 0,
-  fontWeight: 600,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  marginBottom: 2,
-};
-const pickerConfirmBtnStyle = {
-  marginTop: 14,
-  width: '100%',
-  padding: '11px 0',
-  borderRadius: 10,
-  border: 'none',
-  background: '#6366f1',
-  color: '#fff',
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  transition: 'background 0.15s',
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPTY STATE COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+const ProductsEmptyState = ({ onAddProduct }) => (
+  <div className={styles.emptyState}>
+    <div className={styles.emptyStateIcon}>
+      <Inbox />
+    </div>
+    <h4 className={styles.emptyStateTitle}>No Products Configured</h4>
+    <p className={styles.emptyStateDesc}>
+      Begin building your purchase order by importing from your catalog or manually adding items.
+    </p>
+    <button className={styles.btnAdd} onClick={onAddProduct}>
+      <Plus />
+      Add Your First Product
+    </button>
+  </div>
+);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT GROUP CARD — redesigned with card layout
+// ─────────────────────────────────────────────────────────────────────────────
 const EMPTY_TIER = () => ({ type: '', options: [{ value: '', isCustom: false }] });
 
 const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPickerSelect }) => {
   const dispatch = useDispatch();
   const { myProducts, myProductsLoading } = useSelector((state) => state.erp);
-  const { productName, tiers, variants } = group;
+  const { productId, productName, tiers, variants } = group;
   const [showPicker, setShowPicker] = useState(false);
   const [bulkQty, setBulkQty] = useState('');
   const [bulkPrice, setBulkPrice] = useState('');
   const [warnings, setWarnings] = useState({});
+  const [isExiting, setIsExiting] = useState(false);
+
+  // Chỉ cho phép tương tác khi đã chọn product từ list
+  const hasSelectedProduct = !!productId;
 
   useEffect(() => {
     const fetchWarnings = async () => {
@@ -801,11 +648,11 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
 
       for (const v of variants) {
         if (!v.sku || v.sku.length < 3) {
-          continue;
-        }
+continue;
+}
         if (newWarnings[v.sku]) {
-          continue;
-        }
+continue;
+}
 
         try {
           const res = await inventoryService.getLotBreakdown(v.sku);
@@ -816,8 +663,8 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
             newWarnings[v.sku] = { empty: true };
             updated = true;
           }
-        } catch (err) {
-          // ignore error (probably not found)
+        } catch {
+          // ignore
         }
       }
 
@@ -844,13 +691,10 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
     onUpdate({ ...group, productName: name, variants: newVariants });
   };
 
-  // Handle groups coming from the Listing Picker
   const handlePickerSelect = (pickedGroups) => {
     if (pickedGroups.length === 1) {
-      // Simple case: replace this group's content
       onUpdate({ ...group, ...pickedGroups[0] });
     } else {
-      // Multiple groups: replace this group with first, merge rest via parent
       onUpdate({ ...group, ...pickedGroups[0] });
       if (onPickerSelect) {
         onPickerSelect(pickedGroups.slice(1));
@@ -878,169 +722,157 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
       onUpdate({ ...group, variants: newVariants });
       return;
     }
-    const parsed = field === 'quantity'
-      ? Math.max(1, parseInt(value, 10) || 1)
-      : parseFloat(value);
+    const parsed = field === 'quantity' ? Math.max(1, parseInt(value, 10) || 1) : parseFloat(value);
     const newVariants = variants.map((v, idx) => (idx === vi ? { ...v, [field]: parsed } : v));
     onUpdate({ ...group, variants: newVariants });
   };
 
   const bulkUpdateVariants = (field, value) => {
     if (value === '' || value == null) {
-      return;
-    }
+return;
+}
     const parsed =
       field === 'quantity' ? Math.max(1, parseInt(value, 10) || 1) : parseFloat(value) || 0;
     const newVariants = variants.map((v) => ({ ...v, [field]: parsed }));
     onUpdate({ ...group, variants: newVariants });
   };
 
+  // P1: Animated exit when removing
+  const handleRemove = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onRemove();
+    }, 200);
+  };
+
+  const totalVariants = variants.length;
+  const totalQty = variants.reduce((s, v) => s + Number(v.quantity || 0), 0);
+
   return (
-    <div className={styles.productGroup}>
-      {/* Picker Modal */}
-      {showPicker && (
+    <div className={`${styles.productGroup}${isExiting ? ` ${styles.isExiting}` : ''}`}>
+      {/* P0: ListingPickerModal — rendered via portal to escape overflow:hidden */}
+      {showPicker && createPortal(
         <ListingPickerModal
           products={myProducts}
           loading={myProductsLoading}
           onSelect={handlePickerSelect}
           onClose={() => setShowPicker(false)}
           exchangeRate={exchangeRate}
-        />
+        />,
+        document.body
       )}
 
-      {/* Header */}
-      <div className={styles.pgHeader}>
-        <h3 className={styles.pgTitle}>📦 Product #{index + 1}</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
+      {/* Card Header */}
+      <div className={styles.pgCardHeader}>
+        <div className={styles.pgCardHeaderLeft}>
+          <div className={styles.pgCardIcon}>
+            <span className={styles.pgIconColor}>
+              <Layers />
+            </span>
+          </div>
+          <div className={styles.pgCardInfo}>
+            <div className={styles.pgCardName}>
+              {productName || <span className={styles.pgUnnamedText}>Untitled Product</span>}
+            </div>
+            <div className={styles.pgCardMeta}>
+              <span>
+                {totalVariants} variant{totalVariants !== 1 ? 's' : ''}
+              </span>
+              {totalQty > 0 && (
+                <>
+                  <span className={styles.pgMetaDot} />
+                  <span>
+                    {totalQty} unit{totalQty !== 1 ? 's' : ''}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* P0: Card actions */}
+        <div className={styles.pgCardActions}>
           <button
             type="button"
-            className={styles.btnSecondary}
+            className={styles.btnSecondaryOutline}
             onClick={openPicker}
-            style={{ fontSize: 13, padding: '4px 12px' }}
+            aria-label="Select from listing"
           >
-            📋 Select from listing
+            <List />
+            From Listing
           </button>
-          <button type="button" className={styles.btnRemove} onClick={onRemove}>
-            ✕
+          <button
+            type="button"
+            className={styles.btnCardIcon}
+            onClick={openPicker}
+            aria-label="Edit product"
+          >
+            <Pencil />
+          </button>
+          <button
+            type="button"
+            className={`${styles.btnCardIcon} ${styles.btnCardIconDanger}`}
+            onClick={handleRemove}
+            aria-label="Remove product"
+          >
+            <Trash2 />
           </button>
         </div>
       </div>
 
-      {/* Product name */}
-      <div className={styles.formGroup} style={{ marginBottom: 16 }}>
-        <label>
-          Product Name <span className={styles.required}>*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Ex: Guangzhou Fashion Leather Backpack"
-          value={productName}
-          onChange={(e) => updateProductName(e.target.value)}
-        />
-      </div>
-
-      {/* Tiers */}
-      <div className={styles.tiersSection}>
-        <div className={styles.tiersSectionHeader}>
-          <span className={styles.tiersLabel}>🏷️ Classification (optional)</span>
-          {tiers.length < 3 && (
-            <button type="button" className={styles.btnAddTier} onClick={addTier}>
-              + Add Classification
-            </button>
-          )}
+      {/* Product name — locked: phải chọn từ listing */}
+      <div className={styles.pgProductNameInputWrap}>
+        <div className={`${styles.pgFormGroupNoMargin} ${!hasSelectedProduct ? styles.lockedGroup : ''}`}>
+          <label htmlFor={`productName-${index}`} className={styles.pgProductNameLabel}>
+            Product Name <span className={styles.required}>*</span>
+            {!hasSelectedProduct && (
+              <span className={styles.lockedBadge}>
+                <List size={10} />
+                Select from Listing
+              </span>
+            )}
+          </label>
+          <div className={styles.lockedInputWrap}>
+            {hasSelectedProduct ? (
+              <input
+                id={`productName-${index}`}
+                type="text"
+                value={productName}
+                readOnly
+                className={styles.pgProductNameInput}
+              />
+            ) : (
+              <>
+                <span className={styles.lockedInputIcon}>
+                  <Package size={15} />
+                </span>
+                <input
+                  id={`productName-${index}`}
+                  type="text"
+                  placeholder="Click 'From Listing' above to select a product..."
+                  value=""
+                  readOnly
+                  disabled
+                  className={styles.lockedInput}
+                />
+              </>
+            )}
+          </div>
         </div>
-        {tiers.map((tier, i) => {
-          const usedTypes = tiers.map((t) => t.type).filter(Boolean);
-          return (
-            <TierRow
-              key={i}
-              tier={tier}
-              usedTypes={usedTypes}
-              styles={styles}
-              onChangeType={(type) => {
-                const tierDef = TIER_TYPES[type];
-                updateTier(i, {
-                  type,
-                  name: tierDef ? tierDef.name : '',
-                  options: [{ value: '', isCustom: false }],
-                });
-              }}
-              onChangeOptions={(options) => updateTier(i, { options })}
-              onRemove={() => removeTier(i)}
-            />
-          );
-        })}
       </div>
 
       {/* Variants Table */}
-      <div className={styles.variantsSection}>
-        <div className={styles.variantHintRow}>
-          <p className={styles.variantHint}>
-            {tiers.length === 0
-              ? 'Product has no classification — enter information below'
-              : `${variants.length} variants auto-generated from classification`}
-          </p>
-          {variants.length >= 1 && (
-            <div className={styles.bulkEditBar}>
-              <span className={styles.bulkLabel}>Bulk:</span>
-              <input
-                type="number"
-                min="1"
-                placeholder="Qty"
-                className={styles.bulkInput}
-                value={bulkQty}
-                onChange={(e) => setBulkQty(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' && (bulkUpdateVariants('quantity', bulkQty), setBulkQty(''))
-                }
-              />
-              <button
-                type="button"
-                className={styles.bulkBtn}
-                onClick={() => {
-                  bulkUpdateVariants('quantity', bulkQty);
-                  setBulkQty('');
-                }}
-              >
-                Apply Qty
-              </button>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="¥ Price"
-                className={styles.bulkInput}
-                value={bulkPrice}
-                onChange={(e) => setBulkPrice(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' &&
-                  (bulkUpdateVariants('unitPriceCny', bulkPrice), setBulkPrice(''))
-                }
-              />
-              <button
-                type="button"
-                className={styles.bulkBtn}
-                onClick={() => {
-                  bulkUpdateVariants('unitPriceCny', bulkPrice);
-                  setBulkPrice('');
-                }}
-              >
-                Apply Price
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className={styles.tableContainer}>
+      <div className={styles.pgVariantsWrap}>
+        <div className={styles.pgVariantsOverflow}>
           <table className={styles.variantTable}>
             <thead>
               <tr>
-                <th>Classification</th>
+                <th style={{ minWidth: '220px' }}>Classification</th>
                 <th>
                   SKU <span className={styles.autoTag}>auto</span>
                 </th>
                 <th>Qty</th>
-                <th>Unit Price (¥)</th>
+                <th>Unit Price</th>
                 <th>Amount</th>
               </tr>
             </thead>
@@ -1048,12 +880,43 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
               {variants.map((v, vi) => {
                 const warn = warnings[v.sku];
                 const hasWarning = warn && !warn.empty && warn.totalRemaining > 0;
+                const tier0 = v._tier0Label || '';
+                const tier1 = v._tier1Label || '';
+                const hasImage = v._image;
 
                 return (
                   <React.Fragment key={vi}>
                     <tr>
-                      <td className={styles.variantLabel}>
-                        {v._variantLabel || <em style={{ color: '#aaa' }}>—</em>}
+                      <td className={styles.classificationCell}>
+                        {hasImage && (
+                          <img
+                            src={v._image}
+                            alt={tier0 || 'variant'}
+                            className={styles.classificationImg}
+                          />
+                        )}
+                        {!hasImage && (
+                          <div className={styles.classificationImgPlaceholder}>
+                            <Box size={14} />
+                          </div>
+                        )}
+                        <div className={styles.classificationLabels}>
+                          {tier0 ? (
+                            <>
+                              <span className={styles.classificationTier0}>{tier0}</span>
+                              {tier1 && (
+                                <>
+                                  <span className={styles.classificationSlash}>/</span>
+                                  <span className={styles.classificationTier1}>{tier1}</span>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <span className={styles.variantLabelText}>
+                              {v._variantLabel || <em className={styles.variantLabelEmpty}>—</em>}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <input
@@ -1061,6 +924,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                           value={v.sku}
                           onChange={(e) => updateVariant(vi, 'sku', e.target.value.toUpperCase())}
                           placeholder="AUTO"
+                          readOnly={!hasSelectedProduct}
                         />
                       </td>
                       <td>
@@ -1070,6 +934,7 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                           className={styles.numInput}
                           value={v.quantity}
                           onChange={(e) => updateVariant(vi, 'quantity', e.target.value)}
+                          disabled={!hasSelectedProduct}
                         />
                       </td>
                       <td>
@@ -1080,25 +945,24 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
                           className={styles.numInput}
                           value={v.unitPriceCny}
                           onChange={(e) => updateVariant(vi, 'unitPriceCny', e.target.value)}
+                          disabled={!hasSelectedProduct}
                         />
                       </td>
-                      <td className={styles.calcCell}>
-                        {fmt(Number(v.unitPriceCny) * exchangeRate * Number(v.quantity))} ₫
+                      <td>
+                        <span className={styles.calcCell}>
+                          {fmt(Number(v.unitPriceCny) * exchangeRate * Number(v.quantity))} ₫
+                          <span className={styles.calcCellCny}>
+                            {fmtCny(Number(v.unitPriceCny) * Number(v.quantity))}
+                          </span>
+                        </span>
                       </td>
                     </tr>
+                    {/* P1: Stock warning */}
                     {hasWarning && (
                       <tr>
-                        <td
-                          colSpan="5"
-                          style={{
-                            padding: '8px 12px',
-                            background: '#fffbeb',
-                            color: '#b45309',
-                            fontSize: 13,
-                            borderBottom: '1px solid #e2e8f0',
-                          }}
-                        >
-                          ⚠️ <strong>Cảnh báo tồn kho:</strong> SKU này đang còn tồn{' '}
+                        <td colSpan="5" className={styles.stockWarning}>
+                          <AlertTriangle className={styles.stockAlertIcon} />
+                          <strong>Cảnh báo tồn kho:</strong> SKU này đang còn tồn{' '}
                           <strong>{warn.totalRemaining}</strong> sản phẩm từ lô cũ
                           {warn.lots?.length > 0 &&
                             ` (giá vốn: ${warn.lots.map((l) => `${fmt(l.costPrice)}đ`).join(', ')})`}
@@ -1112,7 +976,102 @@ const ProductGroup = ({ group, index, onUpdate, onRemove, exchangeRate, onPicker
             </tbody>
           </table>
         </div>
+
+        {/* Bulk Edit Bar */}
+        {variants.length >= 1 && (
+          <div className={styles.bulkEditBar}>
+            <span className={styles.bulkLabel}>Bulk:</span>
+            <input
+              type="number"
+              min="1"
+              placeholder="Qty"
+              className={styles.bulkInput}
+              value={bulkQty}
+              onChange={(e) => setBulkQty(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === 'Enter' && hasSelectedProduct && (bulkUpdateVariants('quantity', bulkQty), setBulkQty(''))
+              }
+              disabled={!hasSelectedProduct}
+            />
+            <button
+              type="button"
+              className={styles.bulkBtn}
+              onClick={() => {
+                bulkUpdateVariants('quantity', bulkQty);
+                setBulkQty('');
+              }}
+              disabled={!hasSelectedProduct}
+            >
+              Apply
+            </button>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="¥"
+              className={styles.bulkInput}
+              value={bulkPrice}
+              onChange={(e) => setBulkPrice(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === 'Enter' && hasSelectedProduct &&
+                (bulkUpdateVariants('unitPriceCny', bulkPrice), setBulkPrice(''))
+              }
+              disabled={!hasSelectedProduct}
+            />
+            <button
+              type="button"
+              className={styles.bulkBtn}
+              onClick={() => {
+                bulkUpdateVariants('unitPriceCny', bulkPrice);
+                setBulkPrice('');
+              }}
+              disabled={!hasSelectedProduct}
+            >
+              Apply
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Tiers Section — chỉ hiển thị khi đã chọn product từ list */}
+      {hasSelectedProduct && (tiers.length > 0 || tiers.length < 3) ? (
+        <div className={styles.tiersSection}>
+          <div className={styles.tiersSectionHeader}>
+            <span className={styles.tiersLabel}>
+              <Tag className={styles.tiersLabelIcon} />
+              Classification
+            </span>
+            {tiers.length < 3 && (
+              <button type="button" className={styles.btnAddTier} onClick={addTier}>
+                <Plus className={styles.btnAddTierIcon} />
+                Add
+              </button>
+            )}
+          </div>
+          {tiers.map((tier, i) => {
+            const usedTypes = tiers.map((t) => t.type).filter(Boolean);
+            return (
+              <TierRow
+                key={i}
+                tier={tier}
+                usedTypes={usedTypes}
+                styles={styles}
+                disabled={!hasSelectedProduct}
+                onChangeType={(type) => {
+                  const tierDef = TIER_TYPES[type];
+                  updateTier(i, {
+                    type,
+                    name: tierDef ? tierDef.name : '',
+                    options: [{ value: '', isCustom: false }],
+                  });
+                }}
+                onChangeOptions={(options) => updateTier(i, { options })}
+                onRemove={() => removeTier(i)}
+              />
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -1128,7 +1087,7 @@ const EMPTY_GROUP = () => ({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE
+// MAIN PAGE — redesigned 2-column layout
 // ─────────────────────────────────────────────────────────────────────────────
 const CreatePurchaseOrderPage = () => {
   const dispatch = useDispatch();
@@ -1142,8 +1101,8 @@ const CreatePurchaseOrderPage = () => {
   useEffect(() => {
     const raw = searchParams.get('products');
     if (!raw) {
-      return;
-    }
+return;
+}
     try {
       const decoded = JSON.parse(decodeURIComponent(raw));
       const products = Array.isArray(decoded) ? decoded : [decoded];
@@ -1164,17 +1123,14 @@ const CreatePurchaseOrderPage = () => {
           .toLowerCase()
           .replace(/\s+/g, ' ');
 
-      // Group by normalized product name: dashboard may return multiple Product docs
-      // (different _id) for the same listing title; they should be one PO line group.
       const grouped = new Map();
       products.forEach((p) => {
         if (!p || !p.name) {
-          return;
-        }
+return;
+}
         const groupKey = normNameKey(p.name);
 
         if (!grouped.has(groupKey)) {
-          // All docs with the same name share the same tier def; prefer first non-empty
           const productTiers =
             Array.isArray(p.tiers) && p.tiers.length > 0
               ? p.tiers.map((t) => listingTierToFormState(t))
@@ -1186,15 +1142,12 @@ const CreatePurchaseOrderPage = () => {
             variants: [],
           });
         } else {
-          // Fill in tiers if the first doc didn't have them
           const existing = grouped.get(groupKey);
           if (existing.tiers.length === 0 && Array.isArray(p.tiers) && p.tiers.length > 0) {
             existing.tiers = p.tiers.map((t) => listingTierToFormState(t));
           }
         }
         const g = grouped.get(groupKey);
-
-        // Only the model that triggered the low-stock warning (lowestStockModel)
         const model = p.lowestStockModel;
         if (model && (model.sku || model._id)) {
           const mid = model._id ? String(model._id) : '';
@@ -1206,6 +1159,7 @@ const CreatePurchaseOrderPage = () => {
             const variantLabel = variantLabelFromFormTiers(g.tiers, model.tierIndex || []);
             g.variants.push({
               _variantLabel: variantLabel,
+              _image: model.image || null,
               sku: model.sku || '',
               quantity: 1,
               unitPriceCny:
@@ -1228,12 +1182,13 @@ const CreatePurchaseOrderPage = () => {
         });
         return { ...g, tiers, variants };
       });
+
       if (prefilled.length > 0) {
         setGroups(prefilled);
         toast.success(`Đã điền sẵn ${prefilled.length} sản phẩm sắp hết hàng`);
       }
     } catch {
-      // ignore malformed param
+      /* ignore malformed param */
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1243,7 +1198,6 @@ const CreatePurchaseOrderPage = () => {
     notes: '',
   });
 
-  // Pre-fill supplier when navigating from supplier detail page
   useEffect(() => {
     if (supplierIdFromUrl) {
       setFormData((p) => ({ ...p, supplierId: supplierIdFromUrl }));
@@ -1272,12 +1226,10 @@ const CreatePurchaseOrderPage = () => {
     dispatch(fetchExchangeRate());
   }, [dispatch]);
 
-  // Auto-fill exchange rate from live cron data when component mounts
-  // Only overrides if the user has the default value (hasn't manually customised)
   useEffect(() => {
     if (!liveRate?.rate) {
-      return;
-    }
+return;
+}
     setImportConfig((prev) => {
       if (Number(prev.exchangeRate) === DEFAULT_IMPORT_CONFIG.exchangeRate) {
         return { ...prev, exchangeRate: liveRate.rate };
@@ -1286,7 +1238,6 @@ const CreatePurchaseOrderPage = () => {
     });
   }, [liveRate?.rate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Save import config to localStorage whenever it changes
   useEffect(() => {
     try {
       localStorage.setItem('gz_import_config', JSON.stringify(importConfig));
@@ -1295,7 +1246,6 @@ const CreatePurchaseOrderPage = () => {
     }
   }, [importConfig]);
 
-  // Flatten all variants for Stage 1 cost basis
   const flatItems = useMemo(
     () => groups.flatMap((g) => g.variants.map((v) => ({ ...v, _groupId: g._id }))),
     [groups]
@@ -1305,6 +1255,10 @@ const CreatePurchaseOrderPage = () => {
     () => computeStage1CostBasis(flatItems, importConfig),
     [flatItems, importConfig]
   );
+
+  // P2: Summary stats for sticky bar
+  const totalItemCount = flatItems.reduce((s, v) => s + Number(v.quantity || 0), 0);
+  const totalProductCount = groups.filter((g) => g.productName.trim()).length;
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -1322,9 +1276,8 @@ const CreatePurchaseOrderPage = () => {
     }));
   };
 
-  /** Merge all groups that share the same productName into one group */
   const mergeGroupsByName = (groupList) => {
-    const seen = new Map(); // productName (lowercased) → index in merged array
+    const seen = new Map();
     const merged = [];
     groupList.forEach((g) => {
       const key = g.productName.trim().toLowerCase();
@@ -1333,7 +1286,6 @@ const CreatePurchaseOrderPage = () => {
         return;
       }
       if (seen.has(key)) {
-        // Merge variants into the existing group
         const idx = seen.get(key);
         merged[idx] = {
           ...merged[idx],
@@ -1357,12 +1309,14 @@ const CreatePurchaseOrderPage = () => {
   const removeGroup = (i) => {
     if (groups.length > 1) {
       setGroups((p) => p.filter((_, idx) => idx !== i));
+    } else {
+      // Reset instead of removing last group
+      setGroups([EMPTY_GROUP()]);
     }
   };
 
   const addGroup = () => setGroups((p) => [...p, EMPTY_GROUP()]);
 
-  /** Called when ListingPicker returns 1+ groups — merge duplicates */
   const addGroupsFromPicker = (pickerGroups) => {
     setGroups((prev) =>
       mergeGroupsByName([...prev.filter((g) => g.productName.trim()), ...pickerGroups])
@@ -1386,7 +1340,7 @@ const CreatePurchaseOrderPage = () => {
           errs[`sku_${gi}_${vi}`] = 'SKU is required';
         }
         if (Number(v.quantity) < 1) {
-          errs[`qty_${gi}_${vi}`] = 'Qty ≥ 1';
+          errs[`qty_${gi}_${vi}`] = 'Qty >= 1';
         }
         if (Number(v.unitPriceCny) <= 0) {
           errs[`price_${gi}_${vi}`] = 'Price > 0';
@@ -1465,9 +1419,7 @@ const CreatePurchaseOrderPage = () => {
     }
     try {
       await dispatch(createPurchaseOrder(buildOrderData('ORDERED'))).unwrap();
-      toast.success('Order created and submitted. Status: Ordered.', {
-        autoClose: 4000,
-      });
+      toast.success('Order created and submitted. Status: Ordered.', { autoClose: 4000 });
       navigate('/seller/erp/purchase-orders');
     } catch (err) {
       console.error('Failed:', err);
@@ -1479,277 +1431,322 @@ const CreatePurchaseOrderPage = () => {
     return <LoadingSpinner />;
   }
 
+  // P2: Generate doc ID
+  const docId = `PO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}-ALPHA`;
+
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div>
-          <h1>Create Purchase Order</h1>
+      {/* P1: Redesigned page header with breadcrumb */}
+      <div className={styles.pageHeader}>
+        <nav className={styles.breadcrumb}>
+          <span className={styles.breadcrumbItem}>Orders</span>
+          <span className={styles.breadcrumbSep}>
+            <ChevronRight />
+          </span>
+          <span>New Purchase Order</span>
+        </nav>
+        <div className={styles.pageTitleRow}>
+          <div>
+            <h1 className={styles.pageTitle}>Create Purchase Order</h1>
+            <p className={styles.pageSubtitle}>
+              Initiate a formal inventory requisition from verified suppliers.
+            </p>
+          </div>
+          <div className={styles.docIdBadge}>
+            <span className={styles.docIdLabel}>Document ID</span>
+            <span className={styles.docIdValue}>{docId}</span>
+          </div>
         </div>
-        <button
-          type="button"
-          className={styles.btnSecondary}
-          onClick={() => navigate('/seller/erp/purchase-orders')}
-        >
-          ← Back
-        </button>
       </div>
 
+      {/* P1: 2-column grid layout */}
       <form onSubmit={handleCreateAndSubmit}>
-        {/* ─── Section 1: Order Info ─────────────────────────── */}
-        <div className={styles.section}>
-          <h2>Order Information</h2>
-          <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label>
-                Supplier <span className={styles.required}>*</span>
-              </label>
-              <select
-                name="supplierId"
-                value={formData.supplierId}
-                onChange={handleFormChange}
-                className={errors.supplierId ? styles.error : ''}
-              >
-                <option value="">-- Select supplier --</option>
-                {suppliers.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-              {errors.supplierId && <span className={styles.errorText}>{errors.supplierId}</span>}
-            </div>
-            <div className={styles.formGroup}>
-              <label>
-                Expected Delivery Date <span className={styles.required}>*</span>
-              </label>
-              <input
-                type="date"
-                name="expectedDeliveryDate"
-                value={formData.expectedDeliveryDate}
-                onChange={handleFormChange}
-                className={errors.expectedDeliveryDate ? styles.error : ''}
-              />
-              {errors.expectedDeliveryDate && (
-                <span className={styles.errorText}>{errors.expectedDeliveryDate}</span>
-              )}
-            </div>
-            <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-              <label>Notes</label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleFormChange}
-                rows={2}
-                placeholder="Order notes..."
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Section 2: Import Config (Stage 1 — Goods Value & Buying Fee) ───────────────────────────────── */}
-        <div className={styles.configSection}>
-          <h2>
-            Import Configuration
-            <span className={styles.savedBadge}>✓ Auto-saved</span>
-          </h2>
-          <p className={styles.configHint}>
-            Shipping and fixed costs are entered when goods arrive (Stage 2).
-          </p>
-          <div className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label>
-                <LabelWithTooltip tooltip="Exchange rate 1 ¥ (CNY) to VND. Used to convert goods value to VND.">
-                  Exchange Rate (VND / ¥)
-                </LabelWithTooltip>
-              </label>
-              <input
-                type="number"
-                name="exchangeRate"
-                value={importConfig.exchangeRate}
-                onChange={handleConfigChange}
-                min="1"
-                step="any"
-                placeholder="3500"
-              />
-              {liveRate?.rate && (
-                <span className={styles.rateHint}>
-                  Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
-                  {Number(importConfig.exchangeRate) !== liveRate.rate && (
-                    <button
-                      type="button"
-                      className={styles.rateSyncBtn}
-                      onClick={() =>
-                        setImportConfig((p) => ({ ...p, exchangeRate: liveRate.rate }))
-                      }
-                      title="Apply live exchange rate"
-                    >
-                      ↻ Use
-                    </button>
+        <div className={styles.pageGrid}>
+          {/* Left Column: Core Data */}
+          <div className={styles.leftColumn}>
+            {/* P0: Order Information */}
+            <div className={styles.sectionOrderInfo}>
+              <div className={styles.sectionAccentBar} />
+              <div className={styles.sectionHeader}>
+                <div className={`${styles.sectionIcon} ${styles.sectionIconPrimary}`}>
+                  <Info />
+                </div>
+                <h2 className={styles.sectionTitle}>Order Information</h2>
+              </div>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="supplierId">
+                    Supplier <span className={styles.required}>*</span>
+                  </label>
+                  <select
+                    id="supplierId"
+                    name="supplierId"
+                    value={formData.supplierId}
+                    onChange={handleFormChange}
+                    className={errors.supplierId ? styles.error : ''}
+                    aria-invalid={!!errors.supplierId}
+                  >
+                    <option value="">-- Select supplier --</option>
+                    {suppliers.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.supplierId && (
+                    <span className={styles.errorText}>
+                      <AlertTriangle />
+                      {errors.supplierId}
+                    </span>
                   )}
-                </span>
-              )}
-            </div>
-            <div className={styles.formGroup}>
-              <label>
-                <LabelWithTooltip tooltip="Buying service fee (%). Applied to total goods value in VND. E.g. 5% = 0.05.">
-                  Buying Service Fee (%)
-                </LabelWithTooltip>
-              </label>
-              <input
-                type="number"
-                value={(importConfig.buyingServiceFeeRate * 100).toFixed(1)}
-                onChange={(e) =>
-                  setImportConfig((p) => ({
-                    ...p,
-                    buyingServiceFeeRate: parseFloat(e.target.value || 0) / 100,
-                  }))
-                }
-                min="0"
-                max="30"
-                step="0.5"
-              />
-            </div>
-          </div>
-        </div>
+                </div>
 
-        {/* ─── Section 3: Products ──────────────────────────── */}
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2>Products List</h2>
-            <button type="button" className={styles.btnAdd} onClick={addGroup}>
-              + Add Product
-            </button>
-          </div>
-          <div className={styles.itemsContainer}>
-            {groups.map((g, gi) => (
-              <ProductGroup
-                key={g._id}
-                group={g}
-                index={gi}
-                onUpdate={(updated) => updateGroup(gi, updated)}
-                onRemove={() => removeGroup(gi)}
-                exchangeRate={importConfig.exchangeRate || 3500}
-                onPickerSelect={addGroupsFromPicker}
-              />
-            ))}
-          </div>
-        </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="expectedDeliveryDate">
+                    Delivery Date <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="expectedDeliveryDate"
+                    type="date"
+                    name="expectedDeliveryDate"
+                    value={formData.expectedDeliveryDate}
+                    onChange={handleFormChange}
+                    className={errors.expectedDeliveryDate ? styles.error : ''}
+                    aria-invalid={!!errors.expectedDeliveryDate}
+                  />
+                  {errors.expectedDeliveryDate && (
+                    <span className={styles.errorText}>
+                      <AlertTriangle />
+                      {errors.expectedDeliveryDate}
+                    </span>
+                  )}
+                </div>
 
-        {/* ─── Section 4: Cost Basis (Stage 1 — Goods Value + Buying Fee only) ───────────────── */}
-        <div className={styles.section}>
-          <h2>Cost Basis</h2>
-          <p className={styles.configHint}>
-            Landed cost will be calculated when goods arrive (Stage 2).
-          </p>
-          <div className={styles.tableContainer}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Product Name</th>
-                  <th>Classification</th>
-                  <th>SKU</th>
-                  <th style={{ textAlign: 'right' }}>Qty</th>
-                  <th style={{ textAlign: 'right' }}>¥ CNY</th>
-                  <th style={{ textAlign: 'right' }}>Amount (VND)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groups.map((g) =>
-                  g.variants.map((v, vi) => {
-                    const rate = importConfig.exchangeRate || 3500;
-                    const amountVnd = Number(v.unitPriceCny) * rate * Number(v.quantity);
-                    const isFirst = vi === 0;
-                    return (
-                      <tr
-                        key={g._id + vi}
-                        style={
-                          isFirst && g.variants.length > 1 ? { borderTop: '2px solid #e2e8f0' } : {}
-                        }
-                      >
-                        {isFirst && (
-                          <td
-                            rowSpan={g.variants.length}
-                            style={{
-                              fontWeight: 700,
-                              fontSize: 13,
-                              color: '#0f172a',
-                              verticalAlign: 'top',
-                              paddingTop: '0.65rem',
-                              borderRight: '1px solid #f1f5f9',
-                              background: '#fafbff',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {g.productName || '—'}
-                          </td>
-                        )}
-                        <td style={{ fontSize: 12, color: '#64748b' }}>
-                          {v._variantLabel || <em style={{ color: '#cbd5e1' }}>—</em>}
-                        </td>
-                        <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{v.sku || '—'}</td>
-                        <td style={{ textAlign: 'right' }}>{v.quantity}</td>
-                        <td style={{ textAlign: 'right' }}>{fmtCny(v.unitPriceCny)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color: '#059669' }}>
-                          {fmt(amountVnd)} ₫
-                        </td>
-                      </tr>
-                    );
-                  })
+                <div className={`${styles.formGroup} ${styles.formGridFull}`}>
+                  <label htmlFor="notes">Internal Notes</label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleFormChange}
+                    rows={2}
+                    placeholder="Specify logistics constraints or handling requirements..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* P1: Products List */}
+            <div className={styles.sectionProducts}>
+              <div className={styles.sectionAccentBar} />
+              <div className={styles.productsHeader}>
+                <div className={styles.productsHeaderLeft}>
+                  <div className={`${styles.sectionIcon} ${styles.sectionIconSecondary}`}>
+                    <Package />
+                  </div>
+                  <h2 className={styles.sectionTitle}>Products List</h2>
+                </div>
+                <button type="button" className={styles.btnAdd} onClick={addGroup}>
+                  <Plus />
+                  Add Product
+                </button>
+              </div>
+
+              <div className={styles.productsBody}>
+                {groups.length === 0 ||
+                (groups.length === 1 &&
+                  !groups[0].productName.trim() &&
+                  groups[0].variants.length === 1 &&
+                  !groups[0].variants[0].sku) ? (
+                  <ProductsEmptyState onAddProduct={addGroup} />
+                ) : (
+                  groups.map((g, gi) => (
+                    <ProductGroup
+                      key={g._id}
+                      group={g}
+                      index={gi}
+                      onUpdate={(updated) => updateGroup(gi, updated)}
+                      onRemove={() => removeGroup(gi)}
+                      exchangeRate={importConfig.exchangeRate || 3500}
+                      onPickerSelect={addGroupsFromPicker}
+                    />
+                  ))
                 )}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
 
-          {/* Summary — Stage 1: Goods Value + Buying Fee only */}
-          <div className={styles.summary} style={{ marginTop: 16 }}>
-            <div className={styles.summaryRow}>
-              <span>
-                <LabelWithTooltip tooltip="Total goods value = Σ(Unit Price ¥ × Qty × Exchange Rate). Excludes fees.">
-                  Total Goods Value:
-                </LabelWithTooltip>
-              </span>
-              <span>
-                {fmt(costBasis.totalValueVnd)} ₫ ({fmtCny(costBasis.totalValueCny)})
-              </span>
+          {/* Right Column: Sidebar */}
+          <aside className={styles.sidebarSticky}>
+            {/* P0: Import Configuration */}
+            <div className={styles.sectionImportConfig}>
+              <div className={styles.inventoryConfigHeader}>
+                <div className={styles.inventoryConfigIcon}>
+                  <Settings />
+                </div>
+                <div>
+                  <h3 className={styles.inventoryConfigTitle}>Import Config</h3>
+                </div>
+              </div>
+
+              <p className={styles.configNote}>
+                Shipping and fixed costs are entered when goods arrive (Stage 2).
+              </p>
+
+              <div className={styles.configGrid}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="exchangeRate">
+                    <LabelWithTooltip tooltip="Exchange rate 1 ¥ (CNY) to VND. Used to convert goods value to VND.">
+                      Exchange Rate
+                    </LabelWithTooltip>
+                  </label>
+                  <div className={styles.configInputWrap}>
+                    <span className={styles.configPrefixIcon}>$</span>
+                    <input
+                      id="exchangeRate"
+                      type="number"
+                      name="exchangeRate"
+                      value={importConfig.exchangeRate}
+                      onChange={handleConfigChange}
+                      min="1"
+                      step="any"
+                      placeholder="3500"
+                      className={`${styles.configSection} ${styles.configInputPrefix}`}
+                    />
+                  </div>
+                  {liveRate?.rate && (
+                    <span className={styles.rateHint}>
+                      Live: <strong>{Number(liveRate.rate).toLocaleString('vi-VN')}</strong> ₫/¥
+                      {Number(importConfig.exchangeRate) !== liveRate.rate && (
+                        <button
+                          type="button"
+                          className={styles.rateSyncBtn}
+                          onClick={() =>
+                            setImportConfig((p) => ({ ...p, exchangeRate: liveRate.rate }))
+                          }
+                          title="Apply live exchange rate"
+                        >
+                          <RefreshCw className={styles.rateSyncBtnIcon} />
+                          Use
+                        </button>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="buyingFee">
+                    <LabelWithTooltip tooltip="Buying service fee (%). Applied to total goods value in VND. E.g. 5% = 0.05.">
+                      Service Fee
+                    </LabelWithTooltip>
+                  </label>
+                  <div className={styles.configInputWrap}>
+                    <input
+                      id="buyingFee"
+                      type="number"
+                      value={(importConfig.buyingServiceFeeRate * 100).toFixed(1)}
+                      onChange={(e) =>
+                        setImportConfig((p) => ({
+                          ...p,
+                          buyingServiceFeeRate: parseFloat(e.target.value || 0) / 100,
+                        }))
+                      }
+                      min="0"
+                      max="30"
+                      step="0.5"
+                      className={`${styles.configSection} ${styles.configInputSuffix}`}
+                    />
+                    <span className={styles.configSuffixIcon}>%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.autoApplyRow}>
+                <span className={styles.autoApplyLabel}>Auto-Apply Rules</span>
+                <span className={styles.autoApplyBadge}>
+                  <Check className={styles.autoApplyBadgeIcon} />
+                  Enabled
+                </span>
+              </div>
             </div>
-            <div className={styles.summaryRow}>
-              <span>
-                <LabelWithTooltip tooltip="Buying fee = Total Goods Value × Buying Fee (%).">
-                  Total Buying Service Fee:
-                </LabelWithTooltip>
-              </span>
-              <span style={{ color: '#2563eb' }}>{fmt(costBasis.buyingFeeVnd)} ₫</span>
+
+            {/* P0: Cost Basis Summary (sidebar) */}
+            <div className={styles.summaryCard}>
+              <h3 className={styles.summaryCardTitle}>Order Summary</h3>
+
+              <div className={styles.summaryRows}>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Total Goods</span>
+                  <span className={styles.summaryValue}>{fmt(costBasis.totalValueVnd)} ₫</span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>
+                    <LabelWithTooltip tooltip="Buying fee = Total Goods Value x Buying Fee (%)">
+                      Service Fee
+                    </LabelWithTooltip>
+                  </span>
+                  <span className={`${styles.summaryValue} ${styles.summaryGreen}`}>
+                    {fmt(costBasis.buyingFeeVnd)} ₫
+                  </span>
+                </div>
+
+                <div className={styles.summaryDivider} />
+
+                <div className={styles.summaryTotalRow}>
+                  <div className={styles.summaryTotalLabel}>
+                    <span>Total Commitment</span>
+                    <span className={styles.summaryVndBase}>VND BASE</span>
+                  </div>
+                  <div className={styles.summaryTotalAmount}>
+                    <span className={styles.summaryTotalCurrency}>₫</span>
+                    {fmt(costBasis.costBasisVnd)}
+                  </div>
+                  {costBasis.totalValueCny > 0 && (
+                    <div className={styles.summaryCny}>{fmtCny(costBasis.totalValueCny)} CNY</div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className={`${styles.summaryRow} ${styles.total}`}>
-              <span>
-                <LabelWithTooltip tooltip="Stage 1 cost basis = Goods Value + Buying Fee. Full landed cost calculated when goods arrive (Stage 2).">
-                  Cost Basis (Goods + Fee):
-                </LabelWithTooltip>
-              </span>
-              <strong style={{ color: '#059669', fontSize: 18 }}>
-                {fmt(costBasis.costBasisVnd)} ₫
-              </strong>
-            </div>
-          </div>
+          </aside>
         </div>
+      </form>
 
-        {/* Actions */}
-        <div className={styles.actions}>
+      {/* P0: Sticky Action Bar with summary */}
+      <div className={styles.stickyActions}>
+        <div className={styles.stickyActionsInner}>
+          <div className={styles.actionSummary}>
+            <span className={styles.actionSummaryText}>
+              {totalProductCount > 0
+                ? `${totalProductCount} product${totalProductCount !== 1 ? 's' : ''} · ${totalItemCount} unit${totalItemCount !== 1 ? 's' : ''}`
+                : 'No products added'}
+            </span>
+            {costBasis.costBasisVnd > 0 && (
+              <span className={styles.actionSummaryAmount}>
+                Total: <span>₫</span>
+                {fmt(costBasis.costBasisVnd)}
+              </span>
+            )}
+          </div>
+
           <button
             type="button"
-            className={styles.btnSecondary}
+            className={styles.actionCancel}
             onClick={() => navigate('/seller/erp/purchase-orders')}
           >
             Cancel
           </button>
-          <button type="button" className={styles.btnSecondary} onClick={handleSaveAsDraft}>
+
+          <button type="button" className={styles.actionDraft} onClick={handleSaveAsDraft}>
             Save as Draft
           </button>
-          <button type="submit" className={styles.btnPrimary}>
+
+          <button type="submit" className={styles.actionSubmit} onClick={handleCreateAndSubmit}>
+            <Send />
             Create & Submit Order
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
@@ -1769,6 +1766,7 @@ TierRow.propTypes = {
   onChangeOptions: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
   styles: PropTypes.object.isRequired,
+  disabled: PropTypes.bool,
 };
 
 ListingPickerModal.propTypes = {

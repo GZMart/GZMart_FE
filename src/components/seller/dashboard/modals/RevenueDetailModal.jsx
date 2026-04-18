@@ -92,16 +92,16 @@ function SummaryCard({ label, value, sub, icon: Icon, iconBg, iconColor, valueCo
   );
 }
 
-export function RevenueDetailModal({ open, onClose, period, comparison }) {
+export function RevenueDetailModal({ open, onClose, period, customDateRange, comparison }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [trendData, setTrendData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-  const [selectedPeriod, setSelectedPeriod] = useState(period || 'monthly');
+  const [selectedPeriod, setSelectedPeriod] = useState(period || '12months');
 
   useEffect(() => {
     if (open) {
-      setSelectedPeriod(period || 'monthly');
+      setSelectedPeriod(period || '12months');
     }
   }, [open, period]);
 
@@ -113,8 +113,8 @@ export function RevenueDetailModal({ open, onClose, period, comparison }) {
     setLoading(true);
 
     Promise.all([
-      dashboardService.getRevenueTrend({ period: selectedPeriod }),
-      dashboardService.getTopSellingProductsWithProfit({ limit: 10, period: selectedPeriod }),
+      dashboardService.getRevenueTrend({ period: selectedPeriod, ...customDateRange }),
+      dashboardService.getTopSellingProductsWithProfit({ limit: 10, period: selectedPeriod, ...customDateRange }),
     ])
       .then(([trendRes, productsRes]) => {
         if (cancelled) {
@@ -135,19 +135,19 @@ export function RevenueDetailModal({ open, onClose, period, comparison }) {
       });
 
     return () => {
- cancelled = true; 
-};
-  }, [open, selectedPeriod]);
+      cancelled = true;
+    };
+  }, [open, selectedPeriod, customDateRange]);
 
   const growthVal = comparison?.growth?.revenue ?? 0;
   const isPositive = growthVal >= 0;
 
   const periodShortLabels = {
-    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
-    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
-    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
-    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
-    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+    '7days':    t('sellerDashboard.periodShort.7days', '7 Days'),
+    '30days':   t('sellerDashboard.periodShort.30days', '30 Days'),
+    '90days':   t('sellerDashboard.periodShort.90days', '90 Days'),
+    '12months': t('sellerDashboard.periodShort.12months', '12 Months'),
+    yearly:   t('sellerDashboard.periodShort.yearly', 'Last Year'),
   };
 
   const productColumns = [
@@ -236,7 +236,7 @@ export function RevenueDetailModal({ open, onClose, period, comparison }) {
       <Spin spinning={loading} tip={t('sellerDashboard.revenueDetail.loading', 'Đang tải dữ liệu...')}>
         {/* Period selector */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
-          {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
+          {['7days', '30days', '90days', '12months', 'yearly'].map((p) => (
             <button
               key={p}
               onClick={() => setSelectedPeriod(p)}

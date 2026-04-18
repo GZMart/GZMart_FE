@@ -139,7 +139,7 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
       onClose={handleCancel}
       placement="right"
       width={560}
-      destroyOnClose
+      destroyOnHidden
       extra={
         <Button icon={<CloseOutlined />} onClick={handleCancel}>
           Close

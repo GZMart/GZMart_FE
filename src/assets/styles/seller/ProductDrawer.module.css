@@ -87,6 +87,10 @@
 }
 
 /* ── Form elements ──────────────────────────────────────────────── */
+.categorySelectWrap {
+  width: 100%;
+}
+
 .formLabel {
   font-size: 12.5px;
   font-weight: 600;
@@ -109,8 +113,10 @@
 .formControl {
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  min-height: 2.75rem;
   color: #0f172a;
   width: 100%;
   background: #fff;
@@ -159,20 +165,30 @@
 
 .weightUnitRow {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
 }
+/* Ô số phải rộng; min-width:0 khiến flex co ô số xuống sát trong khi select vẫn giữ min-width */
 .weightUnitRow .formControl {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 10rem;
+  width: auto;
+}
+.weightUnitRow .unitSelect {
+  flex: 0 0 4.75rem;
+  width: 4.75rem;
+  max-width: 5rem;
+  min-width: unset;
+  /* Bootstrap .form-select dùng width:100% — ép hẹp để ô số chiếm phần còn lại */
 }
 .unitSelect {
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.625rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   background: #fff;
   min-width: 70px;
+  min-height: 2.75rem;
 }
 .dimRow {
   display: flex;
@@ -180,10 +196,11 @@
 }
 .dimRow .dimInput {
   width: 70px;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
+  min-height: 2.5rem;
 }
 .dimWarning {
   font-size: 11px;

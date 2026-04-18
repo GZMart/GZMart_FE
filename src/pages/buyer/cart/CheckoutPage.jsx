@@ -398,7 +398,8 @@ const CheckoutPage = () => {
     }));
   };
 
-  const [paymentMethod, setPaymentMethod] = useState('payos');
+  // Default COD: PayOS returns 400 if server has no PAYOS_* keys (common in local dev).
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   const [shippingCompany, setShippingCompany] = useState('ghn');
   const [includeGiftBox, setIncludeGiftBox] = useState(false);
   const [includeCoin, setIncludeCoin] = useState(true);
@@ -816,8 +817,11 @@ const CheckoutPage = () => {
           navigate(BUYER_ROUTES.ORDER_CONFIRMATION.replace(':orderId', orderId));
         }
       } catch (error) {
-        console.error('Failed to create order', error);
-        const serverMsg = error?.response?.data?.message || error.message;
+        console.error('Failed to create order', error?.response?.data || error);
+        const serverMsg =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error.message;
         alert(serverMsg || 'Failed to create order');
       } finally {
         setIsProcessing(false);

@@ -51,17 +51,17 @@ const periodBtnStyle = (active) => ({
   transition: 'all 0.2s ease',
 });
 
-export function ProfitDetailModal({ open, onClose, period, comparison }) {
+export function ProfitDetailModal({ open, onClose, period, customDateRange, comparison }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [profitData, setProfitData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-  const [selectedPeriod, setSelectedPeriod] = useState(period || 'monthly');
+  const [selectedPeriod, setSelectedPeriod] = useState(period || '12months');
 
   useEffect(() => {
     if (open) {
- setSelectedPeriod(period || 'monthly'); 
-}
+      setSelectedPeriod(period || '12months');
+    }
   }, [open, period]);
 
   useEffect(() => {
@@ -72,8 +72,8 @@ export function ProfitDetailModal({ open, onClose, period, comparison }) {
     setLoading(true);
 
     Promise.all([
-      dashboardService.getProfitLossAnalysis({ period: selectedPeriod }),
-      dashboardService.getTopSellingProductsWithProfit({ limit: 10, period: selectedPeriod }),
+      dashboardService.getProfitLossAnalysis({ period: selectedPeriod, ...customDateRange }),
+      dashboardService.getTopSellingProductsWithProfit({ limit: 10, period: selectedPeriod, ...customDateRange }),
     ])
       .then(([profitRes, productsRes]) => {
         if (cancelled) {
@@ -96,7 +96,7 @@ export function ProfitDetailModal({ open, onClose, period, comparison }) {
     return () => {
  cancelled = true; 
 };
-  }, [open, selectedPeriod]);
+  }, [open, selectedPeriod, customDateRange]);
 
   const totalRevenue = useMemo(() => profitData.reduce((s, d) => s + (d.revenue || 0), 0), [profitData]);
   const totalCost = useMemo(() => profitData.reduce((s, d) => s + (d.cost || 0), 0), [profitData]);
@@ -115,11 +115,11 @@ export function ProfitDetailModal({ open, onClose, period, comparison }) {
   }, [profitData]);
 
   const periodShortLabels = {
-    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
-    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
-    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
-    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
-    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+    '7days':    t('sellerDashboard.periodShort.7days', '7 Days'),
+    '30days':   t('sellerDashboard.periodShort.30days', '30 Days'),
+    '90days':   t('sellerDashboard.periodShort.90days', '90 Days'),
+    '12months': t('sellerDashboard.periodShort.12months', '12 Months'),
+    yearly:   t('sellerDashboard.periodShort.yearly', 'Last Year'),
   };
 
   const productColumns = [
@@ -217,7 +217,7 @@ export function ProfitDetailModal({ open, onClose, period, comparison }) {
       <Spin spinning={loading} tip={t('sellerDashboard.profitDetail.loading', 'Đang tải dữ liệu...')}>
         {/* Period selector */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
-          {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
+          {['7days', '30days', '90days', '12months', 'yearly'].map((p) => (
             <button
               key={p}
               onClick={() => setSelectedPeriod(p)}

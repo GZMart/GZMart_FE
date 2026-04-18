@@ -210,6 +210,7 @@ ro.observe(panelRef.current);
 
   const renderSuggestionExplanation = () => {
     const costData = data?.costData;
+    const reasoning = data?.reasoning;
     const cur = product?.price != null ? Number(product.price) : null;
 
     if (costData?.hasCostData) {

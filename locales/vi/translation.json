@@ -564,25 +564,35 @@
       "vsPeriod": "so với kỳ trước"
     },
     "period": {
-      "daily": "30 ngày gần nhất",
-      "weekly": "13 tuần gần nhất",
-      "monthly": "12 tháng gần nhất",
-      "quarterly": "4 quý gần nhất",
-      "yearly": "5 năm gần nhất"
+      "7days": "7 ngày gần nhất",
+      "30days": "30 ngày gần nhất",
+      "90days": "90 ngày gần nhất",
+      "12months": "12 tháng qua",
+      "yearly": "Năm trước",
+      "custom": "Tùy chỉnh"
     },
     "periodCompare": {
-      "daily": "so với 30 ngày trước",
-      "weekly": "so với 13 tuần trước",
-      "monthly": "so với 12 tháng trước",
-      "quarterly": "so với 4 quý trước",
-      "yearly": "so với 5 năm trước"
+      "7days": "so với 7 ngày trước",
+      "30days": "so với 30 ngày trước",
+      "90days": "so với 90 ngày trước",
+      "12months": "so với 12 tháng trước",
+      "yearly": "so với năm trước nữa",
+      "custom": "so với kỳ trước cùng độ dài"
     },
     "periodShort": {
-      "daily": "30 Ngày",
-      "weekly": "13 Tuần",
-      "monthly": "12 Tháng",
-      "quarterly": "4 Quý",
-      "yearly": "5 Năm"
+      "7days": "7 Ngày",
+      "30days": "30 Ngày",
+      "90days": "90 Ngày",
+      "12months": "12 Tháng",
+      "yearly": "Năm trước",
+      "custom": "Tùy chỉnh"
+    },
+    "segmented": {
+      "days7": "7 Ngày",
+      "days30": "30 Ngày",
+      "days90": "90 Ngày",
+      "months12": "12 Tháng",
+      "yearly": "Năm"
     },
     "lowStock": {
       "title": "Cảnh báo sắp hết hàng",
@@ -622,7 +632,69 @@
       "title": "Phân tích sản phẩm theo danh mục",
       "noData": "Không có dữ liệu phân tích theo danh mục",
       "source": "Nguồn: doanh thu theo danh mục — {{count}} danh mục trong kỳ",
-      "legendTooltip": "{{name}} — {{percent}}% doanh thu kỳ"
+      "legendTooltip": "{{name}} — {{percent}}% doanh thu kỳ",
+      "distribution": "Phân bố theo doanh thu",
+      "topCategoryLabel": "Top Danh mục",
+      "topCategoryBadge": "Top Category",
+      "shareLabel": "Tỷ trọng",
+      "rankLabel": "Hạng",
+      "kpi": {
+        "totalRevenue": "Tổng doanh thu",
+        "categories": "danh mục",
+        "topCategory": "Danh mục dẫn đầu",
+        "topShare": "Tỷ trọng cao nhất"
+      }
+    },
+    "productAnalytics": {
+      "cardTitle": "Phân tích sản phẩm",
+      "topProducts": "Top sản phẩm",
+      "source": "Nguồn: {{count}} sản phẩm trong kỳ",
+      "noData": "Không có dữ liệu phân tích sản phẩm",
+      "viewDetail": "Chi tiết",
+      "totalRevenue": "Tổng doanh thu",
+      "sold": "Đã bán",
+      "avgPrice": "Giá TB",
+      "activeGroups": "nhóm hoạt động",
+      "groupUnit": "nhóm"
+    },
+    "ageAnalytics": {
+      "cardTitle": "Phân tích độ tuổi khách hàng",
+      "title": "Phân tích độ tuổi khách hàng",
+      "subtitle": "Phân tích nhân khẩu học khách hàng",
+      "viewDetail": "Chi tiết",
+      "noDataTitle": "Chưa có dữ liệu độ tuổi",
+      "noDataHint": "Dữ liệu sẽ hiển thị khi khách hàng có cập nhật ngày sinh",
+      "noData": "Không có dữ liệu",
+      "noBirthdayData": "Chưa có dữ liệu ngày sinh",
+      "noProductData": "Chưa có dữ liệu mua hàng theo sản phẩm",
+      "totalCustomers": "Tổng khách hàng",
+      "ordersUnit": "đơn",
+      "totalRevenue": "Tổng doanh thu",
+      "avgPerOrder": "TB {{value}}/đơn",
+      "primaryAgeGroup": "Nhóm tuổi chính",
+      "activeGroups": "Nhóm hoạt động",
+      "activeAgeGroups": "Nhóm hoạt động",
+      "groupUnit": "nhóm tuổi",
+      "distribution": "Phân bố khách hàng",
+      "customerCompare": "So sánh khách hàng theo nhóm tuổi",
+      "total": "Tổng:",
+      "customers": "KH",
+      "percentRevenue": "% DT",
+      "revenue": "Doanh thu",
+      "tabOverview": "Tổng quan",
+      "tabByProduct": "Theo sản phẩm",
+      "product": "Sản phẩm",
+      "rank": "Hạng",
+      "ageGroup": "Nhóm tuổi",
+      "orders": "Đơn",
+      "percent": "Tỷ lệ",
+      "topAgeGroup": "Nhóm tuổi chính",
+      "topAgePct": "Tỷ lệ",
+      "avgRevenue": "Doanh thu TB",
+      "topProductsByAge": "Top sản phẩm bán chạy theo nhóm tuổi",
+      "back": "Quay lại danh sách",
+      "last30Days": "30 Ngày",
+      "selectDate": "Tùy chỉnh"
     },
     "segmented": {
       "week": "Tuần",
@@ -731,6 +803,23 @@
       "avgMargin": "Margin TB",
       "loading": "Đang tải dữ liệu…",
       "noData": "Không có dữ liệu sản phẩm"
+    },
+    "bannerWidget": {
+      "title": "Quảng Cáo Banner",
+      "loading": "Đang tải...",
+      "freeSlots": "{{count}} slot trống hôm nay",
+      "noSlotsToday": "Hết slot hôm nay",
+      "slotTooltip": "Slot {{number}}: {{label}}",
+      "slotLabels": {
+        "free": "Slot trống",
+        "other": "Đã có người đặt",
+        "mineRunning": "Banner đang chạy của bạn",
+        "minePending": "Banner chờ duyệt của bạn"
+      },
+      "coinUnit": "xu",
+      "slotsMeta": "{{count}} slot · {{price}} xu/ngày",
+      "running": "Đang chạy",
+      "pending": "Chờ duyệt"
     }
   },
   "sellerOrders": {

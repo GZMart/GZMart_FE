@@ -395,6 +395,7 @@
   box-shadow: 0 4px 16px rgba(17, 24, 39, 0.06);
   padding: 1.25rem;
   transition: box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 .chartCard:hover {
@@ -438,6 +439,27 @@
   color: #1a56db;
 }
 
+/* ─── Custom Range Picker ──────────────────────────────── */
+.customRangePicker {
+  height: 32px !important;
+  font-size: 0.8125rem;
+  border-radius: 8px;
+  border-color: #1677ff;
+  background: #eff6ff;
+}
+
+.customRangePicker:hover {
+  border-color: #1677ff !important;
+}
+
+.customRangePopup {
+  z-index: 1050;
+}
+
+.customRangePopup .ant-picker-content {
+  font-size: 0.8125rem;
+}
+
 .periodBtn {
   display: inline-flex;
   align-items: center;
@@ -471,11 +493,15 @@
 }
 
 .salesValue {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.03em;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .trendup {
@@ -509,6 +535,7 @@
   background: #fafbfc;
   border-radius: 10px;
   padding: 0.5rem 0;
+  overflow: visible;
 }
 
 .chartMetricRow {
@@ -516,13 +543,16 @@
   align-items: baseline;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .chartMetricLabel {
   font-size: 0.75rem;
   color: #94a3b8;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ─── Chart + Stats Grid ─────────────────────────────────────── */
@@ -609,12 +639,15 @@
 }
 
 .statValue {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .statTrend {
@@ -795,6 +828,11 @@
   margin-top: 2.25rem;
 }
 
+/* Extra vertical rhythm between Age Analytics and other sections */
+.ageAnalyticsBlock {
+  margin-top: 2.25rem;
+}
+
 .erpSectionCard {
   background: #ffffff;
   border-radius: 14px;
@@ -838,7 +876,483 @@
   padding: 1rem 1.125rem;
 }
 
-/* Expense Pie */
+/* Expense KPI Strip */
+.expenseKpiStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.expenseKpiCard {
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.expenseKpiLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.expenseKpiValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.expenseKpiMeta {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Expense Donut Chart */
+.expenseChartContainer {
+  width: 100%;
+}
+
+.expenseDonutWrapper {
+  position: relative;
+}
+
+.expenseDonutCenter {
+  position: relative;
+  width: 100%;
+  height: 240px;
+}
+
+.expenseDonutLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.expenseDonutLabelSub {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+}
+
+.expenseDonutLabelTotal {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Category KPI Strip */
+.categoryKpiStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.categoryKpiCard {
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.categoryKpiLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.categoryKpiValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.categoryKpiMeta {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Category Chart Section */
+.categoryChartSection {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.categoryDonutWrapper {
+  flex: 0 0 220px;
+}
+
+.categoryDonutCenter {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+
+.categoryDonutLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.categoryDonutLabelSub {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+}
+
+.categoryDonutLabelTop {
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryLegendSection {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.categoryLegendGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.categoryLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.categoryLegendItem:hover {
+  transform: translateX(2px);
+}
+
+.categoryLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.categoryLegendContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.categoryLegendName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.categoryLegendRevenue {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.categoryLegendPercent {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Featured Category Card */
+.categoryFeaturedCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.categoryFeaturedCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.categoryFeaturedLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.categoryFeaturedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.categoryFeaturedName {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.categoryFeaturedRevenue {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.categoryFeaturedRight {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.categoryFeaturedStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.categoryFeaturedStatValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.categoryFeaturedStatLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+}
+
+/* Age KPI Strip */
+.ageKpiStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.ageKpiCard {
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.ageKpiLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.ageKpiValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.ageKpiMeta {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Age Chart Section */
+.ageChartSection {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.ageDonutWrapper {
+  flex: 0 0 220px;
+}
+
+.ageDonutCenter {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+
+.ageDonutLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.ageDonutLabelSub {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+}
+
+.ageDonutLabelAge {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.ageLegendSection {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ageLegendTitle {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+
+.ageLegendRow {
+  margin-bottom: 10px;
+}
+
+.ageLegendRowHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ageLegendLabelGroup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ageLegendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ageLegendName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ageLegendStats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ageLegendCustomers {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+}
+
+.ageLegendPercent {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Age Bar Chart Section */
+.ageBarChartSection {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ageBarChartTitle {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.ageBarChartLegend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 10px;
+}
+
+.ageBarChartLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ageBarChartLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
 .pieChartContainer {
   width: 100%;
   height: 200px;
@@ -1141,11 +1655,16 @@
 }
 
 .balanceMainCardValue {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.03em;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .balanceMainCardFooter {
@@ -1341,6 +1860,10 @@
   .lowStockGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .ageKpiStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 900px) {
@@ -1350,6 +1873,33 @@
 
   .balanceSectionGrid {
     grid-template-columns: 1fr;
+  }
+
+  .categoryChartSection {
+    flex-direction: column;
+  }
+
+  .categoryDonutWrapper {
+    flex: 0 0 auto;
+  }
+
+  .ageChartSection {
+    flex-direction: column;
+  }
+
+  .ageDonutWrapper {
+    flex: 0 0 auto;
+  }
+
+  .categoryFeaturedCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .categoryFeaturedRight {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
@@ -1397,4 +1947,14 @@
   .xrBanner {
     display: none;
   }
+}
+
+/* RangePicker custom — hide input, show calendar button only */
+.customRangePickerHidden {
+  width: 36px !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
 }

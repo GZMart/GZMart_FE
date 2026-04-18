@@ -10,6 +10,10 @@ export const livestreamService = {
   endSession: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/end`),
   getActiveByShop: (shopId) => axiosClient.get(`${BASE}/active`, { params: { shopId } }),
   getSession: (sessionId) => axiosClient.get(`${BASE}/session/${sessionId}`),
+  /** Seller-only: revenue, order count, per-product units for a live session */
+  getSessionStats: (sessionId) => axiosClient.get(`${BASE}/session/${sessionId}/stats`),
+  /** Seller-only: paginated ended sessions with revenue / units summary */
+  getSessionsHistory: (params) => axiosClient.get(`${BASE}/sessions/history`, { params }),
   getSessionProducts: (sessionId) => axiosClient.get(`${BASE}/session/${sessionId}/products`),
   addProductsToSession: (sessionId, productIds) =>
     axiosClient.post(`${BASE}/session/${sessionId}/products`, { productIds }),
@@ -31,6 +35,10 @@ export const livestreamService = {
     axiosClient.put(`${BASE}/session/${sessionId}`, data),
   getSessionConfig: (sessionId) =>
     axiosClient.get(`${BASE}/session/${sessionId}/config`),
+  createHandoff: (sessionId) =>
+    axiosClient.post(`${BASE}/session/${sessionId}/handoff`),
+  exchangeHandoff: (token) =>
+    axiosClient.post(`${BASE}/handoff/exchange`, { token }),
 };
 
 export default livestreamService;

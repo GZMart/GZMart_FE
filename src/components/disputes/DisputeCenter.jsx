@@ -907,7 +907,7 @@ return;
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         title={detailReport ? buildDisplayLabel(detailReport) : 'Dispute Detail'}
-        destroyOnClose
+        destroyOnHidden
       >
         {detailLoading ? (
           <div style={{ padding: 48, textAlign: 'center' }}>
@@ -1054,7 +1054,7 @@ return;
         open={createOpen}
         onClose={closeCreateDrawer}
         title="Create Dispute Report"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={createForm} layout="vertical" initialValues={{ type: 'order' }}>
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -1159,7 +1159,7 @@ return;
         open={actionOpen}
         onClose={closeActionDrawer}
         title={mode === 'seller' ? 'Submit Counter-Report' : 'Update Report Status'}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={actionForm} layout="vertical">
           <Space direction="vertical" size={16} style={{ width: '100%' }}>

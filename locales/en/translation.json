@@ -564,25 +564,35 @@
       "vsPeriod": "vs. previous period"
     },
     "period": {
-      "daily": "Last 30 days",
-      "weekly": "Last 13 weeks",
-      "monthly": "Last 12 months",
-      "quarterly": "Last 4 quarters",
-      "yearly": "Last 5 years"
+      "7days": "Last 7 days",
+      "30days": "Last 30 days",
+      "90days": "Last 90 days",
+      "12months": "Last 12 months",
+      "yearly": "Last year",
+      "custom": "Custom"
     },
     "periodCompare": {
-      "daily": "vs. 30 days ago",
-      "weekly": "vs. 13 weeks ago",
-      "monthly": "vs. 12 months ago",
-      "quarterly": "vs. 4 quarters ago",
-      "yearly": "vs. 5 years ago"
+      "7days": "vs. 7 days ago",
+      "30days": "vs. 30 days ago",
+      "90days": "vs. 90 days ago",
+      "12months": "vs. 12 months ago",
+      "yearly": "vs. year before last",
+      "custom": "vs. previous equal period"
     },
     "periodShort": {
-      "daily": "30 Days",
-      "weekly": "13 Weeks",
-      "monthly": "12 Months",
-      "quarterly": "4 Quarters",
-      "yearly": "5 Years"
+      "7days": "7 Days",
+      "30days": "30 Days",
+      "90days": "90 Days",
+      "12months": "12 Months",
+      "yearly": "Last Year",
+      "custom": "Custom"
+    },
+    "segmented": {
+      "days7": "7 Days",
+      "days30": "30 Days",
+      "days90": "90 Days",
+      "months12": "12 Months",
+      "yearly": "Year"
     },
     "lowStock": {
       "title": "Low Stock Alerts",
@@ -622,7 +632,69 @@
       "title": "Product Analytics by Category",
       "noData": "No category analytics data",
       "source": "Source: revenue by category — {{count}} categories in period",
-      "legendTooltip": "{{name}} — {{percent}}% period revenue"
+      "legendTooltip": "{{name}} — {{percent}}% period revenue",
+      "distribution": "Distribution by revenue",
+      "topCategoryLabel": "Top Category",
+      "topCategoryBadge": "Top Category",
+      "shareLabel": "Share",
+      "rankLabel": "Rank",
+      "kpi": {
+        "totalRevenue": "Total Revenue",
+        "categories": "categories",
+        "topCategory": "Leading Category",
+        "topShare": "Highest Share"
+      }
+    },
+    "productAnalytics": {
+      "cardTitle": "Product Analytics",
+      "topProducts": "Top Products",
+      "source": "Source: {{count}} products in period",
+      "noData": "No product analytics data",
+      "viewDetail": "Details",
+      "totalRevenue": "Total Revenue",
+      "sold": "Sold",
+      "avgPrice": "Avg Price",
+      "activeGroups": "active groups",
+      "groupUnit": "groups"
+    },
+    "ageAnalytics": {
+      "cardTitle": "Customer Age Analytics",
+      "title": "Customer Age Analytics",
+      "subtitle": "Customer demographic analytics",
+      "viewDetail": "Details",
+      "noDataTitle": "No age data available",
+      "noDataHint": "Data will appear when customers have birthday info",
+      "noData": "No data available",
+      "noBirthdayData": "No birthday data",
+      "noProductData": "No product purchase data",
+      "totalCustomers": "Total Customers",
+      "ordersUnit": "orders",
+      "totalRevenue": "Total Revenue",
+      "avgPerOrder": "Avg {{value}}/order",
+      "primaryAgeGroup": "Primary Age Group",
+      "activeGroups": "Active Groups",
+      "activeAgeGroups": "Active Groups",
+      "groupUnit": "age groups",
+      "distribution": "Customer Distribution",
+      "customerCompare": "Customer Comparison by Age",
+      "total": "Total:",
+      "customers": "Cust",
+      "percentRevenue": "% Rev",
+      "revenue": "Revenue",
+      "tabOverview": "Overview",
+      "tabByProduct": "By Product",
+      "product": "Product",
+      "rank": "Rank",
+      "ageGroup": "Age Group",
+      "orders": "Orders",
+      "percent": "Percent",
+      "topAgeGroup": "Primary Age Group",
+      "topAgePct": "Percent",
+      "avgRevenue": "Avg Revenue",
+      "topProductsByAge": "Top Selling Products by Age Group",
+      "back": "Back to list",
+      "last30Days": "Last 30 Days",
+      "selectDate": "Custom"
     },
     "segmented": {
       "week": "Week",
@@ -731,6 +803,23 @@
       "avgMargin": "Avg. Margin",
       "loading": "Loading data…",
       "noData": "No product data"
+    },
+    "bannerWidget": {
+      "title": "Banner Ads",
+      "loading": "Loading...",
+      "freeSlots": "{{count}} slot available today",
+      "noSlotsToday": "All slots booked today",
+      "slotTooltip": "Slot {{number}}: {{label}}",
+      "slotLabels": {
+        "free": "Available",
+        "other": "Booked by others",
+        "mineRunning": "Your running banner",
+        "minePending": "Your pending banner"
+      },
+      "coinUnit": "coins",
+      "slotsMeta": "{{count}} slot · {{price}} coins/day",
+      "running": "Running",
+      "pending": "Pending"
     }
   },
   "sellerOrders": {
