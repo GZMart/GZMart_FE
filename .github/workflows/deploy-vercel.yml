@@ -29,25 +29,24 @@ jobs:
         with:
           node-version: '24'
 
-      # Bước 2: Cài đặt Vercel CLI phiên bản mới nhất
-      - name: Install latest Vercel CLI
-        run: npm install -g vercel@latest
-
-      # Bước 3: Deploy dự án lên Vercel
+      # Bước 2: Deploy dự án lên Vercel
       - name: Deploy GZMart to Vercel
         uses: amondnet/vercel-action@v25
         with:
           # Token Vercel để xác thực
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
 
-          # Token GitHub để Vercel liên kết commit (có sẵn, không cần tạo)
+          # Token GitHub để Vercel liên kết commit
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
           # Argument để báo cho Vercel đây là bản deploy production
           vercel-args: '--prod'
 
           # ID của tài khoản Vercel (cá nhân hoặc team)
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID}}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
 
           # ID của dự án trên Vercel
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID}}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+
+          # Chỉ định phiên bản Vercel CLI mới nhất để tránh lỗi outdated
+          vercel-version: 47.2.2
