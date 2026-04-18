@@ -26,14 +26,52 @@ const LIVE_OVERLAY = {
 };
 
 // ── Chat message normalizer ─────────────────────────────────────────────────
+const resolveUserAvatar = (u) => {
+  if (!u) {
+    return '';
+  }
+  const url = u.avatar || u.profileImage;
+  return typeof url === 'string' && url.trim() ? url.trim() : '';
+};
+
 const normalizeMessage = (m) => ({
   id: m.id || m._id || String(Math.random()),
   displayName: m.displayName || m.userId || 'Viewer',
   content: m.content,
-  userId: m.userId,
+  userId: m.userId ?? m.senderId,
   role: m.role || 'buyer',
   timestamp: m.timestamp || new Date().toISOString(),
+  avatar: typeof m.avatar === 'string' && m.avatar.trim() ? m.avatar.trim() : undefined,
 });
+
+/** Renders profile image when `src` loads; otherwise initials (per-row image error state). */
+function LiveChatAvatar({ src, initials, className }) {
+  const [imgErr, setImgErr] = useState(false);
+  useEffect(() => {
+    setImgErr(false);
+  }, [src]);
+  const showImg = Boolean(src) && !imgErr;
+  return (
+    <div className={className}>
+      {showImg ? (
+        <img
+          src={src}
+          alt=""
+          className={styles['ls-msg-avatar-img']}
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+}
+
+LiveChatAvatar.propTypes = {
+  src: PropTypes.string,
+  initials: PropTypes.string.isRequired,
+  className: PropTypes.string.isRequired,
+};
 
 /** Quick reactions for live chat (sent as plain text over the socket). */
 const LIVE_CHAT_EMOTES = [
@@ -1014,7 +1052,11 @@ return;
               return;
             }
 
-            const fromServer = msgList.map((m) => ({ ...normalizeMessage(m), isOwn: false }));
+            const fromServer = msgList.map((m) => ({
+              ...normalizeMessage(m),
+              isOwn:
+                String(m.userId ?? m.senderId) === String(user?._id),
+            }));
             setMessages((prev) => {
               const byId = new Map();
               for (const m of fromServer) {
@@ -1327,7 +1369,12 @@ return false;
 
       setIsSending(true);
       const localMsg = {
-        ...normalizeMessage({ id: `local_${Date.now()}`, content: text, userId: user?._id }),
+        ...normalizeMessage({
+          id: `local_${Date.now()}`,
+          content: text,
+          userId: user?._id,
+          avatar: resolveUserAvatar(user),
+        }),
         displayName: displayNameRef.current,
         isOwn: true,
       };
@@ -1349,6 +1396,7 @@ return false;
         displayName: displayNameRef.current,
         userId: user?._id || 'anonymous',
         role: 'buyer',
+        avatar: resolveUserAvatar(user) || undefined,
       });
 
       setTimeout(() => setIsSending(false), 600);
@@ -2060,14 +2108,20 @@ handleQuickBuy(product);
                     ? (user?.fullName || 'YO').slice(0, 2).toUpperCase()
                     : (m.displayName || 'V').slice(0, 2).toUpperCase();
 
+                const avatarSrc = isOwn
+                  ? resolveUserAvatar(user)
+                  : (m.avatar || (isHost && !isOwn ? session?.shopId?.avatar : '') || '');
+
                 return (
                   <div
                     key={m.id || i}
                     className={`${styles['ls-msg-row']}${isOwn ? ` ${styles['ls-msg-row--own']}` : ''}${isHost && !isOwn ? ` ${styles['ls-msg-row--host']}` : ''}`}
                   >
-                    <div className={`${styles['ls-msg-avatar']}${isHost && !isOwn ? ` ${styles['ls-msg-avatar--host']}` : isOwn ? ` ${styles['ls-msg-avatar--own']}` : ` ${styles['ls-msg-avatar--other']}`}`}>
-                      {initials}
-                    </div>
+                    <LiveChatAvatar
+                      src={avatarSrc}
+                      initials={initials}
+                      className={`${styles['ls-msg-avatar']}${isHost && !isOwn ? ` ${styles['ls-msg-avatar--host']}` : isOwn ? ` ${styles['ls-msg-avatar--own']}` : ` ${styles['ls-msg-avatar--other']}`}`}
+                    />
                     <div className={`${styles['ls-msg-content']}${isOwn ? ` ${styles['ls-msg-content--own']}` : ''}`}>
                       <div className={styles['ls-msg-meta']}>
                         {isHost && !isOwn && (

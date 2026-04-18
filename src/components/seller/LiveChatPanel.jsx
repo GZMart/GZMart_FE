@@ -8,6 +8,36 @@ import socketService from '@services/socket/socketService';
 import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 import OrderSyntaxPanel from './OrderSyntaxPanel';
 
+function resolveUserAvatar(u) {
+  if (!u) {
+    return '';
+  }
+  const url = u.avatar || u.profileImage;
+  return typeof url === 'string' && url.trim() ? url.trim() : '';
+}
+
+function SellerChatAvatar({ avatarUrl, initials, className }) {
+  const [imgErr, setImgErr] = useState(false);
+  useEffect(() => {
+    setImgErr(false);
+  }, [avatarUrl]);
+  const show = Boolean(avatarUrl) && !imgErr;
+  return (
+    <div className={className}>
+      {show ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className={styles.chatAvatarImg}
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+}
+
 export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {
   const compactTabs = useMediaQuery('(max-width: 768px)');
   const [activeTab, setActiveTab] = useState('interaction');
@@ -89,6 +119,7 @@ return;
           isLocal: false,
           timestamp: m.timestamp,
           senderId: m.senderId,
+          avatarUrl: typeof m.avatar === 'string' && m.avatar.trim() ? m.avatar.trim() : '',
         }));
         // Only add messages we don't already have
         const fresh = normalized.filter((m) => !existingIdsRef.current.has(m.id));
@@ -169,6 +200,7 @@ return;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
+          avatarUrl: typeof msg.avatar === 'string' && msg.avatar.trim() ? msg.avatar.trim() : '',
         };
         setMessages((prev) => [...prev, newMsg]);
       } else {
@@ -182,6 +214,7 @@ return;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
+          avatarUrl: typeof msg.avatar === 'string' && msg.avatar.trim() ? msg.avatar.trim() : '',
         };
         setMessages((prev) => [...prev, newMsg]);
       }
@@ -219,6 +252,7 @@ return;
       colorClass: styles.chatAvatarPink,
       text,
       isLocal: true,
+      avatarUrl: resolveUserAvatar(user),
     };
 
     const payloadJson = {
@@ -245,6 +279,7 @@ return;
       displayName: displayNameRef.current,
       userId: sellerIdRef.current,
       role: 'seller',
+      avatar: resolveUserAvatar(user) || undefined,
     });
 
     setMessages((prev) => [...prev, localMsg]);
@@ -349,9 +384,11 @@ e.currentTarget.style.color = '#8f2e29';
               ) : (
                 messages.map((msg) => (
                   <div className={styles.chatMsg} key={msg.id}>
-                    <div className={`${styles.chatAvatar} ${msg.colorClass}`}>
-                      {msg.initials}
-                    </div>
+                    <SellerChatAvatar
+                      avatarUrl={msg.avatarUrl}
+                      initials={msg.initials}
+                      className={`${styles.chatAvatar} ${msg.colorClass}`}
+                    />
                     <div className={styles.chatMsgContent}>
                       <div className={styles.chatSender}>{msg.sender}</div>
                       <div className={styles.chatText}>{msg.text}</div>
