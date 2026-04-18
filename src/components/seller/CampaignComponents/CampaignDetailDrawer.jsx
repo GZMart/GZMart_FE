@@ -134,7 +134,7 @@ const CampaignDetailDrawer = ({
       width={900}
       open={open}
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
       styles={{
         header: { 
           display: 'none', // Custom header trong body

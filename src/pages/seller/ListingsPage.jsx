@@ -143,7 +143,12 @@ const ListingsPage = () => {
         setShowAddModal(true);
       }
     } catch (error) {
-      console.error('Error fetching product:', error);
+      if (error.status === 404 && product.status === 'draft') {
+        setEditingProduct({ _id: product.id, ...product });
+        setShowAddModal(true);
+      } else {
+        console.error('Error fetching product:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -170,7 +175,16 @@ const ListingsPage = () => {
         setShowAddModal(true);
       }
     } catch (error) {
-      console.error('Error opening product for AI batch price apply:', error);
+      if (error.status === 404 && product.status === 'draft') {
+        setEditingProduct({
+          _id: product.id,
+          ...product,
+          _aiPriceChanges: changes,
+        });
+        setShowAddModal(true);
+      } else {
+        console.error('Error opening product for AI batch price apply:', error);
+      }
     } finally {
       setLoading(false);
     }

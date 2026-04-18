@@ -22,7 +22,9 @@ export const dashboardService = {
   /**
    * Get revenue trend over time
    * @param {object} params - Query parameters
-   * @param {string} [params.period='daily'] - Period type: 'daily', 'weekly', 'monthly'
+   * @param {string} [params.period='30days'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
+   * @param {string} [params.startDate] - Start date for custom range (ISO format or YYYY-MM-DD)
+   * @param {string} [params.endDate] - End date for custom range (ISO format or YYYY-MM-DD)
    * @returns {Promise} Revenue trend data grouped by period
    */
   getRevenueTrend: async (params = {}) =>
@@ -79,7 +81,9 @@ export const dashboardService = {
   /**
    * Get comparison statistics (current vs previous period)
    * @param {object} params - Query parameters
-   * @param {string} [params.period='month'] - Calendar: 'month', 'week'. Rolling (matches revenue-trend): 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+   * @param {string} [params.period='30days'] - Rolling (matches revenue-trend): '7days' | '30days' | '90days' | '12months' | 'yearly'
+   * @param {string} [params.startDate] - Start date for custom range (ISO format or YYYY-MM-DD)
+   * @param {string} [params.endDate] - End date for custom range (ISO format or YYYY-MM-DD)
    * @returns {Promise} Comparison data with growth percentages
    */
   getComparison: async (params = {}) => await axiosClient.get(`${BASE_URL}/comparison`, { params }),
@@ -98,7 +102,7 @@ export const dashboardService = {
   /**
    * Get profit and loss analysis by period
    * @param {object} params - Query parameters
-   * @param {string} [params.period='daily'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @param {string} [params.period='30days'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @returns {Promise} P&L data grouped by period with { _id, revenue, cost, quantity, orders, profit }
    */
   getProfitLossAnalysis: async (params = {}) => await axiosClient.get(`${BASE_URL}/profit-loss`, { params }),
@@ -106,7 +110,7 @@ export const dashboardService = {
   /**
    * Get expense analysis (product cost vs shipping cost)
    * @param {object} params - Query parameters
-   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @param {string} [params.period='12months'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @returns {Promise} Expense breakdown with { totalProductCost, totalShippingCost, totalExpense, breakdownByType }
    */
   getExpenseAnalysis: async (params = {}) => await axiosClient.get(`${BASE_URL}/expense`, { params }),
@@ -115,7 +119,7 @@ export const dashboardService = {
    * Get top selling products with profit analysis
    * @param {object} params - Query parameters
    * @param {number} [params.limit=10] - Number of products to retrieve
-   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @param {string} [params.period='12months'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @returns {Promise} Array of products with { _id, name, totalQuantity, totalRevenue, cost, profit, profitMargin }
    */
   getTopSellingProductsWithProfit: async (params = {}) => await axiosClient.get(`${BASE_URL}/top-products-profit`, { params }),
@@ -123,7 +127,7 @@ export const dashboardService = {
   /**
    * Get product analytics by category
    * @param {object} params - Query parameters
-   * @param {string} [params.period='monthly'] - Period type: 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'
+   * @param {string} [params.period='12months'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @param {number} [params.limit=8] - Number of categories to retrieve
    * @returns {Promise} { categories: [{categoryName, totalRevenue, totalQuantity, profit, profitMargin, revenuePercent}], totalRevenue, totalQuantity, totalProfit, period }
    */
@@ -229,6 +233,31 @@ export const dashboardService = {
    */
   getSellerWalletTransactions: async (params = {}) =>
     await axiosClient.get(`${BASE_URL}/seller-wallet-transactions`, { params }),
+
+  // ============= CUSTOMER AGE ANALYTICS =============
+
+  /**
+   * Get customer age analytics for the shop (overall)
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='12months'] - Period type: '7days' | '30days' | '90days' | '12months' | 'yearly'
+   * @param {string} [params.startDate] - Start date for custom range
+   * @param {string} [params.endDate] - End date for custom range
+   * @returns {Promise} { ageGroups, totalCustomers, totalRevenue, period, hasBirthdayData }
+   */
+  getCustomerAgeAnalytics: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/customer-age-analytics`, { params }),
+
+  /**
+   * Get customer age analytics grouped by product
+   * @param {object} params - Query parameters
+   * @param {string} [params.period='12months'] - Period type: '7days' | '30days' | '90days' | '12months' | 'yearly'
+   * @param {string} [params.startDate] - Start date for custom range
+   * @param {string} [params.endDate] - End date for custom range
+   * @param {number} [params.limit=10] - Number of products to retrieve
+   * @returns {Promise} { products, period, hasBirthdayData }
+   */
+  getCustomerAgeAnalyticsByProduct: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/customer-age-analytics-by-product`, { params }),
 };
 
 export default dashboardService;

@@ -172,7 +172,7 @@ return;
       okText="Lưu Hotspot"
       cancelText="Hủy"
       width={900}
-      bodyStyle={{ padding: 0 }}
+      styles={{ body: { padding: 0 } }}
       destroyOnHidden
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 16 }}>

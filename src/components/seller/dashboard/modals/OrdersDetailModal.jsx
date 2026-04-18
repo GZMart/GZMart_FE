@@ -41,7 +41,7 @@ const STATUS_ICONS = {
   under_investigation: { bg: '#FED7AA', color: '#EA580C' },
 };
 
-export function OrdersDetailModal({ open, onClose, _period, comparison }) {
+export function OrdersDetailModal({ open, onClose, _period, _customDateRange, comparison }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -266,7 +266,7 @@ export function OrdersDetailModal({ open, onClose, _period, comparison }) {
         </div>
       }
       width={1000}
-      destroyOnClose
+      destroyOnHidden
     >
       <Spin spinning={loading} tip={t('sellerDashboard.ordersDetail.loading', 'Đang tải đơn hàng...')}>
         {/* Comparison summary */}

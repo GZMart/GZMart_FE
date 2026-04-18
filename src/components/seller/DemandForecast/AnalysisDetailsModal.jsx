@@ -37,13 +37,11 @@ const VelocityChart = ({ data, trendDays }) => {
   const xs = data.map((_, i) => (i / (data.length - 1)) * plotW + PAD.left);
   const ys = data.map((d) => PAD.top + plotH - (d.quantity / maxQty) * plotH);
 
-  const areaPath =
-    `M ${xs[0]} ${PAD.top + plotH}${ 
-    xs.map((x, i) => ` L ${x} ${ys[i]}`).join('') 
-    } L ${xs[xs.length - 1]} ${PAD.top + plotH} Z`;
+  const areaPath = `M ${xs[0]} ${PAD.top + plotH}${xs
+    .map((x, i) => ` L ${x} ${ys[i]}`)
+    .join('')} L ${xs[xs.length - 1]} ${PAD.top + plotH} Z`;
 
-  const linePath =
-    `M ${  xs[0]  } ${  ys[0]  }${xs.map((x, i) => ` L ${x} ${ys[i]}`).join('')}`;
+  const linePath = `M ${xs[0]} ${ys[0]}${xs.map((x, i) => ` L ${x} ${ys[i]}`).join('')}`;
 
   const first = data[0]?.quantity || 0;
   const last = data[data.length - 1]?.quantity || 0;
@@ -53,8 +51,8 @@ const VelocityChart = ({ data, trendDays }) => {
   const labels = labelIndices.map((i) => {
     const d = data[i];
     if (!d) {
-return '';
-}
+      return '';
+    }
     const parts = d.date.split('-');
     return `${parts[1]}/${parts[2]}`;
   });
@@ -69,7 +67,11 @@ return '';
 
   return (
     <div className={styles.chartWrap}>
-      <svg viewBox={`0 0 ${W} ${H}`} className={styles.chartSvg} preserveAspectRatio="xMidYMid meet">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className={styles.chartSvg}
+        preserveAspectRatio="xMidYMid meet"
+      >
         <defs>
           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
@@ -107,8 +109,8 @@ return '';
             const x = xs[origIdx];
             const y = ys[origIdx];
             if (d.quantity === 0) {
-return null;
-}
+              return null;
+            }
             return (
               <circle
                 key={`point-${origIdx}`}
@@ -177,8 +179,8 @@ const AnalysisDetailsModal = ({ item, trendDays, onClose }) => {
       .getProductDemandDetails(item.productId, { days: 30 })
       .then((res) => {
         if (!cancelled) {
-setDetails(res.data);
-}
+          setDetails(res.data);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -187,20 +189,20 @@ setDetails(res.data);
       })
       .finally(() => {
         if (!cancelled) {
-setLoading(false);
-}
+          setLoading(false);
+        }
       });
     return () => {
- cancelled = true; 
-};
+      cancelled = true;
+    };
   }, [item.productId]);
 
   useEffect(() => {
     const handler = (e) => {
- if (e.key === 'Escape') {
-onClose();
-} 
-};
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
     document.addEventListener('keydown', handler);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -222,11 +224,14 @@ onClose();
 
   const fmtCurrency = (v) =>
     v > 0
-      ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v)
+      ? new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+          maximumFractionDigits: 0,
+        }).format(v)
       : '—';
 
-  const fmtNumber = (v) =>
-    v != null ? v.toLocaleString('vi-VN') : '—';
+  const fmtNumber = (v) => (v != null ? v.toLocaleString('vi-VN') : '—');
 
   return (
     <>
@@ -277,11 +282,12 @@ onClose();
 
           {details && (
             <div className={styles.analysisContent}>
-
               {/* ── Section A: Internal Shop Performance ───────────────────── */}
               <section className={styles.analysisSection}>
                 <div className={styles.analysisSectionHeader}>
-                  <span className={styles.analysisSectionIcon}><BarChart3 size={14} /></span>
+                  <span className={styles.analysisSectionIcon}>
+                    <BarChart3 size={14} />
+                  </span>
                   <h3 className={styles.analysisSectionTitle}>Internal Performance</h3>
                 </div>
 
@@ -296,20 +302,25 @@ onClose();
                   <div className={styles.analysisKpi}>
                     <span className={styles.analysisKpiLabel}>Current Stock</span>
                     <span className={styles.analysisKpiValue}>
-                      {fmtNumber(details.totalStock)} <span className={styles.analysisKpiUnit}>units</span>
+                      {fmtNumber(details.totalStock)}{' '}
+                      <span className={styles.analysisKpiUnit}>units</span>
                     </span>
                   </div>
                   <div className={styles.analysisKpi}>
                     <span className={styles.analysisKpiLabel}>Avg / Day</span>
                     <span className={styles.analysisKpiValue}>
-                      {fmtNumber(details.avgDailyQty)} <span className={styles.analysisKpiUnit}>/ day</span>
+                      {fmtNumber(details.avgDailyQty)}{' '}
+                      <span className={styles.analysisKpiUnit}>/ day</span>
                     </span>
                   </div>
                   <div className={styles.analysisKpi}>
                     <span className={styles.analysisKpiLabel}>Lead Time</span>
                     <span className={styles.analysisKpiValue}>
                       {details.leadTimeDays != null ? (
-                        <>{details.leadTimeDays} <span className={styles.analysisKpiUnit}>days</span></>
+                        <>
+                          {details.leadTimeDays}{' '}
+                          <span className={styles.analysisKpiUnit}>days</span>
+                        </>
                       ) : (
                         <span className={styles.analysisKpiNoData}>No data</span>
                       )}
@@ -318,7 +329,8 @@ onClose();
                   <div className={styles.analysisKpi}>
                     <span className={styles.analysisKpiLabel}>Total Sold</span>
                     <span className={styles.analysisKpiValue}>
-                      {fmtNumber(details.totalSold)} <span className={styles.analysisKpiUnit}>units</span>
+                      {fmtNumber(details.totalSold)}{' '}
+                      <span className={styles.analysisKpiUnit}>units</span>
                     </span>
                   </div>
                 </div>
@@ -330,8 +342,8 @@ onClose();
                       details.daysUntilStockout <= 7
                         ? styles.analysisAlertDanger
                         : details.daysUntilStockout <= 14
-                        ? styles.analysisAlertWarn
-                        : styles.analysisAlertInfo
+                          ? styles.analysisAlertWarn
+                          : styles.analysisAlertInfo
                     }`}
                   >
                     <AlertTriangle size={14} />
@@ -339,16 +351,14 @@ onClose();
                       {details.daysUntilStockout <= 7
                         ? 'At the current sales pace, you will run out of stock in '
                         : details.daysUntilStockout <= 14
-                        ? 'Expected stockout in approximately '
-                        : 'Current stock covers about '}
-                      <strong>
-                        {details.daysUntilStockout} days
-                      </strong>
+                          ? 'Expected stockout in approximately '
+                          : 'Current stock covers about '}
+                      <strong>{details.daysUntilStockout} days</strong>
                       {details.daysUntilStockout <= 7 && !details.leadTimeDays
                         ? ' — order now!'
                         : details.leadTimeDays && details.daysUntilStockout <= details.leadTimeDays
-                        ? ` (Lead time: ${details.leadTimeDays} days — place order immediately)`
-                        : '.'}
+                          ? ` (Lead time: ${details.leadTimeDays} days — place order immediately)`
+                          : '.'}
                     </span>
                   </div>
                 )}
@@ -357,7 +367,9 @@ onClose();
               {/* ── Section B: External Market Proof ───────────────────────── */}
               <section className={styles.analysisSection}>
                 <div className={styles.analysisSectionHeader}>
-                  <span className={styles.analysisSectionIcon}><Zap size={14} /></span>
+                  <span className={styles.analysisSectionIcon}>
+                    <Zap size={14} />
+                  </span>
                   <h3 className={styles.analysisSectionTitle}>Market Proof</h3>
                 </div>
 
@@ -375,8 +387,8 @@ onClose();
                               details.webTrends.globalTrendScore >= 70
                                 ? '#16a34a'
                                 : details.webTrends.globalTrendScore >= 40
-                                ? '#d97706'
-                                : '#94a3b8',
+                                  ? '#d97706'
+                                  : '#94a3b8',
                           }}
                         />
                       </div>
@@ -437,7 +449,9 @@ onClose();
               {/* ── Section C: Analysis & Recommendation ─────────────────── */}
               <section className={styles.analysisSection}>
                 <div className={styles.analysisSectionHeader}>
-                  <span className={styles.analysisSectionIcon}><CheckCircle2 size={14} /></span>
+                  <span className={styles.analysisSectionIcon}>
+                    <CheckCircle2 size={14} />
+                  </span>
                   <h3 className={styles.analysisSectionTitle}>Analysis &amp; Recommendation</h3>
                 </div>
 
@@ -446,8 +460,8 @@ onClose();
                   <div className={styles.aiInsight}>
                     {details.aiInsight.split('\n').map((line, i) => {
                       if (!line.trim()) {
-return <br key={i} />;
-}
+                        return <br key={i} />;
+                      }
                       const bold = line.startsWith('**') && line.endsWith('**');
                       const isBullet = line.startsWith('- ');
                       if (bold) {
@@ -475,11 +489,16 @@ return <br key={i} />;
 
                 {/* Strategy KPIs */}
                 <div className={styles.analysisKpiRow}>
-                  <div className={`${styles.analysisKpi} ${details.suggestedQty > 0 ? styles.analysisKpiPrimary : ''}`}>
+                  <div
+                    className={`${styles.analysisKpi} ${details.suggestedQty > 0 ? styles.analysisKpiPrimary : ''}`}
+                  >
                     <span className={styles.analysisKpiLabel}>Suggested Order Qty</span>
                     <span className={styles.analysisKpiValue}>
                       {details.suggestedQty > 0 ? (
-                        <>+{fmtNumber(details.suggestedQty)} <span className={styles.analysisKpiUnit}>units</span></>
+                        <>
+                          +{fmtNumber(details.suggestedQty)}{' '}
+                          <span className={styles.analysisKpiUnit}>units</span>
+                        </>
                       ) : (
                         <span className={styles.noRestockLabel}>No restock needed</span>
                       )}
@@ -488,14 +507,15 @@ return <br key={i} />;
                   <div className={styles.analysisKpi}>
                     <span className={styles.analysisKpiLabel}>Est. Revenue</span>
                     <span className={styles.analysisKpiValue}>
-                      {details.estimatedRevenue
-                        ? fmtCurrency(details.estimatedRevenue)
-                        : <span className={styles.analysisKpiNoData}>—</span>}
+                      {details.estimatedRevenue ? (
+                        fmtCurrency(details.estimatedRevenue)
+                      ) : (
+                        <span className={styles.analysisKpiNoData}>—</span>
+                      )}
                     </span>
                   </div>
                 </div>
               </section>
-
             </div>
           )}
 
@@ -506,10 +526,7 @@ return <br key={i} />;
                 Close
               </button>
               {details && details.suggestedQty > 0 && (
-                <button
-                  className={modalStyles.btnPrimary}
-                  onClick={handleCreatePO}
-                >
+                <button className={modalStyles.btnPrimary} onClick={handleCreatePO}>
                   <ShoppingCart size={14} />
                   Create PO (+{details.suggestedQty})
                 </button>
