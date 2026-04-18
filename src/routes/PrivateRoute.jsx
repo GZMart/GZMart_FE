@@ -10,7 +10,6 @@ import { PUBLIC_ROUTES, ERROR_ROUTES } from '@constants/routes';
  * Protects routes that require authentication
  */
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
-  const storeAuthenticated = useSelector(selectIsAuthenticated);
   const location = useLocation();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
