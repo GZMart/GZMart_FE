@@ -1,22 +1,52 @@
-import { useEffect, useRef, useState } from 'react';
-import { LiveKitRoom, VideoTrack, RoomAudioRenderer, useLocalParticipant } from '@livekit/components-react';
+import { useEffect, useRef, useState, useCallback, forwardRef } from 'react';
+import { LiveKitRoom, VideoTrack, RoomAudioRenderer, useLocalParticipant, useRoomContext } from '@livekit/components-react';
 import { Room, Track } from 'livekit-client';
 import '@livekit/components-styles';
+import { createMicGainController } from '@utils/sellerAudioGainer';
 
 /* eslint-disable react/prop-types */
 
+function MicGainSliderRow({ value, onChange, disabled, styles }) {
+  return (
+    <div className={styles.micGainRow}>
+      <input
+        type="range"
+        className={styles.micGainSlider}
+        min={0}
+        max={100}
+        value={Math.round(value * 100)}
+        onChange={(e) => onChange(Number(e.target.value) / 100)}
+        disabled={disabled}
+        aria-label="Âm lượng micro"
+        title="Âm lượng micro"
+      />
+    </div>
+  );
+}
+
 // ── Thin wrapper inside LiveKitRoom to grab Room from context ───────────────
-// useLocalParticipant() internally uses useEnsureRoom → RoomContext → RoomContext.Provider
-// So we can safely call useLocalParticipant() inside LiveKitRoom and it works.
-function SellerLiveView({ isMicOn, isCamOn }) {
+function SellerLiveView({
+  isMicOn,
+  isCamOn,
+  micDeviceId,
+  camDeviceId,
+  micGain,
+  onMeterFrame,
+}) {
   const { localParticipant, cameraTrack, lastCameraError, lastMicrophoneError } = useLocalParticipant();
+  const room = useRoomContext();
+  const gainCtrlRef = useRef(null);
+  const micGainRef = useRef(micGain);
+  const isMicOnRef = useRef(isMicOn);
+  micGainRef.current = micGain;
+  isMicOnRef.current = isMicOn;
 
   useEffect(() => {
     if (!localParticipant) {
       return;
     }
     localParticipant.setCameraEnabled(isCamOn).catch(() => {
-      // ignore
+      /* ignore */
     });
   }, [isCamOn, localParticipant]);
 
@@ -25,9 +55,94 @@ function SellerLiveView({ isMicOn, isCamOn }) {
       return;
     }
     localParticipant.setMicrophoneEnabled(isMicOn).catch(() => {
-      // ignore
+      /* ignore */
     });
   }, [isMicOn, localParticipant]);
+
+  useEffect(() => {
+    if (!room || !micDeviceId) {
+      return;
+    }
+    room.switchActiveDevice('audioinput', micDeviceId).catch(() => {
+      /* ignore */
+    });
+  }, [room, micDeviceId]);
+
+  useEffect(() => {
+    if (!room || !camDeviceId) {
+      return;
+    }
+    room.switchActiveDevice('videoinput', camDeviceId).catch(() => {
+      /* ignore */
+    });
+  }, [room, camDeviceId]);
+
+  useEffect(() => {
+    const ctrl = gainCtrlRef.current;
+    if (!ctrl) {
+      return;
+    }
+    ctrl.setGain(isMicOn ? micGain : 0);
+  }, [micGain, isMicOn]);
+
+  useEffect(() => {
+    if (!localParticipant) {
+      return undefined;
+    }
+
+    if (!gainCtrlRef.current) {
+      gainCtrlRef.current = createMicGainController();
+    }
+    const controller = gainCtrlRef.current;
+    let cancelled = false;
+    let intervalId;
+    let attachInFlight = false;
+
+    const tryAttach = async () => {
+      if (cancelled || attachInFlight) {
+        return false;
+      }
+      const pub = localParticipant.getTrackPublication(Track.Source.Microphone);
+      const t = pub?.track;
+      if (!t || t.kind !== Track.Kind.Audio) {
+        return false;
+      }
+      attachInFlight = true;
+      try {
+        const g = isMicOnRef.current ? micGainRef.current : 0;
+        await controller.attach(t, g, (lvl) => {
+          if (!cancelled) {
+            onMeterFrame?.(isMicOnRef.current ? lvl : 0);
+          }
+        });
+        return true;
+      } catch {
+        return false;
+      } finally {
+        attachInFlight = false;
+      }
+    };
+
+    tryAttach().catch(() => {});
+
+    intervalId = setInterval(() => {
+      tryAttach().then((ok) => {
+        if (ok && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      controller.dispose().catch(() => {});
+      gainCtrlRef.current = null;
+    };
+  }, [localParticipant, micDeviceId, onMeterFrame]);
 
   const videoTrackRef =
     cameraTrack && localParticipant
@@ -102,12 +217,14 @@ function SellerLiveView({ isMicOn, isCamOn }) {
   );
 }
 
-// ── Live overlay: mic / cam / fullscreen (same UX as preview) ─────────────
+// ── Live overlay: mic / cam / fullscreen ───────────────────────────────────
 function SellerLiveOverlay({
   styles,
   isMicOn,
   isCamOn,
-  micLevel,
+  meterLevel,
+  micGain,
+  onMicGainChange,
   onToggleMic,
   onToggleCam,
   onToggleFullscreen,
@@ -125,71 +242,107 @@ function SellerLiveOverlay({
             style={{ fontSize: 18, lineHeight: 1, color: isMicOn ? undefined : '#ff6b6b' }}
           />
           <div className={styles.micBar}>
-            <div className={styles.micBarFill} style={{ width: isMicOn ? `${micLevel}%` : '0%' }} />
+            <div className={styles.micBarFill} style={{ width: isMicOn ? `${meterLevel}%` : '0%' }} />
           </div>
         </div>
       </div>
 
-      <div className={styles.overlayBottom}>
-        <div className={styles.qualityInfo}>
-          <div className={styles.qualityItem}>
-            <i className={`bi bi-display ${styles.qualityItemIcon}`} />
-            720p <span className={styles.qualityValue}>30fps</span>
+      <div className={styles.overlayFooter}>
+        <div className={styles.overlayBottom}>
+          <div className={styles.qualityInfo}>
+            <div className={styles.qualityItem}>
+              <i className={`bi bi-display ${styles.qualityItemIcon}`} />
+              720p <span className={styles.qualityValue}>30fps</span>
+            </div>
+            <div className={styles.qualityItem}>
+              <i className={`bi bi-signal ${styles.qualityItemIcon}`} />
+              Broadcasting
+            </div>
           </div>
-          <div className={styles.qualityItem}>
-            <i className={`bi bi-signal ${styles.qualityItemIcon}`} />
-            Broadcasting
-          </div>
-        </div>
 
-        <div className={styles.videoControls}>
-          <button
-            className={`${styles.vcBtn} ${isMicOn ? styles.vcBtnActive : ''}`}
-            onClick={onToggleMic}
-            title={isMicOn ? 'Tắt micro' : 'Bật micro'}
-            type="button"
-          >
-            <i className={`bi bi-mic${isMicOn ? '-fill' : '-mute'}`} />
-          </button>
-          <button
-            className={`${styles.vcBtn} ${isCamOn ? styles.vcBtnActive : ''}`}
-            onClick={onToggleCam}
-            title={isCamOn ? 'Tắt camera' : 'Bật camera'}
-            type="button"
-          >
-            <i
-              className={isCamOn ? 'bi bi-camera-video-fill' : 'bi bi-camera-video-off'}
-              style={isCamOn ? undefined : { color: '#ff6b6b' }}
+          <div className={styles.videoControlsRow}>
+            <MicGainSliderRow
+              value={micGain}
+              onChange={onMicGainChange}
+              disabled={!isMicOn}
+              styles={styles}
             />
-          </button>
-          <button
-            className={styles.vcBtn}
-            onClick={onToggleFullscreen}
-            title="Toàn màn hình"
-            type="button"
-          >
-            <i className="bi bi-fullscreen" />
-          </button>
+            <div className={styles.videoControls}>
+              <button
+                className={`${styles.vcBtn} ${isMicOn ? styles.vcBtnActive : ''}`}
+                onClick={onToggleMic}
+                title={isMicOn ? 'Tắt micro' : 'Bật micro'}
+                type="button"
+              >
+                <i className={`bi bi-mic${isMicOn ? '-fill' : '-mute'}`} />
+              </button>
+              <button
+                className={`${styles.vcBtn} ${isCamOn ? styles.vcBtnActive : ''}`}
+                onClick={onToggleCam}
+                title={isCamOn ? 'Tắt camera' : 'Bật camera'}
+                type="button"
+              >
+                <i
+                  className={isCamOn ? 'bi bi-camera-video-fill' : 'bi bi-camera-video-off'}
+                  style={isCamOn ? undefined : { color: '#ff6b6b' }}
+                />
+              </button>
+              <button
+                className={styles.vcBtn}
+                onClick={onToggleFullscreen}
+                title="Toàn màn hình"
+                type="button"
+              >
+                <i className="bi bi-fullscreen" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function SellerLiveController({
-  token,
-  isMicOn,
-  isCamOn,
-  micLevel,
-  styles,
-  onToggleMic,
-  onToggleCam,
-  onToggleFullscreen,
-  onRoomConnect,
-}) {
-  // Create Room upfront — this is what LiveKitRoom uses as its room prop.
-  // LiveKitRoom sets up RoomContext.Provider with this instance,
-  // so useLocalParticipant() (which calls useEnsureRoom → RoomContext) works in children.
+function buildCaptureConstraints(micDeviceId, camDeviceId) {
+  const videoConstraints = {
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    frameRate: { ideal: 30 },
+  };
+  if (camDeviceId) {
+    videoConstraints.deviceId = { exact: camDeviceId };
+  }
+  const audioConstraints = {};
+  if (micDeviceId) {
+    audioConstraints.deviceId = { exact: micDeviceId };
+  }
+  const audio =
+    Object.keys(audioConstraints).length > 0 ? audioConstraints : true;
+  return { video: videoConstraints, audio };
+}
+
+const SellerLiveController = forwardRef(function SellerLiveController(
+  {
+    token,
+    isMicOn,
+    isCamOn,
+    micDeviceId,
+    camDeviceId,
+    micGain,
+    onMicGainChange,
+    styles,
+    onToggleMic,
+    onToggleCam,
+    onToggleFullscreen,
+    onRoomConnect,
+  },
+  ref,
+) {
+  const [liveMeter, setLiveMeter] = useState(0);
+  const onMeterFrame = useCallback((v) => {
+    setLiveMeter(v);
+  }, []);
+
   const roomRef = useRef(
     new Room({
       adaptiveStream: true,
@@ -201,33 +354,56 @@ function SellerLiveController({
     onRoomConnect?.(roomRef.current);
   };
 
+  const audioOpts = micDeviceId ? { deviceId: micDeviceId } : true;
+  const videoOpts = camDeviceId
+    ? {
+        deviceId: camDeviceId,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 },
+      }
+    : {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 },
+      };
+
   return (
-    <div className={styles.videoCard}>
+    <div ref={ref} className={styles.videoCard}>
       <div className={styles.videoAspect} style={{ position: 'relative' }}>
         <LiveKitRoom
           serverUrl={import.meta.env.VITE_LIVEKIT_URL}
           token={token}
           connect={true}
-          audio={true}
-          video={true}
+          audio={audioOpts}
+          video={videoOpts}
           room={roomRef.current}
           onConnected={handleConnected}
           onDisconnected={() => {
             onRoomConnect?.(null);
           }}
           onError={() => {
-            // ignore
+            /* ignore */
           }}
           style={{ height: '100%', width: '100%' }}
         >
-          <SellerLiveView isMicOn={isMicOn} isCamOn={isCamOn} />
+          <SellerLiveView
+            isMicOn={isMicOn}
+            isCamOn={isCamOn}
+            micDeviceId={micDeviceId}
+            camDeviceId={camDeviceId}
+            micGain={micGain}
+            onMeterFrame={onMeterFrame}
+          />
         </LiveKitRoom>
 
         <SellerLiveOverlay
           styles={styles}
           isMicOn={isMicOn}
           isCamOn={isCamOn}
-          micLevel={micLevel}
+          meterLevel={liveMeter}
+          micGain={micGain}
+          onMicGainChange={onMicGainChange}
           onToggleMic={onToggleMic}
           onToggleCam={onToggleCam}
           onToggleFullscreen={onToggleFullscreen}
@@ -235,26 +411,59 @@ function SellerLiveController({
       </div>
     </div>
   );
-}
+});
 
 // ── Preview mode: local camera only, no LiveKit ───────────────────────────
-function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onToggleMic, onToggleCam, onToggleFullscreen }) {
+const CameraPreviewView = forwardRef(function CameraPreviewView(
+  {
+    videoRef,
+    isCamOn,
+    isMicOn,
+    micDeviceId,
+    camDeviceId,
+    micGain,
+    onMicGainChange,
+    styles,
+    onToggleMic,
+    onToggleCam,
+    onToggleFullscreen,
+  },
+  ref,
+) {
   const [streamError, setStreamError] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
   const streamRef = useRef(null);
+  const previewMeterRef = useRef(0);
+  const [, setPreviewMeterTick] = useState(0);
+  const previewGainRef = useRef(null);
+  const isMicOnMeterRef = useRef(isMicOn);
+  const micGainRefPreview = useRef(micGain);
+
+  isMicOnMeterRef.current = isMicOn;
+  micGainRefPreview.current = micGain;
+
+  useEffect(() => {
+    if (previewGainRef.current) {
+      previewGainRef.current.gain.value = isMicOn ? micGain : 0;
+    }
+  }, [isMicOn, micGain]);
 
   useEffect(() => {
     let mounted = true;
+    let meterRaf;
+    let previewCtx;
 
     async function startPreview() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
+      streamRef.current = null;
+      previewGainRef.current = null;
+      setCameraReady(false);
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-          audio: true,
-        });
+        const { video, audio } = buildCaptureConstraints(micDeviceId, camDeviceId);
+        const stream = await navigator.mediaDevices.getUserMedia({ video, audio });
         if (!mounted) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -264,6 +473,35 @@ function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onTog
         setCameraReady(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+        }
+
+        const a = stream.getAudioTracks()[0];
+        if (a) {
+          previewCtx = new AudioContext();
+          const src = previewCtx.createMediaStreamSource(new MediaStream([a]));
+          const gain = previewCtx.createGain();
+          previewGainRef.current = gain;
+          gain.gain.value = isMicOnMeterRef.current ? micGainRefPreview.current : 0;
+          const an = previewCtx.createAnalyser();
+          an.fftSize = 512;
+          src.connect(gain);
+          gain.connect(an);
+          const data = new Uint8Array(an.frequencyBinCount);
+          const tickMeter = () => {
+            if (!mounted || !an) {
+              return;
+            }
+            an.getByteFrequencyData(data);
+            let s = 0;
+            for (let i = 0; i < data.length; i += 1) {
+              s += data[i];
+            }
+            const avg = s / data.length / 255;
+            previewMeterRef.current = isMicOnMeterRef.current ? Math.min(100, avg * 320) : 0;
+            setPreviewMeterTick((x) => x + 1);
+            meterRaf = requestAnimationFrame(tickMeter);
+          };
+          tickMeter();
         }
       } catch (err) {
         if (!mounted) {
@@ -282,13 +520,21 @@ function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onTog
 
     return () => {
       mounted = false;
+      if (meterRaf) {
+        cancelAnimationFrame(meterRaf);
+      }
+      previewGainRef.current = null;
+      if (previewCtx) {
+        previewCtx.close().catch(() => {});
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    /* Only re-acquire getUserMedia when device selection changes; micGain uses previewGainRef. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- omit micGain, videoRef (stable)
+  }, [micDeviceId, camDeviceId]);
 
   useEffect(() => {
     if (!streamRef.current) {
@@ -308,8 +554,10 @@ function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onTog
     });
   }, [isCamOn]);
 
+  const displayMeter = cameraReady ? previewMeterRef.current : 0;
+
   return (
-    <div className={styles.videoCard}>
+    <div ref={ref} className={styles.videoCard}>
       <div className={styles.videoAspect}>
         <video
           ref={videoRef}
@@ -358,6 +606,7 @@ function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onTog
                     .catch(() => {});
                 }}
                 style={{ marginTop: 4, padding: '8px 20px', borderRadius: 8, border: 'none', background: 'var(--ls-primary)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                type="button"
               >
                 Thử lại
               </button>
@@ -378,46 +627,56 @@ function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onTog
                   style={{ fontSize: 18, lineHeight: 1, color: isMicOn ? undefined : '#ff6b6b' }}
                 />
                 <div className={styles.micBar}>
-                  <div className={styles.micBarFill} style={{ width: isMicOn ? `${micLevel}%` : '0%' }} />
+                  <div className={styles.micBarFill} style={{ width: isMicOn ? `${displayMeter}%` : '0%' }} />
                 </div>
               </div>
             </div>
 
-            <div className={styles.overlayBottom}>
-              <div className={styles.qualityInfo}>
-                <div className={styles.qualityItem}>
-                  <i className={`bi bi-display ${styles.qualityItemIcon}`} />
-                  720p <span className={styles.qualityValue}>30fps</span>
+            <div className={styles.overlayFooter}>
+              <div className={styles.overlayBottom}>
+                <div className={styles.qualityInfo}>
+                  <div className={styles.qualityItem}>
+                    <i className={`bi bi-display ${styles.qualityItemIcon}`} />
+                    720p <span className={styles.qualityValue}>30fps</span>
+                  </div>
+                  <div className={styles.qualityItem}>
+                    <i className={`bi bi-signal ${styles.qualityItemIcon}`} />
+                    Ready
+                  </div>
                 </div>
-                <div className={styles.qualityItem}>
-                  <i className={`bi bi-signal ${styles.qualityItemIcon}`} />
-                  Ready
-                </div>
-              </div>
 
-              <div className={styles.videoControls}>
-                <button
-                  className={`${styles.vcBtn} ${isMicOn ? styles.vcBtnActive : ''}`}
-                  onClick={onToggleMic}
-                  title={isMicOn ? 'Tắt micro' : 'Bật micro'}
-                  type="button"
-                >
-                  <i className={`bi bi-mic${isMicOn ? '-fill' : '-mute'}`} />
-                </button>
-                <button
-                  className={`${styles.vcBtn} ${isCamOn ? styles.vcBtnActive : ''}`}
-                  onClick={onToggleCam}
-                  title={isCamOn ? 'Tắt camera' : 'Bật camera'}
-                  type="button"
-                >
-                  <i
-                    className={isCamOn ? 'bi bi-camera-video-fill' : 'bi bi-camera-video-off'}
-                    style={isCamOn ? undefined : { color: '#ff6b6b' }}
+                <div className={styles.videoControlsRow}>
+                  <MicGainSliderRow
+                    value={micGain}
+                    onChange={onMicGainChange}
+                    disabled={!isMicOn}
+                    styles={styles}
                   />
-                </button>
-                <button className={styles.vcBtn} onClick={onToggleFullscreen} title="Toàn màn hình" type="button">
-                  <i className="bi bi-fullscreen" />
-                </button>
+                  <div className={styles.videoControls}>
+                    <button
+                      className={`${styles.vcBtn} ${isMicOn ? styles.vcBtnActive : ''}`}
+                      onClick={onToggleMic}
+                      title={isMicOn ? 'Tắt micro' : 'Bật micro'}
+                      type="button"
+                    >
+                      <i className={`bi bi-mic${isMicOn ? '-fill' : '-mute'}`} />
+                    </button>
+                    <button
+                      className={`${styles.vcBtn} ${isCamOn ? styles.vcBtnActive : ''}`}
+                      onClick={onToggleCam}
+                      title={isCamOn ? 'Tắt camera' : 'Bật camera'}
+                      type="button"
+                    >
+                      <i
+                        className={isCamOn ? 'bi bi-camera-video-fill' : 'bi bi-camera-video-off'}
+                        style={isCamOn ? undefined : { color: '#ff6b6b' }}
+                      />
+                    </button>
+                    <button className={styles.vcBtn} onClick={onToggleFullscreen} title="Toàn màn hình" type="button">
+                      <i className="bi bi-fullscreen" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -425,29 +684,39 @@ function CameraPreviewView({ videoRef, isCamOn, isMicOn, micLevel, styles, onTog
       </div>
     </div>
   );
-}
+});
 
-export default function VideoPreview({
-  styles = {},
-  isLive,
-  token,
-  micLevel = 66,
-  isMicOn = true,
-  isCamOn = true,
-  onToggleMic,
-  onToggleCam,
-  onToggleFullscreen,
-  onRoomConnect,
-}) {
+const VideoPreview = forwardRef(function VideoPreview(
+  {
+    styles = {},
+    isLive,
+    token,
+    micDeviceId,
+    camDeviceId,
+    micGain = 1,
+    onMicGainChange,
+    isMicOn = true,
+    isCamOn = true,
+    onToggleMic,
+    onToggleCam,
+    onToggleFullscreen,
+    onRoomConnect,
+  },
+  ref,
+) {
   const videoRef = useRef(null);
 
   if (isLive && token) {
     return (
       <SellerLiveController
+        ref={ref}
         token={token}
         isMicOn={isMicOn}
         isCamOn={isCamOn}
-        micLevel={micLevel}
+        micDeviceId={micDeviceId}
+        camDeviceId={camDeviceId}
+        micGain={micGain}
+        onMicGainChange={onMicGainChange}
         styles={styles}
         onToggleMic={onToggleMic}
         onToggleCam={onToggleCam}
@@ -459,14 +728,20 @@ export default function VideoPreview({
 
   return (
     <CameraPreviewView
+      ref={ref}
       videoRef={videoRef}
       isCamOn={isCamOn}
       isMicOn={isMicOn}
-      micLevel={micLevel}
+      micDeviceId={micDeviceId}
+      camDeviceId={camDeviceId}
+      micGain={micGain}
+      onMicGainChange={onMicGainChange}
       styles={styles}
       onToggleMic={onToggleMic}
       onToggleCam={onToggleCam}
       onToggleFullscreen={onToggleFullscreen}
     />
   );
-}
+});
+
+export default VideoPreview;

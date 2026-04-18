@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -17,15 +17,61 @@ import Footer from '@components/common/Footer';
 import LiveQuickBuySheet from './LiveQuickBuySheet';
 import styles from '@assets/styles/buyer/LiveViewerPage.module.css';
 
+/** Only one of these overlays at a time (drawers + quick-buy sheet + live cart). */
+const LIVE_OVERLAY = {
+  PRODUCTS: 'products',
+  VOUCHERS: 'vouchers',
+  QUICK_BUY: 'quickBuy',
+  LIVE_CART: 'liveCart',
+};
+
 // ── Chat message normalizer ─────────────────────────────────────────────────
+const resolveUserAvatar = (u) => {
+  if (!u) {
+    return '';
+  }
+  const url = u.avatar || u.profileImage;
+  return typeof url === 'string' && url.trim() ? url.trim() : '';
+};
+
 const normalizeMessage = (m) => ({
   id: m.id || m._id || String(Math.random()),
   displayName: m.displayName || m.userId || 'Viewer',
   content: m.content,
-  userId: m.userId,
+  userId: m.userId ?? m.senderId,
   role: m.role || 'buyer',
   timestamp: m.timestamp || new Date().toISOString(),
+  avatar: typeof m.avatar === 'string' && m.avatar.trim() ? m.avatar.trim() : undefined,
 });
+
+/** Renders profile image when `src` loads; otherwise initials (per-row image error state). */
+function LiveChatAvatar({ src, initials, className }) {
+  const [imgErr, setImgErr] = useState(false);
+  useEffect(() => {
+    setImgErr(false);
+  }, [src]);
+  const showImg = Boolean(src) && !imgErr;
+  return (
+    <div className={className}>
+      {showImg ? (
+        <img
+          src={src}
+          alt=""
+          className={styles['ls-msg-avatar-img']}
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+}
+
+LiveChatAvatar.propTypes = {
+  src: PropTypes.string,
+  initials: PropTypes.string.isRequired,
+  className: PropTypes.string.isRequired,
+};
 
 /** Quick reactions for live chat (sent as plain text over the socket). */
 const LIVE_CHAT_EMOTES = [
@@ -228,49 +274,103 @@ const syntaxTierOptionsResolved = (tier, product) => {
   return Array.isArray(fromProduct) ? fromProduct : [];
 };
 
+/** Match session syntax tier to product.tiers row (names may differ in casing / spacing). */
+function findProductTierIndexForSyntaxTier(product, variantTier, variantTierIndex) {
+  if (!product?.tiers?.length || !variantTier?.name) {
+    return -1;
+  }
+  const want = String(variantTier.name).toLowerCase().trim();
+  const byName = product.tiers.findIndex((t) => String(t.name || '').toLowerCase().trim() === want);
+  if (byName >= 0) {
+    return byName;
+  }
+  if (
+    typeof variantTierIndex === 'number' &&
+    variantTierIndex >= 0 &&
+    variantTierIndex < product.tiers.length
+  ) {
+    return variantTierIndex;
+  }
+  return -1;
+}
+
+function optionIndexInTierOptions(productTier, optionDisplayValue) {
+  const opts = productTier?.options;
+  if (!Array.isArray(opts)) {
+    return -1;
+  }
+  const want = normalizeVariantOptionKey(optionDisplayValue);
+  return opts.findIndex((o) => normalizeVariantOptionKey(o) === want);
+}
+
+/**
+ * true = out of stock (show strikethrough). false = in stock or unknown — never default to OOS.
+ */
+function buildSyntaxGuideOosMap(product, variantTiers) {
+  const map = {};
+  if (!Array.isArray(variantTiers) || variantTiers.length === 0) {
+    return map;
+  }
+
+  variantTiers.forEach((vt, vtIdx) => {
+    map[vt.name] = {};
+    const resolvedOpts = syntaxTierOptionsResolved(vt, product);
+    const ptIdx = findProductTierIndexForSyntaxTier(product, vt, vtIdx);
+
+    if (ptIdx < 0 || !product?.models?.length) {
+      resolvedOpts.forEach((opt) => {
+        map[vt.name][opt] = false;
+      });
+      return;
+    }
+
+    const pt = product.tiers[ptIdx];
+    resolvedOpts.forEach((opt) => {
+      const oIdx = optionIndexInTierOptions(pt, opt);
+      if (oIdx < 0) {
+        map[vt.name][opt] = false;
+        return;
+      }
+      let hasStock = false;
+      for (const model of product.models) {
+        if (!model.tierIndex || model.stock <= 0) {
+          continue;
+        }
+        if (model.tierIndex[ptIdx] === oIdx) {
+          hasStock = true;
+          break;
+        }
+      }
+      map[vt.name][opt] = !hasStock;
+    });
+  });
+
+  return map;
+}
+
+/** English labels for common tier names (seller data may still be Vietnamese). */
+function formatSyntaxTierLabel(rawName) {
+  if (rawName == null || rawName === '') {
+    return '';
+  }
+  const s = String(rawName).toLowerCase().trim();
+  if (/màu|mau/.test(s) || s === 'color') {
+    return 'Color';
+  }
+  if (/size|kích|kich/.test(s)) {
+    return 'Size';
+  }
+  return String(rawName);
+}
+
 // ── Syntax Guide Card (pinned at top of chat) ───────────────────────────────
 const SyntaxGuideCard = ({ guide }) => {
   const { prefix, product, variantTiers } = guide ?? { prefix: '', product: null, variantTiers: [] };
 
-  const oosMap = useMemo(() => {
-    if (!guide) {
-return {};
-}
-    const map = {};
-    for (const tier of variantTiers) {
-      map[tier.name] = {};
-      for (const opt of syntaxTierOptionsResolved(tier, product)) {
-        map[tier.name][opt] = true;
-      }
-    }
-    if (product?.models?.length && variantTiers.length >= 2) {
-      const tiers = product.tiers;
-      const colorIdx = tiers.findIndex((t) => /color|màu|mau/i.test(t.name));
-      const sizeIdx = tiers.findIndex((t) => /size|kích|kich/i.test(t.name));
-      if (colorIdx >= 0 && sizeIdx >= 0) {
-        for (const model of product.models) {
-          if (!model.tierIndex) {
-continue;
-}
-          const colorOpt = tiers[colorIdx].options?.[model.tierIndex[colorIdx]];
-          const sizeOpt = tiers[sizeIdx].options?.[model.tierIndex[sizeIdx]];
-          if (colorOpt && sizeOpt) {
-            if (model.stock > 0) {
-              if (!map[variantTiers[colorIdx]?.name]) {
-map[variantTiers[colorIdx]?.name] = {};
-}
-              if (!map[variantTiers[sizeIdx]?.name]) {
-map[variantTiers[sizeIdx]?.name] = {};
-}
-              map[variantTiers[colorIdx]?.name][colorOpt] = false;
-              map[variantTiers[sizeIdx]?.name][sizeOpt] = false;
-            }
-          }
-        }
-      }
-    }
-    return map;
-  }, [guide, variantTiers, product]);
+  const oosMap = useMemo(
+    () => (guide ? buildSyntaxGuideOosMap(product, variantTiers) : {}),
+    [guide, variantTiers, product],
+  );
 
   const exampleParts = [
     prefix,
@@ -293,7 +393,7 @@ return null;
         <div className={styles['ls-syntax-guide-icon']}>
           <IconMessageSquare size={12} />
         </div>
-        <span className={styles['ls-syntax-guide-label']}>Cú pháp mua hàng</span>
+        <span className={styles['ls-syntax-guide-label']}>Order syntax</span>
       </div>
 
       {product && (
@@ -316,7 +416,7 @@ return null;
         <div className={styles['ls-syntax-guide-variants']}>
           {variantTiers.map((tier) => (
             <div key={tier.name} className={styles['ls-syntax-guide-tier']}>
-              <span className={styles['ls-syntax-guide-tier-name']}>{tier.name}:</span>
+              <span className={styles['ls-syntax-guide-tier-name']}>{formatSyntaxTierLabel(tier.name)}:</span>
               <div className={styles['ls-syntax-guide-tier-options']}>
                 {syntaxTierOptionsResolved(tier, product).map((opt) => {
                   const isOOS = Boolean(oosMap[tier.name]?.[opt]);
@@ -324,7 +424,7 @@ return null;
                     <span
                       key={opt}
                       className={`${styles['ls-syntax-guide-option-chip']}${isOOS ? ` ${styles['ls-syntax-chip-oos']}` : ''}`}
-                      title={isOOS ? 'Hết hàng' : 'Còn hàng'}
+                      title={isOOS ? 'Out of stock' : 'In stock'}
                     >
                       {opt}
                       {isOOS && (
@@ -342,11 +442,11 @@ return null;
       )}
 
       <div className={styles['ls-syntax-guide-example']}>
-        Ví dụ: <code>{example}</code>
+        Example: <code>{example}</code>
       </div>
 
       <div className={styles['ls-syntax-guide-hint']}>
-        Nhắn cú pháp trên vào chat để mua ngay
+        Send the message above in chat to add items to your cart.
       </div>
     </div>
   );
@@ -361,9 +461,9 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
       <div className={styles['ls-live-cart-empty-icon']}>
         <IconCart size={32} />
       </div>
-      <span>Chưa có sản phẩm nào</span>
+      <span>No items yet</span>
       <span className={styles['ls-live-cart-empty-hint']}>
-        Nhắn cú pháp để thêm vào giỏ
+        Use order syntax in chat to add items
       </span>
     </div>
   ) : (
@@ -414,15 +514,15 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
 
       <div className={styles['ls-live-cart-footer']}>
         <div className={styles['ls-live-cart-total-row']}>
-          <span className={styles['ls-live-cart-total-label']}>Tổng cộng:</span>
+          <span className={styles['ls-live-cart-total-label']}>Total:</span>
           <span className={styles['ls-live-cart-total-value']}>{formatVND(total)}</span>
         </div>
         <button className={styles['ls-live-cart-checkout-btn']} onClick={onCheckout}>
           <IconCart size={13} />
-          Thanh toán ngay
+          Checkout now
         </button>
         <button className={styles['ls-live-cart-continue-btn']} onClick={onHide}>
-          Tiếp tục mua
+          Keep shopping
         </button>
       </div>
     </>
@@ -430,7 +530,7 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
 
   return (
     <motion.div
-      className={styles['ls-live-cart-root']}
+      className={`${styles['ls-live-cart-root']} ${styles['ls-live-cart-root--live']}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="ls-live-cart-title"
@@ -442,7 +542,7 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
       <button
         type="button"
         className={styles['ls-live-cart-backdrop']}
-        aria-label="Đóng giỏ hàng live"
+        aria-label="Close live cart"
         onClick={onHide}
       />
       <motion.div
@@ -456,13 +556,13 @@ const LiveCartDrawer = ({ items, onHide, onRemoveItem, onUpdateQty, onCheckout }
         <div className={styles['ls-live-cart-header']}>
           <div className={styles['ls-live-cart-header-left']}>
             <span id="ls-live-cart-title" className={styles['ls-live-cart-title']}>
-              Giỏ hàng Live
+              Live cart
             </span>
             {items.length > 0 && (
               <span className={styles['ls-live-cart-count']}>{items.length}</span>
             )}
           </div>
-          <button type="button" className={styles['ls-live-cart-close']} onClick={onHide} aria-label="Đóng">
+          <button type="button" className={styles['ls-live-cart-close']} onClick={onHide} aria-label="Close">
             <IconX />
           </button>
         </div>
@@ -507,8 +607,6 @@ export default function LiveViewerPage() {
   const [products, setProducts] = useState([]);
   const [pinnedProduct, setPinnedProduct] = useState(null);
   const [, /* setPinnedProductId not exposed — use pinnedProductIdRef */] = useState(null);
-  const [showProductsDrawer, setShowProductsDrawer] = useState(false);
-  const [showVouchersDrawer, setShowVouchersDrawer] = useState(false);
   const [vouchers, setVouchers] = useState([]);
   const [savedVoucherIds, setSavedVoucherIds] = useState(new Set());
   const [showPinnedOverlay, setShowPinnedOverlay] = useState(true);
@@ -522,10 +620,10 @@ export default function LiveViewerPage() {
   const emotePickerRef = useRef(null);
   const [systemMessages, setSystemMessages] = useState([]);
   const hasJoinedRef = useRef(false);
-  const [showQuickBuy, setShowQuickBuy] = useState(false);
+  /** Mutually exclusive: products drawer | vouchers drawer | quick-buy sheet | live cart */
+  const [activeOverlay, setActiveOverlay] = useState(null);
   const [selectedQuickBuyProduct, setSelectedQuickBuyProduct] = useState(null);
   const [liveCartItems, setLiveCartItems] = useState([]);
-  const [showLiveCart, setShowLiveCart] = useState(false);
 
   const [floatingHearts, setFloatingHearts] = useState([]);
   const heartIdRef = useRef(0);
@@ -567,6 +665,61 @@ export default function LiveViewerPage() {
   useEffect(() => {
  liveCartItemsRef.current = liveCartItems; 
 }, [liveCartItems]);
+
+  const productsRailRef = useRef(null);
+  const productsRailWrapRef = useRef(null);
+  const [productsRailEdges, setProductsRailEdges] = useState({ moreLeft: false, moreRight: false });
+
+  const updateProductsRailEdges = useCallback(() => {
+    const el = productsRailRef.current;
+    if (!el) {
+      return;
+    }
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setProductsRailEdges({
+      moreLeft: scrollLeft > 2,
+      moreRight: scrollLeft + clientWidth < scrollWidth - 2,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (activeOverlay !== LIVE_OVERLAY.PRODUCTS || products.length === 0) {
+      return;
+    }
+    updateProductsRailEdges();
+    const el = productsRailRef.current;
+    if (!el) {
+      return;
+    }
+    const ro = new ResizeObserver(() => updateProductsRailEdges());
+    ro.observe(el);
+    window.addEventListener('resize', updateProductsRailEdges);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateProductsRailEdges);
+    };
+  }, [activeOverlay, products.length, updateProductsRailEdges]);
+
+  useEffect(() => {
+    if (activeOverlay !== LIVE_OVERLAY.PRODUCTS || products.length === 0) {
+      return;
+    }
+    const wrap = productsRailWrapRef.current;
+    const el = productsRailRef.current;
+    if (!wrap || !el) {
+      return;
+    }
+    const onWheel = (e) => {
+      if (el.scrollWidth <= el.clientWidth + 1) {
+        return;
+      }
+      e.preventDefault();
+      el.scrollLeft += e.deltaY + e.deltaX;
+      requestAnimationFrame(updateProductsRailEdges);
+    };
+    wrap.addEventListener('wheel', onWheel, { passive: false });
+    return () => wrap.removeEventListener('wheel', onWheel);
+  }, [activeOverlay, products.length, updateProductsRailEdges]);
 
   // ── Floating Hearts ─────────────────────────────────────────────────
   const HEART_COLORS = ['#FF6B6B', '#FF8E8E', '#FFB4B4', '#B13C36', '#FF5252', '#FF7043'];
@@ -648,6 +801,25 @@ setEmotePickerOpen(false);
     };
   }, [emotePickerOpen]);
 
+  const closeLiveOverlay = useCallback(() => setActiveOverlay(null), []);
+
+  const toggleLiveOverlay = useCallback((key) => {
+    setActiveOverlay((prev) => (prev === key ? null : key));
+    setEmotePickerOpen(false);
+  }, []);
+
+  const openQuickBuySheet = useCallback((product) => {
+    setSelectedQuickBuyProduct(product);
+    setActiveOverlay(LIVE_OVERLAY.QUICK_BUY);
+    setEmotePickerOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeOverlay) {
+      setEmotePickerOpen(false);
+    }
+  }, [activeOverlay]);
+
   // Keep displayNameRef in sync
   useEffect(() => {
     displayNameRef.current = user?.fullName || 'Viewer';
@@ -724,7 +896,7 @@ setVouchers(voucherList);
       // Show in chat sidebar at the top; auto-remove after 3.2 s
       setSystemMessages((prev) => [
         ...prev.slice(-4),
-        { id: toastId, type: 'join', text: `${displayName || 'Viewer'} đã vào phiên live` },
+        { id: toastId, type: 'join', text: `${displayName || 'Viewer'} joined the live` },
       ]);
       setTimeout(() => {
         setSystemMessages((prev) => prev.filter((m) => m.id !== toastId));
@@ -871,16 +1043,36 @@ return;
         }).catch(() => {});
 
         livestreamService
-          .getSessionMessages(sessionId)
+          .getSessionMessages(sessionId, 100)
           .then((messagesRes) => {
             const msgList = Array.isArray(messagesRes?.data)
               ? messagesRes.data
               : messagesRes?.data?.data;
-            if (msgList?.length) {
-              setMessages(
-                msgList.slice(-20).map(normalizeMessage)
-              );
+            if (!msgList?.length) {
+              return;
             }
+
+            const fromServer = msgList.map((m) => ({
+              ...normalizeMessage(m),
+              isOwn:
+                String(m.userId ?? m.senderId) === String(user?._id),
+            }));
+            setMessages((prev) => {
+              const byId = new Map();
+              for (const m of fromServer) {
+                byId.set(m.id, m);
+              }
+              for (const m of prev) {
+                if (!byId.has(m.id)) {
+                  byId.set(m.id, m);
+                }
+              }
+              const merged = Array.from(byId.values()).sort(
+                (a, b) =>
+                  new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+              );
+              return merged.slice(-100);
+            });
           })
           .catch(() => { /* chat history is optional */ });
 
@@ -965,7 +1157,7 @@ setHasRemoteTrack(true);
     prevMsgLen.current = messages.length;
   }, [messages]);
 
-  // ── Session persistence: restore buyer chat after F5 ─────────────────
+  // ── Session persistence: restore buyer chat after F5 (merge with server/socket state) ─
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(`gzmart_buyer_chat_${sessionId}`);
@@ -975,7 +1167,24 @@ setHasRemoteTrack(true);
           const deduped = parsed.filter(
             (m, i, arr) => arr.findIndex((p) => p.id === m.id) === i,
           );
-          setMessages(deduped.slice(-100));
+          setMessages((prev) => {
+            const byId = new Map();
+            for (const m of deduped) {
+              const n = normalizeMessage(m);
+              byId.set(n.id, { ...n, isOwn: m.isOwn });
+            }
+            for (const m of prev) {
+              if (!byId.has(m.id)) {
+                byId.set(m.id, m);
+              }
+            }
+            return Array.from(byId.values())
+              .sort(
+                (a, b) =>
+                  new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+              )
+              .slice(-100);
+          });
         }
       }
     } catch {
@@ -1062,7 +1271,7 @@ return null;
       );
     }
     if (!targetProduct) {
-      toast.error('Không có sản phẩm nào được chọn để đặt hàng.');
+      toast.error('No product is selected to order.');
       return;
     }
 
@@ -1078,7 +1287,7 @@ return null;
       resolvedVariant = resolveVariantFromTiers(targetProduct, result.variants);
       if (!resolvedVariant) {
         const attempted = result.variants.map((v) => `${v.tierName}=${v.value}`).join(', ');
-        toast.error(`Không tìm thấy biến thể phù hợp (${attempted}) cho sản phẩm này.`);
+        toast.error(`No matching variant (${attempted}) for this product.`);
         return;
       }
       price = Number(resolvedVariant.price) || price;
@@ -1106,7 +1315,7 @@ return;
       const fallback = targetProduct.models?.find((m) => m.isActive !== false && m.stock > 0)
         || targetProduct.models?.[0];
       if (!fallback) {
-        toast.error('Sản phẩm này không có biến thể hợp lệ.');
+        toast.error('This product has no valid variant.');
         return;
       }
       price = Number(fallback.price) || price;
@@ -1128,11 +1337,11 @@ return;
       };
 
       setLiveCartItems((prev) => [...prev, liveItem]);
-      setShowLiveCart(true);
+      setActiveOverlay(LIVE_OVERLAY.LIVE_CART);
 
       toast.success(
         <div>
-          <div style={{ fontWeight: 600 }}>Đã thêm vào giỏ live!</div>
+          <div style={{ fontWeight: 600 }}>Added to live cart!</div>
           <div style={{ fontSize: '0.78rem', color: '#ddd', marginTop: 2 }}>
             {qty}x {targetProduct.name}
             {variantLabel ? ` (${variantLabel})` : ''}
@@ -1141,7 +1350,7 @@ return;
         { autoClose: 3000 },
       );
     } catch (err) {
-      toast.error(err?.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+      toast.error(err?.message || 'Could not create the order. Please try again.');
     }
   }, [resolveVariantFromTiers]);
 
@@ -1160,7 +1369,12 @@ return false;
 
       setIsSending(true);
       const localMsg = {
-        ...normalizeMessage({ id: `local_${Date.now()}`, content: text, userId: user?._id }),
+        ...normalizeMessage({
+          id: `local_${Date.now()}`,
+          content: text,
+          userId: user?._id,
+          avatar: resolveUserAvatar(user),
+        }),
         displayName: displayNameRef.current,
         isOwn: true,
       };
@@ -1182,6 +1396,7 @@ return false;
         displayName: displayNameRef.current,
         userId: user?._id || 'anonymous',
         role: 'buyer',
+        avatar: resolveUserAvatar(user) || undefined,
       });
 
       setTimeout(() => setIsSending(false), 600);
@@ -1289,8 +1504,7 @@ setLikeCount(res.data.likeCount);
 };
 
   const handleQuickBuy = (product) => {
-    setSelectedQuickBuyProduct(product);
-    setShowQuickBuy(true);
+    openQuickBuySheet(product);
   };
 
   const formatCount = (count) => {
@@ -1494,8 +1708,8 @@ return `${(count / 1000).toFixed(1)}k`;
               </button>
 
               <button
-                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${showProductsDrawer ? ` ${styles['ls-glass-btn--active']}` : ''}`}
-                onClick={() => setShowProductsDrawer((v) => !v)}
+                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${activeOverlay === LIVE_OVERLAY.PRODUCTS ? ` ${styles['ls-glass-btn--active']}` : ''}`}
+                onClick={() => toggleLiveOverlay(LIVE_OVERLAY.PRODUCTS)}
                 aria-label="Products"
               >
                 <IconShoppingBag size={15} />
@@ -1503,8 +1717,8 @@ return `${(count / 1000).toFixed(1)}k`;
               </button>
 
               <button
-                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${showVouchersDrawer ? ` ${styles['ls-glass-btn--active']}` : ''}`}
-                onClick={() => setShowVouchersDrawer((v) => !v)}
+                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${activeOverlay === LIVE_OVERLAY.VOUCHERS ? ` ${styles['ls-glass-btn--active']}` : ''}`}
+                onClick={() => toggleLiveOverlay(LIVE_OVERLAY.VOUCHERS)}
                 aria-label="Vouchers"
               >
                 <IconGift size={15} />
@@ -1514,8 +1728,8 @@ return `${(count / 1000).toFixed(1)}k`;
               </button>
 
               <button
-                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${showLiveCart ? ` ${styles['ls-glass-btn--active']}` : ''}`}
-                onClick={() => setShowLiveCart((v) => !v)}
+                className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--icon']}${activeOverlay === LIVE_OVERLAY.LIVE_CART ? ` ${styles['ls-glass-btn--active']}` : ''}`}
+                onClick={() => toggleLiveOverlay(LIVE_OVERLAY.LIVE_CART)}
                 aria-label="Live Cart"
               >
                 <IconCart size={15} />
@@ -1591,7 +1805,7 @@ return `${(count / 1000).toFixed(1)}k`;
           )}
 
           {/* ══ PRODUCTS DRAWER ══ */}
-          {showProductsDrawer && (
+          {activeOverlay === LIVE_OVERLAY.PRODUCTS && (
             <div className={`${styles['ls-products-drawer']} ${styles['ls-products-drawer--dark']}`}>
               {/* Drawer Header */}
               <div className={`${styles['ls-drawer-header']} ${styles['ls-drawer-header--glass']}`}>
@@ -1600,13 +1814,15 @@ return `${(count / 1000).toFixed(1)}k`;
                     <IconShoppingBag size={13} />
                   </div>
                   <div>
-                    <div className={`${styles['ls-drawer-title']} ${styles['ls-drawer-title--glass']}`}>San pham dang live</div>
-                    <div className={`${styles['ls-drawer-subtitle']} ${styles['ls-drawer-subtitle--glass']}`}>{products.length} san pham</div>
+                    <div className={`${styles['ls-drawer-title']} ${styles['ls-drawer-title--glass']}`}>Live products</div>
+                    <div className={`${styles['ls-drawer-subtitle']} ${styles['ls-drawer-subtitle--glass']}`}>
+                      {products.length} {products.length === 1 ? 'product' : 'products'}
+                    </div>
                   </div>
                 </div>
                 <button
                   className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--close']}`}
-                  onClick={() => setShowProductsDrawer(false)}
+                  onClick={closeLiveOverlay}
                   aria-label="Close"
                 >
                   <IconX />
@@ -1620,11 +1836,37 @@ return `${(count / 1000).toFixed(1)}k`;
                     <div className={styles['ls-empty-icon']}>
                       <IconShoppingBag size={32} />
                     </div>
-                    <div className={styles['ls-empty-text']}>Chua co san pham nao</div>
-                    <div className={styles['ls-empty-sub']}>Seller se them san pham som nhat</div>
+                    <div className={styles['ls-empty-text']}>No products yet</div>
+                    <div className={styles['ls-empty-sub']}>The seller will add products soon.</div>
                   </div>
                 ) : (
-                  <div className={styles['ls-products-grid']}>
+                  <div
+                    ref={productsRailWrapRef}
+                    className={`${styles['ls-products-rail-wrap']}${
+                      productsRailEdges.moreLeft ? ` ${styles['ls-products-rail-wrap--more-left']}` : ''
+                    }${productsRailEdges.moreRight ? ` ${styles['ls-products-rail-wrap--more-right']}` : ''}`}
+                  >
+                    {products.length > 1 && (
+                      <p className={styles['ls-products-rail-hint']}>
+                        Hover — wheel scrolls sideways · Di chuột — lăn chuột để cuộn ngang · kéo
+                      </p>
+                    )}
+                    <div className={styles['ls-products-rail-inner']}>
+                      <div
+                        className={`${styles['ls-products-rail-fade']} ${styles['ls-products-rail-fade--left']}`}
+                        aria-hidden
+                      />
+                      <div
+                        className={`${styles['ls-products-rail-fade']} ${styles['ls-products-rail-fade--right']}`}
+                        aria-hidden
+                      />
+                      <div
+                        ref={productsRailRef}
+                        className={styles['ls-products-grid']}
+                        role="list"
+                        aria-label="Live products"
+                        onScroll={updateProductsRailEdges}
+                      >
                     {products.map((product, idx) => {
                       const { original: op, current: mp, discount: disc } = computePrice(product);
                       const ip = product._id === pinnedProduct?._id;
@@ -1634,7 +1876,7 @@ return `${(count / 1000).toFixed(1)}k`;
                           key={product._id != null ? String(product._id) : `cart-${idx}`}
                           className={`${styles['ls-product-card']} ${styles['ls-product-card--enhanced']}${ip ? ` ${styles['ls-product-card--pinned']}` : ''}`}
                           onClick={() => handleQuickBuy(product)}
-                          role="button"
+                          role="listitem"
                           tabIndex={0}
                           onKeyDown={(e) => {
  if (e.key === 'Enter') {
@@ -1646,17 +1888,18 @@ handleQuickBuy(product);
                           <div className={`${styles['ls-product-img-wrap']} ${styles['ls-product-img-wrap--enhanced']}`}>
                             <img
                               src={product.thumbnail || product.images?.[0] || '/placeholder.png'}
-                              alt={product.name || 'San pham'}
+                              alt={product.name || 'Product'}
                               className={`${styles['ls-product-img']} ${styles['ls-product-img--enhanced']}`}
                               loading="lazy"
                               decoding="async"
+                              onLoad={updateProductsRailEdges}
                               onError={(e) => {
  e.target.src = '/placeholder.png'; 
 }}
                             />
                             <div className={styles['ls-product-badge-stack']}>
                               {ip && (
-                                <span className={`${styles['ls-product-pin-badge']} ${styles['ls-product-pin-badge--new']}`}>Ghim</span>
+                                <span className={`${styles['ls-product-pin-badge']} ${styles['ls-product-pin-badge--new']}`}>Pinned</span>
                               )}
                               {disc && (
                                 <span className={`${styles['ls-product-disc-badge']} ${styles['ls-product-disc-badge--new']}`}>-{disc}%</span>
@@ -1684,12 +1927,14 @@ handleQuickBuy(product);
  e.stopPropagation(); handleQuickBuy(product); 
 }}
                             >
-                              Mua ngay
+                              Buy now
                             </button>
                           </div>
                         </div>
                       );
                     })}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1697,7 +1942,7 @@ handleQuickBuy(product);
           )}
 
           {/* ══ VOUCHERS DRAWER ══ */}
-          {showVouchersDrawer && (
+          {activeOverlay === LIVE_OVERLAY.VOUCHERS && (
             <div className={`${styles['ls-products-drawer']} ${styles['ls-products-drawer--dark']}`}>
               <div className={`${styles['ls-drawer-header']} ${styles['ls-drawer-header--glass']}`}>
                 <div className={styles['ls-drawer-header-left']}>
@@ -1705,27 +1950,29 @@ handleQuickBuy(product);
                     <IconGift size={13} />
                   </div>
                   <div>
-                    <div className={`${styles['ls-drawer-title']} ${styles['ls-drawer-title--glass']}`}>Voucher khuyen mai</div>
-                    <div className={`${styles['ls-drawer-subtitle']} ${styles['ls-drawer-subtitle--glass']}`}>{vouchers.length} voucher</div>
+                    <div className={`${styles['ls-drawer-title']} ${styles['ls-drawer-title--glass']}`}>Live vouchers</div>
+                    <div className={`${styles['ls-drawer-subtitle']} ${styles['ls-drawer-subtitle--glass']}`}>
+                      {vouchers.length} {vouchers.length === 1 ? 'voucher' : 'vouchers'}
+                    </div>
                   </div>
                 </div>
                 <button
                   className={`${styles['ls-glass-btn']} ${styles['ls-glass-btn--close']}`}
-                  onClick={() => setShowVouchersDrawer(false)}
+                  onClick={closeLiveOverlay}
                   aria-label="Close"
                 >
                   <IconX />
                 </button>
               </div>
 
-              <div className={styles['ls-drawer-scroll']}>
+              <div className={`${styles['ls-drawer-scroll']} ${styles['ls-drawer-scroll--dark']}`}>
                 {vouchers.length === 0 ? (
-                  <div className={styles['ls-empty-products']}>
+                  <div className={`${styles['ls-empty-products']} ${styles['ls-empty-products--dark']}`}>
                     <div className={styles['ls-empty-icon']}>
                       <IconGift size={32} />
                     </div>
-                    <div className={styles['ls-empty-text']}>Chua co voucher nao</div>
-                    <div className={styles['ls-empty-sub']}>Seller se them voucher som nhat</div>
+                    <div className={styles['ls-empty-text']}>No vouchers yet</div>
+                    <div className={styles['ls-empty-sub']}>The seller will add vouchers soon.</div>
                   </div>
                 ) : (
                   <div className={styles['ls-vouchers-list']}>
@@ -1734,39 +1981,47 @@ handleQuickBuy(product);
                       const discountLabel =
                         voucher.discountType === 'percent'
                           ? `${voucher.discountValue}% OFF`
-                          : `₫${Number(voucher.discountValue || 0).toLocaleString('vi-VN')} OFF`;
+                          : `₫${Number(voucher.discountValue || 0).toLocaleString('en-US')} OFF`;
                       const minLabel = voucher.minBasketPrice
-                        ? `Min ₫${Number(voucher.minBasketPrice).toLocaleString('vi-VN')}`
+                        ? `Min ₫${Number(voucher.minBasketPrice).toLocaleString('en-US')}`
                         : null;
                       const expDate = voucher.endTime
-                        ? new Date(voucher.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                        ? new Date(voucher.endTime).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
                         : null;
 
                       return (
-                        <div key={voucher._id} className={styles['ls-voucher-card']}>
-                          <div className={styles['ls-voucher-left']}>
+                        <div
+                          key={voucher._id}
+                          className={`${styles['ls-voucher-card']} ${styles['ls-voucher-card--redesigned']}`}
+                        >
+                          <div className={styles['ls-voucher-card-left']}>
                             <div className={styles['ls-voucher-discount']}>{discountLabel}</div>
                             {minLabel && <div className={styles['ls-voucher-min']}>{minLabel}</div>}
                           </div>
-                          <div className={styles['ls-voucher-right']}>
+                          <div className={styles['ls-voucher-separator']} aria-hidden />
+                          <div className={styles['ls-voucher-card-right']}>
                             <div className={styles['ls-voucher-code']}>{voucher.code}</div>
                             {voucher.name && <div className={styles['ls-voucher-name']}>{voucher.name}</div>}
-                            {expDate && <div className={styles['ls-voucher-exp']}>Han: {expDate}</div>}
+                            {expDate && <div className={styles['ls-voucher-exp']}>Expires: {expDate}</div>}
                             <div className={styles['ls-voucher-actions']}>
                               <button
-                                className={styles['ls-voucher-copy-btn']}
+                                className={styles['ls-voucher-copy-btn--new']}
                                 onClick={() => handleCopyVoucherCode(voucher.code)}
                                 type="button"
                               >
                                 Copy
                               </button>
                               <button
-                                className={`${styles['ls-voucher-save-btn']}${isSaved ? ` ${styles['ls-voucher-save-btn--saved']}` : ''}`}
+                                className={`${styles['ls-voucher-save-btn--new']}${isSaved ? ` ${styles['ls-voucher-save-btn--saved-new']}` : ''}`}
                                 onClick={() => handleSaveVoucher(String(voucher._id))}
                                 disabled={isSaved}
                                 type="button"
                               >
-                                {isSaved ? 'Da luu' : 'Luu lai'}
+                                {isSaved ? 'Saved' : 'Save'}
                               </button>
                             </div>
                           </div>
@@ -1853,14 +2108,20 @@ handleQuickBuy(product);
                     ? (user?.fullName || 'YO').slice(0, 2).toUpperCase()
                     : (m.displayName || 'V').slice(0, 2).toUpperCase();
 
+                const avatarSrc = isOwn
+                  ? resolveUserAvatar(user)
+                  : (m.avatar || (isHost && !isOwn ? session?.shopId?.avatar : '') || '');
+
                 return (
                   <div
                     key={m.id || i}
                     className={`${styles['ls-msg-row']}${isOwn ? ` ${styles['ls-msg-row--own']}` : ''}${isHost && !isOwn ? ` ${styles['ls-msg-row--host']}` : ''}`}
                   >
-                    <div className={`${styles['ls-msg-avatar']}${isHost && !isOwn ? ` ${styles['ls-msg-avatar--host']}` : isOwn ? ` ${styles['ls-msg-avatar--own']}` : ` ${styles['ls-msg-avatar--other']}`}`}>
-                      {initials}
-                    </div>
+                    <LiveChatAvatar
+                      src={avatarSrc}
+                      initials={initials}
+                      className={`${styles['ls-msg-avatar']}${isHost && !isOwn ? ` ${styles['ls-msg-avatar--host']}` : isOwn ? ` ${styles['ls-msg-avatar--own']}` : ` ${styles['ls-msg-avatar--other']}`}`}
+                    />
                     <div className={`${styles['ls-msg-content']}${isOwn ? ` ${styles['ls-msg-content--own']}` : ''}`}>
                       <div className={styles['ls-msg-meta']}>
                         {isHost && !isOwn && (
@@ -1977,19 +2238,18 @@ sendChat();
 
       {/* Quick Buy Bottom Sheet */}
       <LiveQuickBuySheet
-        show={showQuickBuy}
-        onHide={() => setShowQuickBuy(false)}
+        show={activeOverlay === LIVE_OVERLAY.QUICK_BUY}
+        onHide={closeLiveOverlay}
         product={selectedQuickBuyProduct}
         liveVouchers={vouchers}
         sessionId={sessionId}
         user={user}
         onAddToLiveCart={(item) => {
           setLiveCartItems((prev) => [...prev, { ...item, tempId: generateTempId() }]);
-          setShowQuickBuy(false);
-          setShowLiveCart(true);
+          setActiveOverlay(LIVE_OVERLAY.LIVE_CART);
           toast.success(
             <div>
-              <div style={{ fontWeight: 600 }}>Đã thêm vào giỏ live!</div>
+              <div style={{ fontWeight: 600 }}>Added to live cart!</div>
               <div style={{ fontSize: '0.78rem', color: '#ddd', marginTop: 2 }}>
                 {item.quantity}x {item.name}
                 {item.variantLabel ? ` (${item.variantLabel})` : ''}
@@ -2002,10 +2262,10 @@ sendChat();
 
       {/* Live Cart Drawer */}
       <AnimatePresence>
-        {showLiveCart && (
+        {activeOverlay === LIVE_OVERLAY.LIVE_CART && (
           <LiveCartDrawer
             items={liveCartItems}
-            onHide={() => setShowLiveCart(false)}
+            onHide={closeLiveOverlay}
             onRemoveItem={handleRemoveLiveCartItem}
             onUpdateQty={handleUpdateLiveCartQty}
             onCheckout={handleLiveCartCheckout}

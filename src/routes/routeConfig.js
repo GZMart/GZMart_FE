@@ -70,6 +70,7 @@ const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage'));
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
 const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
+const LiveStreamMobilePage = lazy(() => import('@pages/seller/LiveStreamMobilePage'));
 const SellerFinancePage = lazy(() => import('@pages/seller/SellerFinancePage'));
 const SellerBannerAdsPage = lazy(() => import('@pages/seller/SellerBannerAdsPage'));
 
@@ -345,6 +346,13 @@ export const routeConfig = [
   {
     path: '/seller/live',
     element: LiveStreamPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/live/mobile',
+    element: LiveStreamMobilePage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

@@ -1,10 +1,20 @@
+/** Alphabetical order for color presets (Vietnamese-aware). */
+export function sortColorOptions(options) {
+  if (!options?.length) {
+    return [];
+  }
+  return [...options].sort((a, b) =>
+    String(a).localeCompare(String(b), 'vi', { sensitivity: 'base' })
+  );
+}
+
 // Predefined tier types and their options (like Shopee)
 export const TIER_TYPES = {
   COLOR: {
     key: 'COLOR',
     name: 'Màu sắc',
     nameEn: 'Color',
-    options: [
+    options: sortColorOptions([
       'Đỏ',
       'Xanh matcha',
       'Bạc ánh kim',
@@ -45,7 +55,7 @@ export const TIER_TYPES = {
       'Trắng',
       'Be',
       'Kem',
-    ],
+    ]),
   },
   SIZE: {
     key: 'SIZE',
@@ -162,7 +172,11 @@ return [];
       extras.push(v);
     }
   });
-  return [...preset, ...extras];
+  const combined = [...preset, ...extras];
+  if (tierDef.key === 'COLOR') {
+    return sortColorOptions(combined);
+  }
+  return combined;
 }
 
 /**

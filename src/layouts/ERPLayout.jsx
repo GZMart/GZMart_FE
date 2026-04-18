@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useMediaQuery } from '@hooks/useMediaQuery';
 import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/common/Layouts/ERPLayout.module.css';
@@ -57,6 +58,46 @@ const ERPLayout = ({ children }) => {
   const user = useSelector((state) => state.auth?.user);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  /** Trên mobile luôn hiển thị nhãn đầy đủ trong drawer; desktop giữ collapse */
+  const effectiveCollapsed = isMobile ? false : collapsed;
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileNavOpen(false);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || !mobileNavOpen) {
+      return undefined;
+    }
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobile, mobileNavOpen]);
+
+  useEffect(() => {
+    if (!isMobile || !mobileNavOpen) {
+      return undefined;
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setMobileNavOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobile, mobileNavOpen]);
+
+  const closeMobileNav = () => setMobileNavOpen(false);
 
   const isActive = (to) => {
     if (to === SELLER_ROUTES.DASHBOARD) {
@@ -72,8 +113,23 @@ const ERPLayout = ({ children }) => {
 
   return (
     <div className={styles.shell}>
-      {/* ─── Sidebar ──────────────────────────────────────────────── */}
-      <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
+      {isMobile && mobileNavOpen && (
+        <button
+          type="button"
+          className={styles.drawerBackdrop}
+          aria-label="Đóng menu"
+          onClick={closeMobileNav}
+        />
+      )}
+
+      {/* ─── Sidebar (desktop: sticky | mobile: drawer tràn màn) ─── */}
+      <aside
+        id="seller-sidebar"
+        className={`${styles.sidebar} ${!isMobile && collapsed ? styles.sidebarCollapsed : ''} ${
+          isMobile ? styles.sidebarDrawer : ''
+        } ${isMobile && mobileNavOpen ? styles.sidebarDrawerOpen : ''}`}
+        aria-hidden={isMobile ? !mobileNavOpen : undefined}
+      >
         {/* Brand */}
         <div className={styles.brand}>
           <div className={styles.brandLogo}>
@@ -83,14 +139,26 @@ const ERPLayout = ({ children }) => {
               style={{ width: '22px', height: '22px', objectFit: 'contain' }}
             />
           </div>
-          {!collapsed && (
+          {!effectiveCollapsed && (
             <div className={styles.brandText}>
               <span className={styles.brandName}>GZMart</span>
               <span className={styles.brandSub}>Seller Portal</span>
             </div>
           )}
-          {!collapsed && (
+          {isMobile && mobileNavOpen && (
             <button
+              type="button"
+              className={styles.drawerCloseBtn}
+              onClick={closeMobileNav}
+              title="Đóng menu"
+              aria-label="Đóng menu"
+            >
+              <i className="bi bi-x-lg" />
+            </button>
+          )}
+          {!isMobile && !collapsed && (
+            <button
+              type="button"
               className={styles.collapseBtn}
               onClick={() => setCollapsed((c) => !c)}
               title="Collapse sidebar"
@@ -104,17 +172,22 @@ const ERPLayout = ({ children }) => {
         <nav className={styles.nav}>
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className={styles.navGroup}>
-              {!collapsed && <span className={styles.navGroupLabel}>{group.label}</span>}
+              {!effectiveCollapsed && <span className={styles.navGroupLabel}>{group.label}</span>}
               {group.items.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   className={`${styles.navItem} ${isActive(item.to) ? styles.navItemActive : ''}`}
-                  title={collapsed ? item.label : undefined}
+                  title={!effectiveCollapsed ? undefined : item.label}
+                  onClick={() => {
+                    if (isMobile) {
+                      closeMobileNav();
+                    }
+                  }}
                 >
                   <i className={`bi ${item.icon} ${styles.navIcon}`} />
-                  {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
-                  {isActive(item.to) && !collapsed && <span className={styles.navActiveDot} />}
+                  {!effectiveCollapsed && <span className={styles.navLabel}>{item.label}</span>}
+                  {isActive(item.to) && !effectiveCollapsed && <span className={styles.navActiveDot} />}
                 </Link>
               ))}
             </div>
@@ -122,7 +195,7 @@ const ERPLayout = ({ children }) => {
         </nav>
 
         {/* User profile pill at bottom */}
-        {!collapsed && (
+        {!effectiveCollapsed && (
           <div className={styles.sidebarFooter}>
             <div className={styles.userPill}>
               <div className={styles.userAvatar}>{user?.name?.[0]?.toUpperCase() || 'S'}</div>
@@ -138,11 +211,25 @@ const ERPLayout = ({ children }) => {
       {/* ─── Main panel ───────────────────────────────────────────── */}
       <div className={styles.panel}>
         {/* Top bar */}
-        <header className={styles.topbar}>
+        <header className={`${styles.topbar} ${isMobile ? styles.topbarMobile : ''}`}>
           {/* Page context breadcrumb */}
           <div className={styles.topbarLeft}>
-            {collapsed && (
+            {isMobile && (
               <button
+                type="button"
+                className={styles.iconBtn}
+                onClick={() => setMobileNavOpen((o) => !o)}
+                title={mobileNavOpen ? 'Đóng menu' : 'Mở menu'}
+                aria-label={mobileNavOpen ? 'Đóng menu' : 'Mở menu'}
+                aria-expanded={mobileNavOpen}
+                aria-controls="seller-sidebar"
+              >
+                <i className={`bi ${mobileNavOpen ? 'bi-x-lg' : 'bi-list'}`} />
+              </button>
+            )}
+            {!isMobile && collapsed && (
+              <button
+                type="button"
                 className={styles.iconBtn}
                 onClick={() => setCollapsed(false)}
                 title="Expand sidebar"
