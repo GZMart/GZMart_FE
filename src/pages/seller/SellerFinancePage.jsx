@@ -28,10 +28,9 @@ import {
   Lock,
   RefreshCw,
 } from 'lucide-react';
-import { Button, Spin, message } from 'antd';
+import { Button, Drawer, Spin, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/formatters';
-import dashboardService from '../../services/api/dashboardService';
 import financeService from '../../services/api/finance.service';
 import styles from '../../assets/styles/seller/Finance.module.css';
 
@@ -58,6 +57,53 @@ const formatInputAmount = (value) => {
 };
 
 const parseAmount = (formatted) => parseInt(formatted.replace(/\D/g, ''), 10) || 0;
+
+const BIN_TO_BANK_NAME = {
+  970436: 'Vietcombank',
+  970407: 'Techcombank',
+  970422: 'MB Bank',
+  970416: 'ACB',
+  970432: 'VPBank',
+  970415: 'VietinBank',
+  970418: 'BIDV',
+  970423: 'TPBank',
+};
+
+const mapBankNameFromBin = (bin) => BIN_TO_BANK_NAME[String(bin || '')] || String(bin || '—');
+
+const mapBankNameFromCode = (code) => {
+  const bankMap = {
+    VCB: 'Vietcombank',
+    TCB: 'Techcombank',
+    MBB: 'MB Bank',
+    ACB: 'ACB',
+    VPB: 'VPBank',
+    CTG: 'VietinBank',
+    BID: 'BIDV',
+    TPB: 'TPBank',
+  };
+  return bankMap[String(code || '').toUpperCase()] || String(code || '—');
+};
+
+const normalizeTxType = (type) => {
+  const map = {
+    payout: 'withdraw',
+    reward_point_withdrawal: 'convert_rp',
+    order_payment: 'earning',
+    order_refund: 'refund',
+    admin_adjustment: 'deposit',
+    pending_release: 'deposit',
+    platform_fee: 'refund',
+  };
+  return map[type] || type || 'deposit';
+};
+
+const normalizeTxStatus = (status) => {
+  const map = {
+    failed: 'rejected',
+  };
+  return map[status] || status || 'pending';
+};
 
 /* ================================================================
    AMOUNT INPUT COMPONENT
@@ -114,6 +160,18 @@ const DepositModal = ({ open, onClose, depositData, t: tSub }) => {
     }
   };
 
+  const copyAccountNumber = async () => {
+    if (!depositData?.accountNumber) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(depositData.accountNumber);
+      message.success(tSub('sellerFinance.toast.copied'));
+    } catch {
+      message.error(tSub('sellerFinance.toast.copyFailed'));
+    }
+  };
+
   if (!open) {
     return null;
   }
@@ -132,26 +190,32 @@ const DepositModal = ({ open, onClose, depositData, t: tSub }) => {
         <div className={styles.bankInfoCard} style={{ marginBottom: '1rem' }}>
           <div className={styles.bankInfoRow}>
             <span className={styles.bankInfoLabel}>{tSub('sellerFinance.deposit.bank')}</span>
-            <span className={styles.bankInfoValue}>Vietcombank</span>
+            <span className={styles.bankInfoValue}>{depositData?.bankName || '—'}</span>
           </div>
           <div className={styles.bankInfoRow}>
-            <span className={styles.bankInfoLabel}>{tSub('sellerFinance.deposit.accountNumber')}</span>
+            <span className={styles.bankInfoLabel}>
+              {tSub('sellerFinance.deposit.accountNumber')}
+            </span>
             <span className={styles.bankInfoValue}>
-              1234567890
-              <button className={styles.bankInfoCopy} title="Copy">
+              {depositData?.accountNumber || '—'}
+              <button className={styles.bankInfoCopy} title="Copy" onClick={copyAccountNumber}>
                 <Copy size={14} />
               </button>
             </span>
           </div>
           <div className={styles.bankInfoRow}>
-            <span className={styles.bankInfoLabel}>{tSub('sellerFinance.deposit.accountName')}</span>
-            <span className={styles.bankInfoValue}>GZMART JOINT STOCK</span>
+            <span className={styles.bankInfoLabel}>
+              {tSub('sellerFinance.deposit.accountName')}
+            </span>
+            <span className={styles.bankInfoValue}>{depositData?.accountName || '—'}</span>
           </div>
         </div>
 
         {/* Transfer amount */}
         <div className={styles.transferAmountBox}>
-          <div className={styles.transferAmountLabel}>{tSub('sellerFinance.depositModal.transferAmount')}</div>
+          <div className={styles.transferAmountLabel}>
+            {tSub('sellerFinance.depositModal.transferAmount')}
+          </div>
           <div className={styles.transferAmountValue}>
             {depositData?.amount ? formatCurrency(depositData.amount) : '—'}
           </div>
@@ -159,7 +223,9 @@ const DepositModal = ({ open, onClose, depositData, t: tSub }) => {
 
         {/* Transfer content */}
         <div className={styles.transferCodeBox}>
-          <div className={styles.transferCodeLabel}>{tSub('sellerFinance.depositModal.transferContent')}</div>
+          <div className={styles.transferCodeLabel}>
+            {tSub('sellerFinance.depositModal.transferContent')}
+          </div>
           <div className={styles.transferCodeValue} style={{ userSelect: 'all' }}>
             {depositData?.transferContent || '—'}
           </div>
@@ -172,7 +238,9 @@ const DepositModal = ({ open, onClose, depositData, t: tSub }) => {
           style={{ marginBottom: '0.75rem' }}
         >
           <Copy size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          {copied ? tSub('sellerFinance.depositModal.copied') : tSub('sellerFinance.depositModal.copyBtn')}
+          {copied
+            ? tSub('sellerFinance.depositModal.copied')
+            : tSub('sellerFinance.depositModal.copyBtn')}
         </button>
 
         {/* Notice */}
@@ -267,7 +335,9 @@ const WithdrawPinModal = ({ open, onClose, amount, onSuccess, t: tSub }) => {
           </div>
         </div>
         <p className={styles.pinModalDesc}>
-          {tSub('sellerFinance.withdrawPin.description', { amount: amount ? formatCurrency(amount) : '' })}
+          {tSub('sellerFinance.withdrawPin.description', {
+            amount: amount ? formatCurrency(amount) : '',
+          })}
         </p>
         <div className={styles.pinDots}>
           {pin.map((digit, idx) => (
@@ -286,7 +356,15 @@ const WithdrawPinModal = ({ open, onClose, amount, onSuccess, t: tSub }) => {
           ))}
         </div>
         {error && (
-          <p style={{ textAlign: 'center', color: '#dc2626', fontSize: '0.8125rem', fontWeight: 600, margin: '0.5rem 0' }}>
+          <p
+            style={{
+              textAlign: 'center',
+              color: '#dc2626',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              margin: '0.5rem 0',
+            }}
+          >
             {tSub('sellerFinance.withdrawPin.pinError')}
           </p>
         )}
@@ -322,46 +400,76 @@ const SellerFinancePage = () => {
   const locale = i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN';
 
   // ── Constants with i18n keys (computed inside component so t() is available)
-  const ACTION_TABS = useMemo(() => [
-    { key: 'deposit', label: t('sellerFinance.actionTabs.deposit'), icon: 'bi-wallet2' },
-    { key: 'convert', label: t('sellerFinance.actionTabs.convert'), icon: 'bi-arrow-repeat' },
-    { key: 'withdraw', label: t('sellerFinance.actionTabs.withdraw'), icon: 'bi-bank' },
-  ], [t]);
+  const ACTION_TABS = useMemo(
+    () => [
+      { key: 'deposit', label: t('sellerFinance.actionTabs.deposit'), icon: 'bi-wallet2' },
+      { key: 'convert', label: t('sellerFinance.actionTabs.convert'), icon: 'bi-arrow-repeat' },
+      { key: 'withdraw', label: t('sellerFinance.actionTabs.withdraw'), icon: 'bi-bank' },
+    ],
+    [t]
+  );
 
-  const TX_TYPE_CONFIG = useMemo(() => ({
-    deposit: { label: t('sellerFinance.txType.deposit'), dotColor: '#1a56db', isPositive: true },
-    withdraw: { label: t('sellerFinance.txType.withdraw'), dotColor: '#f97316', isPositive: false },
-    convert_rp: { label: t('sellerFinance.txType.convert_rp'), dotColor: '#9333ea', isPositive: true },
-    earning: { label: t('sellerFinance.txType.earning'), dotColor: '#16a34a', isPositive: true },
-    refund: { label: t('sellerFinance.txType.refund'), dotColor: '#dc2626', isPositive: false },
-  }), [t]);
+  const TX_TYPE_CONFIG = useMemo(
+    () => ({
+      deposit: { label: t('sellerFinance.txType.deposit'), dotColor: '#1a56db', isPositive: true },
+      withdraw: {
+        label: t('sellerFinance.txType.withdraw'),
+        dotColor: '#f97316',
+        isPositive: false,
+      },
+      convert_rp: {
+        label: t('sellerFinance.txType.convert_rp'),
+        dotColor: '#9333ea',
+        isPositive: true,
+      },
+      earning: { label: t('sellerFinance.txType.earning'), dotColor: '#16a34a', isPositive: true },
+      refund: { label: t('sellerFinance.txType.refund'), dotColor: '#dc2626', isPositive: false },
+    }),
+    [t]
+  );
 
-  const TX_STATUS_CONFIG = useMemo(() => ({
-    completed: { className: styles.txStatusCompleted, label: t('sellerFinance.txStatus.completed') },
-    pending: { className: styles.txStatusPending, label: t('sellerFinance.txStatus.pending') },
-    rejected: { className: styles.txStatusRejected, label: t('sellerFinance.txStatus.rejected') },
-    cancelled: { className: styles.txStatusCancelled, label: t('sellerFinance.txStatus.cancelled') },
-  }), [t]);
+  const TX_STATUS_CONFIG = useMemo(
+    () => ({
+      completed: {
+        className: styles.txStatusCompleted,
+        label: t('sellerFinance.txStatus.completed'),
+      },
+      pending: { className: styles.txStatusPending, label: t('sellerFinance.txStatus.pending') },
+      rejected: { className: styles.txStatusRejected, label: t('sellerFinance.txStatus.rejected') },
+      failed: { className: styles.txStatusRejected, label: t('sellerFinance.txStatus.rejected') },
+      cancelled: {
+        className: styles.txStatusCancelled,
+        label: t('sellerFinance.txStatus.cancelled'),
+      },
+    }),
+    [t]
+  );
 
-  const QUICK_AMOUNTS = useMemo(() => [
-    { label: '500K', value: 500000 },
-    { label: '1M', value: 1000000 },
-    { label: '2M', value: 2000000 },
-    { label: '5M', value: 5000000 },
-    { label: '10M', value: 10000000 },
-    { label: '20M', value: 20000000 },
-  ], []);
+  const QUICK_AMOUNTS = useMemo(
+    () => [
+      { label: '500K', value: 500000 },
+      { label: '1M', value: 1000000 },
+      { label: '2M', value: 2000000 },
+      { label: '5M', value: 5000000 },
+      { label: '10M', value: 10000000 },
+      { label: '20M', value: 20000000 },
+    ],
+    []
+  );
 
-  const BANK_LIST = useMemo(() => [
-    { code: 'VCB', name: 'Vietcombank' },
-    { code: 'TCB', name: 'Techcombank' },
-    { code: 'MBB', name: 'MB Bank' },
-    { code: 'ACB', name: 'ACB' },
-    { code: 'VPB', name: 'VPBank' },
-    { code: 'CTG', name: 'VietinBank' },
-    { code: 'BID', name: 'BIDV' },
-    { code: 'TPB', name: 'TPBank' },
-  ], []);
+  const BANK_LIST = useMemo(
+    () => [
+      { code: 'VCB', name: 'Vietcombank' },
+      { code: 'TCB', name: 'Techcombank' },
+      { code: 'MBB', name: 'MB Bank' },
+      { code: 'ACB', name: 'ACB' },
+      { code: 'VPB', name: 'VPBank' },
+      { code: 'CTG', name: 'VietinBank' },
+      { code: 'BID', name: 'BIDV' },
+      { code: 'TPB', name: 'TPBank' },
+    ],
+    []
+  );
 
   // ── Loading states
   const [balanceLoading, setBalanceLoading] = useState(true);
@@ -370,12 +478,17 @@ const SellerFinancePage = () => {
   const [depositLoading, setDepositLoading] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [convertLoading, setConvertLoading] = useState(false);
+  const convertSubmittingRef = useRef(false);
 
   // ── Data
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [txTotal, setTxTotal] = useState(0);
-  const [quickStats, setQuickStats] = useState({ pendingApprovals: 0, approvedToday: 0, totalTransactions: 0 });
+  const [quickStats, setQuickStats] = useState({
+    pendingApprovals: 0,
+    approvedToday: 0,
+    totalTransactions: 0,
+  });
 
   // ── Action tab
   const [activeTab, setActiveTab] = useState('deposit');
@@ -384,7 +497,13 @@ const SellerFinancePage = () => {
   const [depositAmount, setDepositAmount] = useState('');
   const [selectedDepositAmount, setSelectedDepositAmount] = useState(1000000);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [depositData, setDepositData] = useState(null);
+  const [depositData, setDepositData] = useState({
+    bankName: '',
+    accountNumber: '',
+    accountName: '',
+    transferContent: '',
+    amount: 0,
+  });
 
   // ── Withdraw form
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -392,6 +511,8 @@ const SellerFinancePage = () => {
   const [withdrawAccount, setWithdrawAccount] = useState('');
   const [withdrawAccountName, setWithdrawAccountName] = useState('');
   const [withdrawPinOpen, setWithdrawPinOpen] = useState(false);
+  const [withdrawEstimate, setWithdrawEstimate] = useState(null);
+  const [withdrawEstimateLoading, setWithdrawEstimateLoading] = useState(false);
 
   // ── Convert form
   const [convertAmount, setConvertAmount] = useState('');
@@ -400,6 +521,10 @@ const SellerFinancePage = () => {
   // ── Transaction filters
   const [txSearch, setTxSearch] = useState('');
   const [txTypeFilter, setTxTypeFilter] = useState('');
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [txDetailOpen, setTxDetailOpen] = useState(false);
+  const [payoutInfoLoading, setPayoutInfoLoading] = useState(false);
+  const [payoutInfo, setPayoutInfo] = useState(null);
   const [txPage, setTxPage] = useState(1);
   const txPageSize = 10;
 
@@ -407,23 +532,27 @@ const SellerFinancePage = () => {
   const [savedBankAccounts, setSavedBankAccounts] = useState([]);
   const [showBankForm, setShowBankForm] = useState(false);
   const [bankForm, setBankForm] = useState({ bankCode: '', accountNumber: '', accountName: '' });
+  const primaryBankAccount = useMemo(() => savedBankAccounts[0] || null, [savedBankAccounts]);
 
   /* ─── Format date helper ─────────────────────────────────── */
-  const formatDate = useCallback((dateStr) => {
-    if (!dateStr) {
-      return { date: '—', time: '—' };
-    }
-    const d = new Date(dateStr);
-    return {
-      date: d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }),
-      time: d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-    };
-  }, [locale]);
+  const formatDate = useCallback(
+    (dateStr) => {
+      if (!dateStr) {
+        return { date: '—', time: '—' };
+      }
+      const d = new Date(dateStr);
+      return {
+        date: d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }),
+        time: d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+      };
+    },
+    [locale]
+  );
 
   /* ─── Fetch wallet balance ───────────────────────────────── */
   const fetchBalance = useCallback(async () => {
     try {
-      const resp = await dashboardService.getSellerBalance();
+      const resp = await financeService.getWalletInfo();
       if (resp?.data) {
         setBalance(resp.data);
       }
@@ -435,25 +564,46 @@ const SellerFinancePage = () => {
   }, []);
 
   /* ─── Fetch transactions ───────────────────────────────── */
-  const fetchTransactions = useCallback(async (page = 1) => {
-    setTxLoading(true);
-    try {
-      const params = {
-        limit: txPageSize,
-        skip: (page - 1) * txPageSize,
-        ...(txTypeFilter && { type: txTypeFilter }),
-        ...(txSearch && { search: txSearch }),
-      };
-      const resp = await financeService.getTransactions(params);
-      setTransactions(resp?.data?.data ?? []);
-      setTxTotal(resp?.data?.total ?? 0);
-    } catch {
-      setTransactions([]);
-      setTxTotal(0);
-    } finally {
-      setTxLoading(false);
-    }
-  }, [txTypeFilter, txSearch]);
+  const fetchTransactions = useCallback(
+    async (page = 1) => {
+      setTxLoading(true);
+      try {
+        const params = {
+          limit: txPageSize,
+          skip: (page - 1) * txPageSize,
+          ...(txTypeFilter && { type: txTypeFilter }),
+          ...(txSearch && { search: txSearch }),
+        };
+        const resp = await financeService.getTransactions(params);
+        const rawTxs = resp?.data?.data ?? [];
+        const normalized = rawTxs.map((tx) => {
+          const txType = normalizeTxType(tx?.type);
+          const txStatus = normalizeTxStatus(tx?.status);
+          const txId =
+            tx?.transactionId ||
+            tx?.reference?.orderNumber ||
+            tx?.metadata?.referenceId ||
+            tx?.reference?.payoutId ||
+            (tx?._id ? `#${String(tx._id).slice(-8).toUpperCase()}` : '—');
+          return {
+            ...tx,
+            type: txType,
+            status: txStatus,
+            transactionId: txId,
+            amount: Number(tx?.amount || 0),
+          };
+        });
+        setTransactions(normalized);
+        setTxTotal(resp?.data?.total ?? 0);
+      } catch {
+        setTransactions([]);
+        setTxTotal(0);
+      } finally {
+        setTxLoading(false);
+      }
+    },
+    [txTypeFilter, txSearch]
+  );
 
   /* ─── Fetch quick stats ────────────────────────────────── */
   const fetchQuickStats = useCallback(async () => {
@@ -492,6 +642,50 @@ const SellerFinancePage = () => {
     fetchTransactions(txPage);
   }, [txPage, txTypeFilter, txSearch, fetchTransactions]);
 
+  useEffect(() => {
+    if (activeTab !== 'withdraw') {
+      setWithdrawEstimate(null);
+      setWithdrawEstimateLoading(false);
+      return undefined;
+    }
+
+    const amount = parseAmount(withdrawAmount);
+    if (!primaryBankAccount || !amount || amount < 2000) {
+      setWithdrawEstimate(null);
+      setWithdrawEstimateLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setWithdrawEstimateLoading(true);
+      try {
+        const resp = await financeService.estimatePayosWithdraw({
+          amount,
+          bankCode: primaryBankAccount.bankCode,
+          accountNumber: primaryBankAccount.accountNumber,
+          accountName: primaryBankAccount.accountName,
+        });
+        if (!cancelled) {
+          setWithdrawEstimate(resp?.data || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setWithdrawEstimate(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setWithdrawEstimateLoading(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeTab, withdrawAmount, primaryBankAccount]);
+
   /* ─── Deposit ─────────────────────────────────────────── */
   const handleDeposit = async () => {
     const amount = parseAmount(depositAmount);
@@ -501,16 +695,27 @@ const SellerFinancePage = () => {
     }
     setDepositLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
+      const resp = await financeService.createTopupLink({ amount });
+      const checkoutUrl = resp?.data?.checkoutUrl;
+      const orderCode = resp?.data?.orderCode;
+      const qrData = resp?.data?.qrData || {};
+
+      if (!checkoutUrl) {
+        throw new Error('Không lấy được link thanh toán PayOS');
+      }
+
       setDepositData({
-        transferContent: `GZMART-NAP-${Date.now()}`,
+        bankName: mapBankNameFromBin(qrData?.bin),
+        accountNumber: String(qrData?.accountNumber || ''),
+        accountName: String(qrData?.accountName || ''),
+        transferContent: String(orderCode || qrData?.description || ''),
         amount,
-        expiresAt: new Date(Date.now() + 30 * 60000).toISOString(),
+        expiresAt: new Date(Date.now() + 15 * 60000).toISOString(),
       });
       setDepositModalOpen(true);
-      message.success(t('sellerFinance.toast.depositSuccess'));
-    } catch {
-      message.error(t('sellerFinance.toast.depositFailed'));
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      message.error(err?.message || t('sellerFinance.toast.depositFailed'));
     } finally {
       setDepositLoading(false);
     }
@@ -524,11 +729,13 @@ const SellerFinancePage = () => {
   /* ─── Withdraw ─────────────────────────────────────────── */
   const handleWithdraw = async () => {
     const amount = parseAmount(withdrawAmount);
-    if (!amount || amount < 50000) {
+    const savedAccount = primaryBankAccount;
+
+    if (!amount || amount < 2000) {
       message.warning(t('sellerFinance.validation.minWithdraw'));
       return;
     }
-    if (!withdrawBank || !withdrawAccount || !withdrawAccountName) {
+    if (!savedAccount) {
       message.warning(t('sellerFinance.validation.incompleteBankInfo'));
       return;
     }
@@ -542,17 +749,35 @@ const SellerFinancePage = () => {
   const handleWithdrawConfirm = async () => {
     setWithdrawPinOpen(false);
     setWithdrawLoading(true);
+
+    const amount = parseAmount(withdrawAmount);
+    const savedAccount = primaryBankAccount;
+
+    if (!savedAccount) {
+      message.warning(t('sellerFinance.validation.incompleteBankInfo'));
+      setWithdrawLoading(false);
+      return;
+    }
+
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      await financeService.createPayosWithdraw({
+        amount,
+        bankCode: savedAccount.bankCode,
+        accountNumber: savedAccount.accountNumber,
+        accountName: savedAccount.accountName,
+      });
+
       message.success(t('sellerFinance.toast.withdrawSuccess'));
       setWithdrawAmount('');
       setWithdrawBank('');
       setWithdrawAccount('');
       setWithdrawAccountName('');
+      setWithdrawEstimate(null);
       fetchBalance();
       fetchTransactions(1);
-    } catch {
-      message.error(t('sellerFinance.toast.withdrawFailed'));
+      fetchQuickStats();
+    } catch (err) {
+      message.error(err?.message || t('sellerFinance.toast.withdrawFailed'));
     } finally {
       setWithdrawLoading(false);
     }
@@ -560,6 +785,9 @@ const SellerFinancePage = () => {
 
   /* ─── Convert to RP ────────────────────────────────────── */
   const handleConvert = async () => {
+    if (convertSubmittingRef.current || convertLoading) {
+      return;
+    }
     const amount = parseAmount(convertAmount);
     if (!amount || amount < 10000) {
       message.warning(t('sellerFinance.validation.minConvert'));
@@ -570,6 +798,7 @@ const SellerFinancePage = () => {
       return;
     }
     try {
+      convertSubmittingRef.current = true;
       setConvertLoading(true);
       const resp = await financeService.convertToRewardPoints({ amount });
       message.success(
@@ -586,6 +815,7 @@ const SellerFinancePage = () => {
       message.error(msg);
     } finally {
       setConvertLoading(false);
+      convertSubmittingRef.current = false;
     }
   };
 
@@ -640,8 +870,49 @@ const SellerFinancePage = () => {
   /* ─── Tab badge for pending withdraws ─────────────────── */
   const pendingWithdrawCount = useMemo(
     () => transactions.filter((tx) => tx.type === 'withdraw' && tx.status === 'pending').length,
-    [transactions],
+    [transactions]
   );
+
+  const displayedTransactions = useMemo(() => transactions, [transactions]);
+
+  const openTxDetail = (tx) => {
+    setSelectedTx(tx || null);
+    setPayoutInfo(null);
+    setTxDetailOpen(true);
+  };
+
+  const selectedTxPayoutId =
+    selectedTx?.metadata?.payoutId || selectedTx?.reference?.payoutId || null;
+
+  const handleCheckPayoutInfo = async () => {
+    if (!selectedTxPayoutId) {
+      return;
+    }
+
+    try {
+      setPayoutInfoLoading(true);
+      const resp = await financeService.getPayosPayoutInfo(selectedTxPayoutId);
+      const data = resp?.data || null;
+      setPayoutInfo(data);
+
+      if (data?.txStatus) {
+        setSelectedTx((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: normalizeTxStatus(data.txStatus),
+              }
+            : prev
+        );
+      }
+
+      fetchTransactions(txPage);
+    } catch (err) {
+      message.error(err?.message || 'Không thể lấy trạng thái payout');
+    } finally {
+      setPayoutInfoLoading(false);
+    }
+  };
 
   /* ─── Render action body ──────────────────────────────── */
   const renderActionBody = () => {
@@ -651,29 +922,40 @@ const SellerFinancePage = () => {
           {/* Bank Info */}
           <div>
             <div className={styles.bankInfoCard}>
-              <h3 className={styles.bankInfoCardTitle}>{t('sellerFinance.deposit.transferInfo')}</h3>
+              <h3 className={styles.bankInfoCardTitle}>
+                {t('sellerFinance.deposit.transferInfo')}
+              </h3>
               <div className={styles.bankInfoRow}>
                 <span className={styles.bankInfoLabel}>{t('sellerFinance.deposit.bank')}</span>
-                <span className={styles.bankInfoValue}>Vietcombank</span>
+                <span className={styles.bankInfoValue}>Ngân hàng TMCP Quân đội</span>
               </div>
               <div className={styles.bankInfoRow}>
-                <span className={styles.bankInfoLabel}>{t('sellerFinance.deposit.accountNumber')}</span>
+                <span className={styles.bankInfoLabel}>
+                  {t('sellerFinance.deposit.accountNumber')}
+                </span>
                 <span className={styles.bankInfoValue}>
-                  1234567890
-                  <button className={styles.bankInfoCopy} onClick={() => copyToClipboard('1234567890')} title={t('sellerFinance.depositModal.copyBtn')}>
+                  0795810504
+                  <button
+                    className={styles.bankInfoCopy}
+                    onClick={() => copyToClipboard(String(depositData?.accountNumber || ''))}
+                    title={t('sellerFinance.depositModal.copyBtn')}
+                  >
                     <Copy size={14} />
                   </button>
                 </span>
               </div>
               <div className={styles.bankInfoRow}>
-                <span className={styles.bankInfoLabel}>{t('sellerFinance.deposit.accountName')}</span>
-                <span className={styles.bankInfoValue}>GZMART JOINT STOCK</span>
+                <span className={styles.bankInfoLabel}>
+                  {t('sellerFinance.deposit.accountName')}
+                </span>
+                <span className={styles.bankInfoValue}>HUYNH DINH THIEN</span>
               </div>
             </div>
             <div className={styles.noticeBox}>
               <Info size={16} className={styles.noticeBoxIcon} />
               <p className={styles.noticeBoxText}>
-                <strong>{t('sellerFinance.deposit.note')}:</strong> {t('sellerFinance.deposit.noteText')}
+                <strong>{t('sellerFinance.deposit.note')}:</strong>{' '}
+                {t('sellerFinance.deposit.noteText')}
               </p>
             </div>
           </div>
@@ -681,8 +963,14 @@ const SellerFinancePage = () => {
           {/* Deposit Form */}
           <div className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>{t('sellerFinance.deposit.amountToDeposit')}</label>
-              <AmountInput value={depositAmount} onChange={setDepositAmount} placeholder={t('sellerFinance.deposit.amountPlaceholder')} />
+              <label className={styles.formLabel}>
+                {t('sellerFinance.deposit.amountToDeposit')}
+              </label>
+              <AmountInput
+                value={depositAmount}
+                onChange={setDepositAmount}
+                placeholder={t('sellerFinance.deposit.amountPlaceholder')}
+              />
             </div>
             <div className={styles.quickAmountGrid}>
               {QUICK_AMOUNTS.map((qa) => (
@@ -700,7 +988,9 @@ const SellerFinancePage = () => {
               onClick={handleDeposit}
               disabled={depositLoading || !parseAmount(depositAmount)}
             >
-              {depositLoading ? t('sellerFinance.deposit.processing') : t('sellerFinance.deposit.confirmBtn')}
+              {depositLoading
+                ? t('sellerFinance.deposit.processing')
+                : t('sellerFinance.deposit.confirmBtn')}
             </button>
           </div>
         </div>
@@ -715,26 +1005,35 @@ const SellerFinancePage = () => {
             <div className={styles.bankInfoCard}>
               <h3 className={styles.bankInfoCardTitle}>{t('sellerFinance.convert.title')}</h3>
               <div className={styles.bankInfoRow}>
-                <span className={styles.bankInfoLabel}>{t('sellerFinance.convert.conversionRate')}</span>
+                <span className={styles.bankInfoLabel}>
+                  {t('sellerFinance.convert.conversionRate')}
+                </span>
                 <span className={styles.bankInfoValue}>{t('sellerFinance.convert.rateValue')}</span>
               </div>
               <div className={styles.bankInfoRow}>
-                <span className={styles.bankInfoLabel}>{t('sellerFinance.convert.availableBalance')}</span>
+                <span className={styles.bankInfoLabel}>
+                  {t('sellerFinance.convert.availableBalance')}
+                </span>
                 <span className={styles.bankInfoValue}>
-                  {balance?.availableBalance != null ? formatCurrency(balance.availableBalance) : '—'}
+                  {balance?.availableBalance != null
+                    ? formatCurrency(balance.availableBalance)
+                    : '—'}
                 </span>
               </div>
               <div className={styles.bankInfoRow}>
                 <span className={styles.bankInfoLabel}>{t('sellerFinance.convert.currentRP')}</span>
                 <span className={styles.bankInfoValue}>
-                  {balance?.rewardPoints != null ? `${Number(balance.rewardPoints).toLocaleString(locale)} pts` : '—'}
+                  {balance?.rewardPoints != null
+                    ? `${Number(balance.rewardPoints).toLocaleString(locale)} pts`
+                    : '—'}
                 </span>
               </div>
             </div>
             <div className={styles.noticeBox}>
               <Info size={16} className={styles.noticeBoxIcon} />
               <p className={styles.noticeBoxText}>
-                <strong>{t('sellerFinance.convert.note')}:</strong> {t('sellerFinance.convert.noteText')}
+                <strong>{t('sellerFinance.convert.note')}:</strong>{' '}
+                {t('sellerFinance.convert.noteText')}
               </p>
             </div>
           </div>
@@ -742,8 +1041,14 @@ const SellerFinancePage = () => {
           {/* Convert Form */}
           <div className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>{t('sellerFinance.convert.amountToConvert')}</label>
-              <AmountInput value={convertAmount} onChange={setConvertAmount} placeholder={t('sellerFinance.convert.amountPlaceholder')} />
+              <label className={styles.formLabel}>
+                {t('sellerFinance.convert.amountToConvert')}
+              </label>
+              <AmountInput
+                value={convertAmount}
+                onChange={setConvertAmount}
+                placeholder={t('sellerFinance.convert.amountPlaceholder')}
+              />
             </div>
             <div className={styles.quickAmountGrid}>
               {QUICK_AMOUNTS.map((qa) => (
@@ -761,7 +1066,9 @@ const SellerFinancePage = () => {
               onClick={handleConvert}
               disabled={!parseAmount(convertAmount) || convertLoading}
             >
-              {convertLoading ? t('sellerFinance.convert.processing') : t('sellerFinance.convert.confirmBtn')}
+              {convertLoading
+                ? t('sellerFinance.convert.processing')
+                : t('sellerFinance.convert.confirmBtn')}
             </button>
           </div>
         </div>
@@ -774,14 +1081,25 @@ const SellerFinancePage = () => {
           {/* Bank Account */}
           <div>
             <div className={styles.bankInfoCard}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 className={styles.bankInfoCardTitle} style={{ margin: 0 }}>{t('sellerFinance.withdraw.recipientAccount')}</h3>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem',
+                }}
+              >
+                <h3 className={styles.bankInfoCardTitle} style={{ margin: 0 }}>
+                  {t('sellerFinance.withdraw.recipientAccount')}
+                </h3>
                 <button
                   className={styles.submitBtn}
                   style={{ padding: '0.375rem 0.875rem', fontSize: '0.75rem', width: 'auto' }}
                   onClick={() => setShowBankForm(!showBankForm)}
                 >
-                  {showBankForm ? t('sellerFinance.withdraw.closeBtn') : t('sellerFinance.withdraw.updateBtn')}
+                  {showBankForm
+                    ? t('sellerFinance.withdraw.closeBtn')
+                    : t('sellerFinance.withdraw.updateBtn')}
                 </button>
               </div>
 
@@ -794,7 +1112,9 @@ const SellerFinancePage = () => {
                   >
                     <option value="">{t('sellerFinance.withdraw.selectBank')}</option>
                     {BANK_LIST.map((b) => (
-                      <option key={b.code} value={b.code}>{b.name}</option>
+                      <option key={b.code} value={b.code}>
+                        {b.name}
+                      </option>
                     ))}
                   </select>
                   <input
@@ -811,19 +1131,32 @@ const SellerFinancePage = () => {
                     value={bankForm.accountName}
                     onChange={(e) => setBankForm((f) => ({ ...f, accountName: e.target.value }))}
                   />
-                  <button className={styles.submitBtn} onClick={handleSaveBank} style={{ fontSize: '0.8125rem' }}>
+                  <button
+                    className={styles.submitBtn}
+                    onClick={handleSaveBank}
+                    style={{ fontSize: '0.8125rem' }}
+                  >
                     {t('sellerFinance.withdraw.saveBtn')}
                   </button>
                 </div>
               ) : savedBankAccounts.length > 0 ? (
                 savedBankAccounts.map((acc, idx) => (
                   <div key={idx} className={styles.bankInfoRow}>
-                    <span className={styles.bankInfoLabel}>{acc.bankName || acc.bankCode}</span>
+                    <span className={styles.bankInfoLabel}>
+                      {mapBankNameFromCode(acc.bankCode || acc.bankName)}
+                    </span>
                     <span className={styles.bankInfoValue}>{acc.accountNumber}</span>
                   </div>
                 ))
               ) : (
-                <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem' }}>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '1rem',
+                    color: '#94a3b8',
+                    fontSize: '0.8125rem',
+                  }}
+                >
                   {t('sellerFinance.withdraw.noBankAccount')}
                 </div>
               )}
@@ -831,7 +1164,8 @@ const SellerFinancePage = () => {
             <div className={styles.noticeBox}>
               <Info size={16} className={styles.noticeBoxIcon} />
               <p className={styles.noticeBoxText}>
-                <strong>{t('sellerFinance.withdraw.note')}:</strong> {t('sellerFinance.withdraw.noteText')}
+                <strong>{t('sellerFinance.withdraw.note')}:</strong>{' '}
+                {t('sellerFinance.withdraw.noteText')}
               </p>
             </div>
           </div>
@@ -839,15 +1173,59 @@ const SellerFinancePage = () => {
           {/* Withdraw Form */}
           <div className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>{t('sellerFinance.withdraw.amountToWithdraw')}</label>
+              <label className={styles.formLabel}>
+                {t('sellerFinance.withdraw.amountToWithdraw')}
+              </label>
               <AmountInput
                 value={withdrawAmount}
                 onChange={setWithdrawAmount}
                 placeholder={t('sellerFinance.withdraw.amountPlaceholder')}
               />
               <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                {t('sellerFinance.withdraw.availableBalance')}: {balance?.availableBalance != null ? formatCurrency(balance.availableBalance) : '—'}
+                {t('sellerFinance.withdraw.availableBalance')}:{' '}
+                {balance?.availableBalance != null ? formatCurrency(balance.availableBalance) : '—'}
               </span>
+
+              {(withdrawEstimateLoading || withdrawEstimate) && (
+                <div
+                  style={{
+                    marginTop: '0.75rem',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 10,
+                    padding: '0.625rem 0.75rem',
+                    background: '#f8fafc',
+                    display: 'grid',
+                    gap: '0.25rem',
+                  }}
+                >
+                  {withdrawEstimateLoading ? (
+                    <span style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      Đang ước tính phí PayOS...
+                    </span>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                        Phí ước tính:{' '}
+                        {formatCurrency(Number(withdrawEstimate?.estimateCredit || 0))}
+                      </span>
+                      <span style={{ fontSize: '0.8125rem', color: '#0f766e', fontWeight: 700 }}>
+                        Số tiền thực nhận:{' '}
+                        {formatCurrency(
+                          Number(
+                            withdrawEstimate?.netAmount != null
+                              ? withdrawEstimate.netAmount
+                              : Math.max(
+                                  0,
+                                  parseAmount(withdrawAmount) -
+                                    Number(withdrawEstimate?.estimateCredit || 0)
+                                )
+                          )
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <div className={styles.quickAmountGrid}>
               {QUICK_AMOUNTS.map((qa) => (
@@ -867,7 +1245,9 @@ const SellerFinancePage = () => {
               onClick={handleWithdraw}
               disabled={withdrawLoading || !parseAmount(withdrawAmount)}
             >
-              {withdrawLoading ? t('sellerFinance.withdraw.processing') : t('sellerFinance.withdraw.confirmBtn')}
+              {withdrawLoading
+                ? t('sellerFinance.withdraw.processing')
+                : t('sellerFinance.withdraw.confirmBtn')}
             </button>
           </div>
         </div>
@@ -880,7 +1260,6 @@ const SellerFinancePage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.pageContent}>
-
         {/* ── Header ── */}
         <div className={styles.headerCard}>
           <div className={styles.headerInner}>
@@ -896,7 +1275,9 @@ const SellerFinancePage = () => {
               <Button
                 icon={<RefreshCw size={14} />}
                 onClick={() => {
-                  fetchBalance(); fetchTransactions(1); fetchQuickStats();
+                  fetchBalance();
+                  fetchTransactions(1);
+                  fetchQuickStats();
                 }}
               >
                 {t('sellerFinance.refresh')}
@@ -913,7 +1294,9 @@ const SellerFinancePage = () => {
             {/* Main: Available Balance */}
             <div className={styles.balanceMainCard}>
               <div className={styles.balanceMainCardTop}>
-                <div className={styles.balanceMainCardLabel}>{t('sellerFinance.balance.availableBalance')}</div>
+                <div className={styles.balanceMainCardLabel}>
+                  {t('sellerFinance.balance.availableBalance')}
+                </div>
                 <div className={styles.balanceMainCardAmount}>
                   {balance?.availableBalance != null
                     ? Math.round(balance.availableBalance).toLocaleString(locale)
@@ -923,11 +1306,14 @@ const SellerFinancePage = () => {
               </div>
               <div className={styles.balanceMainCardBottom}>
                 <div className={styles.balanceMainCardRp}>
-                  <div className={styles.balanceMainCardRpLabel}>{t('sellerFinance.balance.rewardPoints')}</div>
+                  <div className={styles.balanceMainCardRpLabel}>
+                    {t('sellerFinance.balance.rewardPoints')}
+                  </div>
                   <div className={styles.balanceMainCardRpValue}>
                     {balance?.rewardPoints != null
                       ? Number(balance.rewardPoints).toLocaleString(locale)
-                      : '0'} pts
+                      : '0'}{' '}
+                    pts
                   </div>
                 </div>
               </div>
@@ -939,7 +1325,9 @@ const SellerFinancePage = () => {
                 <TrendingUp size={20} color="#16a34a" />
               </div>
               <div>
-                <div className={styles.balanceSubCardLabel}>{t('sellerFinance.balance.totalEarnings')}</div>
+                <div className={styles.balanceSubCardLabel}>
+                  {t('sellerFinance.balance.totalEarnings')}
+                </div>
                 <div className={styles.balanceSubCardValue}>
                   {balance?.totalEarning != null ? formatCurrency(balance.totalEarning) : '—'}
                 </div>
@@ -952,9 +1340,15 @@ const SellerFinancePage = () => {
                 <ArrowDownToLine size={20} color="#1a56db" />
               </div>
               <div>
-                <div className={styles.balanceSubCardLabel}>{t('sellerFinance.balance.totalWithdrawn')}</div>
+                <div className={styles.balanceSubCardLabel}>
+                  {t('sellerFinance.balance.totalWithdrawn')}
+                </div>
                 <div className={styles.balanceSubCardValue}>
-                  {balance?.totalWithdraw != null ? formatCurrency(balance.totalWithdraw) : '—'}
+                  {balance?.totalWithdraw != null
+                    ? formatCurrency(balance.totalWithdraw)
+                    : balance?.totalPayout != null
+                      ? formatCurrency(balance.totalPayout)
+                      : '—'}
                 </div>
               </div>
             </div>
@@ -965,7 +1359,9 @@ const SellerFinancePage = () => {
                 <ArrowDownToLine size={20} color="#dc2626" />
               </div>
               <div>
-                <div className={styles.balanceSubCardLabel}>{t('sellerFinance.balance.totalRefund')}</div>
+                <div className={styles.balanceSubCardLabel}>
+                  {t('sellerFinance.balance.totalRefund')}
+                </div>
                 <div className={styles.balanceSubCardValue}>
                   {balance?.totalRefund != null ? formatCurrency(balance.totalRefund) : '—'}
                 </div>
@@ -986,7 +1382,9 @@ const SellerFinancePage = () => {
                 <i className={`bi ${tab.icon} ${styles.actionTabIcon}`} />
                 {tab.label}
                 {tab.key === 'withdraw' && pendingWithdrawCount > 0 && (
-                  <span className={`${styles.actionTabBadge} ${activeTab === tab.key ? styles.actionTabBadgeActive : ''}`}>
+                  <span
+                    className={`${styles.actionTabBadge} ${activeTab === tab.key ? styles.actionTabBadgeActive : ''}`}
+                  >
                     {pendingWithdrawCount}
                   </span>
                 )}
@@ -1000,18 +1398,27 @@ const SellerFinancePage = () => {
         {statsLoading ? (
           <div className={styles.quickStatsRow}>
             {[0, 1, 2].map((i) => (
-              <div key={i} className={`${styles.skeleton}`} style={{ height: 72, borderRadius: 12 }} />
+              <div
+                key={i}
+                className={`${styles.skeleton}`}
+                style={{ height: 72, borderRadius: 12 }}
+              />
             ))}
           </div>
         ) : (
           <div className={styles.quickStatsRow}>
             <div className={styles.quickStatCard}>
               <div className={styles.quickStatLeft}>
-                <div className={styles.quickStatIcon} style={{ background: '#fff7ed', color: '#ea580c' }}>
+                <div
+                  className={styles.quickStatIcon}
+                  style={{ background: '#fff7ed', color: '#ea580c' }}
+                >
                   <Clock size={20} />
                 </div>
                 <div className={styles.quickStatContent}>
-                  <span className={styles.quickStatLabel}>{t('sellerFinance.quickStats.pendingApprovals')}</span>
+                  <span className={styles.quickStatLabel}>
+                    {t('sellerFinance.quickStats.pendingApprovals')}
+                  </span>
                   <span className={styles.quickStatValue}>
                     {quickStats.pendingApprovals} {t('sellerFinance.quickStats.pendingUnit')}
                   </span>
@@ -1021,11 +1428,16 @@ const SellerFinancePage = () => {
             </div>
             <div className={styles.quickStatCard}>
               <div className={styles.quickStatLeft}>
-                <div className={styles.quickStatIcon} style={{ background: '#f0fdf4', color: '#16a34a' }}>
+                <div
+                  className={styles.quickStatIcon}
+                  style={{ background: '#f0fdf4', color: '#16a34a' }}
+                >
                   <Check size={20} />
                 </div>
                 <div className={styles.quickStatContent}>
-                  <span className={styles.quickStatLabel}>{t('sellerFinance.quickStats.approvedToday')}</span>
+                  <span className={styles.quickStatLabel}>
+                    {t('sellerFinance.quickStats.approvedToday')}
+                  </span>
                   <span className={styles.quickStatValue}>
                     {quickStats.approvedToday} {t('sellerFinance.quickStats.approvedUnit')}
                   </span>
@@ -1035,13 +1447,19 @@ const SellerFinancePage = () => {
             </div>
             <div className={styles.quickStatCard}>
               <div className={styles.quickStatLeft}>
-                <div className={styles.quickStatIcon} style={{ background: '#eff6ff', color: '#1a56db' }}>
+                <div
+                  className={styles.quickStatIcon}
+                  style={{ background: '#eff6ff', color: '#1a56db' }}
+                >
                   <History size={20} />
                 </div>
                 <div className={styles.quickStatContent}>
-                  <span className={styles.quickStatLabel}>{t('sellerFinance.quickStats.totalTransactions')}</span>
+                  <span className={styles.quickStatLabel}>
+                    {t('sellerFinance.quickStats.totalTransactions')}
+                  </span>
                   <span className={styles.quickStatValue}>
-                    {quickStats.totalTransactions.toLocaleString(locale)} {t('sellerFinance.quickStats.transactionsUnit')}
+                    {quickStats.totalTransactions.toLocaleString(locale)}{' '}
+                    {t('sellerFinance.quickStats.transactionsUnit')}
                   </span>
                 </div>
               </div>
@@ -1056,13 +1474,17 @@ const SellerFinancePage = () => {
             <h3 className={styles.historyTitle}>{t('sellerFinance.transactionHistory.title')}</h3>
             <div className={styles.historyFilters}>
               <div className={styles.historySearchWrap}>
-                <i className={`bi bi-search ${styles.historySearchIcon}`} style={{ fontSize: '14px' }} />
+                <i
+                  className={`bi bi-search ${styles.historySearchIcon}`}
+                  style={{ fontSize: '14px' }}
+                />
                 <input
                   className={styles.historySearch}
                   placeholder={t('sellerFinance.transactionHistory.searchPlaceholder')}
                   value={txSearch}
                   onChange={(e) => {
-                    setTxSearch(e.target.value); setTxPage(1);
+                    setTxSearch(e.target.value);
+                    setTxPage(1);
                   }}
                 />
               </div>
@@ -1070,23 +1492,25 @@ const SellerFinancePage = () => {
                 className={styles.historySelect}
                 value={txTypeFilter}
                 onChange={(e) => {
-                  setTxTypeFilter(e.target.value); setTxPage(1);
+                  setTxTypeFilter(e.target.value);
+                  setTxPage(1);
                 }}
               >
                 <option value="">{t('sellerFinance.transactionHistory.filterAll')}</option>
-                <option value="deposit">{t('sellerFinance.transactionHistory.filterDeposit')}</option>
-                <option value="withdraw">{t('sellerFinance.transactionHistory.filterWithdraw')}</option>
-                <option value="convert_rp">{t('sellerFinance.transactionHistory.filterConvertRp')}</option>
-                <option value="earning">{t('sellerFinance.transactionHistory.filterEarning')}</option>
+                <option value="deposit">
+                  {t('sellerFinance.transactionHistory.filterDeposit')}
+                </option>
+                <option value="withdraw">
+                  {t('sellerFinance.transactionHistory.filterWithdraw')}
+                </option>
+                <option value="convert_rp">
+                  {t('sellerFinance.transactionHistory.filterConvertRp')}
+                </option>
+                <option value="earning">
+                  {t('sellerFinance.transactionHistory.filterEarning')}
+                </option>
                 <option value="refund">{t('sellerFinance.transactionHistory.filterRefund')}</option>
               </select>
-              <div className={styles.historyDateRange}>
-                <i className="bi bi-calendar3" style={{ fontSize: '14px' }} />
-                <span>{t('sellerFinance.transactionHistory.dateRange')}</span>
-              </div>
-              <button className={styles.historyFilterBtn} title={t('sellerFinance.transactionHistory.advancedFilter')}>
-                <i className="bi bi-funnel" style={{ fontSize: '14px' }} />
-              </button>
             </div>
           </div>
 
@@ -1095,7 +1519,7 @@ const SellerFinancePage = () => {
             <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
               <Spin />
             </div>
-          ) : transactions.length === 0 ? (
+          ) : displayedTransactions.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyStateIcon}>
                 <History size={24} />
@@ -1114,13 +1538,16 @@ const SellerFinancePage = () => {
                       <th>{t('sellerFinance.transactionHistory.table.amount')}</th>
                       <th>{t('sellerFinance.transactionHistory.table.balanceAfter')}</th>
                       <th>{t('sellerFinance.transactionHistory.table.status')}</th>
-                      <th style={{ textAlign: 'right' }}>{t('sellerFinance.transactionHistory.table.action')}</th>
+                      <th style={{ textAlign: 'right' }}>
+                        {t('sellerFinance.transactionHistory.table.action')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.map((tx) => {
+                    {displayedTransactions.map((tx) => {
                       const typeConfig = TX_TYPE_CONFIG[tx.type] || TX_TYPE_CONFIG.deposit;
-                      const statusConfig = TX_STATUS_CONFIG[tx.status] || TX_STATUS_CONFIG.completed;
+                      const statusConfig =
+                        TX_STATUS_CONFIG[tx.status] || TX_STATUS_CONFIG.completed;
                       const { date, time } = formatDate(tx.createdAt);
                       const isPositive = typeConfig.isPositive;
 
@@ -1133,17 +1560,27 @@ const SellerFinancePage = () => {
                             </div>
                           </td>
                           <td>
-                            <span className={styles.txId}>{tx.transactionId || `#${tx._id?.slice(-8).toUpperCase()}`}</span>
+                            <span className={styles.txId}>
+                              {tx.transactionId || `#${tx._id?.slice(-8).toUpperCase()}`}
+                            </span>
                           </td>
                           <td>
                             <div className={styles.txTypeCell}>
-                              <span className={styles.txTypeDot} style={{ background: typeConfig.dotColor }} />
+                              <span
+                                className={styles.txTypeDot}
+                                style={{ background: typeConfig.dotColor }}
+                              />
                               <span className={styles.txTypeLabel}>{typeConfig.label}</span>
                             </div>
                           </td>
                           <td>
-                            <span className={isPositive ? styles.txAmountPositive : styles.txAmountNegative}>
-                              {isPositive ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                            <span
+                              className={
+                                isPositive ? styles.txAmountPositive : styles.txAmountNegative
+                              }
+                            >
+                              {isPositive ? '+' : '-'}
+                              {formatCurrency(Math.abs(tx.amount))}
                             </span>
                           </td>
                           <td>
@@ -1157,7 +1594,11 @@ const SellerFinancePage = () => {
                             </span>
                           </td>
                           <td className={styles.txAction}>
-                            <button className={styles.txActionBtn} title={t('sellerFinance.transactionHistory.viewDetails')}>
+                            <button
+                              className={styles.txActionBtn}
+                              title={t('sellerFinance.transactionHistory.viewDetails')}
+                              onClick={() => openTxDetail(tx)}
+                            >
                               <Eye size={15} />
                             </button>
                           </td>
@@ -1171,7 +1612,10 @@ const SellerFinancePage = () => {
               {/* Footer / Pagination */}
               <div className={styles.historyFooter}>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
-                  {t('sellerFinance.transactionHistory.showing', { shown: transactions.length, total: txTotal })}
+                  {t('sellerFinance.transactionHistory.showing', {
+                    shown: displayedTransactions.length,
+                    total: txTotal,
+                  })}
                 </span>
                 <div className={styles.historyPagination}>
                   <button
@@ -1202,7 +1646,6 @@ const SellerFinancePage = () => {
             </>
           )}
         </div>
-
       </div>
 
       {/* ── Modals ── */}
@@ -1220,6 +1663,97 @@ const SellerFinancePage = () => {
         onSuccess={handleWithdrawConfirm}
         t={t}
       />
+      <Drawer
+        title={t('sellerFinance.transactionHistory.viewDetails')}
+        placement="right"
+        width={420}
+        onClose={() => {
+          setTxDetailOpen(false);
+          setPayoutInfo(null);
+        }}
+        open={txDetailOpen}
+      >
+        {selectedTx ? (
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            <div>
+              <strong>ID:</strong> {selectedTx.transactionId || selectedTx._id || '—'}
+            </div>
+            <div>
+              <strong>Type:</strong>{' '}
+              {TX_TYPE_CONFIG[selectedTx.type]?.label || selectedTx.type || '—'}
+            </div>
+            <div>
+              <strong>Status:</strong>{' '}
+              {TX_STATUS_CONFIG[selectedTx.status]?.label || selectedTx.status || '—'}
+            </div>
+            <div>
+              <strong>Amount:</strong> {formatCurrency(Math.abs(Number(selectedTx.amount || 0)))}
+            </div>
+            <div>
+              <strong>Balance After:</strong>{' '}
+              {selectedTx.balanceAfter != null ? formatCurrency(selectedTx.balanceAfter) : '—'}
+            </div>
+            <div>
+              <strong>Date:</strong>{' '}
+              {selectedTx.createdAt ? new Date(selectedTx.createdAt).toLocaleString(locale) : '—'}
+            </div>
+            <div>
+              <strong>Description:</strong> {selectedTx.description || '—'}
+            </div>
+            {!!selectedTx?.metadata?.orderCode && (
+              <div>
+                <strong>Order Code:</strong> {selectedTx.metadata.orderCode}
+              </div>
+            )}
+            {!!selectedTx?.metadata?.coinAmount && (
+              <div>
+                <strong>Coin Amount:</strong>{' '}
+                {Number(selectedTx.metadata.coinAmount).toLocaleString(locale)}
+              </div>
+            )}
+
+            {selectedTx.type === 'withdraw' && selectedTxPayoutId && (
+              <div
+                style={{
+                  borderTop: '1px solid #e2e8f0',
+                  marginTop: '0.5rem',
+                  paddingTop: '0.75rem',
+                  display: 'grid',
+                  gap: '0.625rem',
+                }}
+              >
+                <Button onClick={handleCheckPayoutInfo} loading={payoutInfoLoading}>
+                  Kiểm tra trạng thái PayOS
+                </Button>
+
+                {payoutInfo?.payout && (
+                  <div style={{ display: 'grid', gap: '0.375rem', fontSize: '0.875rem' }}>
+                    <div>
+                      <strong>Approval State:</strong> {payoutInfo.payout.approvalState || '—'}
+                    </div>
+                    <div>
+                      <strong>Created At:</strong>{' '}
+                      {payoutInfo.payout.createdAt
+                        ? new Date(payoutInfo.payout.createdAt).toLocaleString(locale)
+                        : '—'}
+                    </div>
+                    <div>
+                      <strong>Beneficiary:</strong>{' '}
+                      {payoutInfo.payout.transactions?.[0]?.toAccountName || '—'}
+                    </div>
+                    <div>
+                      <strong>Transfer State:</strong>{' '}
+                      {payoutInfo.payout.transactions?.[0]?.state || '—'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>—</div>
+        )}
+      </Drawer>
     </div>
   );
 };

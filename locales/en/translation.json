@@ -1277,7 +1277,7 @@
     },
     "validation": {
       "minDeposit": "Minimum deposit amount is 10,000 VND",
-      "minWithdraw": "Minimum withdrawal amount is 50,000 VND",
+      "minWithdraw": "Minimum withdrawal amount is 2,000 VND",
       "minConvert": "Minimum conversion amount is 10,000 VND",
       "insufficientBalance": "Insufficient available balance",
       "incompleteBankInfo": "Please fill in all bank information",

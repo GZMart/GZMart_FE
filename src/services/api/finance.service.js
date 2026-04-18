@@ -61,8 +61,7 @@ export const financeService = {
    * @param {string} [params.search] - Tìm kiếm theo mã giao dịch
    * @returns {Promise<{data: WalletTransaction[], total: number}>}
    */
-  getTransactions: async (params = {}) =>
-    axiosClient.get(`${BASE_URL}/transactions`, { params }),
+  getTransactions: async (params = {}) => axiosClient.get(`${BASE_URL}/transactions`, { params }),
 
   /**
    * Tạo yêu cầu nạp tiền - sinh nội dung chuyển khoản
@@ -70,8 +69,15 @@ export const financeService = {
    * @param {number} data.amount - Số tiền muốn nạp (VND)
    * @returns {Promise<{transferContent: string, amount: number, expiresAt: string}>}
    */
-  createDepositRequest: async (data) =>
-    axiosClient.post(`${BASE_URL}/deposit`, data),
+  createDepositRequest: async (data) => axiosClient.post(`${BASE_URL}/deposit`, data),
+
+  /**
+   * Tạo link PayOS để nạp token vào ví seller
+   * @param {Object} data
+   * @param {number} data.amount - Số tiền nạp (VND)
+   * @returns {Promise<{orderCode: string|number, checkoutUrl: string}>}
+   */
+  createTopupLink: async (data) => axiosClient.post(`${BASE_URL}/deposit/topup-link`, data),
 
   /**
    * Xác nhận đã chuyển khoản (gọi sau khi seller đã chuyển tiền theo nội dung)
@@ -79,8 +85,7 @@ export const financeService = {
    * @param {string} data.transactionId - Mã yêu cầu nạp tiền
    * @returns {Promise}
    */
-  confirmDeposit: async (data) =>
-    axiosClient.post(`${BASE_URL}/deposit/confirm`, data),
+  confirmDeposit: async (data) => axiosClient.post(`${BASE_URL}/deposit/confirm`, data),
 
   /**
    * Tạo yêu cầu rút tiền
@@ -91,8 +96,34 @@ export const financeService = {
    * @param {string} data.accountName - Tên chủ tài khoản
    * @returns {Promise<{transactionId: string, status: string}>}
    */
-  createWithdrawRequest: async (data) =>
-    axiosClient.post(`${BASE_URL}/withdraw`, data),
+  createWithdrawRequest: async (data) => axiosClient.post(`${BASE_URL}/withdraw`, data),
+
+  /**
+   * Tạo yêu cầu rút tiền về tài khoản ngân hàng qua PayOS payout
+   * @param {Object} data
+   * @param {number} data.amount
+   * @param {string} data.bankCode
+   * @param {string} data.accountNumber
+   * @param {string} data.accountName
+   */
+  createPayosWithdraw: async (data) => axiosClient.post(`${BASE_URL}/withdraw/payos`, data),
+
+  /**
+   * Ước tính phí PayOS payout cho lệnh rút tiền
+   * @param {Object} data
+   * @param {number} data.amount
+   * @param {string} data.bankCode
+   * @param {string} data.accountNumber
+   * @param {string} [data.accountName]
+   */
+  estimatePayosWithdraw: async (data) =>
+    axiosClient.post(`${BASE_URL}/withdraw/payos/estimate`, data),
+
+  /**
+   * Lấy thông tin payout từ PayOS
+   * @param {string} payoutId
+   */
+  getPayosPayoutInfo: async (payoutId) => axiosClient.get(`${BASE_URL}/withdraw/payos/${payoutId}`),
 
   /**
    * Lấy thông tin tài khoản ngân hàng đã lưu
@@ -108,8 +139,7 @@ export const financeService = {
    * @param {string} data.accountName - Tên chủ tài khoản
    * @returns {Promise}
    */
-  saveBankAccount: async (data) =>
-    axiosClient.post(`${BASE_URL}/bank-accounts`, data),
+  saveBankAccount: async (data) => axiosClient.post(`${BASE_URL}/bank-accounts`, data),
 
   /**
    * Chuyển số dư thành Reward Point
@@ -117,8 +147,7 @@ export const financeService = {
    * @param {number} data.amount - Số tiền muốn chuyển đổi
    * @returns {Promise<{rewardPoints: number, transactionId: string}>}
    */
-  convertToRewardPoints: async (data) =>
-    axiosClient.post(`${BASE_URL}/convert-rp`, data),
+  convertToRewardPoints: async (data) => axiosClient.post(`${BASE_URL}/convert-rp`, data),
 
   /**
    * Lấy thống kê nhanh
