@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { selectIsAuthenticated, selectUserRole } from '@store/slices/authSlice';
+import { getAuthToken } from '@utils/storage';
 import { PUBLIC_ROUTES, ERROR_ROUTES } from '@constants/routes';
 
 /**
@@ -9,9 +10,11 @@ import { PUBLIC_ROUTES, ERROR_ROUTES } from '@constants/routes';
  * Protects routes that require authentication
  */
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
+  const storeAuthenticated = useSelector(selectIsAuthenticated);
   const location = useLocation();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
+  const authToken = getAuthToken();
+  const isAuthenticated = storeAuthenticated && !!authToken;
 
   if (!isAuthenticated) {
     const redirect = encodeURIComponent(`${location.pathname}${location.search}`);

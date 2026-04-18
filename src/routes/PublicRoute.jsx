@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { selectIsAuthenticated, selectUserRole } from '@store/slices/authSlice';
+import { getAuthToken } from '@utils/storage';
 import { getRoleHomePath } from '@constants/routes';
 
 /**
@@ -9,8 +10,10 @@ import { getRoleHomePath } from '@constants/routes';
  * Redirects authenticated users to their dashboard
  */
 const PublicRoute = ({ children, restricted = false }) => {
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const storeAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
+  const authToken = getAuthToken();
+  const isAuthenticated = storeAuthenticated && !!authToken;
 
   if (isAuthenticated && restricted) {
     // Redirect to role-based dashboard if already authenticated
