@@ -35,7 +35,7 @@ jobs:
 
       # Bước 3: Deploy dự án lên Vercel
       - name: Deploy GZMart to Vercel
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@v42
         with:
           # Token Vercel để xác thực
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -51,6 +51,3 @@ jobs:
 
           # ID của dự án trên Vercel
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-
-          # Chỉ định phiên bản Vercel CLI mới nhất để tránh lỗi outdated
-          vercel-version: 47.2.2
