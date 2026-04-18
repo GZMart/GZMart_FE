@@ -1188,7 +1188,7 @@
     },
     "validation": {
       "minDeposit": "Số tiền nạp tối thiểu là 10,000 VND",
-      "minWithdraw": "Số tiền rút tối thiểu là 50,000 VND",
+      "minWithdraw": "Số tiền rút tối thiểu là 2,000 VND",
       "minConvert": "Số tiền chuyển đổi tối thiểu là 10,000 VND",
       "insufficientBalance": "Số dư khả dụng không đủ",
       "incompleteBankInfo": "Vui lòng điền đầy đủ thông tin ngân hàng",

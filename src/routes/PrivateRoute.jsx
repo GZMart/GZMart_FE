@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { selectIsAuthenticated, selectUserRole } from '@store/slices/authSlice';
+import { getAuthToken } from '@utils/storage';
 import { PUBLIC_ROUTES, ERROR_ROUTES } from '@constants/routes';
 
 /**
@@ -9,8 +10,10 @@ import { PUBLIC_ROUTES, ERROR_ROUTES } from '@constants/routes';
  * Protects routes that require authentication
  */
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const storeAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
+  const authToken = getAuthToken();
+  const isAuthenticated = storeAuthenticated && !!authToken;
 
   if (!isAuthenticated) {
     // Redirect to login if not authenticated
