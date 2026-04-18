@@ -42,6 +42,78 @@
   width: 64px;
 }
 
+/* Mobile drawer: không chiếm chỗ cạnh nội dung — fixed + overlay.
+   Bắt đầu dưới topbar để nút menu (cùng topbarMobile 52px) luôn bấm được */
+.sidebarDrawer {
+  position: fixed;
+  left: 0;
+  top: 52px;
+  height: calc(100vh - 52px);
+  height: calc(100dvh - 52px);
+  width: min(288px, 88vw);
+  max-width: 300px;
+  z-index: 400;
+  transform: translateX(-100%);
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.28s ease;
+  box-shadow: none;
+  border-right: 1px solid #e8ecf0;
+}
+
+.sidebarDrawerOpen {
+  transform: translateX(0);
+  box-shadow: 12px 0 40px rgba(15, 23, 42, 0.14);
+}
+
+.drawerBackdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 52px;
+  bottom: 0;
+  z-index: 350;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: erpBackdropFade 0.2s ease;
+}
+
+@keyframes erpBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drawerCloseBtn {
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.drawerCloseBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 /* ─── Brand ──────────────────────────────────────────────────────── */
 .brand {
   display: flex;
@@ -295,6 +367,46 @@
   max-width: 100%;
 }
 
+/* Topbar gọn trên điện thoại — ưu tiên nội dung trang */
+.topbarMobile {
+  height: 52px;
+  padding: 0 10px 0 8px;
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+  padding-right: max(10px, env(safe-area-inset-right, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  gap: 8px;
+  position: relative;
+  z-index: 380;
+}
+
+.topbarMobile .topbarRoute {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.topbarMobile .iconBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.topbarMobile .avatarBtn {
+  padding: 4px;
+  border: none;
+  background: transparent;
+}
+
+.topbarMobile .avatarBtn .bi-chevron-down {
+  display: none;
+}
+
+.topbarMobile .topbarRight {
+  gap: 4px;
+}
+
 /* ─── Icon Button ────────────────────────────────────────────────── */
 .iconBtn {
   width: 36px;
@@ -450,6 +562,9 @@
   flex: 1;
   /* No padding here — individual pages set their own padding */
   overflow: visible;
+  /* Cho phép trang con (vd. Live) bố cục theo độ rộng thực khi sidebar 240px vs 64px */
+  container-type: inline-size;
+  container-name: erp-main;
 }
 
 /* ─── Seller Portal: Override btn-primary to use ERP color ────────── */

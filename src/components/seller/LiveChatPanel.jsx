@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
+import { useMediaQuery } from '@hooks/useMediaQuery';
 import { DataPacket_Kind } from 'livekit-client';
 import livestreamService from '@services/api/livestreamService';
 import socketService from '@services/socket/socketService';
@@ -8,6 +9,7 @@ import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 import OrderSyntaxPanel from './OrderSyntaxPanel';
 
 export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {
+  const compactTabs = useMediaQuery('(max-width: 768px)');
   const [activeTab, setActiveTab] = useState('interaction');
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -102,6 +104,25 @@ return;
     }
   }, [isLive, sessionId]);
 
+  /** Fetch server chat history once per live segment / session (late-joining seller). */
+  const historyFetchKeyRef = useRef('');
+
+  useEffect(() => {
+    if (!isLive) {
+      historyFetchKeyRef.current = '';
+      return;
+    }
+    if (!sessionId) {
+      return;
+    }
+    const key = String(sessionId);
+    if (historyFetchKeyRef.current === key) {
+      return;
+    }
+    historyFetchKeyRef.current = key;
+    void handleRefreshChat();
+  }, [isLive, sessionId, handleRefreshChat]);
+
   // LiveKit room connected → enable chat input
   useEffect(() => {
     if (room) {
@@ -124,10 +145,7 @@ return;
 }
 
     socketService.connect(user._id);
-    socketService.emit('livestream_join', {
-      sessionId,
-      displayName: displayNameRef.current,
-    });
+    // livestream_join / livestream_leave — LiveStreamPage (stays active on Analytics tab)
 
     const onSocketChat = (msg) => {
       if (!msg?.content || msg.sessionId !== sessionId) {
@@ -173,7 +191,6 @@ return;
 
     return () => {
       socketService.off('livestream_chat_message', onSocketChat);
-      socketService.emit('livestream_leave', { sessionId });
     };
   }, [isLive, sessionId, user?._id]);
 
@@ -242,37 +259,40 @@ return;
   };
 
   return (
-    <div className={styles.rightColumn}>
-      <div className={styles.chatCard}>
+    <div className={styles.chatCard}>
         {/* Tabs */}
         <div className={styles.chatTabs}>
           <button
             className={`${styles.chatTab} ${activeTab === 'interaction' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('interaction')}
             type="button"
+            title="Live Interaction"
           >
-            Live Interaction
+            {compactTabs ? 'Chat' : 'Live Interaction'}
           </button>
           <button
             className={`${styles.chatTab} ${activeTab === 'products' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('products')}
             type="button"
+            title="Product Showcase"
           >
-            Product Showcase
+            {compactTabs ? 'Products' : 'Product Showcase'}
           </button>
           <button
             className={`${styles.chatTab} ${activeTab === 'vouchers' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('vouchers')}
             type="button"
+            title="Vouchers"
           >
-            Vouchers
+            {compactTabs ? 'Vouchers' : 'Vouchers'}
           </button>
           <button
             className={`${styles.chatTab} ${activeTab === 'syntax' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('syntax')}
             type="button"
+            title="Order Syntax"
           >
-            Order Syntax
+            {compactTabs ? 'Orders' : 'Order Syntax'}
           </button>
         </div>
 
@@ -605,7 +625,6 @@ e.currentTarget.style.color = '#8f2e29';
           </div>
         )}
         </div>
-      </div>
     </div>
   );
 }

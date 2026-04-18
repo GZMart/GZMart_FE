@@ -1,4 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { useMediaDevices } from '@hooks/useMediaDevices';
+import { useMediaQuery } from '@hooks/useMediaQuery';
 import livestreamService from '@services/api/livestreamService';
 import VideoPreview from '@components/seller/VideoPreview';
 import StreamSettingsForm from '@components/seller/StreamSettingsForm';
@@ -6,15 +9,45 @@ import LiveChatPanel from '@components/seller/LiveChatPanel';
 import LiveActionBar from '@components/seller/LiveActionBar';
 import LiveProductSelector from '@components/seller/LiveProductSelector';
 import LiveVoucherSelector from '@components/seller/LiveVoucherSelector';
+import LiveSessionEndSummaryModal from '@components/seller/LiveSessionEndSummaryModal';
+import LiveSessionAnalyticsPanel from '@components/seller/LiveSessionAnalyticsPanel';
+import socketService from '@services/socket/socketService';
 import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
 const DEFAULT_FORM = {
-  title: 'Live Stream: Giới thiệu sản phẩm mới',
+  title: 'Live stream: New product showcase',
   category: 'Fashion & Accessories',
   platforms: ['tiktok'],
 };
 
+const END_LIVE_CONFIRM_MSG =
+  'Bạn có chắc muốn kết thúc phiên live? Người xem sẽ không còn xem được phát sóng này.';
+
+function getFullscreenElement() {
+  const d = document;
+  return d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement;
+}
+
+function exitFullscreen() {
+  const d = document;
+  const fn = d.exitFullscreen || d.webkitExitFullscreen || d.mozCancelFullScreen || d.msExitFullscreen;
+  return fn?.call(d);
+}
+
+function requestFullscreen(el) {
+  if (!el) {
+    return;
+  }
+  const fn =
+    el.requestFullscreen ||
+    el.webkitRequestFullscreen ||
+    el.mozRequestFullScreen ||
+    el.msRequestFullscreen;
+  fn?.call(el);
+}
+
 export default function LiveStreamPage() {
+  const videoContainerRef = useRef(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [session, setSession] = useState(null);
   const [token, setToken] = useState(null);
@@ -30,9 +63,66 @@ export default function LiveStreamPage() {
   const [addingVouchers, setAddingVouchers] = useState(false);
   const [showVoucherSelector, setShowVoucherSelector] = useState(false);
 
+  /** Right column: chat & stream tools vs. dedicated analytics panel */
+  const [rightStudioTab, setRightStudioTab] = useState('tools');
+
+  const [endSummaryOpen, setEndSummaryOpen] = useState(false);
+  const [endSummaryLoading, setEndSummaryLoading] = useState(false);
+  const [endSummaryError, setEndSummaryError] = useState(null);
+  const [endSummaryStats, setEndSummaryStats] = useState(null);
+
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
-  const [micLevel, setMicLevel] = useState(66);
+  const [micGain, setMicGain] = useState(1);
+  const [selectedMicId, setSelectedMicId] = useState('');
+  const [selectedCamId, setSelectedCamId] = useState('');
+
+  const { audioInputs, videoInputs, error: devicesError, requestPermission } = useMediaDevices();
+  const isMobileLayout = useMediaQuery('(max-width: 768px)');
+  const user = useSelector((state) => state.auth?.user);
+
+  /** Keep seller in livestream socket room while live (chat + analytics tabs; stats tick delivery). */
+  useEffect(() => {
+    if (!session?._id || !isLive || !user?._id) {
+      return undefined;
+    }
+    const sessionId = session._id;
+    socketService.connect(user._id);
+    socketService.emit('livestream_join', {
+      sessionId,
+      userId: user._id,
+      displayName: user.fullName || 'Seller',
+      role: 'seller',
+    });
+    return () => {
+      socketService.emit('livestream_leave', { sessionId });
+    };
+  }, [session?._id, isLive, user?._id]);
+
+  const streamSettingsProps = {
+    form,
+    onChange: setForm,
+    audioInputs,
+    videoInputs,
+    selectedMicId,
+    selectedCamId,
+    onMicChange: setSelectedMicId,
+    onCamChange: setSelectedCamId,
+    onRequestDevicePermission: requestPermission,
+    devicesError,
+  };
+
+  useEffect(() => {
+    if (!selectedMicId && audioInputs[0]?.deviceId) {
+      setSelectedMicId(audioInputs[0].deviceId);
+    }
+  }, [audioInputs, selectedMicId]);
+
+  useEffect(() => {
+    if (!selectedCamId && videoInputs[0]?.deviceId) {
+      setSelectedCamId(videoInputs[0].deviceId);
+    }
+  }, [videoInputs, selectedCamId]);
 
   const handleGoLive = useCallback(async () => {
     if (!form.title.trim()) {
@@ -62,23 +152,52 @@ export default function LiveStreamPage() {
   }, [form]);
 
   const handleEndLive = useCallback(async () => {
-    if (!session) {
-return;
-}
-    try {
-      await livestreamService.endSession(session._id);
-    } catch (_) {
-      // best-effort
+    if (!session?._id) {
+      return;
     }
+    const sessionId = session._id;
+    setEndSummaryOpen(true);
+    setEndSummaryLoading(true);
+    setEndSummaryError(null);
+    setEndSummaryStats(null);
+
+    try {
+      await livestreamService.endSession(sessionId);
+    } catch (_) {
+      /* best-effort end; still try to load stats */
+    }
+
     setSession(null);
     setToken(null);
     setRoom(null);
     setIsLive(false);
+
+    try {
+      const res = await livestreamService.getSessionStats(sessionId);
+      const payload = res?.data?.data ?? res?.data;
+      setEndSummaryStats(payload ?? null);
+    } catch (e) {
+      setEndSummaryError(
+        e.response?.data?.message || e.message || 'Could not load session summary.',
+      );
+    } finally {
+      setEndSummaryLoading(false);
+    }
   }, [session]);
+
+  const confirmEndLive = useCallback(() => {
+    if (typeof window !== 'undefined' && !window.confirm(END_LIVE_CONFIRM_MSG)) {
+      return;
+    }
+    void handleEndLive();
+  }, [handleEndLive]);
 
   const handleDiscard = useCallback(() => {
     if (isLive) {
-      handleEndLive();
+      if (typeof window !== 'undefined' && !window.confirm(END_LIVE_CONFIRM_MSG)) {
+        return;
+      }
+      void handleEndLive();
     }
     setForm(DEFAULT_FORM);
     setError(null);
@@ -86,21 +205,21 @@ return;
 
   const toggleMic = () => {
     setIsMicOn((v) => !v);
-    setMicLevel((v) => (v > 0 ? 0 : 66));
   };
 
   const toggleCam = () => setIsCamOn((v) => !v);
 
-  const toggleFullscreen = () => {
-    const el = document.querySelector(`.${styles.videoCard}`);
-    if (el) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        el.requestFullscreen?.();
-      }
+  const toggleFullscreen = useCallback(() => {
+    const el = videoContainerRef.current;
+    if (!el) {
+      return;
     }
-  };
+    if (getFullscreenElement()) {
+      exitFullscreen();
+    } else {
+      requestFullscreen(el);
+    }
+  }, []);
 
   const handleRoomConnect = useCallback((liveKitRoom) => {
     setRoom(liveKitRoom);
@@ -250,31 +369,20 @@ return;
             manage your products before going live.
           </p>
         </div>
-
-        <div className={styles.headerBadges}>
-          <div className={styles.headerBadge}>
-            <span className={styles.badgeLabel}>Time Slot</span>
-            <span className={`${styles.badgeValue} ${styles.badgeValueAccent}`}>
-              Today, 20:00
-            </span>
-          </div>
-          <div className={styles.badgeDivider} />
-          <div className={styles.headerBadge}>
-            <span className={styles.badgeLabel}>Est. Reach</span>
-            <span className={styles.badgeValue}>~2,400</span>
-          </div>
-        </div>
       </div>
 
-      {/* ── Main Grid ───────────────────────────────────────────── */}
+      {/* ── Main: desktop = video+settings | chat; mobile = video → chat → settings ── */}
       <div className={styles.mainGrid}>
-        {/* Left: Video + Settings */}
-        <div className={styles.leftColumn}>
+        <div className={styles.gridAreaVideo}>
           <VideoPreview
+            ref={videoContainerRef}
             styles={styles}
             isLive={isLive}
             token={token}
-            micLevel={micLevel}
+            micDeviceId={selectedMicId || undefined}
+            camDeviceId={selectedCamId || undefined}
+            micGain={micGain}
+            onMicGainChange={setMicGain}
             isMicOn={isMicOn}
             isCamOn={isCamOn}
             onToggleMic={toggleMic}
@@ -282,25 +390,66 @@ return;
             onToggleFullscreen={toggleFullscreen}
             onRoomConnect={handleRoomConnect}
           />
-
-          <StreamSettingsForm form={form} onChange={setForm} />
         </div>
 
-        {/* Right: Chat Panel */}
-        <LiveChatPanel
-          room={room}
-          sessionId={session?._id}
-          isLive={isLive}
-          liveProducts={liveProducts}
-          onEditProducts={() => setShowProductSelector(true)}
-          onRemoveProduct={handleRemoveProduct}
-          pinnedProductId={pinnedProductId}
-          onPinProduct={handlePinProduct}
-          onUnpinProduct={handleUnpinProduct}
-          liveVouchers={liveVouchers}
-          onEditVouchers={() => setShowVoucherSelector(true)}
-          onRemoveVoucher={handleRemoveVoucher}
-        />
+        <div className={`${styles.gridAreaChat} ${styles.rightColumn}`}>
+          <div className={styles.studioRightStack}>
+            <div className={styles.studioPanelTabs} role="tablist" aria-label="Studio panel">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightStudioTab === 'tools'}
+                className={`${styles.studioPanelTab} ${rightStudioTab === 'tools' ? styles.studioPanelTabActive : ''}`}
+                onClick={() => setRightStudioTab('tools')}
+              >
+                {isMobileLayout ? 'Tools' : 'Live tools'}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightStudioTab === 'analytics'}
+                className={`${styles.studioPanelTab} ${rightStudioTab === 'analytics' ? styles.studioPanelTabActive : ''}`}
+                onClick={() => setRightStudioTab('analytics')}
+              >
+                {isMobileLayout ? 'Analytics' : 'Session analytics'}
+              </button>
+            </div>
+            <div className={styles.studioRightInner}>
+              {rightStudioTab === 'tools' && (
+                <LiveChatPanel
+                  room={room}
+                  sessionId={session?._id}
+                  isLive={isLive}
+                  liveProducts={liveProducts}
+                  onEditProducts={() => setShowProductSelector(true)}
+                  onRemoveProduct={handleRemoveProduct}
+                  pinnedProductId={pinnedProductId}
+                  onPinProduct={handlePinProduct}
+                  onUnpinProduct={handleUnpinProduct}
+                  liveVouchers={liveVouchers}
+                  onEditVouchers={() => setShowVoucherSelector(true)}
+                  onRemoveVoucher={handleRemoveVoucher}
+                />
+              )}
+              {rightStudioTab === 'analytics' && (
+                <LiveSessionAnalyticsPanel sessionId={session?._id} isLive={isLive} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.gridAreaSettings}>
+          {isMobileLayout ? (
+            <details className={styles.mobileSettingsDetails}>
+              <summary className={styles.mobileSettingsSummary}>
+                Broadcast settings, mic & camera
+              </summary>
+              <StreamSettingsForm {...streamSettingsProps} />
+            </details>
+          ) : (
+            <StreamSettingsForm {...streamSettingsProps} />
+          )}
+        </div>
       </div>
 
       {/* ── Product Selector Modal ── */}
@@ -321,6 +470,18 @@ return;
         existingVoucherIds={liveVouchers.map((v) => v._id)}
       />
 
+      <LiveSessionEndSummaryModal
+        isOpen={endSummaryOpen}
+        loading={endSummaryLoading}
+        error={endSummaryError}
+        stats={endSummaryStats}
+        onClose={() => {
+          setEndSummaryOpen(false);
+          setEndSummaryStats(null);
+          setEndSummaryError(null);
+        }}
+      />
+
       {/* ── Action Bar ───────────────────────────────────────────── */}
       <LiveActionBar
         onDiscard={handleDiscard}
@@ -331,40 +492,13 @@ return;
 
       {/* ── Error toast ─────────────────────────────────────────── */}
       {error && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 24,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: '#dc3545',
-            color: '#fff',
-            padding: '12px 24px',
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 600,
-            boxShadow: '0 4px 16px rgba(220,53,69,0.4)',
-            zIndex: 9999,
-            maxWidth: 480,
-            textAlign: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-          }}
-        >
-          <span style={{ flex: 1 }}>{error}</span>
+        <div className={styles.livestreamErrorToast} role="alert">
+          <span className={styles.livestreamErrorToastText}>{error}</span>
           <button
+            className={styles.livestreamErrorToastClose}
             onClick={() => setError(null)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: 20,
-              lineHeight: 1,
-              padding: 0,
-              flexShrink: 0,
-            }}
+            type="button"
+            aria-label="Close"
           >
             &times;
           </button>
@@ -373,7 +507,7 @@ return;
 
       {/* ── End Live floating button (when live) ─────────────────── */}
       {isLive && (
-        <button className={styles.endLiveBtn} onClick={handleEndLive} type="button">
+        <button className={styles.endLiveBtn} onClick={confirmEndLive} type="button">
           <i className={`bi bi-x-circle-fill ${styles.endLiveBtnIcon}`} />
           End Live
         </button>

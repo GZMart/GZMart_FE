@@ -15,6 +15,33 @@ import axios from 'axios';
 import FacebookLogin from 'react-facebook-login/dist/facebook-login-render-props';
 import { notification } from 'antd'; // Ensure notification is imported if used, otherwise stick to toast
 
+/** Same-origin relative path only; blocks protocol-relative URLs. Role must match path prefix when applicable. */
+function getSafeRedirectPath(search, role) {
+  try {
+    const params = new URLSearchParams(search);
+    const raw = params.get('redirect');
+    if (!raw) {
+      return null;
+    }
+    const path = decodeURIComponent(raw);
+    if (!path.startsWith('/') || path.startsWith('//')) {
+      return null;
+    }
+    if (role === 'seller') {
+      return path.startsWith('/seller') ? path : null;
+    }
+    if (role === 'admin') {
+      return path.startsWith('/admin') ? path : null;
+    }
+    if (path.startsWith('/seller') || path.startsWith('/admin')) {
+      return null;
+    }
+    return path;
+  } catch {
+    return null;
+  }
+}
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -59,9 +86,12 @@ const LoginPage = () => {
         // Login thành công
         toast.success(t('login_page.success_login'));
 
-        // Redirect dựa trên role
+        // Redirect dựa trên role (hoặc ?redirect= khi an toàn)
         const user = result.user;
-        if (user?.role === 'seller') {
+        const next = getSafeRedirectPath(location.search, user?.role);
+        if (next) {
+          navigate(next);
+        } else if (user?.role === 'seller') {
           navigate('/seller/dashboard');
         } else if (user?.role === 'admin') {
           navigate('/admin/dashboard');
@@ -115,9 +145,11 @@ const LoginPage = () => {
           // But Redux state update should be enough usually.
           // Keeping the reload logic if it was requested or beneficial for avatar sync
 
-          // Redirect based on role or default to Home
           const user = result.user;
-          if (user?.role === 'seller') {
+          const next = getSafeRedirectPath(location.search, user?.role);
+          if (next) {
+            navigate(next);
+          } else if (user?.role === 'seller') {
             navigate('/seller/dashboard');
           } else if (user?.role === 'admin') {
             navigate('/admin/dashboard');
@@ -160,9 +192,11 @@ const LoginPage = () => {
         const result = resultAction.payload;
         toast.success(t('login_page.success_login'));
 
-        // Direct navigation for Facebook login, skipping set-password
         const user = result.user;
-        if (user?.role === 'seller') {
+        const next = getSafeRedirectPath(location.search, user?.role);
+        if (next) {
+          navigate(next);
+        } else if (user?.role === 'seller') {
           navigate('/seller/dashboard');
         } else if (user?.role === 'admin') {
           navigate('/admin/dashboard');

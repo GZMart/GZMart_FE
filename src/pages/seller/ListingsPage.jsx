@@ -547,11 +547,6 @@ const ListingsPage = () => {
                                   </>
                                 )}
                               </Dropdown.Item>
-                              <Dropdown.Divider />
-                              <Dropdown.Item className="text-danger">
-                                <i className="bi bi-trash me-2" />
-                                Delete
-                              </Dropdown.Item>
                             </Dropdown.Menu>
                           </Dropdown>
                         </td>

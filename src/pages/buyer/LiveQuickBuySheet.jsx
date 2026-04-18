@@ -171,7 +171,7 @@ return;
       })
       .catch(() => {
         if (!cancelled) {
-          setDetailError('Không tải được biến thể sản phẩm');
+          setDetailError('Could not load product variants');
           setDetailProduct(null);
           setSelectedTierIndex([]);
           setActiveModel(null);
@@ -367,13 +367,13 @@ return;
 
     if (detailProduct?.tier_variations?.length > 0) {
       if (!activeModel) {
-        toast.error('Vui lòng chọn đủ phân loại hàng');
+        toast.error('Please select all variant options');
         return;
       }
     }
 
     if (maxStock <= 0) {
-      toast.error('Sản phẩm đã hết hàng');
+      toast.error('This product is out of stock');
       return;
     }
 
@@ -388,7 +388,7 @@ return;
         );
         if (!stockRes.data?.available) {
           toast.error(
-            `Không đủ hàng. Còn lại: ${stockRes.data?.currentStock ?? 0}`,
+            `Not enough stock. Remaining: ${stockRes.data?.currentStock ?? 0}`,
           );
           setSubmitting(false);
           return;
@@ -448,7 +448,7 @@ return;
       const msg =
         typeof e === 'string'
           ? e
-          : e?.message || 'Không thêm được vào giỏ hàng';
+          : e?.message || 'Could not add to cart';
       toast.error(msg);
       console.error('Failed to add to cart:', e);
       setSubmitting(false);
@@ -484,7 +484,7 @@ return null;
             <div className={styles['lqbs-handle']} />
 
             <div className={styles['lqbs-header']}>
-              <span className={styles['lqbs-header-title']}>Mua ngay</span>
+              <span className={styles['lqbs-header-title']}>Buy now</span>
               <button className={styles['lqbs-close']} onClick={onHide} aria-label="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -503,7 +503,7 @@ return null;
               <div className={styles['lqbs-product-info']}>
                 <div className={styles['lqbs-product-name']}>{displayName}</div>
                 {detailLoading ? (
-                  <div className={styles['lqbs-product-price']}>Đang tải giá…</div>
+                  <div className={styles['lqbs-product-price']}>Loading price…</div>
                 ) : (
                   <div className={styles['lqbs-product-price']}>
                     {formatCurrency(unitPrice)}
@@ -572,7 +572,7 @@ return null;
                       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                       <line x1="7" y1="7" x2="7.01" y2="7" />
                     </svg>
-                    Voucher Live
+                    Live vouchers
                   </div>
 
                   {selectedLiveVoucher ? (
@@ -589,7 +589,7 @@ return null;
                         </div>
                       </div>
                       <button type="button" className={styles['lqbs-voucher-remove']} onClick={handleRemoveVoucher}>
-                        Bỏ
+                        Remove
                       </button>
                     </div>
                   ) : (
@@ -609,7 +609,7 @@ return null;
                             <span className={styles['lqbs-voucher-chip-name']}>{v.name}</span>
                             {!canUse && (
                               <span className={styles['lqbs-voucher-chip-hint']}>
-                                Tối thiểu {formatCurrency(v.minBasketPrice)}
+                                Min. {formatCurrency(v.minBasketPrice)}
                               </span>
                             )}
                           </div>
@@ -626,20 +626,20 @@ return null;
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
-                  Thông tin người mua
+                  Buyer details
                 </div>
 
                 <div className={styles['lqbs-form-grid']}>
                   <div className={styles['lqbs-form-row']}>
                     <input
                       className={styles['lqbs-input']}
-                      placeholder="Họ"
+                      placeholder="Last name"
                       value={customerInfo.lastName}
                       onChange={(e) => setCustomerInfo((p) => ({ ...p, lastName: e.target.value }))}
                     />
                     <input
                       className={styles['lqbs-input']}
-                      placeholder="Tên"
+                      placeholder="First name"
                       value={customerInfo.firstName}
                       onChange={(e) => setCustomerInfo((p) => ({ ...p, firstName: e.target.value }))}
                     />
@@ -647,7 +647,7 @@ return null;
                   <input
                     className={styles['lqbs-input']}
                     type="tel"
-                    placeholder="Số điện thoại"
+                    placeholder="Phone number"
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo((p) => ({ ...p, phone: e.target.value }))}
                   />
@@ -660,7 +660,7 @@ return null;
                   />
                   <input
                     className={styles['lqbs-input']}
-                    placeholder="Địa chỉ"
+                    placeholder="Address"
                     value={customerInfo.address}
                     onChange={(e) => setCustomerInfo((p) => ({ ...p, address: e.target.value }))}
                   />
@@ -675,12 +675,12 @@ return null;
                     <circle cx="5.5" cy="18.5" r="2.5" />
                     <circle cx="18.5" cy="18.5" r="2.5" />
                   </svg>
-                  Phương thức vận chuyển (ước tính)
+                  Shipping method (estimate)
                 </div>
                 <div className={styles['lqbs-shipping-options']}>
                   {[
-                    { id: 'ghn', label: 'Giao Hàng Nhanh (GHN)' },
-                    { id: 'ghtk', label: 'Giao Hàng Tiết Kiệm (GHTK)' },
+                    { id: 'ghn', label: 'GHN Express' },
+                    { id: 'ghtk', label: 'GHTK Economy' },
                     { id: 'viettel', label: 'Viettel Post' },
                   ].map((opt) => (
                     <label
@@ -700,7 +700,7 @@ return null;
                   ))}
                 </div>
                 <p className={styles['lqbs-shipping-note']}>
-                  Phí vận chuyển chính xác sẽ được tính ở bước thanh toán.
+                  Exact shipping fee is calculated at checkout.
                 </p>
               </div>
             </div>
@@ -708,17 +708,17 @@ return null;
             <div className={styles['lqbs-footer']}>
               <div className={styles['lqbs-totals']}>
                 <div className={styles['lqbs-total-row']}>
-                  <span>Tạm tính</span>
+                  <span>Subtotal</span>
                   <span>{formatCurrency(displaySubtotal)}</span>
                 </div>
                 {displayDiscount > 0 && (
                   <div className={`${styles['lqbs-total-row']} ${styles['lqbs-total-row--discount']}`}>
-                    <span>Giảm giá</span>
+                    <span>Discount</span>
                     <span>-{formatCurrency(displayDiscount)}</span>
                   </div>
                 )}
                 <div className={`${styles['lqbs-total-row']} ${styles['lqbs-total-row--grand']}`}>
-                  <span>Tổng tạm</span>
+                  <span>Estimated total</span>
                   <span>{formatCurrency(displayTotal)}</span>
                 </div>
               </div>
@@ -737,7 +737,7 @@ return null;
                       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                       <line x1="1" y1="10" x2="23" y2="10" />
                     </svg>
-                    Tiến hành thanh toán
+                    {onAddToLiveCart ? 'Add to live cart' : 'Proceed to checkout'}
                   </>
                 )}
               </button>
