@@ -29,7 +29,11 @@ jobs:
         with:
           node-version: '24'
 
-      # Bước 2: Deploy dự án lên Vercel
+      # Bước 2: Cài đặt Vercel CLI phiên bản mới nhất
+      - name: Install latest Vercel CLI
+        run: npm install -g vercel@latest
+
+      # Bước 3: Deploy dự án lên Vercel
       - name: Deploy GZMart to Vercel
         uses: amondnet/vercel-action@v25
         with:
