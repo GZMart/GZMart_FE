@@ -233,7 +233,7 @@ const CampaignDrawer = ({
       width={1700}
       open={open}
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
       styles={{
         header: { 
           padding: '16px 24px', 

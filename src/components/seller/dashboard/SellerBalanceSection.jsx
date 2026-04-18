@@ -183,7 +183,7 @@ const SellerBalanceSection = ({ onBalanceLoaded }) => {
             </div>
 
             <div className={styles.balanceMainCardAmount}>
-              <span className={styles.balanceMainCardCurrency}>₫</span>
+              <span className={styles.balanceMainCardCurrency}>VND</span>
               <span className={styles.balanceMainCardValue}>
                 {balance.availableBalance != null
                   ? Math.round(balance.availableBalance).toLocaleString('vi-VN')
@@ -200,7 +200,7 @@ const SellerBalanceSection = ({ onBalanceLoaded }) => {
                     {balance.pendingBalance != null
                       ? Math.round(balance.pendingBalance).toLocaleString('vi-VN')
                       : 0}
-                    ₫
+                    VND
                   </strong>
                 </span>
               </div>

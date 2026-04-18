@@ -55,7 +55,7 @@ export const getRelativeTime = (date) => {
  */
 export const formatCurrency = (amount, currency = 'VND') => {
   if (amount === null || amount === undefined || isNaN(amount)) {
-    return '0₫';
+    return '0 VND';
   }
 
   if (currency === 'VND') {
@@ -63,7 +63,7 @@ export const formatCurrency = (amount, currency = 'VND') => {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount)}₫`;
+    }).format(amount)} VND`;
   }
 
   return new Intl.NumberFormat('en-US', {

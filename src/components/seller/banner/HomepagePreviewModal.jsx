@@ -26,8 +26,8 @@ const HomepagePreviewModal = ({ open, onClose, banner = {} }) => {
           <span className={styles.previewBadge}>Bản xem thử</span>
         </div>
       }
-      bodyStyle={{ padding: 0 }}
-      destroyOnClose
+      styles={{ body: { padding: 0 }, header: { padding: '16px 24px', borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(135deg, #fef2f2 0%, #fff 100%)' } }}
+      destroyOnHidden
     >
       <div className={styles.notice}>
         <ExclamationCircleOutlined style={{ color: '#f97316' }} />
