@@ -30,7 +30,7 @@ const { Text } = Typography;
 
 const BUCKET_COLORS = ['#EF4444', '#F97316', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
 
-export function AOVDetailModal({ open, onClose, _period, comparison }) {
+export function AOVDetailModal({ open, onClose, _period, _customDateRange, comparison }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -71,12 +71,12 @@ export function AOVDetailModal({ open, onClose, _period, comparison }) {
  return []; 
 }
     const buckets = [
-      { range: '< 100K', min: 0, max: 100_000, count: 0 },
-      { range: '100K–250K', min: 100_000, max: 250_000, count: 0 },
-      { range: '250K–500K', min: 250_000, max: 500_000, count: 0 },
-      { range: '500K–1M', min: 500_000, max: 1_000_000, count: 0 },
-      { range: '1M–2M', min: 1_000_000, max: 2_000_000, count: 0 },
-      { range: '> 2M', min: 2_000_000, max: Infinity, count: 0 },
+      { range: '< 100.000 VND', min: 0, max: 100_000, count: 0 },
+      { range: '100.000 – 250.000 VND', min: 100_000, max: 250_000, count: 0 },
+      { range: '250.000 – 500.000 VND', min: 250_000, max: 500_000, count: 0 },
+      { range: '500.000 – 1.000.000 VND', min: 500_000, max: 1_000_000, count: 0 },
+      { range: '1.000.000 – 2.000.000 VND', min: 1_000_000, max: 2_000_000, count: 0 },
+      { range: '> 2.000.000 VND', min: 2_000_000, max: Infinity, count: 0 },
     ];
     recentOrders.forEach((o) => {
       const v = o.totalPrice || 0;

@@ -9,6 +9,18 @@ import { PUBLIC_ROUTES } from '../../../constants/routes';
 const formatPrice = (price) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
+/** Nếu tên toàn chữ hoa (dữ liệu cũ) thì hiển thị dạng câu; giữ nguyên nếu đã hỗn hợp */
+const formatProductDisplayName = (name) => {
+  if (!name || typeof name !== 'string') return '';
+  const t = name.trim();
+  if (t.length === 0) return t;
+  if (t === t.toUpperCase() && /[a-zÀ-ỹ]/i.test(t)) {
+    const lower = t.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }
+  return t;
+};
+
 // Helper to map deal type to human-readable label
 const TYPE_LABELS = {
   flash_sale: 'Flash Sale',
@@ -79,7 +91,7 @@ const ProductCard = ({ product }) => (
     style={{ textDecoration: 'none' }}
   >
     <motion.div
-      className="card h-100 border-0 bg-transparent"
+      className="card border-0 bg-transparent"
       whileHover={{ y: -10 }}
       transition={{ type: 'spring', stiffness: 300 }}
     >
@@ -152,16 +164,25 @@ const ProductCard = ({ product }) => (
         </div>
 
         <h6
-          className="card-title fw-bold text-dark mb-3 text-uppercase"
-          style={{ lineHeight: '1.4', fontSize: '1.2rem' }}
+          className="card-title fw-bold text-dark mb-2"
+          title={product.name}
+          style={{
+            lineHeight: '1.4',
+            fontSize: '1.2rem',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            wordBreak: 'break-word',
+          }}
         >
-          {product.name}
+          {formatProductDisplayName(product.name)}
         </h6>
 
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="btn btn-dark w-100 fw-bold py-2 mt-auto d-flex align-items-center justify-content-center gap-2"
+          className="btn btn-dark w-100 fw-bold py-2 mt-1 d-flex align-items-center justify-content-center gap-2"
           style={{
             borderRadius: '4px',
             fontSize: '0.85rem',
@@ -299,14 +320,14 @@ const DealsOfTheDay = () => {
           });
 
         // ── Smart sort & limit: 20 deals tối đa ─────────────────────────
-        // Ưu tiên discount cao, đảm bảo variety giữa các deal types
+        // Ưu tiên deal sắp kết thúc nhất (flash sale / các loại) lên trước
         // Deduplicate by productId — keep the first occurrence (flash sales have priority)
         const seenProductIds = new Set();
         const allDeals = [...transformedFlashSales, ...transformedDeals].filter((deal) => {
           const pid = String(deal.productId);
           if (seenProductIds.has(pid)) {
-return false;
-}
+            return false;
+          }
           seenProductIds.add(pid);
           return true;
         });
@@ -320,14 +341,23 @@ return false;
           special: 6,
         };
 
+        const endTime = (d) => {
+          const t = new Date(d.endDate).getTime();
+          return Number.isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
+        };
+
         const sortedDeals = [...allDeals].sort((a, b) => {
-          // Ưu tiên discount cao nhất
-          const discountDiff = (b.discount || 0) - (a.discount || 0);
-          if (discountDiff !== 0) {
-return discountDiff;
-}
-          // Sau đó ưu tiên deal type
-          return (DEAL_TYPE_PRIORITY[a.dealType] || 99) - (DEAL_TYPE_PRIORITY[b.dealType] || 99);
+          const timeDiff = endTime(a) - endTime(b);
+          if (timeDiff !== 0) {
+            return timeDiff;
+          }
+          // Cùng thời điểm kết thúc: flash sale trước, rồi discount cao hơn
+          const typeDiff =
+            (DEAL_TYPE_PRIORITY[a.dealType] || 99) - (DEAL_TYPE_PRIORITY[b.dealType] || 99);
+          if (typeDiff !== 0) {
+            return typeDiff;
+          }
+          return (b.discount || 0) - (a.discount || 0);
         });
 
         // Giới hạn 12 deals cho carousel homepage

@@ -83,6 +83,8 @@ export const SELLER_ROUTES = {
 
   // Live stream (seller studio)
   LIVE: '/seller/live',
+  /** Continue live on phone (handoff link lands here) */
+  LIVE_MOBILE: '/seller/live/mobile',
 
   // Finance & Topup
   FINANCE: '/seller/finance',

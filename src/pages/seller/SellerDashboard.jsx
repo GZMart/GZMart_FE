@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {
   AlertTriangle,
   ArrowRightLeft,
+  Calendar,
   ChevronRight,
   DollarSign,
   PackageOpen,
@@ -16,12 +17,16 @@ import {
 import {
   Button,
   Card,
+  DatePicker,
   Progress,
   Segmented,
   Spin,
   Table,
 } from 'antd';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import dayjs from 'dayjs';
+const { RangePicker } = DatePicker;
+
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
@@ -35,6 +40,7 @@ import { OrdersDetailModal } from '../../components/seller/dashboard/modals/Orde
 import { AOVDetailModal } from '../../components/seller/dashboard/modals/AOVDetailModal';
 import { ProfitDetailModal } from '../../components/seller/dashboard/modals/ProfitDetailModal';
 import { TopProfitProductsModal } from '../../components/seller/dashboard/modals/TopProfitProductsModal';
+import { CustomerAgeAnalyticsModal } from '../../components/seller/dashboard/modals/CustomerAgeAnalyticsModal';
 import styles from '../../assets/styles/seller/Dashboard.module.css';
 import BannerHotspotWidget from '../../components/seller/dashboard/BannerHotspotWidget';
 
@@ -50,12 +56,64 @@ const EXPENSE_TYPE_TO_I18N = {
   'Last-Mile Delivery (Order)': 'lastMileDeliveryOrder',
 };
 
+const AGE_GROUP_COLORS = {
+  'Under 18': '#8b5cf6',
+  '18-24':    '#3b82f6',
+  '25-34':    '#10b981',
+  '35-44':    '#f59e0b',
+  '45-54':    '#ef4444',
+  '55-64':    '#ec4899',
+  '65+':      '#6b7280',
+  Unknown:  '#d1d5db',
+};
+
+const getAgeColor = (label) => AGE_GROUP_COLORS[label] || '#94a3b8';
+
+const formatAgeGroup = (label) => {
+  const map = {
+    'Under 18': '< 18',
+    '18-24': '18-24',
+    '25-34': '25-34',
+    '35-44': '35-44',
+    '45-54': '45-54',
+    '55-64': '55-64',
+    '65+': '65+',
+    Unknown: 'Không rõ',
+  };
+  return map[label] || label;
+};
+
 const translateExpenseType = (type, t) => {
   const subKey = EXPENSE_TYPE_TO_I18N[type];
   if (!subKey) {
     return type;
   }
   return t(`sellerDashboard.expense.types.${subKey}`, type);
+};
+
+// ── Period helpers for ERP section filters ──
+const getErpPeriodOptions = (t) => [
+  { label: t('sellerDashboard.periodShort.7days', '7 Ngày'),     value: '7days' },
+  { label: t('sellerDashboard.periodShort.30days', '30 Ngày'),   value: '30days' },
+  { label: t('sellerDashboard.periodShort.90days', '90 Ngày'),    value: '90days' },
+  { label: t('sellerDashboard.periodShort.12months', '12 Tháng'), value: '12months' },
+  { label: t('sellerDashboard.periodShort.yearly', 'Năm trước'),  value: 'yearly' },
+  { label: t('sellerDashboard.period.custom', 'Tùy chỉnh'),       value: 'custom' },
+];
+
+const handleErpPeriodChange = (val, setter, customSetter, setPickerOpen) => {
+  if (val === 'custom') {
+    setter('custom');
+    if (setPickerOpen) {
+setPickerOpen(true);
+}
+  } else {
+    setter(val);
+    customSetter(null);
+    if (setPickerOpen) {
+setPickerOpen(false);
+}
+  }
 };
 
 const ACTION_ITEMS = (t) => [
@@ -119,12 +177,36 @@ const CATEGORY_CHART_COLORS = [
 ];
 
 const getCategoryPeriodLabels = (t) => ({
-  daily:     t('sellerDashboard.period.daily', '30 ngày gần nhất'),
-  weekly:    t('sellerDashboard.period.weekly', '13 tuần gần nhất'),
-  monthly:   t('sellerDashboard.period.monthly', '12 tháng gần nhất'),
-  quarterly: t('sellerDashboard.period.quarterly', '4 quý gần nhất'),
-  yearly:    t('sellerDashboard.period.yearly', '5 năm gần nhất'),
+  '7days':    t('sellerDashboard.period.7days', '7 ngày gần nhất'),
+  '30days':   t('sellerDashboard.period.30days', '30 ngày gần nhất'),
+  '90days':   t('sellerDashboard.period.90days', '90 ngày gần nhất'),
+  '12months': t('sellerDashboard.period.12months', '12 tháng qua'),
+  yearly:   t('sellerDashboard.period.yearly', 'Năm trước'),
+  custom:   t('sellerDashboard.period.custom', 'Tùy chỉnh'),
 });
+
+// ─── Enhanced Expense Tooltip ─────────────────────────────────────────────────
+const ExpenseTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) {
+return null;
+}
+  return (
+    <div style={{
+      background: '#1e293b', border: '1px solid #334155', borderRadius: 8,
+      padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 180,
+    }}>
+      <p style={{ margin: 0, fontWeight: 700, color: '#f8fafc', fontSize: 13, marginBottom: 6 }}>
+        {payload[0].name}
+      </p>
+      {payload.map((entry, idx) => (
+        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.9 }}>
+          <span style={{ color: entry.payload.color, fontWeight: 600 }}>{entry.name}: </span>
+          {formatCurrency(entry.value)}
+        </p>
+      ))}
+    </div>
+  );
+};
 
 // ─── Skeleton: Action Card ──────────────────────────────────────────────────
 const SkeletonActionCard = () => (
@@ -265,11 +347,20 @@ const SellerDashboard = () => {
   const [trendLoading, setTrendLoading] = useState(false);
   const [expenseLoading, setExpenseLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(true);
+  const [ageAnalyticsLoading, setAgeAnalyticsLoading] = useState(true);
 
   // ── Period selectors ──
-  const [trendPeriod, setTrendPeriod] = useState('daily');
-  const [expensePeriod, setExpensePeriod] = useState('monthly');
-  const [categoryPeriod, setCategoryPeriod] = useState('monthly');
+  const [trendPeriod, setTrendPeriod] = useState('30days');
+  const [expensePeriod, setExpensePeriod] = useState('12months');
+  const [categoryPeriod, setCategoryPeriod] = useState('12months');
+  const [agePeriod, setAgePeriod] = useState('12months');
+  const [customDateRange, setCustomDateRange] = useState(null); // { startDate, endDate }
+  const [expenseCustomRange, setExpenseCustomRange] = useState(null);
+  const [categoryCustomRange, setCategoryCustomRange] = useState(null);
+  const [ageCustomRange, setAgeCustomRange] = useState(null);
+  const [expensePickerOpen, setExpensePickerOpen] = useState(false);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [agePickerOpen, setAgePickerOpen] = useState(false);
 
   // ── External data ──
   const [exchangeRate, setExchangeRate] = useState(null);
@@ -294,6 +385,7 @@ const SellerDashboard = () => {
   const [expense, setExpense] = useState(null);
   const [topProfitProducts, setTopProfitProducts] = useState([]);
   const [categoryAnalytics, setCategoryAnalytics] = useState(null);
+  const [ageAnalytics, setAgeAnalytics] = useState(null);
 
   // ── Detail modals ──
   const [revenueModalOpen, setRevenueModalOpen] = useState(false);
@@ -301,6 +393,7 @@ const SellerDashboard = () => {
   const [aovModalOpen, setAOVModalOpen] = useState(false);
   const [profitModalOpen, setProfitModalOpen] = useState(false);
   const [topProfitProductsModalOpen, setTopProfitProductsModalOpen] = useState(false);
+  const [ageAnalyticsModalOpen, setAgeAnalyticsModalOpen] = useState(false);
 
   // ── Fetch tỷ giá CNY/VND ──
   useEffect(() => {
@@ -353,8 +446,8 @@ const SellerDashboard = () => {
           dashboardService.getSellerOrderCounts(),
           chatService.getUnreadCount(),
           dashboardService.getLowStock({ threshold: 20, limit: 6 }),
-          dashboardService.getProfitLossAnalysis({ period: 'monthly' }),
-          dashboardService.getTopSellingProductsWithProfit({ limit: 5, period: 'monthly' }),
+          dashboardService.getProfitLossAnalysis({ period: '12months' }),
+          dashboardService.getTopSellingProductsWithProfit({ limit: 5, period: '12months' }),
           dashboardService.getRevenue(),
         ]);
 
@@ -428,8 +521,8 @@ const SellerDashboard = () => {
       setTrendLoading(true);
       try {
         const [trendRes, comparisonRes] = await Promise.all([
-          dashboardService.getRevenueTrend({ period: trendPeriod }),
-          dashboardService.getComparison({ period: trendPeriod }),
+          dashboardService.getRevenueTrend({ period: trendPeriod, ...customDateRange }),
+          dashboardService.getComparison({ period: trendPeriod, ...customDateRange }),
         ]);
 
         if (cancelled) {
@@ -454,14 +547,17 @@ const SellerDashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [trendPeriod]);
+  }, [trendPeriod, customDateRange]);
 
   // ── Refetch expense when period changes ──
   useEffect(() => {
     let cancelled = false;
     setExpenseLoading(true);
+    const params = expenseCustomRange
+      ? { period: 'custom', startDate: expenseCustomRange.startDate, endDate: expenseCustomRange.endDate }
+      : { period: expensePeriod === 'months12' ? '12months' : expensePeriod === 'days90' ? '90days' : expensePeriod };
     dashboardService
-      .getExpenseAnalysis({ period: expensePeriod })
+      .getExpenseAnalysis(params)
       .then((res) => {
         if (cancelled) {
           return;
@@ -481,14 +577,17 @@ const SellerDashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [expensePeriod]);
+  }, [expensePeriod, expenseCustomRange]);
 
   // ── Refetch category analytics when period changes ──
   useEffect(() => {
     let cancelled = false;
     setCategoryLoading(true);
+    const params = categoryCustomRange
+      ? { period: 'custom', startDate: categoryCustomRange.startDate, endDate: categoryCustomRange.endDate }
+      : { period: categoryPeriod === 'months12' ? '12months' : categoryPeriod === 'days90' ? '90days' : categoryPeriod };
     dashboardService
-      .getProductAnalyticsByCategory({ period: categoryPeriod })
+      .getProductAnalyticsByCategory(params)
       .then((res) => {
         if (cancelled) {
           return;
@@ -508,7 +607,37 @@ const SellerDashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [categoryPeriod]);
+  }, [categoryPeriod, categoryCustomRange]);
+
+  // ── Fetch age analytics ──
+  useEffect(() => {
+    let cancelled = false;
+    setAgeAnalyticsLoading(true);
+    const params = ageCustomRange
+      ? { period: 'custom', startDate: ageCustomRange.startDate, endDate: ageCustomRange.endDate }
+      : { period: agePeriod === 'months12' ? '12months' : agePeriod === 'days90' ? '90days' : agePeriod };
+    dashboardService
+      .getCustomerAgeAnalytics(params)
+      .then((res) => {
+        if (cancelled) {
+          return;
+}
+        setAgeAnalytics(res?.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+setAgeAnalytics(null);
+}
+      })
+      .finally(() => {
+        if (!cancelled) {
+setAgeAnalyticsLoading(false);
+}
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agePeriod, ageCustomRange]);
 
   // ── Derived: revenue trend KPI ──
   const trendRevenue = useMemo(() => {
@@ -524,15 +653,21 @@ const SellerDashboard = () => {
   }, [comparison]);
 
   const periodFromLabel = useMemo(() => {
+    if (customDateRange) {
+      const fmt = i18n.language?.startsWith('en') ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
+      const sd = dayjs(customDateRange.startDate).format(fmt);
+      const ed = dayjs(customDateRange.endDate).format(fmt);
+      return t('sellerDashboard.periodCompare.custom', '{{start}} → {{end}}', { start: sd, end: ed });
+    }
     const map = {
-      daily:     t('sellerDashboard.periodCompare.daily', 'so với 30 ngày trước'),
-      weekly:    t('sellerDashboard.periodCompare.weekly', 'so với 13 tuần trước'),
-      monthly:   t('sellerDashboard.periodCompare.monthly', 'so với 12 tháng trước'),
-      quarterly: t('sellerDashboard.periodCompare.quarterly', 'so với 4 quý trước'),
-      yearly:    t('sellerDashboard.periodCompare.yearly', 'so với 5 năm trước'),
+      '7days':    t('sellerDashboard.periodCompare.7days', 'so với 7 ngày trước'),
+      '30days':   t('sellerDashboard.periodCompare.30days', 'so với 30 ngày trước'),
+      '90days':   t('sellerDashboard.periodCompare.90days', 'so với 90 ngày trước'),
+      '12months': t('sellerDashboard.periodCompare.12months', 'so với 12 tháng trước'),
+      yearly:   t('sellerDashboard.periodCompare.yearly', 'so với năm trước'),
     };
     return map[trendPeriod] ?? t('sellerDashboard.stats.vsPeriod', 'so với kỳ trước');
-  }, [trendPeriod, t]);
+  }, [trendPeriod, customDateRange, t]);
 
   // ── Derived: expense pie ──
   const expensePieSlices = useMemo(() => {
@@ -686,21 +821,22 @@ const SellerDashboard = () => {
   }, [categoryAnalytics, t]);
 
   const renderCategoryLegend = () => (
-    <div className={styles.pieLegend}>
+    <div className={styles.categoryLegendGrid}>
       {categoryChartData.map((s) => (
         <div
           key={s.rowKey}
-          className={styles.pieLegendItem}
-          style={{ background: `${s.color}14` }}
+          className={styles.categoryLegendItem}
+          style={{ borderColor: `${s.color}30` }}
           title={t('sellerDashboard.category.legendTooltip', '{{name}} — {{percent}}% period revenue', { name: s.categoryName, percent: s.revenuePercent })}
         >
-          <span className={styles.pieLegendDot} style={{ background: s.color }} />
-          <span style={{ color: '#334155' }}>
-            {s.categoryName}
-            {s.revenuePercent > 0 ? ` (${s.revenuePercent}%)` : ''}
-            :
+          <span className={styles.categoryLegendDot} style={{ background: s.color }} />
+          <div className={styles.categoryLegendContent}>
+            <span className={styles.categoryLegendName}>{s.categoryName}</span>
+            <span className={styles.categoryLegendRevenue}>{formatCurrency(s.totalRevenue)}</span>
+          </div>
+          <span className={styles.categoryLegendPercent} style={{ background: `${s.color}18`, color: s.color }}>
+            {s.revenuePercent}%
           </span>
-          <strong style={{ color: s.color }}>{formatCurrency(s.totalRevenue)}</strong>
         </div>
       ))}
     </div>
@@ -791,7 +927,22 @@ const SellerDashboard = () => {
           <OverallSalesCard
             chartData={revenueTrend}
             period={trendPeriod}
-            onPeriodChange={(p) => setTrendPeriod(p)}
+            onPeriodChange={(p) => {
+              setTrendPeriod(p);
+              setCustomDateRange(null);
+            }}
+            customDateRange={customDateRange}
+            onCustomDateRangeChange={(range) => {
+              if (range) {
+                setTrendPeriod('30days');
+                setCustomDateRange({
+                  startDate: range[0].format('YYYY-MM-DD'),
+                  endDate: range[1].format('YYYY-MM-DD'),
+                });
+              } else {
+                setCustomDateRange(null);
+              }
+            }}
             loading={trendLoading}
             revenueCurrent={trendRevenue}
             trend={trendGrowth}
@@ -986,54 +1137,127 @@ const SellerDashboard = () => {
                   <span className={styles.erpSectionSub}>— {expense.period}</span>
                 )}
               </div>
-              <Segmented
-                size="small"
-                value={expensePeriod}
-                onChange={(val) => setExpensePeriod(val)}
-                options={[
-                  { label: t('sellerDashboard.segmented.week', 'Tuần'), value: 'daily' },
-                  { label: t('sellerDashboard.segmented.month', 'Tháng'), value: 'monthly' },
-                  { label: t('sellerDashboard.segmented.quarter', 'Quý'), value: 'quarterly' },
-                  { label: t('sellerDashboard.segmented.year', 'Năm'), value: 'yearly' },
-                ]}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Segmented
+                  size="small"
+                  value={expensePeriod}
+                  onChange={(val) => handleErpPeriodChange(val, setExpensePeriod, setExpenseCustomRange, setExpensePickerOpen)}
+                  options={getErpPeriodOptions(t)}
+                />
+                {expensePeriod === 'custom' && (
+                  <>
+                    <RangePicker
+                      open={expensePickerOpen}
+                      value={[
+                        expenseCustomRange ? dayjs(expenseCustomRange.startDate) : null,
+                        expenseCustomRange ? dayjs(expenseCustomRange.endDate) : null,
+                      ]}
+                      onChange={(dates) => {
+                        if (dates && dates[0] && dates[1]) {
+                          setExpenseCustomRange({
+                            startDate: dates[0].format('YYYY-MM-DD'),
+                            endDate: dates[1].format('YYYY-MM-DD'),
+                          });
+                        }
+                        setExpensePickerOpen(false);
+                      }}
+                      onOpenChange={setExpensePickerOpen}
+                      disabledDate={(current) => current && current > dayjs().endOf('day')}
+                      size="small"
+                      style={{ width: 0, padding: 0, opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+                    />
+                    <button
+                      onClick={() => setExpensePickerOpen(true)}
+                      className={styles.periodBtn}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                    >
+                      <Calendar size={13} />
+                      {expenseCustomRange
+                        ? `${dayjs(expenseCustomRange.startDate).format('DD/MM/YYYY')} – ${dayjs(expenseCustomRange.endDate).format('DD/MM/YYYY')}`
+                        : t('sellerDashboard.period.custom', 'Tùy chỉnh')}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div className={styles.erpSectionBody}>
-              <div className={styles.pieChartContainer}>
+              {/* KPI Strip */}
+              {expensePieSlices.length > 0 && (
+                <div className={styles.expenseKpiStrip}>
+                  <div className={styles.expenseKpiCard} style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                    <div className={styles.expenseKpiLabel}>{t('sellerDashboard.expense.kpi.total', 'Tổng chi phí')}</div>
+                    <div className={styles.expenseKpiValue} style={{ color: '#1d4ed8' }}>
+                      {(() => {
+                        const total = expensePieSlices.reduce((s, x) => s + x.value, 0);
+                        return formatCurrency(total);
+                      })()}
+                    </div>
+                    <div className={styles.expenseKpiMeta}>{expense?.poDetail?.poCount ?? 0} {t('sellerDashboard.expense.kpi.poCount', 'PO đã hoàn thành')}</div>
+                  </div>
+                  {expensePieSlices.slice(0, 1).map((s) => (
+                    <div key={s.type} className={styles.expenseKpiCard} style={{ background: `${s.color}14`, border: `1px solid ${s.color}30` }}>
+                      <div className={styles.expenseKpiLabel}>{t('sellerDashboard.expense.kpi.largest', 'Chi phí lớn nhất')}</div>
+                      <div className={styles.expenseKpiValue} style={{ color: s.color }}>{formatCurrency(s.value)}</div>
+                      <div className={styles.expenseKpiMeta} style={{ color: s.color }}>{s.name}</div>
+                    </div>
+                  ))}
+                  {(() => {
+                    const total = expensePieSlices.reduce((s, x) => s + x.value, 0);
+                    const top = expensePieSlices[0];
+                    if (!top || total === 0) {
+return null;
+}
+                    return (
+                      <div className={styles.expenseKpiCard} style={{ background: '#fefce8', border: '1px solid #fef08a' }}>
+                        <div className={styles.expenseKpiLabel}>{t('sellerDashboard.expense.kpi.topShare', 'Tỷ trọng cao nhất')}</div>
+                        <div className={styles.expenseKpiValue} style={{ color: '#b45309' }}>{total > 0 ? ((top.value / total) * 100).toFixed(1) : 0}%</div>
+                        <div className={styles.expenseKpiMeta} style={{ color: '#b45309' }}>{top.name}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              {/* Donut Chart */}
+              <div className={styles.expenseChartContainer}>
                 {(loading || expenseLoading) ? (
                   <div className={styles.loadingCenter}>
                     <Spin />
                   </div>
                 ) : expensePieSlices.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={expensePieSlices}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={52}
-                        outerRadius={82}
-                        paddingAngle={2}
-                      >
-                        {expensePieSlices.map((entry) => (
-                          <Cell key={entry.type} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(value)} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className={styles.expenseDonutWrapper}>
+                    <div className={styles.expenseDonutCenter}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={expensePieSlices}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={65}
+                            outerRadius={105}
+                            paddingAngle={2}
+                          >
+                            {expensePieSlices.map((entry) => (
+                              <Cell key={entry.type} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<ExpenseTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className={styles.expenseDonutLabel}>
+                        <div className={styles.expenseDonutLabelSub}>Tổng chi phí</div>
+                        <div className={styles.expenseDonutLabelTotal}>
+                          {formatCurrency(expensePieSlices.reduce((s, x) => s + x.value, 0))}
+                        </div>
+                      </div>
+                    </div>
+                    {renderExpenseLegend()}
+                  </div>
                 ) : (
                   <div className={styles.emptyState}>
                     <p>{t('sellerDashboard.expense.noData', 'Không có dữ liệu chi phí')}</p>
                   </div>
                 )}
               </div>
-              {expensePieSlices.length > 0 && renderExpenseLegend()}
-              {expense?.poDetail?.poCount > 0 && (
-                <span className={styles.pieSourceNote}>
-                  {t('sellerDashboard.expense.source', 'Nguồn: {{count}} PO đã hoàn thành', { count: expense.poDetail.poCount })}
-                </span>
-              )}
             </div>
           </Card>
 
@@ -1078,7 +1302,7 @@ const SellerDashboard = () => {
           >
             <div className={styles.erpSectionHeader}>
               <div className={styles.erpSectionTitleRow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" strokeWidth="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" strokeWidth="2">
                   <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -1087,17 +1311,48 @@ const SellerDashboard = () => {
                   — {categoryPeriodLabels[categoryPeriod] ?? categoryPeriod}
                 </span>
               </div>
-              <Segmented
-                size="small"
-                value={categoryPeriod}
-                onChange={(val) => setCategoryPeriod(val)}
-                options={[
-                  { label: t('sellerDashboard.segmented.week', 'Tuần'), value: 'daily' },
-                  { label: t('sellerDashboard.segmented.month', 'Tháng'), value: 'monthly' },
-                  { label: t('sellerDashboard.segmented.quarter', 'Quý'), value: 'quarterly' },
-                  { label: t('sellerDashboard.segmented.year', 'Năm'), value: 'yearly' },
-                ]}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Segmented
+                  size="small"
+                  value={categoryPeriod}
+                  onChange={(val) => handleErpPeriodChange(val, setCategoryPeriod, setCategoryCustomRange, setCategoryPickerOpen)}
+                  options={getErpPeriodOptions(t)}
+                />
+                {categoryPeriod === 'custom' && (
+                  <>
+                    <RangePicker
+                      open={categoryPickerOpen}
+                      value={[
+                        categoryCustomRange ? dayjs(categoryCustomRange.startDate) : null,
+                        categoryCustomRange ? dayjs(categoryCustomRange.endDate) : null,
+                      ]}
+                      onChange={(dates) => {
+                        if (dates && dates[0] && dates[1]) {
+                          setCategoryCustomRange({
+                            startDate: dates[0].format('YYYY-MM-DD'),
+                            endDate: dates[1].format('YYYY-MM-DD'),
+                          });
+                        }
+                        setCategoryPickerOpen(false);
+                      }}
+                      onOpenChange={setCategoryPickerOpen}
+                      disabledDate={(current) => current && current > dayjs().endOf('day')}
+                      size="small"
+                      style={{ width: 0, padding: 0, opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+                    />
+                    <button
+                      onClick={() => setCategoryPickerOpen(true)}
+                      className={styles.periodBtn}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                    >
+                      <Calendar size={13} />
+                      {categoryCustomRange
+                        ? `${dayjs(categoryCustomRange.startDate).format('DD/MM/YYYY')} – ${dayjs(categoryCustomRange.endDate).format('DD/MM/YYYY')}`
+                        : t('sellerDashboard.period.custom', 'Tùy chỉnh')}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div className={styles.erpSectionBody}>
               {categoryLoading ? (
@@ -1106,26 +1361,106 @@ const SellerDashboard = () => {
                 </div>
               ) : categoryChartData.length > 0 ? (
                 <>
-                  <div className={styles.pieChartContainer}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={categoryChartData}
-                          dataKey="totalRevenue"
-                          nameKey="categoryName"
-                          innerRadius={52}
-                          outerRadius={82}
-                          paddingAngle={2}
-                        >
-                          {categoryChartData.map((entry) => (
-                            <Cell key={entry.rowKey} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(value)} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  {/* KPI Strip */}
+                  <div className={styles.categoryKpiStrip}>
+                    <div className={styles.categoryKpiCard} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                      <div className={styles.categoryKpiLabel}>{t('sellerDashboard.category.kpi.totalRevenue', 'Tổng doanh thu')}</div>
+                      <div className={styles.categoryKpiValue} style={{ color: '#15803d' }}>
+                        {(() => {
+                          const total = categoryChartData.reduce((s, x) => s + x.totalRevenue, 0);
+                          return formatCurrency(total);
+                        })()}
+                      </div>
+                      <div className={styles.categoryKpiMeta}>{categoryChartData.length} {t('sellerDashboard.category.kpi.categories', 'danh mục')}</div>
+                    </div>
+                    {categoryChartData[0] && (
+                      <div className={styles.categoryKpiCard} style={{ background: `${categoryChartData[0].color}14`, border: `1px solid ${categoryChartData[0].color}30` }}>
+                        <div className={styles.categoryKpiLabel}>{t('sellerDashboard.category.kpi.topCategory', 'Danh mục dẫn đầu')}</div>
+                        <div className={styles.categoryKpiValue} style={{ color: categoryChartData[0].color }}>{formatCurrency(categoryChartData[0].totalRevenue)}</div>
+                        <div className={styles.categoryKpiMeta} style={{ color: categoryChartData[0].color }}>{categoryChartData[0].categoryName}</div>
+                      </div>
+                    )}
+                    {(() => {
+                      const total = categoryChartData.reduce((s, x) => s + x.totalRevenue, 0);
+                      const top = categoryChartData[0];
+                      if (!top || total === 0) {
+return null;
+}
+                      return (
+                        <div className={styles.categoryKpiCard} style={{ background: '#fefce8', border: '1px solid #fef08a' }}>
+                          <div className={styles.categoryKpiLabel}>{t('sellerDashboard.category.kpi.topShare', 'Tỷ trọng cao nhất')}</div>
+                          <div className={styles.categoryKpiValue} style={{ color: '#b45309' }}>{top.revenuePercent}%</div>
+                          <div className={styles.categoryKpiMeta} style={{ color: '#b45309' }}>{top.categoryName}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  {renderCategoryLegend()}
+
+                  {/* Chart + Legend layout */}
+                  <div className={styles.categoryChartSection}>
+                    {/* Donut */}
+                    <div className={styles.categoryDonutWrapper}>
+                      <div className={styles.categoryDonutCenter}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryChartData}
+                              dataKey="totalRevenue"
+                              nameKey="categoryName"
+                              innerRadius={65}
+                              outerRadius={105}
+                              paddingAngle={2}
+                            >
+                              {categoryChartData.map((entry) => (
+                                <Cell key={entry.rowKey} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => formatCurrency(value)} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className={styles.categoryDonutLabel}>
+                          <div className={styles.categoryDonutLabelSub}>{t('sellerDashboard.category.topCategoryLabel', 'Top Danh mục')}</div>
+                          <div className={styles.categoryDonutLabelTop} style={{ color: categoryChartData[0]?.color }}>
+                            #{categoryChartData[0]?.categoryName}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Legend */}
+                    <div className={styles.categoryLegendSection}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                        {t('sellerDashboard.category.distribution', 'Phân bố theo doanh thu')}
+                      </div>
+                      {renderCategoryLegend()}
+                    </div>
+                  </div>
+
+                  {/* Featured Top Category Card */}
+                  {categoryChartData[0] && (
+                    <div className={styles.categoryFeaturedCard} style={{ borderColor: `${categoryChartData[0].color}30`, background: `linear-gradient(135deg, ${categoryChartData[0].color}08 0%, ${categoryChartData[0].color}03 100%)` }}>
+                      <div className={styles.categoryFeaturedLeft}>
+                        <div className={styles.categoryFeaturedBadge}>
+                          <TrendingUp size={14} color={categoryChartData[0].color} />
+                          <span>{t('sellerDashboard.category.topCategoryBadge', 'Top Category')}</span>
+                        </div>
+                        <div className={styles.categoryFeaturedName}>{categoryChartData[0].categoryName}</div>
+                        <div className={styles.categoryFeaturedRevenue} style={{ color: categoryChartData[0].color }}>
+                          {formatCurrency(categoryChartData[0].totalRevenue)}
+                        </div>
+                      </div>
+                      <div className={styles.categoryFeaturedRight}>
+                        <div className={styles.categoryFeaturedStat}>
+                          <span className={styles.categoryFeaturedStatValue}>{categoryChartData[0].revenuePercent}%</span>
+                          <span className={styles.categoryFeaturedStatLabel}>{t('sellerDashboard.category.shareLabel', 'Tỷ trọng')}</span>
+                        </div>
+                        <div className={styles.categoryFeaturedStat}>
+                          <span className={styles.categoryFeaturedStatValue}>#1</span>
+                          <span className={styles.categoryFeaturedStatLabel}>{t('sellerDashboard.category.rankLabel', 'Hạng')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <span className={styles.pieSourceNote}>
                     {t('sellerDashboard.category.source', 'Nguồn: doanh thu theo danh mục — {{count}} danh mục trong kỳ', { count: categoryChartData.length })}
                   </span>
@@ -1143,34 +1478,342 @@ const SellerDashboard = () => {
           </Card>
         </div>
 
+        {/* ── 6) Customer Age Analytics ── */}
+        <div className={styles.ageAnalyticsBlock}>
+        <Card
+          className={styles.erpSectionCard}
+          styles={{ body: { padding: 0 } }}
+        >
+          <div className={styles.erpSectionHeader}>
+            <div className={styles.erpSectionTitleRow}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 3.13a4 4 0 010 7.75" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className={styles.erpSectionTitle}>
+                {t('sellerDashboard.ageAnalytics.cardTitle', 'Phân tích độ tuổi khách hàng')}
+              </span>
+              <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                {ageAnalytics?.periodLabel || ''}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Segmented
+                size="small"
+                value={agePeriod}
+                onChange={(val) => handleErpPeriodChange(val, setAgePeriod, setAgeCustomRange, setAgePickerOpen)}
+                options={getErpPeriodOptions(t)}
+              />
+              {agePeriod === 'custom' && (
+                <>
+                  <RangePicker
+                    open={agePickerOpen}
+                    value={[
+                      ageCustomRange ? dayjs(ageCustomRange.startDate) : null,
+                      ageCustomRange ? dayjs(ageCustomRange.endDate) : null,
+                    ]}
+                    onChange={(dates) => {
+                      if (dates && dates[0] && dates[1]) {
+                        setAgeCustomRange({
+                          startDate: dates[0].format('YYYY-MM-DD'),
+                          endDate: dates[1].format('YYYY-MM-DD'),
+                        });
+                      }
+                      setAgePickerOpen(false);
+                    }}
+                    onOpenChange={setAgePickerOpen}
+                    disabledDate={(current) => current && current > dayjs().endOf('day')}
+                    size="small"
+                    style={{ width: 0, padding: 0, opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+                  />
+                  <button
+                    onClick={() => setAgePickerOpen(true)}
+                    className={styles.periodBtn}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                  >
+                    <Calendar size={13} />
+                    {ageCustomRange
+                      ? `${dayjs(ageCustomRange.startDate).format('DD/MM/YYYY')} – ${dayjs(ageCustomRange.endDate).format('DD/MM/YYYY')}`
+                      : t('sellerDashboard.period.custom', 'Tùy chỉnh')}
+                  </button>
+                </>
+              )}
+              <Button
+                type="primary"
+                size="small"
+                icon={<TrendingUp size={13} />}
+                onClick={() => setAgeAnalyticsModalOpen(true)}
+                style={{ background: '#3b82f6', borderColor: '#3b82f6', flexShrink: 0 }}
+              >
+                {t('sellerDashboard.ageAnalytics.viewDetail', 'Chi tiết')}
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles.erpSectionBody}>
+            {ageAnalyticsLoading ? (
+              <div className={styles.loadingCenter}>
+                <Spin />
+              </div>
+            ) : ageAnalytics && ageAnalytics.ageGroups && ageAnalytics.ageGroups.some((g) => g.customers > 0) ? (
+              (() => {
+                const validGroups = ageAnalytics.ageGroups
+                  .filter((g) => g.label !== 'Unknown' && g.customers > 0)
+                  .sort((a, b) => {
+                    const order = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+                    return order.indexOf(a.label) - order.indexOf(b.label);
+                  });
+
+                const donutData = validGroups.map((g) => ({
+                  name: formatAgeGroup(g.label),
+                  value: g.revenue || 0,
+                  label: g.label,
+                }));
+
+                const barData = validGroups.map((g) => ({
+                  name: formatAgeGroup(g.label),
+                  label: g.label,
+                  'Khách hàng': g.customers,
+                  'Doanh thu': g.revenue,
+                }));
+
+                const topGroup = validGroups[0] || null;
+
+                return (
+                  <>
+                    {/* KPI Strip */}
+                    <div className={styles.ageKpiStrip}>
+                      <div className={styles.ageKpiCard} style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                        <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.totalCustomers', 'Tổng khách hàng')}</div>
+                        <div className={styles.ageKpiValue} style={{ color: '#1d4ed8' }}>
+                          {(ageAnalytics.totalCustomers || 0).toLocaleString()}
+                        </div>
+                        <div className={styles.ageKpiMeta}>{ageAnalytics.totalOrders?.toLocaleString()} {t('sellerDashboard.ageAnalytics.ordersUnit', 'đơn')}</div>
+                      </div>
+                      <div className={styles.ageKpiCard} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                        <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.totalRevenue', 'Tổng doanh thu')}</div>
+                        <div className={styles.ageKpiValue} style={{ color: '#15803d' }}>
+                          {formatCurrency(ageAnalytics.totalRevenue || 0)}
+                        </div>
+                        <div className={styles.ageKpiMeta}>TB {formatCurrency(ageAnalytics.avgOrderValue || 0)}/{t('sellerDashboard.ageAnalytics.ordersUnit', 'đơn')}</div>
+                      </div>
+                      {topGroup && (
+                        <div className={styles.ageKpiCard} style={{ background: `${getAgeColor(topGroup.label)}14`, border: `1px solid ${getAgeColor(topGroup.label)}30` }}>
+                          <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.primaryAgeGroup', 'Nhóm tuổi chính')}</div>
+                          <div className={styles.ageKpiValue} style={{ color: getAgeColor(topGroup.label) }}>
+                            {formatAgeGroup(topGroup.label)}
+                          </div>
+                          <div className={styles.ageKpiMeta} style={{ color: getAgeColor(topGroup.label) }}>
+                            {topGroup.percent}% DT · {topGroup.customers.toLocaleString()} KH
+                          </div>
+                        </div>
+                      )}
+                      <div className={styles.ageKpiCard} style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+                        <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.activeGroups', 'Nhóm hoạt động')}</div>
+                        <div className={styles.ageKpiValue} style={{ color: '#7c3aed' }}>{validGroups.length}</div>
+                        <div className={styles.ageKpiMeta}>{t('sellerDashboard.ageAnalytics.groupUnit', 'nhóm tuổi')}</div>
+                      </div>
+                    </div>
+
+                    {/* Chart + Legend Layout */}
+                    <div className={styles.ageChartSection}>
+                      {/* Donut */}
+                      <div className={styles.ageDonutWrapper}>
+                        <div className={styles.ageDonutCenter}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={donutData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={62}
+                                outerRadius={100}
+                                paddingAngle={2}
+                                strokeWidth={0}
+                              >
+                                {donutData.map((entry) => (
+                                  <Cell key={entry.label} fill={getAgeColor(entry.label)} />
+                                ))}
+                              </Pie>
+                              <Tooltip
+                                contentStyle={{
+                                  background: '#1e293b', border: '1px solid #334155',
+                                  borderRadius: 8, fontSize: 12, color: '#f8fafc',
+                                }}
+                                formatter={(value, name) => [formatCurrency(value), name]}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className={styles.ageDonutLabel}>
+                            <div className={styles.ageDonutLabelSub}>Top nhóm</div>
+                            <div className={styles.ageDonutLabelAge} style={{ color: getAgeColor(topGroup?.label) }}>
+                              {formatAgeGroup(topGroup?.label)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Legend bars */}
+                      <div className={styles.ageLegendSection}>
+                        <div className={styles.ageLegendTitle}>
+                          {t('sellerDashboard.ageAnalytics.distribution', 'Phân bố khách hàng')}
+                        </div>
+                        {validGroups.map((g) => (
+                          <div key={g.label} className={styles.ageLegendRow}>
+                            <div className={styles.ageLegendRowHeader}>
+                              <div className={styles.ageLegendLabelGroup}>
+                                <span className={styles.ageLegendDot} style={{ background: getAgeColor(g.label) }} />
+                                <span className={styles.ageLegendName}>{formatAgeGroup(g.label)}</span>
+                              </div>
+                              <div className={styles.ageLegendStats}>
+                                <span className={styles.ageLegendCustomers}>
+                                  {g.customers.toLocaleString()} KH
+                                </span>
+                                <span className={styles.ageLegendPercent} style={{ color: getAgeColor(g.label) }}>
+                                  {g.percent}%
+                                </span>
+                              </div>
+                            </div>
+                            <Progress
+                              percent={g.percent}
+                              size="small"
+                              strokeColor={getAgeColor(g.label)}
+                              showInfo={false}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dual-series bar chart */}
+                    <div className={styles.ageBarChartSection}>
+                      <div className={styles.ageBarChartTitle}>
+                        {t('sellerDashboard.ageAnalytics.customerCompare', 'So sánh khách hàng & doanh thu theo nhóm tuổi')}
+                      </div>
+                      <div className={styles.ageBarChartLegend}>
+                        <div className={styles.ageBarChartLegendItem}>
+                          <div className={styles.ageBarChartLegendDot} style={{ background: '#3b82f6' }} />
+                          <span>Khách hàng</span>
+                        </div>
+                        <div className={styles.ageBarChartLegendItem}>
+                          <div className={styles.ageBarChartLegendDot} style={{ background: '#dbeafe' }} />
+                          <span>Doanh thu</span>
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={barData} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} />
+                          <YAxis
+                            yAxisId="left"
+                            tick={{ fontSize: 10, fill: '#94a3b8' }}
+                            tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
+                          />
+                          <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            tick={{ fontSize: 10, fill: '#94a3b8' }}
+                            tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: '#1e293b', border: '1px solid #334155',
+                              borderRadius: 8, fontSize: 12, color: '#f8fafc',
+                            }}
+                            formatter={(value, name) => {
+                              if (name === 'Doanh thu') {
+return [formatCurrency(value), name];
+}
+                              return [value.toLocaleString(), name];
+                            }}
+                          />
+                          <Bar yAxisId="left" dataKey="Khách hàng" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                            {barData.map((entry) => (
+                              <Cell key={entry.label} fill="#3b82f6" />
+                            ))}
+                          </Bar>
+                          <Bar yAxisId="right" dataKey="Doanh thu" radius={[4, 4, 0, 0]} maxBarSize={32} fill="#dbeafe">
+                            {barData.map((entry) => (
+                              <Cell key={entry.label} fill="#dbeafe" stroke="#3b82f6" strokeWidth={1} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                );
+              })()
+            ) : (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center', padding: '32px 16px', gap: 10,
+              }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%', background: '#f1f5f9',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M16 3.13a4 4 0 010 7.75" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontWeight: 500, color: '#64748b', fontSize: 13, marginBottom: 4 }}>
+                    {t('sellerDashboard.ageAnalytics.noDataTitle', 'Chưa có dữ liệu độ tuổi')}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                    {t('sellerDashboard.ageAnalytics.noDataHint', 'Dữ liệu sẽ hiển thị khi khách hàng có cập nhật ngày sinh')}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          </Card>
+        </div>
+
         {/* ── Detail Modals ── */}
         <RevenueDetailModal
           open={revenueModalOpen}
           onClose={() => setRevenueModalOpen(false)}
           period={trendPeriod}
+          customDateRange={customDateRange}
           comparison={comparison}
         />
         <OrdersDetailModal
           open={ordersModalOpen}
           onClose={() => setOrdersModalOpen(false)}
           period={trendPeriod}
+          customDateRange={customDateRange}
           comparison={comparison}
         />
         <AOVDetailModal
           open={aovModalOpen}
           onClose={() => setAOVModalOpen(false)}
           period={trendPeriod}
+          customDateRange={customDateRange}
           comparison={comparison}
         />
         <ProfitDetailModal
           open={profitModalOpen}
           onClose={() => setProfitModalOpen(false)}
           period={trendPeriod}
+          customDateRange={customDateRange}
           comparison={comparison}
         />
         <TopProfitProductsModal
           open={topProfitProductsModalOpen}
           onClose={() => setTopProfitProductsModalOpen(false)}
+        />
+
+        <CustomerAgeAnalyticsModal
+          open={ageAnalyticsModalOpen}
+          onClose={() => setAgeAnalyticsModalOpen(false)}
         />
 
       </div>

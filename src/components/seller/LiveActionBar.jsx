@@ -1,7 +1,15 @@
 import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 import PropTypes from 'prop-types';
 
-export default function LiveActionBar({ onDiscard, onGoLive, isLive, isLoading }) {
+export default function LiveActionBar({
+  onDiscard,
+  onGoLive,
+  onContinuePhone,
+  phonePrepLoading,
+  isLive,
+  isLoading,
+}) {
+  const phoneDisabled = isLive || phonePrepLoading;
   return (
     <div className={styles.actionBar}>
       {/* Network status */}
@@ -23,6 +31,18 @@ export default function LiveActionBar({ onDiscard, onGoLive, isLive, isLoading }
           Discard Draft
         </button>
 
+        {onContinuePhone && (
+          <button
+            className={styles.btnContinuePhone}
+            onClick={onContinuePhone}
+            disabled={phoneDisabled}
+            type="button"
+          >
+            <i className={`bi bi-phone ${styles.btnContinuePhoneIcon}`} />
+            Tiếp tục trên điện thoại
+          </button>
+        )}
+
         <button
           className={styles.btnGoLive}
           onClick={onGoLive}
@@ -40,6 +60,8 @@ export default function LiveActionBar({ onDiscard, onGoLive, isLive, isLoading }
 LiveActionBar.propTypes = {
   onDiscard: PropTypes.func,
   onGoLive: PropTypes.func,
+  onContinuePhone: PropTypes.func,
+  phonePrepLoading: PropTypes.bool,
   isLive: PropTypes.bool,
   isLoading: PropTypes.bool,
 };

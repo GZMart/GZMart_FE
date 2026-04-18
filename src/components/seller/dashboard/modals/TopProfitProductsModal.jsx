@@ -55,11 +55,11 @@ export function TopProfitProductsModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [chartData, setChartData] = useState([]);
-  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
+  const [selectedPeriod, setSelectedPeriod] = useState('12months');
 
   useEffect(() => {
     if (open) {
-      setSelectedPeriod('monthly');
+      setSelectedPeriod('12months');
     }
   }, [open]);
 
@@ -106,11 +106,11 @@ export function TopProfitProductsModal({ open, onClose }) {
   }, [open, selectedPeriod]);
 
   const periodShortLabels = {
-    daily: t('sellerDashboard.periodShort.daily', '30 Ngày'),
-    weekly: t('sellerDashboard.periodShort.weekly', '13 Tuần'),
-    monthly: t('sellerDashboard.periodShort.monthly', '12 Tháng'),
-    quarterly: t('sellerDashboard.periodShort.quarterly', '4 Quý'),
-    yearly: t('sellerDashboard.periodShort.yearly', '5 Năm'),
+    '7days':    t('sellerDashboard.periodShort.7days', '7 Days'),
+    '30days':   t('sellerDashboard.periodShort.30days', '30 Days'),
+    '90days':   t('sellerDashboard.periodShort.90days', '90 Days'),
+    '12months': t('sellerDashboard.periodShort.12months', '12 Months'),
+    yearly:   t('sellerDashboard.periodShort.yearly', 'Last Year'),
   };
 
   const columns = [
@@ -224,7 +224,7 @@ export function TopProfitProductsModal({ open, onClose }) {
     >
       <Spin spinning={loading} tip={t('sellerDashboard.topProfitProducts.loading', 'Đang tải dữ liệu…')}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
-          {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map((p) => (
+          {['7days', '30days', '90days', '12months', 'yearly'].map((p) => (
             <button
               key={p}
               onClick={() => setSelectedPeriod(p)}

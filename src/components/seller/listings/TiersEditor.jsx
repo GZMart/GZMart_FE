@@ -1,12 +1,72 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Form, Button, Row, Col, Badge, Modal } from 'react-bootstrap';
+import Select from 'react-select';
 import { TIER_TYPES, TIER_TYPE_KEYS, CUSTOM_OPTION } from '../../../constants/tierTypes';
+import { getProductDrawerSelectStyles } from '../../../utils/productDrawerSelectStyles';
+import drawerStyles from '../../../assets/styles/seller/ProductDrawer.module.css';
+
+function TierPresetSelect({
+  tier,
+  tierType,
+  tierIndex,
+  optionIndex,
+  optionValue,
+  disabled,
+  getSelectablePredefinedOptions,
+  onSelect,
+  styles: selectStyles,
+}) {
+  const selectable = getSelectablePredefinedOptions(
+    tier,
+    tierType.options,
+    optionIndex,
+    optionValue
+  );
+  const rsOptions = [
+    ...selectable.map((opt) => ({ value: opt, label: opt })),
+    { value: CUSTOM_OPTION, label: CUSTOM_OPTION },
+  ];
+  const selected = optionValue
+    ? rsOptions.find((o) => o.value === optionValue) || { value: optionValue, label: optionValue }
+    : null;
+
+  return (
+    <div className={drawerStyles.categorySelectWrap}>
+      <Select
+        inputId={`tier-${tierIndex}-opt-${optionIndex}-input`}
+        instanceId={`tier-${tierIndex}-opt-${optionIndex}`}
+        options={rsOptions}
+        value={selected}
+        onChange={(opt) => onSelect(opt?.value ?? '')}
+        placeholder={`Search or select ${tier.name.toLowerCase()}…`}
+        isClearable
+        isSearchable
+        isDisabled={disabled}
+        styles={selectStyles}
+        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+        menuPosition="fixed"
+        menuPlacement="auto"
+        noOptionsMessage={() => 'No matches'}
+        filterOption={(option, rawInput) => {
+          const q = (rawInput || '').trim().toLowerCase();
+          if (!q) {
+            return true;
+          }
+          const label = String(option.label || '').toLowerCase();
+          return label.includes(q);
+        }}
+      />
+    </div>
+  );
+}
 
 const TiersEditor = ({ tiers, onChange, disabled }) => {
   const MAX_TIERS = 3;
   const MAX_OPTIONS = 20;
   const [showAddTierModal, setShowAddTierModal] = useState(false);
   const [selectedTierType, setSelectedTierType] = useState('');
+
+  const tierOptionSelectStyles = useMemo(() => getProductDrawerSelectStyles(false), []);
 
   // Get available tier types (not already used)
   const getAvailableTierTypes = () => {
@@ -173,25 +233,17 @@ const TiersEditor = ({ tiers, onChange, disabled }) => {
                       disabled={disabled}
                     />
                   ) : (
-                    // Dropdown mode with predefined options
-                    <Form.Select
-                      value={option.value}
-                      onChange={(e) => handleOptionChange(tierIndex, optionIndex, e.target.value)}
+                    <TierPresetSelect
+                      tier={tier}
+                      tierType={tierType}
+                      tierIndex={tierIndex}
+                      optionIndex={optionIndex}
+                      optionValue={option.value}
                       disabled={disabled}
-                    >
-                      <option value="">Select {tier.name.toLowerCase()}</option>
-                      {getSelectablePredefinedOptions(
-                        tier,
-                        tierType.options,
-                        optionIndex,
-                        option.value
-                      ).map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                      <option value={CUSTOM_OPTION}>{CUSTOM_OPTION}</option>
-                    </Form.Select>
+                      getSelectablePredefinedOptions={getSelectablePredefinedOptions}
+                      onSelect={(val) => handleOptionChange(tierIndex, optionIndex, val)}
+                      styles={tierOptionSelectStyles}
+                    />
                   )}
                 </Col>
                 <Col md={2}>

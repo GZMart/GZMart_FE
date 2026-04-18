@@ -412,7 +412,21 @@ const AdjustModal = ({ item, onClose, onSave, saving }) => {
   const [newCostPrice, setNewCostPrice] = useState(
     String(item.costPrice > 0 ? item.costPrice : '')
   );
+  const [costPriceFocused, setCostPriceFocused] = useState(false);
   const [note, setNote] = useState('');
+
+  // Format raw input string to VND display (strips non-numeric)
+  const formatVND = (val) => {
+    const num = parseFloat(String(val).replace(/[^0-9.]/g, '')) || 0;
+    return num.toLocaleString('vi-VN');
+  };
+
+  // Strip non-numeric (keep dot) for storing raw number
+  const sanitizeRaw = (val) => String(val).replace(/[^0-9.]/g, '');
+
+  // Raw display value — shows digits only during typing, formatted otherwise
+  const costPriceDisplay =
+    newCostPrice === '' ? '' : costPriceFocused ? newCostPrice : formatVND(newCostPrice);
 
   const delta = Number(newStock) - item.stock;
   const stockChanged = newStock !== String(item.stock);
@@ -516,12 +530,13 @@ const AdjustModal = ({ item, onClose, onSave, saving }) => {
               <div className={styles.inputAddonWrap}>
                 <span className={styles.inputAddonPrefix}>₫</span>
                 <input
-                  type="number"
-                  min="0"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   className={`${styles.formInput} ${styles.formInputWithPrefix}`}
-                  value={newCostPrice}
-                  onChange={(e) => setNewCostPrice(e.target.value)}
+                  value={costPriceDisplay}
+                  onChange={(e) => setNewCostPrice(sanitizeRaw(e.target.value))}
+                  onFocus={() => setCostPriceFocused(true)}
+                  onBlur={() => setCostPriceFocused(false)}
                   placeholder={
                     item.costPrice > 0 ? item.costPrice.toLocaleString('vi-VN') : 'Enter cost price'
                   }

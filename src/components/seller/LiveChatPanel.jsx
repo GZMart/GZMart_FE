@@ -1,13 +1,45 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
+import { useMediaQuery } from '@hooks/useMediaQuery';
 import { DataPacket_Kind } from 'livekit-client';
 import livestreamService from '@services/api/livestreamService';
 import socketService from '@services/socket/socketService';
 import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 import OrderSyntaxPanel from './OrderSyntaxPanel';
 
+function resolveUserAvatar(u) {
+  if (!u) {
+    return '';
+  }
+  const url = u.avatar || u.profileImage;
+  return typeof url === 'string' && url.trim() ? url.trim() : '';
+}
+
+function SellerChatAvatar({ avatarUrl, initials, className }) {
+  const [imgErr, setImgErr] = useState(false);
+  useEffect(() => {
+    setImgErr(false);
+  }, [avatarUrl]);
+  const show = Boolean(avatarUrl) && !imgErr;
+  return (
+    <div className={className}>
+      {show ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className={styles.chatAvatarImg}
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+}
+
 export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = [], pinnedProductId = null, onEditProducts, onRemoveProduct, onPinProduct, onUnpinProduct, liveVouchers = [], onEditVouchers, onRemoveVoucher }) {
+  const compactTabs = useMediaQuery('(max-width: 768px)');
   const [activeTab, setActiveTab] = useState('interaction');
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -87,6 +119,7 @@ return;
           isLocal: false,
           timestamp: m.timestamp,
           senderId: m.senderId,
+          avatarUrl: typeof m.avatar === 'string' && m.avatar.trim() ? m.avatar.trim() : '',
         }));
         // Only add messages we don't already have
         const fresh = normalized.filter((m) => !existingIdsRef.current.has(m.id));
@@ -101,6 +134,25 @@ return;
       setRefreshing(false);
     }
   }, [isLive, sessionId]);
+
+  /** Fetch server chat history once per live segment / session (late-joining seller). */
+  const historyFetchKeyRef = useRef('');
+
+  useEffect(() => {
+    if (!isLive) {
+      historyFetchKeyRef.current = '';
+      return;
+    }
+    if (!sessionId) {
+      return;
+    }
+    const key = String(sessionId);
+    if (historyFetchKeyRef.current === key) {
+      return;
+    }
+    historyFetchKeyRef.current = key;
+    void handleRefreshChat();
+  }, [isLive, sessionId, handleRefreshChat]);
 
   // LiveKit room connected → enable chat input
   useEffect(() => {
@@ -124,10 +176,7 @@ return;
 }
 
     socketService.connect(user._id);
-    socketService.emit('livestream_join', {
-      sessionId,
-      displayName: displayNameRef.current,
-    });
+    // livestream_join / livestream_leave — LiveStreamPage (stays active on Analytics tab)
 
     const onSocketChat = (msg) => {
       if (!msg?.content || msg.sessionId !== sessionId) {
@@ -151,6 +200,7 @@ return;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
+          avatarUrl: typeof msg.avatar === 'string' && msg.avatar.trim() ? msg.avatar.trim() : '',
         };
         setMessages((prev) => [...prev, newMsg]);
       } else {
@@ -164,6 +214,7 @@ return;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
+          avatarUrl: typeof msg.avatar === 'string' && msg.avatar.trim() ? msg.avatar.trim() : '',
         };
         setMessages((prev) => [...prev, newMsg]);
       }
@@ -173,7 +224,6 @@ return;
 
     return () => {
       socketService.off('livestream_chat_message', onSocketChat);
-      socketService.emit('livestream_leave', { sessionId });
     };
   }, [isLive, sessionId, user?._id]);
 
@@ -202,6 +252,7 @@ return;
       colorClass: styles.chatAvatarPink,
       text,
       isLocal: true,
+      avatarUrl: resolveUserAvatar(user),
     };
 
     const payloadJson = {
@@ -228,6 +279,7 @@ return;
       displayName: displayNameRef.current,
       userId: sellerIdRef.current,
       role: 'seller',
+      avatar: resolveUserAvatar(user) || undefined,
     });
 
     setMessages((prev) => [...prev, localMsg]);
@@ -242,37 +294,40 @@ return;
   };
 
   return (
-    <div className={styles.rightColumn}>
-      <div className={styles.chatCard}>
+    <div className={styles.chatCard}>
         {/* Tabs */}
         <div className={styles.chatTabs}>
           <button
             className={`${styles.chatTab} ${activeTab === 'interaction' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('interaction')}
             type="button"
+            title="Live Interaction"
           >
-            Live Interaction
+            {compactTabs ? 'Chat' : 'Live Interaction'}
           </button>
           <button
             className={`${styles.chatTab} ${activeTab === 'products' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('products')}
             type="button"
+            title="Product Showcase"
           >
-            Product Showcase
+            {compactTabs ? 'Products' : 'Product Showcase'}
           </button>
           <button
             className={`${styles.chatTab} ${activeTab === 'vouchers' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('vouchers')}
             type="button"
+            title="Vouchers"
           >
-            Vouchers
+            {compactTabs ? 'Vouchers' : 'Vouchers'}
           </button>
           <button
             className={`${styles.chatTab} ${activeTab === 'syntax' ? styles.chatTabActive : ''}`}
             onClick={() => setActiveTab('syntax')}
             type="button"
+            title="Order Syntax"
           >
-            Order Syntax
+            {compactTabs ? 'Orders' : 'Order Syntax'}
           </button>
         </div>
 
@@ -329,9 +384,11 @@ e.currentTarget.style.color = '#8f2e29';
               ) : (
                 messages.map((msg) => (
                   <div className={styles.chatMsg} key={msg.id}>
-                    <div className={`${styles.chatAvatar} ${msg.colorClass}`}>
-                      {msg.initials}
-                    </div>
+                    <SellerChatAvatar
+                      avatarUrl={msg.avatarUrl}
+                      initials={msg.initials}
+                      className={`${styles.chatAvatar} ${msg.colorClass}`}
+                    />
                     <div className={styles.chatMsgContent}>
                       <div className={styles.chatSender}>{msg.sender}</div>
                       <div className={styles.chatText}>{msg.text}</div>
@@ -605,7 +662,6 @@ e.currentTarget.style.color = '#8f2e29';
           </div>
         )}
         </div>
-      </div>
     </div>
   );
 }
