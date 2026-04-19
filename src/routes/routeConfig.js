@@ -89,7 +89,12 @@ const SystemVouchersPage = lazy(() => import('@pages/admin/marketing/SystemVouch
 const SystemVoucherForm = lazy(() => import('@pages/admin/marketing/SystemVoucherForm'));
 const VoucherCampaignsPage = lazy(() => import('@pages/admin/marketing/VoucherCampaignsPage'));
 const VoucherCampaignForm = lazy(() => import('@pages/admin/marketing/VoucherCampaignForm'));
+const AdminFlashCampaignsPage = lazy(() => import('@pages/admin/marketing/AdminFlashCampaignsPage'));
 const AdminBannerAdsPage = lazy(() => import('@pages/admin/AdminBannerAdsPage'));
+const AdminPlatformOrdersPage = lazy(() => import('@pages/admin/AdminPlatformOrdersPage'));
+const AdminRewardWithdrawalsPage = lazy(() => import('@pages/admin/AdminRewardWithdrawalsPage'));
+const AdminRmaQueuePage = lazy(() => import('@pages/admin/AdminRmaQueuePage'));
+const AdminCoinToolsPage = lazy(() => import('@pages/admin/AdminCoinToolsPage'));
 const TestMapPage = lazy(() => import('@pages/admin/TestMapPage'));
 
 // Error Pages
@@ -365,54 +370,54 @@ export const routeConfig = [
     layout: 'erp',
   },
 
-  // ERP Routes (Mini-ERP/Sourcing Module) - Admin & Seller only
+  // ERP (sourcing / PO) — seller-only; không gắn với admin portal
   {
     path: '/seller/erp/dashboard',
     element: ERPDashboard,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
     path: '/seller/erp/suppliers',
     element: SuppliersPage,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
     path: '/seller/erp/suppliers/:id',
     element: SupplierDetailPage,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
     path: '/seller/erp/purchase-orders',
     element: PurchaseOrdersPage,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
     path: '/seller/erp/purchase-orders/create',
     element: CreatePurchaseOrderPage,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
     path: '/seller/erp/purchase-orders/:id/edit',
     element: EditPurchaseOrderPage,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
   {
     path: '/seller/erp/purchase-orders/:id',
     element: PurchaseOrderDetailPage,
     protected: true,
-    allowedRoles: [USER_ROLES.ADMIN, USER_ROLES.SELLER],
+    allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',
   },
 
@@ -642,6 +647,34 @@ export const routeConfig = [
     layout: 'admin',
   },
   {
+    path: '/admin/orders',
+    element: AdminPlatformOrdersPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/reward-withdrawals',
+    element: AdminRewardWithdrawalsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/rma',
+    element: AdminRmaQueuePage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/coin-tools',
+    element: AdminCoinToolsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
     path: '/admin/seller-applications',
     element: SellerApplicationsPage,
     protected: true,
@@ -693,6 +726,13 @@ export const routeConfig = [
   {
     path: '/admin/system-vouchers/:id/edit',
     element: SystemVoucherForm,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
+  },
+  {
+    path: '/admin/flash-campaigns',
+    element: AdminFlashCampaignsPage,
     protected: true,
     allowedRoles: [USER_ROLES.ADMIN],
     layout: 'admin',

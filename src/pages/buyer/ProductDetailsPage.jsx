@@ -602,7 +602,9 @@ setActiveLive(null);
 
   /** Giới hạn số lượng trên UI: pre-order cho phép đặt cao hơn tồn hiện tại */
   const maxOrderQty = useMemo(() => {
-    if (preOrderDaysNum > 0) return 99;
+    if (preOrderDaysNum > 0) {
+return 99;
+}
     return Math.max(0, currentStock);
   }, [preOrderDaysNum, currentStock]);
 

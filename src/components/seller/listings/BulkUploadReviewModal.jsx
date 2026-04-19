@@ -100,12 +100,10 @@ const BulkUploadReviewModal = ({ items, onBack, onConfirm, confirming }) => {
     [categories],
   );
 
-  const allHaveCategory = useMemo(() => {
-    return items.every((it) => {
+  const allHaveCategory = useMemo(() => items.every((it) => {
       const id = selection[it.index];
       return id && String(id).trim() !== '';
-    });
-  }, [items, selection]);
+    }), [items, selection]);
 
   const handleSelect = (index, categoryId) => {
     setSelection((prev) => ({ ...prev, [index]: categoryId }));

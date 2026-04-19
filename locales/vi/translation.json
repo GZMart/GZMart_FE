@@ -524,6 +524,8 @@
     "loading": "Đang tải...",
     "empty": "Không có thông báo nào",
     "recent": "Thông Báo Mới Nhận",
+    "campaign_warning_badge": "Cảnh cáo",
+    "campaign_stopped_badge": "Dừng chiến dịch",
     "view_all": "Xem Tất Cả",
     "view_details": "Xem Chi Tiết",
     "page_title": "Thông báo của bạn",
@@ -535,7 +537,8 @@
       "flash_sale": "Flash Sale",
       "voucher": "Voucher",
       "wallet": "Cập Nhật Ví",
-      "system": "Cập Nhật Shopee"
+      "system": "Cập Nhật Shopee",
+      "campaign_admin": "Campaign / Quản trị"
     }
   },
   "common": {

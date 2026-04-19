@@ -201,6 +201,22 @@ export const dashboardService = {
     await axiosClient.get(`${BASE_URL}/admin/all`, { params }),
 
   /**
+   * Admin — all reward point withdrawal requests
+   * @param {object} params - status, sellerId, startDate, endDate, limit, skip
+   */
+  getAdminRewardPointWithdrawals: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/admin/reward-point-withdrawals`, { params }),
+
+  /**
+   * Admin — approve / reject withdrawal
+   */
+  processAdminRewardPointWithdrawal: async (transactionId, body) =>
+    await axiosClient.put(
+      `${BASE_URL}/admin/reward-point-withdrawals/${transactionId}/process`,
+      body,
+    ),
+
+  /**
    * Get seller order counts by status (for Immediate To-Do section)
    * @returns {Promise} { pending, confirmed, packing, shipping, toShip, cancellationCount, rmaCount }
    */

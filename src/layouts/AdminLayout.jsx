@@ -5,27 +5,42 @@ import { ADMIN_ROUTES } from '@constants/routes';
 import styles from '@assets/styles/admin/AdminLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
 
+/** Only list routes declared in routeConfig (avoid 404 links). */
 const NAV_ITEMS = [
   {
-    section: 'OVERVIEW',
+    section: 'Overview',
     items: [{ to: ADMIN_ROUTES.DASHBOARD, icon: 'bi bi-speedometer2', label: 'Dashboard' }],
   },
   {
-    section: 'USER MANAGEMENT',
+    section: 'Users & marketplace',
     items: [
       { to: ADMIN_ROUTES.USERS, icon: 'bi bi-people', label: 'Users' },
       { to: ADMIN_ROUTES.SELLER_APPLICATIONS, icon: 'bi bi-shop', label: 'Seller Applications' },
+      { to: ADMIN_ROUTES.DISPUTES, icon: 'bi bi-shield-exclamation', label: 'Disputes' },
     ],
   },
   {
-    section: 'CATALOG',
+    section: 'Operations',
+    items: [
+      { to: ADMIN_ROUTES.PLATFORM_ORDERS, icon: 'bi bi-receipt', label: 'Platform orders' },
+      {
+        to: ADMIN_ROUTES.REWARD_WITHDRAWALS,
+        icon: 'bi bi-cash-coin',
+        label: 'Reward withdrawals',
+      },
+      { to: ADMIN_ROUTES.RMA_QUEUE, icon: 'bi bi-arrow-return-left', label: 'RMA / Returns' },
+      { to: ADMIN_ROUTES.COIN_TOOLS, icon: 'bi bi-coin', label: 'GZCoin (admin)' },
+    ],
+  },
+  {
+    section: 'Catalog',
     items: [
       { to: ADMIN_ROUTES.CATEGORIES, icon: 'bi bi-folder', label: 'Categories' },
       { to: ADMIN_ROUTES.ATTRIBUTES, icon: 'bi bi-tags', label: 'Attributes' },
     ],
   },
   {
-    section: 'MARKETING',
+    section: 'Marketing & ads',
     items: [
       {
         to: ADMIN_ROUTES.SYSTEM_VOUCHERS,
@@ -33,55 +48,29 @@ const NAV_ITEMS = [
         label: 'System Vouchers',
         matchPrefix: true,
       },
-{
-  to: ADMIN_ROUTES.VOUCHER_CAMPAIGNS,
-  icon: 'bi bi-calendar-heart',
-  label: 'Voucher Campaigns',
-  matchPrefix: true,
-},
-{
-  to: ADMIN_ROUTES.BANNER_ADS,
-  icon: 'bi bi-layout-wtf',
-  label: 'Banner Ads',
-  matchPrefix: true,
-},
-    ],
-  },
-  {
-    section: 'SYSTEM',
-    items: [
-      { to: ADMIN_ROUTES.SYSTEM_CONFIG, icon: 'bi bi-gear', label: 'Configuration' },
-      { to: ADMIN_ROUTES.SITE_SETTINGS, icon: 'bi bi-globe', label: 'Site Settings' },
-      { to: ADMIN_ROUTES.PAYMENT_SETTINGS, icon: 'bi bi-credit-card', label: 'Payment Settings' },
-    ],
-  },
-  {
-    section: 'CONTENT',
-    items: [
-      { to: ADMIN_ROUTES.PAGES, icon: 'bi bi-file-earmark', label: 'Pages' },
-      { to: ADMIN_ROUTES.BANNERS, icon: 'bi bi-image', label: 'Banners' },
-    ],
-  },
-  {
-    section: 'ERP MONITORING',
-    items: [
       {
-        to: '/seller/erp/dashboard',
-        icon: 'bi bi-eye',
-        label: 'ERP Overview',
+        to: ADMIN_ROUTES.FLASH_CAMPAIGNS,
+        icon: 'bi bi-lightning-charge',
+        label: 'Flash sale (platform-wide)',
         matchPrefix: true,
-        matchPath: '/erp',
-        badge: 'VIEW ONLY',
+      },
+      {
+        to: ADMIN_ROUTES.VOUCHER_CAMPAIGNS,
+        icon: 'bi bi-calendar-heart',
+        label: 'Voucher Campaigns',
+        matchPrefix: true,
+      },
+      {
+        to: ADMIN_ROUTES.BANNER_ADS,
+        icon: 'bi bi-layout-wtf',
+        label: 'Banner Ads',
+        matchPrefix: true,
       },
     ],
   },
   {
-    section: 'MONITORING',
-    items: [
-      { to: ADMIN_ROUTES.DISPUTES, icon: 'bi-shield-exclamation', label: 'Disputes' },
-      { to: ADMIN_ROUTES.ACTIVITY_LOGS, icon: 'bi bi-activity', label: 'Activity Logs' },
-      { to: ADMIN_ROUTES.SYSTEM_HEALTH, icon: 'bi bi-heart-pulse', label: 'System Health' },
-    ],
+    section: 'System',
+    items: [{ to: ADMIN_ROUTES.SYSTEM_CONFIG, icon: 'bi bi-gear', label: 'Configuration' }],
   },
 ];
 
@@ -92,15 +81,15 @@ const PAGE_TITLES = {
   [ADMIN_ROUTES.CATEGORIES]: 'Categories',
   [ADMIN_ROUTES.ATTRIBUTES]: 'Attributes',
   [ADMIN_ROUTES.SYSTEM_VOUCHERS]: 'System Vouchers',
+  [ADMIN_ROUTES.FLASH_CAMPAIGNS]: 'Flash sale — Admin',
+  [ADMIN_ROUTES.VOUCHER_CAMPAIGNS]: 'Voucher Campaigns',
   [ADMIN_ROUTES.SYSTEM_CONFIG]: 'Configuration',
-  [ADMIN_ROUTES.SITE_SETTINGS]: 'Site Settings',
-  [ADMIN_ROUTES.PAYMENT_SETTINGS]: 'Payment Settings',
-  [ADMIN_ROUTES.PAGES]: 'Pages',
-  [ADMIN_ROUTES.BANNERS]: 'Banners',
   [ADMIN_ROUTES.BANNER_ADS]: 'Banner Ads Management',
   [ADMIN_ROUTES.DISPUTES]: 'Disputes',
-  [ADMIN_ROUTES.ACTIVITY_LOGS]: 'Activity Logs',
-  [ADMIN_ROUTES.SYSTEM_HEALTH]: 'System Health',
+  [ADMIN_ROUTES.PLATFORM_ORDERS]: 'Platform orders',
+  [ADMIN_ROUTES.REWARD_WITHDRAWALS]: 'Reward withdrawals',
+  [ADMIN_ROUTES.RMA_QUEUE]: 'RMA / Returns',
+  [ADMIN_ROUTES.COIN_TOOLS]: 'GZCoin (admin)',
 };
 
 const AdminLayout = ({ children }) => {
@@ -124,7 +113,7 @@ const AdminLayout = ({ children }) => {
   const pageTitle =
     Object.entries(PAGE_TITLES).find(
       ([route]) => location.pathname === route || location.pathname.startsWith(`${route}/`)
-    )?.[1] ?? (location.pathname.includes('/erp') ? 'ERP Overview' : 'Admin');
+    )?.[1] ?? 'Admin';
 
   const handleLogout = () => {
     localStorage.removeItem('token');

@@ -49,6 +49,13 @@ export const orderSellerService = {
   getAll: async (params = {}) => await axiosClient.get(BASE_URL, { params }),
 
   /**
+   * Admin — list all marketplace orders
+   * @param {object} params - page, limit, status, sortBy, orderNumber, userId, sellerId
+   */
+  getAdminPlatformOrders: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/admin/platform-orders`, { params }),
+
+  /**
    * Get orders by status with pagination
    * @param {string} status - Order status (pending, processing, shipped, delivered, delivered_pending_confirmation, completed, cancelled, refunded, refund_pending, under_investigation)
    * @param {object} params - Query parameters

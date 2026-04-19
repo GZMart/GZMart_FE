@@ -34,6 +34,19 @@ const coinService = {
     axiosClient.get('/api/coins/expiring', {
       params: { days },
     }),
+
+  /** Admin — grant coins */
+  adminGrant: (body) => axiosClient.post('/api/coins/admin/grant', body),
+
+  /** Admin — expire old coins (batch job) */
+  adminExpire: () => axiosClient.post('/api/coins/admin/expire'),
+
+  /** Admin — sync user balances */
+  adminSync: () => axiosClient.post('/api/coins/admin/sync'),
+
+  /** Admin — notify users about expiring coins */
+  adminNotifyExpiring: (days = 3) =>
+    axiosClient.post('/api/coins/admin/notify-expiring', { days }),
 };
 
 export default coinService;

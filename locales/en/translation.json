@@ -524,6 +524,8 @@
     "loading": "Loading...",
     "empty": "No notifications",
     "recent": "Recently Received Notifications",
+    "campaign_warning_badge": "Warning",
+    "campaign_stopped_badge": "Campaign stopped",
     "view_all": "View All",
     "view_details": "View Details",
     "page_title": "Your Notifications",
@@ -535,7 +537,8 @@
       "flash_sale": "Flash Sales",
       "voucher": "Vouchers",
       "wallet": "Wallet Updates",
-      "system": "System Updates"
+      "system": "System Updates",
+      "campaign_admin": "Campaign / Admin"
     }
   },
   "common": {

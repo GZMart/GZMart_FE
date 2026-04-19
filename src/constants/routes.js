@@ -109,6 +109,14 @@ export const ADMIN_ROUTES = {
 
   // System Configuration
   SYSTEM_CONFIG: '/admin/config',
+  /** Đơn hàng toàn sàn — tra cứu / hỗ trợ */
+  PLATFORM_ORDERS: '/admin/orders',
+  /** Rút reward point — duyệt */
+  REWARD_WITHDRAWALS: '/admin/reward-withdrawals',
+  /** RMA — hàng chờ admin */
+  RMA_QUEUE: '/admin/rma',
+  /** GZCoin — công cụ admin */
+  COIN_TOOLS: '/admin/coin-tools',
   SITE_SETTINGS: '/admin/site-settings',
   PAYMENT_SETTINGS: '/admin/payment-settings',
 
@@ -119,6 +127,8 @@ export const ADMIN_ROUTES = {
   VOUCHER_CAMPAIGNS: '/admin/voucher-campaigns',
   VOUCHER_CAMPAIGN_CREATE: '/admin/voucher-campaigns/create',
   VOUCHER_CAMPAIGN_EDIT: '/admin/voucher-campaigns/:id/edit',
+  /** Flash Sale / Deal — moderation toàn hệ thống */
+  FLASH_CAMPAIGNS: '/admin/flash-campaigns',
 
   // Content
   PAGES: '/admin/pages',

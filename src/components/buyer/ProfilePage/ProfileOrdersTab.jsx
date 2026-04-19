@@ -15,7 +15,9 @@ import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
 import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
 
 function formatPreorderShipDate(iso, language) {
-  if (!iso) return '';
+  if (!iso) {
+return '';
+}
   const loc = language?.startsWith('en') ? 'en-US' : 'vi-VN';
   return new Date(iso).toLocaleDateString(loc, {
     year: 'numeric',

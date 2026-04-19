@@ -1,7 +1,14 @@
 import PropTypes from 'prop-types';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 
-const CampaignHeader = ({ groupedCampaigns, onCreateClick }) => {
+const CampaignHeader = ({
+  groupedCampaigns,
+  onCreateClick,
+  title = 'Campaign Management',
+  description,
+  createButtonLabel = 'Create Campaign',
+  showCreateButton = true,
+}) => {
   // Count campaigns by type
   const flashSaleCount = groupedCampaigns.filter(g => g.type === 'flash_sale').length;
   const dailyDealCount = groupedCampaigns.filter(g => g.type === 'daily_deal').length;
@@ -28,22 +35,26 @@ const CampaignHeader = ({ groupedCampaigns, onCreateClick }) => {
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
           </div>
-          <h1 className={styles.title}>Campaign Management</h1>
+          <h1 className={styles.title}>{title}</h1>
         </div>
         <div className={styles.titleDesc}>
           <span className={styles.activeDot} />
-          {groupedCampaigns.length > 0
-            ? `${activeCount > 0 ? `${activeCount} active · ` : ''}${flashSaleCount > 0 ? `⚡${flashSaleCount} ` : ''}${dailyDealCount > 0 ? `📅${dailyDealCount} ` : ''}${weeklyDealCount > 0 ? `📆${weeklyDealCount} ` : ''}${otherCount > 0 ? `+${otherCount}` : ''}campaigns`
-            : 'Create and manage your promotional campaigns'}
+          {description
+            ? description
+            : groupedCampaigns.length > 0
+              ? `${activeCount > 0 ? `${activeCount} active · ` : ''}${flashSaleCount > 0 ? `⚡${flashSaleCount} ` : ''}${dailyDealCount > 0 ? `📅${dailyDealCount} ` : ''}${weeklyDealCount > 0 ? `📆${weeklyDealCount} ` : ''}${otherCount > 0 ? `+${otherCount}` : ''}campaigns`
+              : 'Create and manage your promotional campaigns'}
         </div>
       </div>
-      <button className={styles.btnCreate} onClick={onCreateClick}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        Create Campaign
-      </button>
+      {showCreateButton && (
+        <button type="button" className={styles.btnCreate} onClick={onCreateClick}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {createButtonLabel}
+        </button>
+      )}
     </div>
   );
 };
@@ -51,6 +62,10 @@ const CampaignHeader = ({ groupedCampaigns, onCreateClick }) => {
 CampaignHeader.propTypes = {
   groupedCampaigns: PropTypes.array.isRequired,
   onCreateClick: PropTypes.func,
+  title: PropTypes.string,
+  description: PropTypes.node,
+  createButtonLabel: PropTypes.string,
+  showCreateButton: PropTypes.bool,
 };
 
 export default CampaignHeader;

@@ -38,7 +38,7 @@ function formatMoney(n) {
   if (n == null || Number.isNaN(n)) {
     return '—';
   }
-  return new Intl.NumberFormat('en-US').format(Math.round(n)) + ' ₫';
+  return `${new Intl.NumberFormat('en-US').format(Math.round(n))  } ₫`;
 }
 
 function formatEnded(d) {
