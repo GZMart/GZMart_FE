@@ -472,6 +472,8 @@
   margin-top: var(--admin-topbar-height);
   flex: 1;
   min-width: 0;
+  /* Luôn phủ chiều cao còn lại của viewport (tránh khoảng trống dưới cùng trên màn lớn) */
+  min-height: calc(100vh - var(--admin-topbar-height));
   padding: 24px;
   transition: margin-left var(--admin-transition);
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from '@assets/styles/seller/erp/SuppliersPage.module.css';
 import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
 import AddressAutocompleteDropdown from '@components/common/AddressAutocompleteDropdown';
@@ -129,6 +129,16 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
   const [saving, setSaving] = useState(false);
   const [addressTargetField, setAddressTargetField] = useState(null);
 
+  const supplierAddressFormValues = useMemo(
+    () => ({
+      street: form.addressInfo.address,
+      details: form.addressInfo.returnAddress,
+      provinceName: '',
+      wardName: '',
+    }),
+    [form.addressInfo.address, form.addressInfo.returnAddress],
+  );
+
   const {
     activeField: addressSuggestionField,
     setActiveField: setAddressSuggestionField,
@@ -137,12 +147,7 @@ const SupplierDrawer = ({ supplier, onClose, onSave }) => {
     resolveSuggestionDetails,
   } = useAddressAutocomplete({
     addresses: [],
-    formValues: {
-      street: form.addressInfo.address,
-      details: form.addressInfo.returnAddress,
-      provinceName: '',
-      wardName: '',
-    },
+    formValues: supplierAddressFormValues,
   });
 
   useEffect(() => {
