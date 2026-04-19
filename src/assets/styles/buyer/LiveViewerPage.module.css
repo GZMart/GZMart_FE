@@ -1000,6 +1000,19 @@
   transform: scale(0.97);
 }
 
+/* Order-syntax card: pinned under chat header, không cuộn theo tin nhắn */
+.ls-syntax-pin {
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem 0.65rem;
+  background: linear-gradient(180deg, #ffffff 0%, #faf8f7 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  max-height: min(42vh, 260px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
 /* Messages */
 .ls-messages {
   flex: 1;

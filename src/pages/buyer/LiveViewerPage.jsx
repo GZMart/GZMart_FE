@@ -1071,15 +1071,7 @@ return;
           setVouchers(vouchersRes.data.vouchers || []);
         }
 
-        // Load buyer's saved voucher IDs so saved state survives page refresh
-        voucherService
-          .getSavedVoucherIds()
-          .then((res) => {
-            // axios interceptor returns response.data — body is { success, data: { ids } }
-            const ids = (res?.data?.ids || []).map((id) => String(id));
-            setSavedVoucherIds(new Set(ids));
-          })
-          .catch(() => {});
+        /* Saved voucher IDs: useEffect theo user._id — guest không gọi (tránh 401 + redirect login) */
 
         livestreamService.getSessionConfig(sessionId).then((res) => {
           const cfg = res?.data?.orderSyntax;
@@ -1177,6 +1169,20 @@ return;
         setLoading(false);
       });
   }, [sessionId, user]);
+
+  /** Đăng nhập sau khi đã vào live: nạp voucher đã lưu (tránh 401 khi guest). */
+  useEffect(() => {
+    if (!sessionId || !user?._id) {
+      return;
+    }
+    voucherService
+      .getSavedVoucherIds()
+      .then((res) => {
+        const ids = (res?.data?.ids || []).map((id) => String(id));
+        setSavedVoucherIds(new Set(ids));
+      })
+      .catch(() => {});
+  }, [sessionId, user?._id]);
 
   // ── LiveKit Connected event ─
   useEffect(() => {
@@ -2168,11 +2174,15 @@ handleQuickBuy(product);
               </button>
             </div>
 
+            {/* Ghim syntax — không nằm trong vùng scroll tin nhắn */}
+            {syntaxGuide && (
+              <div className={styles['ls-syntax-pin']}>
+                <SyntaxGuideCard guide={syntaxGuide} />
+              </div>
+            )}
+
             {/* Messages */}
             <div ref={chatRef} className={styles['ls-messages']}>
-              {/* Syntax guide pinned at top */}
-              {syntaxGuide && <SyntaxGuideCard guide={syntaxGuide} />}
-
               {messages.length === 0 && (
                 <div className={styles['ls-empty-chat']}>
                   <div className={styles['ls-empty-chat-icon']}>
