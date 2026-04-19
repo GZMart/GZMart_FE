@@ -1880,6 +1880,33 @@
   margin: 0;
 }
 
+.orderItemPreorderRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.125rem;
+}
+
+.orderItemPreorderBadge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.orderItemPreorderText {
+  font-size: 0.75rem;
+  color: #92400e;
+  margin: 0;
+}
+
 .orderCardItemPrice {
   display: flex;
   flex-direction: column;
@@ -2149,6 +2176,29 @@
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
+}
+
+.orderDetailsPreorderRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.buyerPreorderSlaBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .orderDetailsItemPriceContainer {

@@ -1,5 +1,6 @@
 import { Card, Row, Col, Button, Form } from 'react-bootstrap';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { removeFromCart, updateQuantity } from '@store/slices/cartSlice';
 import { formatCurrency } from '@utils/formatters';
 import PropTypes from 'prop-types';
@@ -10,6 +11,8 @@ import PropTypes from 'prop-types';
  */
 const CartItemCard = ({ item, isSelected = false, onSelect }) => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
+  const preOrderDays = Number(item.preOrderDays) || 0;
 
   const handleRemove = () => {
     dispatch(removeFromCart(item.id));
@@ -64,6 +67,15 @@ const CartItemCard = ({ item, isSelected = false, onSelect }) => {
           <Col className="flex-grow-1" style={{ minWidth: '200px' }}>
             <h6 className="mb-1 fw-semibold">{item.name || 'Product Name'}</h6>
             <p className="text-muted small mb-1">{item.description || item.variant || ''}</p>
+            {preOrderDays > 0 && (
+              <div
+                className="small d-flex align-items-center gap-1 mb-2"
+                style={{ color: '#8B4513' }}
+              >
+                <i className="bi bi-clock-history" aria-hidden />
+                <span>{t('cart.item.pre_order_eta', { days: preOrderDays })}</span>
+              </div>
+            )}
             <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
               {item.color && (
                 <div className="d-flex align-items-center gap-1">

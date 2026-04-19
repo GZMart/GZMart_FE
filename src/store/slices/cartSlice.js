@@ -100,6 +100,7 @@ const mapCartItem = (backendItem) => ({
   size: backendItem.size,
   stockAvailable: backendItem.stockAvailable,
   isAvailable: backendItem.isAvailable,
+  preOrderDays: backendItem.productId?.preOrderDays ?? 0,
   // Helper for UI consistent with previous mock data
   variant: `${backendItem.size} - ${backendItem.color}`.trim(),
 });

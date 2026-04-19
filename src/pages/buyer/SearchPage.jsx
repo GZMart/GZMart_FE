@@ -94,6 +94,7 @@ const SearchPage = () => {
         stock: product.stock,
         brand: product.brand,
         category: product.category,
+        preOrderDays: product.preOrderDays ?? 0,
       }));
 
       setProducts(transformed);

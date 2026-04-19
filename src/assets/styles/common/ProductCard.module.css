@@ -213,6 +213,27 @@
   text-transform: uppercase;
 }
 
+.preOrderChip {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #b13c36 0%, #8b2924 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  max-width: calc(100% - 16px);
+  pointer-events: none;
+}
+
 /* ========== Product Info ========== */
 .productInfo {
   padding: 16px !important;

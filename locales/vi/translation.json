@@ -277,7 +277,8 @@
       "color": "Màu sắc",
       "size": "Kích thước",
       "per_item": "/ sản phẩm",
-      "remove_tooltip": "Xóa sản phẩm"
+      "remove_tooltip": "Xóa sản phẩm",
+      "pre_order_eta": "Dự kiến giao: {{days}} ngày làm việc (đặt trước)"
     },
     "summary": {
       "title": "Tóm tắt đơn hàng",
@@ -373,6 +374,10 @@
       "error_invoice": "Lấy hóa đơn thất bại",
       "error_invoice_alert": "Không thể tạo hóa đơn. Vui lòng thử lại.",
       "error_payment": "Tạo liên kết thanh toán thất bại",
+      "preorder_badge": "Đặt trước",
+      "preorder_ship_by": "Giao trước {{date}}",
+      "preorder_within_days": "{{count}} ngày từ ngày đặt",
+      "preorder_sla_buyer_notice": "Đơn có sản phẩm đặt trước đã quá hạn giao dự kiến. Bạn có thể liên hệ shop để được hỗ trợ.",
       "status": {
         "completed": "Hoàn thành",
         "pending": "Chờ xử lý",
@@ -503,6 +508,11 @@
       }
     },
     "only_left": "Chưa đầy {{stock}} sản phẩm!",
+    "pre_order_chip": "Đặt trước",
+    "pre_order_banner_title": "Sản phẩm đặt trước (Pre-Order)",
+    "pre_order_eta": "Người bán dự kiến gửi hàng trong {{days}} ngày làm việc (không tính ngày lễ, Tết).",
+    "pre_order_meta_label": "Giao hàng dự kiến",
+    "pre_order_meta_value": "{{days}} ngày làm việc",
     "tab_home": "Dạo",
     "tab_all_products": "TẤT CẢ SẢN PHẨM",
     "suggested_for_you": "GỢI Ý CHO BẠN",
@@ -835,7 +845,8 @@
     "empty": {
       "title": "Không tìm thấy đơn hàng",
       "default": "Bạn chưa có đơn hàng nào.",
-      "byStatus": "Chưa có đơn hàng \"{{status}}\" nào."
+      "byStatus": "Chưa có đơn hàng \"{{status}}\" nào.",
+      "byPreOrderFilter": "Không có đơn nào khớp bộ lọc đặt trước."
     },
     "filters": {
       "payment": "Thanh toán",
@@ -858,6 +869,12 @@
         "all": "Tất cả",
         "standard": "Tiêu chuẩn",
         "express": "Hỏa tốc"
+      },
+      "preOrder": {
+        "label": "Đặt trước",
+        "all": "Tất cả đơn",
+        "has_preorder": "Có sản phẩm đặt trước",
+        "sla_breached": "Quá hạn SLA đặt trước"
       }
     },
     "order": {
@@ -870,6 +887,11 @@
       "qty": "SL:",
       "message": "Nhắn tin",
       "opening": "Đang mở…"
+    },
+    "preorder": {
+      "badge": "Đặt trước",
+      "ship_by": "Giao trước {{date}}",
+      "sla_breach_banner": "Có mặt hàng đặt trước đã quá hạn giao dự kiến — vui lòng xử lý."
     },
     "paymentStatus": {
       "pending": "Chờ",
