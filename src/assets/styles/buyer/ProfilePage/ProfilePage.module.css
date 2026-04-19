@@ -1721,7 +1721,9 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 1rem;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -1736,6 +1738,8 @@
 
 .orderSearchInput {
   flex: 1;
+  height: 100%;
+  line-height: 34px;
   border: none;
   outline: none;
   font-size: 0.875rem;
@@ -1745,6 +1749,35 @@
 
 .orderSearchInput::placeholder {
   color: var(--color-text-secondary);
+  line-height: 34px;
+}
+
+.reportsToolbarButton {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select) {
+  height: 36px;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select-selector) {
+  height: 36px !important;
+  min-height: 36px !important;
+  display: flex;
+  align-items: center;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select-selection-item),
+.reportsToolbarSelectWrap :global(.ant-select-selection-placeholder) {
+  line-height: 34px !important;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select-selection-search-input) {
+  height: 34px !important;
 }
 
 /* ===== ORDER CARD STYLES ===== */

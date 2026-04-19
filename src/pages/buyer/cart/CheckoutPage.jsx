@@ -121,7 +121,11 @@ const CheckoutPage = () => {
 
           // Auto-select the best product voucher (only from saved vouchers)
           const eligibleProductVouchers = vouchers.filter(
-            (v) => voucherEligibleForCartSubtotal(v, subtotal) && v.isSaved && !v.isLiveVoucher && v.type === 'product'
+            (v) =>
+              voucherEligibleForCartSubtotal(v, subtotal) &&
+              v.isSaved &&
+              !v.isLiveVoucher &&
+              v.type === 'product'
           );
           if (eligibleProductVouchers.length > 0) {
             const bestProductVoucher = eligibleProductVouchers.reduce((prev, current) =>
@@ -409,6 +413,8 @@ const CheckoutPage = () => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addressModalView, setAddressModalView] = useState('list'); // 'list' | 'add' | 'edit'
   const [editingAddress, setEditingAddress] = useState(null);
+  const [showCheckoutErrorModal, setShowCheckoutErrorModal] = useState(false);
+  const [checkoutErrorMessage, setCheckoutErrorMessage] = useState('');
 
   const [addressForm, setAddressForm] = useState({
     receiverName: '',
@@ -633,7 +639,10 @@ const CheckoutPage = () => {
 
       // Skip API when there are no real persisted cart items (live session flow)
       if (realCartItemIds.length === 0) {
-        const liveDiscount = calcDiscount(resolvedLiveVoucher || preSelectedLiveVoucher, rawSubtotal);
+        const liveDiscount = calcDiscount(
+          resolvedLiveVoucher || preSelectedLiveVoucher,
+          rawSubtotal
+        );
         const afterLive = rawSubtotal - liveDiscount;
         const shopDiscount = calcDiscount(resolvedShopVoucher, afterLive);
         const afterShop = afterLive - shopDiscount;
@@ -665,7 +674,10 @@ const CheckoutPage = () => {
         if (response.success) {
           // Stack live voucher discount on top of API totals (use resolved from saved list, fallback to preSelectedLiveVoucher)
           const apiSubtotal = response.data.subtotal ?? rawSubtotal;
-          const liveDiscount = calcDiscount(resolvedLiveVoucher || preSelectedLiveVoucher, apiSubtotal);
+          const liveDiscount = calcDiscount(
+            resolvedLiveVoucher || preSelectedLiveVoucher,
+            apiSubtotal
+          );
           setOrderSummary({
             ...response.data,
             discount: (response.data.discount || 0) + liveDiscount,
@@ -739,6 +751,16 @@ const CheckoutPage = () => {
     }
   };
 
+  const openCheckoutErrorModal = (message) => {
+    setCheckoutErrorMessage(message || 'Failed to create order');
+    setShowCheckoutErrorModal(true);
+  };
+
+  const handleCheckoutErrorGoHome = () => {
+    setShowCheckoutErrorModal(false);
+    navigate(PUBLIC_ROUTES.HOME);
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -746,7 +768,7 @@ const CheckoutPage = () => {
 
     if (currentStep === 1) {
       if (!customerInfo.address) {
-        alert('Please select a shipping address before proceeding.');
+        openCheckoutErrorModal('Please select a shipping address before proceeding.');
         setAddressModalView('list');
         setShowAddressModal(true);
         return;
@@ -804,7 +826,7 @@ const CheckoutPage = () => {
               }
             } catch (paymentError) {
               console.error('Failed to create payment link:', paymentError);
-              alert(
+              openCheckoutErrorModal(
                 'Failed to create payment link. Please try again or choose another payment method.'
               );
               setIsProcessing(false);
@@ -819,10 +841,8 @@ const CheckoutPage = () => {
       } catch (error) {
         console.error('Failed to create order', error?.response?.data || error);
         const serverMsg =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error.message;
-        alert(serverMsg || 'Failed to create order');
+          error?.response?.data?.message || error?.response?.data?.error || error.message;
+        openCheckoutErrorModal(serverMsg || 'Failed to create order');
       } finally {
         setIsProcessing(false);
       }
@@ -1429,9 +1449,13 @@ const CheckoutPage = () => {
             )}
 
             {/* Show Selected Buyer Voucher (new_buyer, repeat_buyer, follower) */}
-            {selectedBuyerVoucher && (
+            {selectedBuyerVoucher &&
               (() => {
-                const info = voucherTypeInfo[selectedBuyerVoucher.type] || { label: 'BUYER', color: '#9c27b0', bg: '#f3e5f5' };
+                const info = voucherTypeInfo[selectedBuyerVoucher.type] || {
+                  label: 'BUYER',
+                  color: '#9c27b0',
+                  bg: '#f3e5f5',
+                };
                 return (
                   <div
                     className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
@@ -1469,8 +1493,8 @@ const CheckoutPage = () => {
                           style={{ cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }}
                           onMouseEnter={(e) => (e.target.style.color = info.color)}
                           onMouseLeave={(e) => {
- e.target.style.color = '#6c757d'; 
-}}
+                            e.target.style.color = '#6c757d';
+                          }}
                           onClick={() => setSelectedBuyerVoucherId(null)}
                           title="Deselect"
                         ></i>
@@ -1488,8 +1512,7 @@ const CheckoutPage = () => {
                     </div>
                   </div>
                 );
-              })()
-            )}
+              })()}
 
             {!selectedShopVoucher && !selectedProductVoucher && !selectedBuyerVoucher && (
               <div
@@ -1734,12 +1757,23 @@ const CheckoutPage = () => {
             style={{ borderBottom: '1px solid #eee', background: '#fff', flexShrink: 0 }}
           >
             <div className="d-flex align-items-center gap-2">
-              <i className="bi bi-ticket-perforated-fill" style={{ color: '#B13C36', fontSize: '1.2rem' }}></i>
-              <span className="fw-bold fs-5" style={{ color: '#2b2b2b' }}>Select Discount Code</span>
+              <i
+                className="bi bi-ticket-perforated-fill"
+                style={{ color: '#B13C36', fontSize: '1.2rem' }}
+              ></i>
+              <span className="fw-bold fs-5" style={{ color: '#2b2b2b' }}>
+                Select Discount Code
+              </span>
             </div>
             <button
               onClick={() => setShowVoucherDrawer(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#888' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                color: '#888',
+              }}
             >
               <i className="bi bi-x-lg"></i>
             </button>
@@ -2130,15 +2164,15 @@ const CheckoutPage = () => {
                       className="ms-2 badge rounded-pill"
                       style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}
                     >
-                      {applicableVouchers.filter((v) =>
-                        ['system_shipping', 'system_order'].includes(v.type)
-                      ).length}
+                      {
+                        applicableVouchers.filter((v) =>
+                          ['system_shipping', 'system_order'].includes(v.type)
+                        ).length
+                      }
                     </span>
                   </div>
                   {applicableVouchers
-                    .filter((v) =>
-                      ['system_shipping', 'system_order'].includes(v.type)
-                    )
+                    .filter((v) => ['system_shipping', 'system_order'].includes(v.type))
                     .map((v) => {
                       const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
                       return (
@@ -2159,8 +2193,8 @@ const CheckoutPage = () => {
                           }}
                           onClick={() => {
                             if (!cartOk) {
-return;
-}
+                              return;
+                            }
                             setSelectedShopVoucherId(
                               selectedShopVoucherId === v._id ? null : v._id
                             );
@@ -2188,7 +2222,13 @@ return;
                                 border: '1px solid #bae6fd',
                               }}
                             >
-                              <i className={v.type === 'system_shipping' ? 'bi bi-truck fs-4' : 'bi bi-box-seam fs-4'}></i>
+                              <i
+                                className={
+                                  v.type === 'system_shipping'
+                                    ? 'bi bi-truck fs-4'
+                                    : 'bi bi-box-seam fs-4'
+                                }
+                              ></i>
                             </div>
                             <div className="flex-grow-1">
                               <div
@@ -2256,15 +2296,15 @@ return;
                       className="ms-2 badge rounded-pill"
                       style={{ backgroundColor: '#f3e5f5', color: '#9c27b0' }}
                     >
-                      {applicableVouchers.filter((v) =>
-                        ['new_buyer', 'repeat_buyer', 'follower'].includes(v.type)
-                      ).length}
+                      {
+                        applicableVouchers.filter((v) =>
+                          ['new_buyer', 'repeat_buyer', 'follower'].includes(v.type)
+                        ).length
+                      }
                     </span>
                   </div>
                   {applicableVouchers
-                    .filter((v) =>
-                      ['new_buyer', 'repeat_buyer', 'follower'].includes(v.type)
-                    )
+                    .filter((v) => ['new_buyer', 'repeat_buyer', 'follower'].includes(v.type))
                     .map((v) => {
                       const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
                       const voucherTypeInfo = {
@@ -2274,17 +2314,17 @@ return;
                       };
                       const info = voucherTypeInfo[v.type] || { label: v.type, icon: 'bi-ticket' };
                       const isEligible = v.eligible !== false;
-                      const notMetReason = v.ineligibleReason || (
-                        !isEligible
-                          ? (v.type === 'new_buyer'
-                              ? 'You already have completed orders'
-                              : v.type === 'repeat_buyer'
-                                ? `Complete ${v.minOrderCount || 2} orders to unlock`
-                                : 'Follow this shop to unlock')
+                      const notMetReason =
+                        v.ineligibleReason ||
+                        (!isEligible
+                          ? v.type === 'new_buyer'
+                            ? 'You already have completed orders'
+                            : v.type === 'repeat_buyer'
+                              ? `Complete ${v.minOrderCount || 2} orders to unlock`
+                              : 'Follow this shop to unlock'
                           : !cartOk && v.minBasketPrice > 0
                             ? `Min. order ${formatCurrency(v.minBasketPrice)} (current ${formatCurrency(localSubtotal)})`
-                            : null
-                      );
+                            : null);
                       return (
                         <div
                           key={v._id}
@@ -2303,11 +2343,11 @@ return;
                           }}
                           onClick={() => {
                             if (!isEligible || !cartOk) {
-return;
-}
+                              return;
+                            }
                             if (!v.isSaved) {
-return;
-}
+                              return;
+                            }
                             setSelectedBuyerVoucherId(
                               selectedBuyerVoucherId === v._id ? null : v._id
                             );
@@ -2436,6 +2476,29 @@ return;
           </div>
         </div>
       </Container>
+
+      <Modal
+        show={showCheckoutErrorModal}
+        onHide={() => setShowCheckoutErrorModal(false)}
+        centered
+        backdrop="static"
+        keyboard={false}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Checkout unavailable</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="mb-0">{checkoutErrorMessage}</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowCheckoutErrorModal(false)}>
+            Stay here
+          </Button>
+          <Button variant="primary" onClick={handleCheckoutErrorGoHome}>
+            Go back home and keep shopping
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal
         show={showAddressModal}

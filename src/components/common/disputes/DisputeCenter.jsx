@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
   Card,
-  Col,
   Descriptions,
   Drawer,
   Empty,
   Form,
   Input,
-  Row,
   Select,
   Space,
   Spin,
@@ -22,37 +21,40 @@ import {
 } from 'antd';
 import { FileText, Filter, Plus, RefreshCcw, Scale, Send, ShieldCheck } from 'lucide-react';
 import disputeService from '@services/api/disputeService';
+import { orderService } from '@services/api/orderService';
+import { productService } from '@services/api';
 import uploadService from '@services/api/uploadService';
+import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
+import {
+  REPORT_TYPES,
+  REPORT_TYPE_OPTIONS,
+  REPORT_CATEGORIES_BY_TYPE,
+  validateReportForm,
+} from '@constants/common/disputes/reportForm.schema';
+import {
+  ADMIN_STATUS_OPTIONS,
+  MAX_IMAGE_SIZE,
+  MAX_MEDIA_FILES,
+  MAX_VIDEO_SIZE,
+  REPORT_STATUS_TABS,
+  STATUS_META,
+  TYPE_META,
+} from './dispute.constants';
+import {
+  buildDisplayLabel,
+  buildOrderLabelText,
+  buildPreviewItem,
+  extractInteractedSellers,
+  formatDate,
+  getActorName,
+  getOrderItems,
+  stripHtml,
+} from './dispute.utils';
+import MediaUploader from './MediaUploader';
 
 const { TextArea } = Input;
 const { Option } = Select;
-const { Title, Text } = Typography;
-
-const STATUS_META = {
-  pending: { label: 'Pending', color: 'gold' },
-  waiting_for_seller: { label: 'Waiting for Seller', color: 'geekblue' },
-  investigating: { label: 'Investigating', color: 'blue' },
-  resolved_refunded: { label: 'Resolved / Refunded', color: 'green' },
-  resolved_rejected: { label: 'Resolved / Rejected', color: 'red' },
-  appealed: { label: 'Appealed', color: 'purple' },
-};
-
-const TYPE_META = {
-  order: { label: 'Order', color: 'cyan' },
-  product: { label: 'Product', color: 'volcano' },
-};
-
-const ROLE_LABEL = {
-  buyer: 'Buyer Disputes',
-  seller: 'Seller Disputes',
-  admin: 'Dispute Queue',
-};
-
-const ROLE_DESCRIPTION = {
-  buyer: 'Track the disputes you created, submit evidence, and appeal outcomes when needed.',
-  seller: 'Review cases tied to your products or orders and submit a counter-report with evidence.',
-  admin: 'Triage all disputes, update the state machine, and process buyer-friendly resolutions.',
-};
+const { Text } = Typography;
 
 const ROLE_ENDPOINTS = {
   buyer: {
@@ -74,38 +76,6 @@ const ROLE_ENDPOINTS = {
   },
 };
 
-const ADMIN_STATUS_OPTIONS = [
-  'pending',
-  'waiting_for_seller',
-  'investigating',
-  'resolved_refunded',
-  'resolved_rejected',
-  'appealed',
-];
-
-const formatDate = (value) => {
-  if (!value) {
-return 'N/A';
-}
-  return new Date(value).toLocaleString('vi-VN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
-};
-
-const parseEvidenceUrls = (value) =>
-  String(value || '')
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const buildDisplayLabel = (report) => {
-  if (!report) {
-return 'Report';
-}
-  return report.reportNumber || report.title || report._id;
-};
-
 const statusTag = (status) => {
   const meta = STATUS_META[status] || { label: status, color: 'default' };
   return <Tag color={meta.color}>{meta.label}</Tag>;
@@ -116,150 +86,11 @@ const typeTag = (type) => {
   return <Tag color={meta.color}>{meta.label}</Tag>;
 };
 
-const stripHtml = (value) => String(value || '').replace(/<[^>]+>/g, '');
+const DisputeCenter = ({ mode }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-const MAX_MEDIA_FILES = 5;
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
-
-const isVideoFile = (file) => file?.type?.startsWith('video/');
-
-const buildPreviewItem = (file) => ({
-  url: URL.createObjectURL(file),
-  type: isVideoFile(file) ? 'video' : 'image',
-  name: file.name,
-});
-
-const MediaUploader = ({ title, hint, files, previews, inputRef, disabled, onPick, onRemove }) => (
-  <div style={{ display: 'grid', gap: 10 }}>
-    <div>
-      <Text strong>{title}</Text>
-      {hint ? (
-        <div>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {hint}
-          </Text>
-        </div>
-      ) : null}
-    </div>
-
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 12,
-        alignItems: 'stretch',
-      }}
-    >
-      {previews.map((media, index) => (
-        <div
-          key={`${media.url}-${index}`}
-          style={{ position: 'relative', width: 92, height: 92, flexShrink: 0 }}
-        >
-          {media.type === 'video' ? (
-            <video
-              src={media.url}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: 12,
-                background: '#0f172a',
-              }}
-            />
-          ) : (
-            <img
-              src={media.url}
-              alt={media.name || 'evidence'}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: 12,
-              }}
-            />
-          )}
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            disabled={disabled}
-            style={{
-              position: 'absolute',
-              top: -6,
-              right: -6,
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              border: 'none',
-              background: '#ef4444',
-              color: '#fff',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(15, 23, 42, 0.18)',
-            }}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-
-      {files.length < MAX_MEDIA_FILES ? (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={disabled}
-          style={{
-            width: 92,
-            height: 92,
-            borderRadius: 12,
-            border: '1px dashed #cbd5e1',
-            background: '#f8fafc',
-            color: '#475569',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 28,
-            flexShrink: 0,
-          }}
-        >
-          +
-        </button>
-      ) : null}
-
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        accept="image/*,video/*"
-        onChange={onPick}
-        style={{ display: 'none' }}
-      />
-    </div>
-  </div>
-);
-
-MediaUploader.propTypes = {
-  title: PropTypes.string.isRequired,
-  hint: PropTypes.string,
-  files: PropTypes.arrayOf(PropTypes.any).isRequired,
-  previews: PropTypes.arrayOf(PropTypes.any).isRequired,
-  inputRef: PropTypes.shape({ current: PropTypes.any }).isRequired,
-  disabled: PropTypes.bool,
-  onPick: PropTypes.func.isRequired,
-  onRemove: PropTypes.func.isRequired,
-};
-
-const getActorName = (actor) => {
-  if (!actor) {
-return 'System';
-}
-  if (typeof actor === 'string') {
-return actor;
-}
-  return actor.fullName || actor.email || actor._id || 'System';
-};
-
-const DisputeCenter = ({ mode, embedded = false }) => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -280,29 +111,48 @@ const DisputeCenter = ({ mode, embedded = false }) => {
   const [createFiles, setCreateFiles] = useState([]);
   const [createPreviews, setCreatePreviews] = useState([]);
   const [createUploading, setCreateUploading] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [reportOrders, setReportOrders] = useState([]);
+  const [reportSellers, setReportSellers] = useState([]);
+  const [selectedProductSubject, setSelectedProductSubject] = useState(null);
   const [actionFiles, setActionFiles] = useState([]);
   const [actionPreviews, setActionPreviews] = useState([]);
   const [actionUploading, setActionUploading] = useState(false);
   const createFileInputRef = useRef(null);
   const actionFileInputRef = useRef(null);
+  const prevCreateReportTypeRef = useRef(null);
 
   const endpoint = ROLE_ENDPOINTS[mode];
 
-  const statusOptions = useMemo(() => {
-    if (mode === 'admin') {
-      return ['all', ...ADMIN_STATUS_OPTIONS];
-    }
+  const reportType = Form.useWatch('type', createForm);
 
-    return [
-      'all',
-      'pending',
-      'waiting_for_seller',
-      'investigating',
-      'resolved_refunded',
-      'resolved_rejected',
-      'appealed',
-    ];
-  }, [mode]);
+  const orderOptions = useMemo(
+    () =>
+      reportOrders.map((order) => ({
+        value: order._id,
+        labelText: buildOrderLabelText(order),
+        searchText: `${order.orderNumber || ''} ${buildOrderLabelText(order)} ${getOrderItems(order)
+          .map((item) => item?.productId?.name || '')
+          .join(' ')}`.toLowerCase(),
+        order,
+      })),
+    [reportOrders]
+  );
+
+  const sellerOptions = useMemo(
+    () =>
+      reportSellers.map((seller) => {
+        const labelText = `${seller.fullName || seller.email || seller._id} - ${seller.interactedOrderCount} interactions`;
+        return {
+          value: seller._id,
+          labelText,
+          searchText:
+            `${seller.fullName || ''} ${seller.email || ''} ${seller._id || ''}`.toLowerCase(),
+          seller,
+        };
+      }),
+    [reportSellers]
+  );
 
   const revokePreviewUrls = (previews) => {
     previews.forEach((media) => {
@@ -334,7 +184,9 @@ const DisputeCenter = ({ mode, embedded = false }) => {
 
   const closeCreateDrawer = () => {
     setCreateOpen(false);
+    prevCreateReportTypeRef.current = null;
     createForm.resetFields();
+    setSelectedProductSubject(null);
     clearCreateMedia();
   };
 
@@ -344,6 +196,156 @@ const DisputeCenter = ({ mode, embedded = false }) => {
     actionForm.resetFields();
     clearActionMedia();
   };
+
+  const loadReportContext = async () => {
+    if (mode !== 'buyer') {
+      return;
+    }
+
+    setContextLoading(true);
+    try {
+      const orders = [];
+      let pageIndex = 1;
+      const limit = 50;
+      let totalPages = 1;
+
+      while (pageIndex <= totalPages && pageIndex <= 20) {
+        const response = await orderService.getMyOrders(pageIndex, limit);
+        const payload = response || {};
+        const data = Array.isArray(payload.data) ? payload.data : [];
+        orders.push(...data);
+
+        const pages = Number(payload?.pagination?.pages || 1);
+        totalPages = Number.isFinite(pages) && pages > 0 ? pages : 1;
+        pageIndex += 1;
+      }
+
+      setReportOrders(orders);
+      setReportSellers(extractInteractedSellers(orders));
+    } catch (error) {
+      console.error('[DisputeCenter] Failed to load report context:', error);
+      message.error(error?.message || 'Failed to load orders/sellers for reporting');
+      setReportOrders([]);
+      setReportSellers([]);
+    } finally {
+      setContextLoading(false);
+    }
+  };
+
+  const openCreateDrawer = (prefill = {}) => {
+    const initialType = prefill.type || REPORT_TYPES.ORDER;
+
+    createForm.resetFields();
+    clearCreateMedia();
+    setSelectedProductSubject(prefill.productSubject || null);
+    createForm.setFieldsValue({
+      type: initialType,
+      title: prefill.title || '',
+      category: prefill.category || undefined,
+      description: prefill.description || '',
+      orderId: prefill.orderId || undefined,
+      productId: prefill.productId || undefined,
+      sellerId: prefill.sellerId || undefined,
+    });
+    prevCreateReportTypeRef.current = initialType;
+    setCreateOpen(true);
+  };
+
+  useEffect(() => {
+    if (mode !== 'buyer') {
+      return;
+    }
+    loadReportContext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  useEffect(() => {
+    if (!createOpen) {
+      return;
+    }
+
+    if (!reportType) {
+      return;
+    }
+
+    const previousType = prevCreateReportTypeRef.current;
+    if (!previousType) {
+      prevCreateReportTypeRef.current = reportType;
+      return;
+    }
+
+    if (previousType === reportType) {
+      return;
+    }
+
+    if (reportType !== REPORT_TYPES.ORDER) {
+      createForm.setFieldValue('orderId', undefined);
+    }
+    if (reportType !== REPORT_TYPES.PRODUCT) {
+      createForm.setFieldValue('productId', undefined);
+      setSelectedProductSubject(null);
+    }
+    if (reportType !== REPORT_TYPES.SELLER) {
+      createForm.setFieldValue('sellerId', undefined);
+    }
+    createForm.setFieldValue('category', undefined);
+
+    prevCreateReportTypeRef.current = reportType;
+  }, [createForm, createOpen, reportType]);
+
+  useEffect(() => {
+    if (mode !== 'buyer') {
+      return;
+    }
+
+    const openReport = searchParams.get('openReport') === '1';
+    const reportTypeFromUrl = searchParams.get('reportType');
+    const subjectProductId = searchParams.get('subjectProductId');
+    const navPrefill = location.state?.reportPrefill || null;
+
+    if (!openReport && !navPrefill?.openForm) {
+      return;
+    }
+
+    const openFromIntent = async () => {
+      const intentType = navPrefill?.type || reportTypeFromUrl || REPORT_TYPES.PRODUCT;
+      const productId = navPrefill?.product?._id || subjectProductId;
+
+      openCreateDrawer({
+        type: intentType,
+        productId: intentType === REPORT_TYPES.PRODUCT ? productId : undefined,
+        productSubject: navPrefill?.product || null,
+      });
+
+      if (intentType === REPORT_TYPES.PRODUCT && productId) {
+        if (navPrefill?.product?._id === productId) {
+          setSelectedProductSubject(navPrefill.product);
+        } else {
+          try {
+            const response = await productService.getById(productId);
+            const data = response?.data?.data || response?.data || response;
+            if (data?._id) {
+              setSelectedProductSubject(data);
+            }
+          } catch (error) {
+            console.error('[DisputeCenter] Failed to preload product subject:', error);
+          }
+        }
+      }
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('openReport');
+      nextParams.delete('reportType');
+      nextParams.delete('subjectProductId');
+      navigate(location.pathname + (nextParams.toString() ? `?${nextParams.toString()}` : ''), {
+        replace: true,
+        state: {},
+      });
+    };
+
+    openFromIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, location.key]);
 
   const getMediaUrls = async (files) => {
     if (!files.length) {
@@ -503,8 +505,8 @@ const DisputeCenter = ({ mode, embedded = false }) => {
   const filteredReports = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) {
-return reports;
-}
+      return reports;
+    }
 
     return reports.filter((report) => {
       const haystack = [
@@ -521,28 +523,30 @@ return reports;
     });
   }, [reports, searchText]);
 
-  const stats = useMemo(() => {
-    const counter = (status) => reports.filter((report) => report.status === status).length;
-    return [
-      { label: 'Total', value: pagination.total || reports.length, tone: 'blue' },
-      { label: 'Pending', value: counter('pending'), tone: 'gold' },
-      { label: 'Investigating', value: counter('investigating'), tone: 'cyan' },
-      {
-        label: 'Resolved',
-        value: counter('resolved_refunded') + counter('resolved_rejected'),
-        tone: 'green',
-      },
-    ];
-  }, [pagination.total, reports]);
+  const reportStatusCounts = useMemo(() => {
+    const counts = {
+      all: reports.length,
+    };
+
+    REPORT_STATUS_TABS.forEach((tab) => {
+      if (tab.key === 'all') {
+        return;
+      }
+      counts[tab.key] = reports.filter((report) => report.status === tab.key).length;
+    });
+
+    return counts;
+  }, [reports]);
 
   const submitCreateReport = async () => {
     setCreateUploading(true);
     try {
       const values = await createForm.validateFields();
+      await validateReportForm(values);
       const uploadedEvidenceUrls = await getMediaUrls(createFiles);
       const payload = {
         ...values,
-        evidenceUrls: [...parseEvidenceUrls(values.evidenceUrls), ...uploadedEvidenceUrls],
+        evidenceUrls: uploadedEvidenceUrls,
       };
 
       await endpoint.create(payload);
@@ -551,8 +555,8 @@ return reports;
       await loadReports(1, pageSize);
     } catch (error) {
       if (error?.errorFields) {
-return;
-}
+        return;
+      }
       console.error('[DisputeCenter] Create report failed:', error);
       message.error(error?.message || 'Failed to create report');
     } finally {
@@ -568,7 +572,7 @@ return;
       const uploadedEvidenceUrls = await getMediaUrls(actionFiles);
       await endpoint.counter(actionTarget._id, {
         counterNote: values.counterNote,
-        evidenceUrls: [...parseEvidenceUrls(values.evidenceUrls), ...uploadedEvidenceUrls],
+        evidenceUrls: uploadedEvidenceUrls,
       });
 
       message.success('Counter-report submitted');
@@ -580,8 +584,8 @@ return;
       }
     } catch (error) {
       if (error?.errorFields) {
-return;
-}
+        return;
+      }
       console.error('[DisputeCenter] Counter-report failed:', error);
       message.error(error?.message || 'Failed to submit counter-report');
     } finally {
@@ -609,8 +613,8 @@ return;
       }
     } catch (error) {
       if (error?.errorFields) {
-return;
-}
+        return;
+      }
       console.error('[DisputeCenter] Status update failed:', error);
       message.error(error?.message || 'Failed to update report');
     } finally {
@@ -693,10 +697,17 @@ return;
       {
         title: 'Actions',
         key: 'actions',
-        width: 220,
+        width: mode === 'admin' ? 300 : 220,
         render: (_, report) => (
-          <Space wrap>
-            <Button size="small" onClick={() => openDetail(report)} icon={<FileText size={14} />}>
+          <Space wrap={mode !== 'admin'} size={6} onClick={(event) => event.stopPropagation()}>
+            <Button
+              size="small"
+              onClick={(event) => {
+                event.stopPropagation();
+                openDetail(report);
+              }}
+              icon={<FileText size={14} />}
+            >
               View
             </Button>
 
@@ -705,7 +716,10 @@ return;
                 <Button
                   size="small"
                   type="primary"
-                  onClick={() => openDetail(report)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openDetail(report);
+                  }}
                   icon={<Scale size={14} />}
                 >
                   Appeal
@@ -716,11 +730,12 @@ return;
               <Button
                 size="small"
                 type="primary"
-                onClick={() => {
+                onClick={(event) => {
+                  event.stopPropagation();
                   setActionTarget(report);
                   clearActionMedia();
                   setActionOpen(true);
-                  actionForm.setFieldsValue({ counterNote: '', evidenceUrls: '' });
+                  actionForm.setFieldsValue({ counterNote: '' });
                 }}
               >
                 Counter
@@ -732,7 +747,8 @@ return;
                 <Button
                   size="small"
                   type="primary"
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setActionTarget(report);
                     clearActionMedia();
                     setActionOpen(true);
@@ -746,7 +762,14 @@ return;
                 >
                   Update
                 </Button>
-                <Button size="small" danger onClick={() => handleAcceptComplaint(report)}>
+                <Button
+                  size="small"
+                  danger
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleAcceptComplaint(report);
+                  }}
+                >
                   Accept
                 </Button>
               </>
@@ -760,147 +783,136 @@ return;
 
   const detailHistory = detailReport?.histories || detailReport?.history || [];
   const detailEvidences = detailReport?.evidences || [];
+  const createCategoryOptions = REPORT_CATEGORIES_BY_TYPE[reportType] || [];
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <Card
-        bordered={false}
-        style={{
-          borderRadius: 20,
-          background: 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 60%, #2563eb 100%)',
-          color: '#fff',
-          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.22)',
-        }}
-      >
-        <Row gutter={[16, 16]} align="middle" justify="space-between">
-          <Col xs={24} lg={16}>
-            <Space direction="vertical" size={8}>
-              <Tag color="geekblue" style={{ width: 'fit-content' }}>
-                Dispute Resolution
-              </Tag>
-              <Title level={2} style={{ color: '#fff', margin: 0 }}>
-                {ROLE_LABEL[mode]}
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', maxWidth: 720 }}>
-                {ROLE_DESCRIPTION[mode]}
-              </Text>
-            </Space>
-          </Col>
-          <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
+      <div>
+        <div className={styles.orderFilterTabs} style={{ marginBottom: 16 }}>
+          {REPORT_STATUS_TABS.map((tab) => {
+            const count = reportStatusCounts[tab.key] || 0;
+            return (
+              <button
+                key={tab.key}
+                className={`${styles.orderFilterTab} ${statusFilter === tab.key ? styles.orderFilterTabActive : ''}`}
+                onClick={() => setStatusFilter(tab.key)}
+              >
+                <span>{tab.label}</span>
+                <span
+                  style={{
+                    marginLeft: 8,
+                    minWidth: 20,
+                    height: 20,
+                    borderRadius: 999,
+                    padding: '0 6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: statusFilter === tab.key ? 'rgba(255,255,255,0.25)' : '#e5e7eb',
+                    color: statusFilter === tab.key ? '#fff' : '#334155',
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <Space
+          wrap
+          align="center"
+          style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}
+        >
+          <Space wrap align="center">
+            <div className={styles.orderSearchBar} style={{ minWidth: 320, marginBottom: 0 }}>
+              <Filter size={16} color="#6b7280" />
+              <input
+                type="text"
+                placeholder="Search report number, title, product or order"
+                className={styles.orderSearchInput}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.reportsToolbarSelectWrap}>
+              <Select
+                value={typeFilter}
+                onChange={setTypeFilter}
+                className={styles.reportsToolbarSelect}
+                style={{ width: 180 }}
+              >
+                <Option value="all">All types</Option>
+                {REPORT_TYPE_OPTIONS.map((type) => (
+                  <Option key={type.value} value={type.value}>
+                    {type.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </Space>
+
+          <Space align="center">
+            <Button
+              className={styles.reportsToolbarButton}
+              icon={<RefreshCcw size={14} />}
+              onClick={() => loadReports(page, pageSize)}
+            >
+              Refresh
+            </Button>
             {mode === 'buyer' ? (
               <Button
+                className={styles.reportsToolbarButton}
                 type="primary"
                 icon={<Plus size={16} />}
-                onClick={() => {
-                  createForm.resetFields();
-                  clearCreateMedia();
-                  setCreateOpen(true);
-                }}
-                style={{
-                  background: '#fff',
-                  borderColor: '#fff',
-                  color: '#1d4ed8',
-                  fontWeight: 600,
-                }}
+                onClick={openCreateDrawer}
               >
                 New Report
               </Button>
             ) : null}
-          </Col>
-        </Row>
-
-        <Row gutter={12} style={{ marginTop: 20 }}>
-          {stats.map((stat) => (
-            <Col key={stat.label} xs={12} md={6}>
-              <div
-                style={{
-                  background: 'rgba(255,255,255,0.11)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 16,
-                  padding: 16,
-                  backdropFilter: 'blur(10px)',
-                }}
-              >
-                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>{stat.label}</div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: '#fff' }}>{stat.value}</div>
-              </div>
-            </Col>
-          ))}
-        </Row>
-      </Card>
-
-      <Card
-        bordered={false}
-        style={{ borderRadius: 18, boxShadow: '0 12px 30px rgba(15, 23, 42, 0.08)' }}
-      >
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Space wrap>
-            <Input
-              placeholder="Search report number, title, product or order"
-              prefix={<Filter size={14} />}
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 320 }}
-            />
-
-            <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 220 }}>
-              <Option value="all">All statuses</Option>
-              {statusOptions
-                .filter((value) => value !== 'all')
-                .map((status) => (
-                  <Option key={status} value={status}>
-                    {STATUS_META[status]?.label || status}
-                  </Option>
-                ))}
-            </Select>
-
-            <Select value={typeFilter} onChange={setTypeFilter} style={{ width: 160 }}>
-              <Option value="all">All types</Option>
-              <Option value="order">Order</Option>
-              <Option value="product">Product</Option>
-            </Select>
           </Space>
-
-          <Button icon={<RefreshCcw size={14} />} onClick={() => loadReports(page, pageSize)}>
-            Refresh
-          </Button>
         </Space>
 
-        {loading ? (
-          <div style={{ padding: 48, textAlign: 'center' }}>
-            <Spin size="large" />
-          </div>
-        ) : filteredReports.length === 0 ? (
-          <Empty
-            description="No disputes found"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            style={{ padding: '36px 0' }}
-          />
-        ) : (
-          <Table
-            rowKey="_id"
-            columns={columns}
-            dataSource={filteredReports}
-            pagination={{
-              current: page,
-              pageSize,
-              total: pagination.total || reports.length,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-            }}
-            onChange={(nextPagination) => {
-              const nextPage = nextPagination.current || 1;
-              const nextSize = nextPagination.pageSize || pageSize;
-              loadReports(nextPage, nextSize);
-            }}
-            onRow={(record) => ({
-              onClick: () => openDetail(record),
-              style: { cursor: 'pointer' },
-            })}
-          />
-        )}
-      </Card>
+        <div className={styles.ordersListContainer}>
+          {loading ? (
+            <div style={{ padding: 48, textAlign: 'center' }}>
+              <Spin size="large" />
+            </div>
+          ) : filteredReports.length === 0 ? (
+            <Empty
+              description="No disputes found"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ padding: '36px 0' }}
+            />
+          ) : (
+            <Table
+              rowKey="_id"
+              columns={columns}
+              dataSource={filteredReports}
+              scroll={mode === 'admin' ? { x: 1100 } : undefined}
+              pagination={{
+                current: page,
+                pageSize,
+                total: pagination.total || reports.length,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+              }}
+              onChange={(nextPagination) => {
+                const nextPage = nextPagination.current || 1;
+                const nextSize = nextPagination.pageSize || pageSize;
+                loadReports(nextPage, nextSize);
+              }}
+              onRow={(record) => ({
+                onClick: () => openDetail(record),
+                style: { cursor: 'pointer' },
+              })}
+            />
+          )}
+        </div>
+      </div>
 
       <Drawer
         width={760}
@@ -1014,7 +1026,7 @@ return;
                       setActionTarget(detailReport);
                       clearActionMedia();
                       setActionOpen(true);
-                      actionForm.setFieldsValue({ counterNote: '', evidenceUrls: '' });
+                      actionForm.setFieldsValue({ counterNote: '' });
                     }}
                   >
                     Send Counter-Report
@@ -1054,9 +1066,10 @@ return;
         open={createOpen}
         onClose={closeCreateDrawer}
         title="Create Dispute Report"
+        zIndex={3000}
         destroyOnHidden
       >
-        <Form form={createForm} layout="vertical" initialValues={{ type: 'order' }}>
+        <Form form={createForm} layout="vertical" initialValues={{ type: REPORT_TYPES.ORDER }}>
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <Form.Item
               name="type"
@@ -1064,9 +1077,194 @@ return;
               rules={[{ required: true, message: 'Select a type' }]}
             >
               <Select>
-                <Option value="order">Order</Option>
-                <Option value="product">Product</Option>
+                {REPORT_TYPE_OPTIONS.map((option) => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
               </Select>
+            </Form.Item>
+
+            <Form.Item shouldUpdate noStyle>
+              {({ getFieldValue }) => {
+                const selectedType = getFieldValue('type');
+                const selectedOrder = orderOptions.find(
+                  (option) => option.value === getFieldValue('orderId')
+                )?.order;
+                const selectedSeller = sellerOptions.find(
+                  (option) => option.value === getFieldValue('sellerId')
+                )?.seller;
+
+                if (selectedType === REPORT_TYPES.SYSTEM_BUG) {
+                  return (
+                    <Alert
+                      type="info"
+                      showIcon
+                      message="SYSTEM_BUG report"
+                      description="This report goes directly to technical triage. Product/Order/Seller selection is not required."
+                    />
+                  );
+                }
+
+                if (selectedType === REPORT_TYPES.PRODUCT) {
+                  return (
+                    <Space direction="vertical" style={{ width: '100%' }} size={10}>
+                      <Form.Item
+                        name="productId"
+                        label="Reported Product"
+                        rules={[{ required: true, message: 'Select a product to report' }]}
+                      >
+                        <Input placeholder="Product is auto-filled from Product Details" disabled />
+                      </Form.Item>
+
+                      {selectedProductSubject ? (
+                        <Card
+                          size="small"
+                          style={{
+                            borderRadius: 14,
+                            border: '1px solid #e2e8f0',
+                            background: '#f8fafc',
+                          }}
+                        >
+                          <Space align="start">
+                            <img
+                              src={
+                                selectedProductSubject?.images?.[0] ||
+                                selectedProductSubject?.image ||
+                                'https://via.placeholder.com/80x80?text=Product'
+                              }
+                              alt={selectedProductSubject?.name || 'Product'}
+                              style={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 10,
+                                objectFit: 'cover',
+                                border: '1px solid #e2e8f0',
+                              }}
+                            />
+                            <Space direction="vertical" size={2}>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                Subject Product
+                              </Text>
+                              <Text strong>
+                                {selectedProductSubject?.name || 'Unknown product'}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                ID: {selectedProductSubject?._id}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {stripHtml(selectedProductSubject?.description || '').slice(
+                                  0,
+                                  100
+                                ) || 'No brief details available'}
+                              </Text>
+                            </Space>
+                          </Space>
+                        </Card>
+                      ) : (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          message="Product not pre-filled"
+                          description="Open report directly from a product details page to auto-capture the product subject."
+                        />
+                      )}
+                    </Space>
+                  );
+                }
+
+                if (selectedType === REPORT_TYPES.ORDER) {
+                  return (
+                    <Form.Item
+                      name="orderId"
+                      label="Related Order"
+                      rules={[{ required: true, message: 'Select an order' }]}
+                    >
+                      <Select
+                        showSearch
+                        loading={contextLoading}
+                        placeholder="Search order number, date, amount, item"
+                        optionFilterProp="searchText"
+                        filterOption={(input, option) =>
+                          (option?.searchText || '').includes(input.trim().toLowerCase())
+                        }
+                        optionLabelProp="labelText"
+                      >
+                        {orderOptions.map((option) => (
+                          <Option
+                            key={option.value}
+                            value={option.value}
+                            labelText={option.labelText}
+                            searchText={option.searchText}
+                          >
+                            <Space direction="vertical" size={0} style={{ lineHeight: 1.2 }}>
+                              <Text strong>{option.order.orderNumber || option.order._id}</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {option.labelText}
+                              </Text>
+                            </Space>
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  );
+                }
+
+                if (selectedType === REPORT_TYPES.SELLER) {
+                  return (
+                    <Space direction="vertical" style={{ width: '100%' }} size={10}>
+                      <Form.Item
+                        name="sellerId"
+                        label="Related Seller"
+                        rules={[{ required: true, message: 'Select a seller' }]}
+                      >
+                        <Select
+                          showSearch
+                          loading={contextLoading}
+                          placeholder="Search seller by name or email"
+                          optionFilterProp="searchText"
+                          filterOption={(input, option) =>
+                            (option?.searchText || '').includes(input.trim().toLowerCase())
+                          }
+                          optionLabelProp="labelText"
+                        >
+                          {sellerOptions.map((option) => (
+                            <Option
+                              key={option.value}
+                              value={option.value}
+                              labelText={option.labelText}
+                              searchText={option.searchText}
+                            >
+                              <Space direction="vertical" size={0} style={{ lineHeight: 1.2 }}>
+                                <Text strong>
+                                  {option.seller.fullName ||
+                                    option.seller.email ||
+                                    option.seller._id}
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  {option.seller.email || 'No email'} -{' '}
+                                  {option.seller.interactedOrderCount} interactions
+                                </Text>
+                              </Space>
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+
+                      {selectedSeller ? (
+                        <Alert
+                          type="info"
+                          showIcon
+                          message={`Reporting seller: ${selectedSeller.fullName || selectedSeller.email}`}
+                          description={`You have interacted with this seller ${selectedSeller.interactedOrderCount} times through your order history.`}
+                        />
+                      ) : null}
+                    </Space>
+                  );
+                }
+
+                return null;
+              }}
             </Form.Item>
 
             <Form.Item
@@ -1077,8 +1275,23 @@ return;
               <Input placeholder="Short summary of the issue" />
             </Form.Item>
 
-            <Form.Item name="category" label="Category">
-              <Input placeholder="Damage, fraud, missing item, wrong product..." />
+            <Form.Item
+              name="category"
+              label="Category"
+              rules={[{ required: true, message: 'Select a category' }]}
+            >
+              <Select
+                placeholder={
+                  reportType ? 'Select a predefined category' : 'Select report type first'
+                }
+                disabled={!reportType}
+              >
+                {createCategoryOptions.map((category) => (
+                  <Option key={category.value} value={category.value}>
+                    {category.label}
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
 
             <Form.Item
@@ -1089,35 +1302,12 @@ return;
               <TextArea rows={4} placeholder="Provide a clear explanation of what happened" />
             </Form.Item>
 
-            <Form.Item shouldUpdate noStyle>
-              {({ getFieldValue }) => (
-                <>
-                  {getFieldValue('type') === 'order' ? (
-                    <Form.Item
-                      name="orderId"
-                      label="Order ID"
-                      rules={[{ required: true, message: 'Enter the order ID' }]}
-                    >
-                      <Input placeholder="Paste the order ID" />
-                    </Form.Item>
-                  ) : (
-                    <Form.Item
-                      name="productId"
-                      label="Product ID"
-                      rules={[{ required: true, message: 'Enter the product ID' }]}
-                    >
-                      <Input placeholder="Paste the product ID" />
-                    </Form.Item>
-                  )}
-                </>
-              )}
-            </Form.Item>
-
             <MediaUploader
               title="Attach evidence"
-              hint="Upload up to 5 images/videos. Supported: image/*, mp4, mov. Max 10MB/image and 50MB/video."
+              hint="Upload up to 5 files. Supported: images (.jpg/.png/...) and videos (.mp4/.webm). Max 10MB/image and 50MB/video."
               files={createFiles}
               previews={createPreviews}
+              maxFiles={MAX_MEDIA_FILES}
               inputRef={createFileInputRef}
               disabled={createUploading}
               onPick={handleCreateFileChange}
@@ -1133,14 +1323,6 @@ return;
                 });
               }}
             />
-
-            <Form.Item
-              name="evidenceUrls"
-              label="Evidence URLs"
-              tooltip="Paste one URL per line or separate by comma"
-            >
-              <TextArea rows={4} placeholder="https://...\nhttps://..." />
-            </Form.Item>
 
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button onClick={closeCreateDrawer} disabled={createUploading}>
@@ -1178,6 +1360,7 @@ return;
                   hint="Upload up to 5 images/videos to support your counter-report."
                   files={actionFiles}
                   previews={actionPreviews}
+                  maxFiles={MAX_MEDIA_FILES}
                   inputRef={actionFileInputRef}
                   disabled={actionUploading}
                   onPick={handleActionFileChange}
@@ -1193,10 +1376,6 @@ return;
                     });
                   }}
                 />
-
-                <Form.Item name="evidenceUrls" label="Evidence URLs">
-                  <TextArea rows={4} placeholder="https://...\nhttps://..." />
-                </Form.Item>
               </>
             )}
 
@@ -1248,7 +1427,6 @@ return;
 
 DisputeCenter.propTypes = {
   mode: PropTypes.oneOf(['buyer', 'seller', 'admin']).isRequired,
-  embedded: PropTypes.bool,
 };
 
 export default DisputeCenter;

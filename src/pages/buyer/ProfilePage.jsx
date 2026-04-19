@@ -13,6 +13,7 @@ import ReturnRequestModal from '@components/buyer/ReturnRequestModal';
 import locationService from '@services/api/locationService';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next'; // Added import
+import { Coins, FileText, Package } from 'lucide-react';
 import ReviewModal from '@components/common/ReviewModal';
 import socketService from '@services/socket/socketService';
 import { addToCart as addToCartApi } from '@services/api/cartService';
@@ -24,7 +25,7 @@ import ProfileAddressTab from '@/components/buyer/ProfilePage/ProfileAddressTab'
 import ProfileOrdersTab from '@/components/buyer/ProfilePage/ProfileOrdersTab';
 import ProfileCoinTab from '@/components/buyer/ProfilePage/ProfileCoinTab';
 import ProfileAddressDrawer from '@/components/buyer/ProfilePage/ProfileAddressDrawer';
-import DisputeCenter from '@/components/disputes/DisputeCenter';
+import DisputeCenter from '@/components/common/disputes/DisputeCenter';
 import { geocodeAddressForSave } from '@utils/addressGeocoding';
 
 const sanitizeOrderId = (value = '') => {
@@ -932,6 +933,13 @@ const ProfilePage = () => {
     return null;
   }
 
+  const renderTabHeader = (title, Icon) => (
+    <div className={styles.sectionHeader}>
+      <Icon size={24} color="#111827" strokeWidth={2} />
+      <h3 className={styles.sectionTitle}>{title}</h3>
+    </div>
+  );
+
   const renderTabContent = () => {
     if (activeTab === 'notifications') {
       return <ProfileNotificationsTab />;
@@ -959,50 +967,61 @@ const ProfilePage = () => {
 
     if (activeTab === 'orders') {
       return (
-        <ProfileOrdersTab
-          t={t}
-          orders={orders}
-          orderLoading={orderLoading}
-          orderStatusFilter={orderStatusFilter}
-          setOrderStatusFilter={setOrderStatusFilter}
-          orderSearchQuery={orderSearchQuery}
-          setOrderSearchQuery={setOrderSearchQuery}
-          selectedOrder={selectedOrder}
-          setSelectedOrder={setSelectedOrder}
-          selectedOrderDetails={selectedOrderDetails}
-          setSelectedOrderDetails={setSelectedOrderDetails}
-          detailsLoading={detailsLoading}
-          pagination={pagination}
-          handlePageChange={handlePageChange}
-          handleOrderClick={handleOrderClick}
-          handleContactSeller={handleContactSeller}
-          handleReorder={handleReorder}
-          reorderLoadingId={reorderLoadingId}
-          handleOpenReviewModal={handleOpenReviewModal}
-          activeReturnRequest={activeReturnRequest}
-          setShowReturnModal={setShowReturnModal}
-          navigate={navigate}
-          searchParams={searchParams}
-          setSearchParams={setSearchParams}
-          user={user}
-          formatCurrency={formatCurrency}
-          setOrders={setOrders}
-        />
+        <>
+          {renderTabHeader('My Orders', Package)}
+          <ProfileOrdersTab
+            t={t}
+            orders={orders}
+            orderLoading={orderLoading}
+            orderStatusFilter={orderStatusFilter}
+            setOrderStatusFilter={setOrderStatusFilter}
+            orderSearchQuery={orderSearchQuery}
+            setOrderSearchQuery={setOrderSearchQuery}
+            selectedOrder={selectedOrder}
+            setSelectedOrder={setSelectedOrder}
+            selectedOrderDetails={selectedOrderDetails}
+            setSelectedOrderDetails={setSelectedOrderDetails}
+            detailsLoading={detailsLoading}
+            pagination={pagination}
+            handlePageChange={handlePageChange}
+            handleOrderClick={handleOrderClick}
+            handleContactSeller={handleContactSeller}
+            handleReorder={handleReorder}
+            reorderLoadingId={reorderLoadingId}
+            handleOpenReviewModal={handleOpenReviewModal}
+            activeReturnRequest={activeReturnRequest}
+            setShowReturnModal={setShowReturnModal}
+            navigate={navigate}
+            searchParams={searchParams}
+            setSearchParams={setSearchParams}
+            user={user}
+            formatCurrency={formatCurrency}
+            setOrders={setOrders}
+          />
+        </>
       );
     }
 
     if (activeTab === 'reports') {
-      return <DisputeCenter mode="buyer" embedded />;
+      return (
+        <>
+          {renderTabHeader('My Reports', FileText)}
+          <DisputeCenter mode="buyer" embedded />
+        </>
+      );
     }
 
     return (
-      <ProfileCoinTab
-        coinBalance={coinBalance}
-        coinTransactions={coinTransactions}
-        coinLoading={coinLoading}
-        coinHistoryFilter={coinHistoryFilter}
-        onFilterChange={setCoinHistoryFilter}
-      />
+      <>
+        {renderTabHeader('My GZCoin', Coins)}
+        <ProfileCoinTab
+          coinBalance={coinBalance}
+          coinTransactions={coinTransactions}
+          coinLoading={coinLoading}
+          coinHistoryFilter={coinHistoryFilter}
+          onFilterChange={setCoinHistoryFilter}
+        />
+      </>
     );
   };
 
