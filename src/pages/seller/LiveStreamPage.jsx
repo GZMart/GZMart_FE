@@ -48,6 +48,8 @@ function requestFullscreen(el) {
 
 export default function LiveStreamPage() {
   const videoContainerRef = useRef(null);
+  const liveHydrateDoneRef = useRef(false);
+  const goLiveStartedRef = useRef(false);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [session, setSession] = useState(null);
   const [token, setToken] = useState(null);
@@ -99,6 +101,65 @@ export default function LiveStreamPage() {
     };
   }, [session?._id, isLive, user?._id]);
 
+  useEffect(() => {
+    const sellerId = user?._id;
+    if (!sellerId || liveHydrateDoneRef.current) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const active = await livestreamService.getActiveByShop(sellerId);
+        if (cancelled || !active || String(active.status) !== 'live' || !active._id) {
+          liveHydrateDoneRef.current = true;
+          return;
+        }
+
+        const res = await livestreamService.mintHostToken(active._id);
+        const tokenStr = res?.token;
+        const sessionObj = res?.session ?? active;
+
+        if (cancelled || goLiveStartedRef.current || !tokenStr || !sessionObj) {
+          liveHydrateDoneRef.current = true;
+          return;
+        }
+
+        setSession(sessionObj);
+        setToken(tokenStr);
+        setIsLive(true);
+        setForm((prev) => ({
+          ...prev,
+          title: sessionObj.title || prev.title,
+          category: sessionObj.category ?? prev.category,
+        }));
+      } catch {
+        /* không có phiên live hoặc lỗi mạng — bỏ qua */
+      } finally {
+        if (!cancelled) {
+          liveHydrateDoneRef.current = true;
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?._id]);
+
+  useEffect(() => {
+    if (!isLive) {
+      return undefined;
+    }
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isLive]);
+
   const streamSettingsProps = {
     form,
     onChange: setForm,
@@ -129,6 +190,7 @@ export default function LiveStreamPage() {
       setError('Please enter a broadcast title.');
       return;
     }
+    goLiveStartedRef.current = true;
     try {
       setIsLoading(true);
       setError(null);

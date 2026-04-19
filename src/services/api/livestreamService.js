@@ -5,6 +5,8 @@ const BASE = '/api/livestream';
 export const livestreamService = {
   createSession: (data) => axiosClient.post(`${BASE}/session`, data),
   startSession: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/start`),
+  mintHostToken: (sessionId) =>
+    axiosClient.post(`${BASE}/session/${sessionId}/host-token`),
   getSessionToken: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/token`),
   getViewerToken: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/token`),
   endSession: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/end`),
