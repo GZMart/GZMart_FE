@@ -90,6 +90,60 @@
   font-size: 0.78rem;
   letter-spacing: 0.06em;
 }
+
+/* Stream ended (seller stopped broadcast) */
+.ls-ended-state {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  position: relative;
+  padding: 1.5rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+.ls-ended-icon-wrap {
+  color: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ls-ended-title {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.ls-ended-sub {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  max-width: 20rem;
+}
+.ls-ended-btn {
+  margin-top: 0.5rem;
+  padding: 0.65rem 1.35rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, #B13C36 0%, #8f2e29 100%);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.ls-ended-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
 .ls-preview-state {
   width: 100%;
   height: 100%;
@@ -257,6 +311,17 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.ls-live-badge--ended {
+  animation: none;
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.ls-live-badge--ended .ls-live-dot-ring {
+  animation: none;
+  opacity: 0;
 }
 
 /* Glass chips */

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, forwardRef } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useMemo } from 'react';
 import { LiveKitRoom, VideoTrack, RoomAudioRenderer, useLocalParticipant, useRoomContext } from '@livekit/components-react';
 import { Room, Track } from 'livekit-client';
 import '@livekit/components-styles';
@@ -350,23 +350,40 @@ const SellerLiveController = forwardRef(function SellerLiveController(
     }),
   );
 
-  const handleConnected = () => {
+  const handleConnected = useCallback(() => {
     onRoomConnect?.(roomRef.current);
-  };
+  }, [onRoomConnect]);
 
-  const audioOpts = micDeviceId ? { deviceId: micDeviceId } : true;
-  const videoOpts = camDeviceId
-    ? {
-        deviceId: camDeviceId,
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 },
-      }
-    : {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30 },
-      };
+  const handleDisconnected = useCallback(() => {
+    onRoomConnect?.(null);
+  }, [onRoomConnect]);
+
+  /** LiveKitRoom re-runs connect when callback deps change; inline arrows spam room.connect(). */
+  const handleLiveKitError = useCallback(() => {
+    /* ignore */
+  }, []);
+
+  const audioOpts = useMemo(
+    () => (micDeviceId ? { deviceId: micDeviceId } : true),
+    [micDeviceId],
+  );
+
+  const videoOpts = useMemo(
+    () =>
+      camDeviceId
+        ? {
+            deviceId: camDeviceId,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 },
+          }
+        : {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 },
+          },
+    [camDeviceId],
+  );
 
   return (
     <div ref={ref} className={styles.videoCard}>
@@ -379,12 +396,8 @@ const SellerLiveController = forwardRef(function SellerLiveController(
           video={videoOpts}
           room={roomRef.current}
           onConnected={handleConnected}
-          onDisconnected={() => {
-            onRoomConnect?.(null);
-          }}
-          onError={() => {
-            /* ignore */
-          }}
+          onDisconnected={handleDisconnected}
+          onError={handleLiveKitError}
           style={{ height: '100%', width: '100%' }}
         >
           <SellerLiveView

@@ -45,7 +45,8 @@ export default function LiveChatPanel({ room, sessionId, isLive, liveProducts = 
   const [inputValue, setInputValue] = useState('');
   const [chatStatus, setChatStatus] = useState('idle');
   const [refreshing, setRefreshing] = useState(false);
-  const chatEndRef = useRef(null);
+  /** Scroll container for seller chat only — avoid scrollIntoView (scrolls the whole page). */
+  const chatScrollRef = useRef(null);
   const user = useSelector((state) => state.auth?.user);
   const sellerIdRef = useRef(user?._id || 'seller_self');
   const displayNameRef = useRef(user?.fullName || 'Seller');
@@ -67,9 +68,10 @@ return;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.sessionId === sessionId && Array.isArray(parsed?.messages)) {
-          const deduped = parsed.messages.filter(
-            (m, i, arr) => arr.findIndex((p) => p.id === m.id) === i,
-          );
+          /* Optimistic rows (local_*) must not survive F5 — server history has the real id. */
+          const deduped = parsed.messages
+            .filter((m) => !m.isLocal)
+            .filter((m, i, arr) => arr.findIndex((p) => p.id === m.id) === i);
           setMessages(deduped);
           deduped.forEach((m) => existingIdsRef.current.add(m.id));
         }
@@ -84,9 +86,10 @@ return;
 return;
 }
     try {
+      const withoutOptimistic = msgList.filter((m) => !m.isLocal).slice(-100);
       sessionStorage.setItem(
         'gzmart_seller_session',
-        JSON.stringify({ sessionId, messages: msgList.slice(-100) }),
+        JSON.stringify({ sessionId, messages: withoutOptimistic }),
       );
     } catch {
       /* non-critical */
@@ -119,12 +122,27 @@ return;
           isLocal: false,
           timestamp: m.timestamp,
           senderId: m.senderId,
+          userId: m.userId ?? m.senderId,
           avatarUrl: typeof m.avatar === 'string' && m.avatar.trim() ? m.avatar.trim() : '',
         }));
         // Only add messages we don't already have
         const fresh = normalized.filter((m) => !existingIdsRef.current.has(m.id));
         if (fresh.length > 0) {
-          setMessages((prev) => [...prev, ...fresh]);
+          const sellerSid = String(sellerIdRef.current);
+          setMessages((prev) => {
+            let next = prev;
+            for (const nm of fresh) {
+              if (String(nm.senderId) === sellerSid) {
+                const li = next.findIndex((p) => p.isLocal && p.text === nm.text);
+                if (li !== -1) {
+                  const removed = next[li];
+                  next = [...next.slice(0, li), ...next.slice(li + 1)];
+                  existingIdsRef.current.delete(removed.id);
+                }
+              }
+            }
+            return [...next, ...fresh];
+          });
           fresh.forEach((m) => existingIdsRef.current.add(m.id));
         }
       }
@@ -200,6 +218,7 @@ return;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
+          userId: msg.userId ?? msg.senderId,
           avatarUrl: typeof msg.avatar === 'string' && msg.avatar.trim() ? msg.avatar.trim() : '',
         };
         setMessages((prev) => [...prev, newMsg]);
@@ -214,6 +233,7 @@ return;
           isLocal: false,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
+          userId: msg.userId ?? msg.senderId,
           avatarUrl: typeof msg.avatar === 'string' && msg.avatar.trim() ? msg.avatar.trim() : '',
         };
         setMessages((prev) => [...prev, newMsg]);
@@ -232,10 +252,19 @@ return;
   // Listening on both channels would cause duplicates.
   // LiveKit is still used for sending (so viewers connected via LiveKit receive). 
 
-  // ── Auto-scroll to bottom ─────────────────────────────────────
+  // ── Keep chat scrolled to bottom inside the panel only (no document scroll) ──
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (activeTab !== 'interaction') {
+      return;
+    }
+    const id = requestAnimationFrame(() => {
+      const root = chatScrollRef.current;
+      if (root) {
+        root.scrollTop = root.scrollHeight;
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [messages, activeTab]);
 
   // ── Send message ───────────────────────────────────────────────
   const handleSend = () => {
@@ -252,6 +281,8 @@ return;
       colorClass: styles.chatAvatarPink,
       text,
       isLocal: true,
+      senderId: sellerIdRef.current,
+      userId: sellerIdRef.current,
       avatarUrl: resolveUserAvatar(user),
     };
 
@@ -332,45 +363,24 @@ return;
         </div>
 
         <div className={styles.chatMainArea}>
-        {/* Live Interaction: messages + featured queue + composer (other tabs use full height) */}
+        {/* Live Interaction: chat only (products / vouchers live on their tabs) */}
         {activeTab === 'interaction' && (
           <>
-            {/* Chat header with refresh */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem 0', flexShrink: 0 }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555', fontFamily: "'Inter', system-ui, sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Chat History
-              </span>
+            <div className={styles.sellerChatHistoryHeader}>
+              <span className={styles.sellerChatHistoryLabel}>Chat History</span>
               <button
                 type="button"
+                className={styles.sellerChatRefreshBtn}
                 onClick={handleRefreshChat}
                 disabled={refreshing || !isLive}
                 title="Refresh chat history"
                 aria-label="Refresh chat"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: isLive ? 'pointer' : 'default',
-                  color: isLive ? '#B13C36' : '#ccc',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  opacity: isLive ? 1 : 0.5,
-                  transition: 'color 0.15s',
-                }}
-                onMouseEnter={(e) => {
- if (isLive) {
-e.currentTarget.style.color = '#8f2e29';
-} 
-}}
-                onMouseLeave={(e) => {
- e.currentTarget.style.color = isLive ? '#B13C36' : '#ccc'; 
-}}
               >
-                <i className={`bi bi-arrow-clockwise ${refreshing ? styles.spinning : ''}`} style={{ fontSize: '13px', display: 'inline-block' }} />
+                <i className={`bi bi-arrow-clockwise ${refreshing ? styles.spinning : ''}`} aria-hidden />
               </button>
             </div>
 
-            <div className={styles.chatBody}>
+            <div className={styles.chatBody} ref={chatScrollRef}>
               {!isLive && messages.length === 0 ? (
                 <div className={styles.emptyChat}>
                   <i className={`bi bi-chat-left-text ${styles.emptyChatIcon}`} />
@@ -382,98 +392,31 @@ e.currentTarget.style.color = '#8f2e29';
                   <span>Waiting for viewer messages...</span>
                 </div>
               ) : (
-                messages.map((msg) => (
-                  <div className={styles.chatMsg} key={msg.id}>
-                    <SellerChatAvatar
-                      avatarUrl={msg.avatarUrl}
-                      initials={msg.initials}
-                      className={`${styles.chatAvatar} ${msg.colorClass}`}
-                    />
-                    <div className={styles.chatMsgContent}>
-                      <div className={styles.chatSender}>{msg.sender}</div>
-                      <div className={styles.chatText}>{msg.text}</div>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div className={styles.featuredSection}>
-              <div className={styles.featuredHeader}>
-                <span className={styles.featuredTitle}>Featured queue</span>
-                <div className={styles.featuredActions}>
-                  <button
-                    className={styles.featuredAddBtn}
-                    type="button"
-                    onClick={onEditProducts}
-                  >
-                    <i className={`bi bi-plus-circle-fill ${styles.featuredAddBtnIcon}`} />
-                    Add product
-                  </button>
-                  <button
-                    className={styles.featuredAddBtnVoucher}
-                    type="button"
-                    onClick={onEditVouchers}
-                  >
-                    <i className={`bi bi-ticket-perforated ${styles.featuredAddBtnIcon}`} />
-                    Add voucher
-                  </button>
-                </div>
-              </div>
-              <div className={styles.featuredList}>
-                {liveProducts && liveProducts.length > 0 ? (
-                  liveProducts.map((p) => {
-                    const isPinned = pinnedProductId && String(p._id) === String(pinnedProductId);
-                    return (
-                    <div
-                      className={`${styles.featuredItem} ${isPinned ? styles.featuredItemPinned : ''}`}
-                      key={p._id}
-                    >
-                      <img
-                        src={p.thumbnail || p.images?.[0] || '/placeholder.png'}
-                        alt={p.name}
-                        className={styles.featuredImg}
-                        onError={(e) => {
- e.target.src = '/placeholder.png'; 
-}}
+                messages.map((msg) => {
+                  const uid = user?._id ? String(user._id) : '';
+                  const isOwn =
+                    msg.isLocal ||
+                    (uid !== '' &&
+                      (String(msg.senderId) === uid || String(msg.userId) === uid));
+                  const displaySender = isOwn ? 'You' : msg.sender;
+                  const displayInitials = isOwn ? 'YO' : msg.initials;
+                  const displayAvatar = isOwn ? resolveUserAvatar(user) : msg.avatarUrl;
+                  const displayColor = isOwn ? styles.chatAvatarPink : msg.colorClass;
+                  return (
+                    <div className={styles.chatMsg} key={msg.id}>
+                      <SellerChatAvatar
+                        avatarUrl={displayAvatar}
+                        initials={displayInitials}
+                        className={`${styles.chatAvatar} ${displayColor}`}
                       />
-                      <div className={styles.featuredInfo}>
-                        <div className={styles.featuredName}>{p.name}</div>
-                        <div className={styles.featuredPrice}>
-                          {p.price != null ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(p.price)) : ''}
-                        </div>
-                      </div>
-                      <div className={styles.featuredItemActions}>
-                        <button
-                          type="button"
-                          className={styles.featuredIconBtn}
-                          onClick={() => (isPinned ? onUnpinProduct(p._id) : onPinProduct(p._id))}
-                          title={isPinned ? 'Unpin' : 'Pin to viewer overlay'}
-                          aria-label={isPinned ? 'Unpin product' : 'Pin product'}
-                        >
-                          <i className={`bi ${isPinned ? 'bi-pin-fill' : 'bi-pin'} ${styles.featuredIconBtnGlyph}`} />
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.featuredIconBtn} ${styles.featuredIconBtnDanger}`}
-                          onClick={() => onRemoveProduct(p._id)}
-                          title="Remove from live"
-                          aria-label="Remove product"
-                        >
-                          <i className={`bi bi-x-lg ${styles.featuredIconBtnGlyph}`} />
-                        </button>
+                      <div className={styles.chatMsgContent}>
+                        <div className={styles.chatSender}>{displaySender}</div>
+                        <div className={styles.chatText}>{msg.text}</div>
                       </div>
                     </div>
-                    );
-                  })
-                ) : (
-                  <div className={styles.emptyChat}>
-                    <i className={`bi bi-inbox ${styles.emptyChatIcon}`} />
-                    <span className={styles.featuredEmptyText}>No featured products yet.</span>
-                  </div>
-                )}
-              </div>
+                  );
+                })
+              )}
             </div>
 
             <div className={styles.chatInputRow}>
@@ -510,7 +453,19 @@ e.currentTarget.style.color = '#8f2e29';
 
         {/* Products tab */}
         {activeTab === 'products' && (
-          <div className={styles.chatBody}>
+          <>
+            <div className={styles.showcaseTabToolbar}>
+              <span className={styles.showcaseTabTitle}>Product showcase</span>
+              <button
+                type="button"
+                className={styles.featuredAddBtn}
+                onClick={onEditProducts}
+              >
+                <i className={`bi bi-plus-circle-fill ${styles.featuredAddBtnIcon}`} />
+                Add product
+              </button>
+            </div>
+            <div className={styles.chatBody}>
             {liveProducts && liveProducts.length > 0 ? (
               liveProducts.map((p) => {
                 const isPinned = pinnedProductId && String(p._id) === String(pinnedProductId);
@@ -580,15 +535,28 @@ e.currentTarget.style.color = '#8f2e29';
             ) : (
               <div className={styles.emptyChat}>
                 <i className={`bi bi-box-seam ${styles.emptyChatIcon}`} />
-                <span>No products in showcase. Add products to your stream!</span>
+                <span>No products in showcase. Use Add product above.</span>
               </div>
             )}
-          </div>
+            </div>
+          </>
         )}
 
         {/* Vouchers tab */}
         {activeTab === 'vouchers' && (
-          <div className={styles.chatBody}>
+          <>
+            <div className={styles.showcaseTabToolbar}>
+              <span className={styles.showcaseTabTitle}>Vouchers</span>
+              <button
+                type="button"
+                className={styles.featuredAddBtnVoucher}
+                onClick={onEditVouchers}
+              >
+                <i className={`bi bi-ticket-perforated ${styles.featuredAddBtnIcon}`} />
+                Add voucher
+              </button>
+            </div>
+            <div className={styles.chatBody}>
             {liveVouchers && liveVouchers.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {liveVouchers.map((v) => (
@@ -644,10 +612,11 @@ e.currentTarget.style.color = '#8f2e29';
             ) : (
               <div className={styles.emptyChat}>
                 <i className={`bi bi-ticket-perforated ${styles.emptyChatIcon}`} />
-                <span>No vouchers in showcase. Add vouchers to your stream!</span>
+                <span>No vouchers in showcase. Use Add voucher above.</span>
               </div>
             )}
-          </div>
+            </div>
+          </>
         )}
 
         {/* Order Syntax tab — same scroll container as other tabs */}
