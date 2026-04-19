@@ -1,4 +1,4 @@
-import DisputeCenter from '@components/disputes/DisputeCenter';
+import DisputeCenter from '@components/common/disputes/DisputeCenter';
 
 const DisputesPage = () => <DisputeCenter mode="admin" />;
 

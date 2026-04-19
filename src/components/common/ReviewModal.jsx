@@ -257,7 +257,12 @@ const ReviewModal = ({
 
       handleClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit review');
+      toast.error(
+        error?.message ||
+          error?.data?.message ||
+          error?.response?.data?.message ||
+          'Failed to submit review'
+      );
     } finally {
       setSubmitting(false);
     }

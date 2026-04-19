@@ -280,13 +280,13 @@ const ProductDetailsPage = () => {
       .then((res) => {
         const data = res?.data ?? res;
         if (!cancelled) {
-setActiveLive(data || null);
-}
+          setActiveLive(data || null);
+        }
       })
       .catch(() => {
         if (!cancelled) {
-setActiveLive(null);
-}
+          setActiveLive(null);
+        }
       });
     return () => {
       cancelled = true;
@@ -736,6 +736,33 @@ setActiveLive(null);
     }
   };
 
+  const handleOpenProductReport = () => {
+    if (!product?._id) {
+      return;
+    }
+
+    const prefillProduct = {
+      _id: product._id,
+      name: product.name,
+      description: product.description,
+      image: product.image,
+      images: product.images,
+    };
+
+    navigate(
+      `/buyer/profile?tab=reports&openReport=1&reportType=product&subjectProductId=${encodeURIComponent(product._id)}`,
+      {
+        state: {
+          reportPrefill: {
+            openForm: true,
+            type: 'product',
+            product: prefillProduct,
+          },
+        },
+      }
+    );
+  };
+
   if (loading) {
     return (
       <div className={styles.productDetailsPage}>
@@ -830,7 +857,10 @@ setActiveLive(null);
             {[...Array(4)].map((_, i) => (
               <div key={i} className={styles.skeletonLine} style={{ width: `${85 - i * 8}%` }} />
             ))}
-            <div className={styles.skeletonLine} style={{ height: 18, width: '30%', marginTop: 8 }} />
+            <div
+              className={styles.skeletonLine}
+              style={{ height: 18, width: '30%', marginTop: 8 }}
+            />
             {[...Array(3)].map((_, i) => (
               <div key={i} className={styles.skeletonLine} style={{ width: `${90 - i * 10}%` }} />
             ))}
@@ -970,6 +1000,15 @@ setActiveLive(null);
                   ? `Saved (${formatSavedCount(product.wishlistCount)})`
                   : `Save (${formatSavedCount(product.wishlistCount)})`}
               </span>
+
+              <button
+                className={`${styles.shareButton} ${styles.unwishlist}`}
+                onClick={handleOpenProductReport}
+                title="Warning / Report this product"
+              >
+                <i className="bi bi-exclamation-triangle"></i>
+              </button>
+              <span className={styles.saveLabel}>Report</span>
             </div>
           </div>
         </div>
