@@ -1,31 +1,29 @@
 import { useState, useEffect } from 'react';
-import {
-  Container, Card, Form, Button, Row, Col,
-  Alert, Spinner,
-} from 'react-bootstrap';
+import { Form, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import voucherCampaignService from '@services/api/voucherCampaignService';
 import { ADMIN_ROUTES } from '@constants/routes';
 import { DatePicker, Space } from 'antd';
 import dayjs from 'dayjs';
+import styles from './VoucherCampaignForm.module.css';
 
 const OCCASION_OPTIONS = [
-  { value: 'NEW_YEAR',      label: '🎆  New Year (Jan 1)' },
+  { value: 'NEW_YEAR', label: '🎆  New Year (Jan 1)' },
   { value: 'LUNAR_NEW_YEAR', label: '🧧  Lunar New Year' },
-  { value: 'BLACK_FRIDAY',  label: '🛒  Black Friday (Nov 29)' },
-  { value: 'CHRISTMAS',     label: '🎄  Christmas (Dec 25)' },
-  { value: 'VALENTINE',     label: '💝  Valentine (Feb 14)' },
-  { value: 'WOMEN_DAY',     label: '🌸  Women\'s Day (Mar 8)' },
-  { value: 'CUSTOM',        label: '🎯  Custom Date' },
+  { value: 'BLACK_FRIDAY', label: '🛒  Black Friday (Nov 29)' },
+  { value: 'CHRISTMAS', label: '🎄  Christmas (Dec 25)' },
+  { value: 'VALENTINE', label: '💝  Valentine (Feb 14)' },
+  { value: 'WOMEN_DAY', label: "🌸  Women's Day (Mar 8)" },
+  { value: 'CUSTOM', label: '🎯  Custom Date' },
 ];
 
 const OFFSET_OPTIONS = [
-  { value: -7,  label: '1 week before' },
-  { value: -3,  label: '3 days before' },
-  { value: 0,   label: 'Exactly on the day' },
-  { value: 3,   label: '3 days after' },
-  { value: 7,   label: '1 week after' },
+  { value: -7, label: '1 week before' },
+  { value: -3, label: '3 days before' },
+  { value: 0, label: 'Exactly on the day' },
+  { value: 3, label: '3 days after' },
+  { value: 7, label: '1 week after' },
 ];
 
 const VoucherCampaignForm = () => {
@@ -58,14 +56,14 @@ const VoucherCampaignForm = () => {
     isActive: true,
   });
 
-  const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const setField = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  // Load existing campaign
   useEffect(() => {
     if (!isEditMode) {
-return;
-}
-    voucherCampaignService.getById(id)
+      return;
+    }
+    voucherCampaignService
+      .getById(id)
       .then((res) => {
         const d = res.data;
         setForm({
@@ -73,9 +71,12 @@ return;
           code: d.code || '',
           triggerType: d.triggerType || 'birthday',
           occasion: d.occasion || '',
-          customDate: d.customDate && d.customMonth
-            ? dayjs(`${new Date().getFullYear()}-${String(d.customMonth).padStart(2,'0')}-${String(d.customDate).padStart(2,'0')}`)
-            : null,
+          customDate:
+            d.customDate && d.customMonth
+              ? dayjs(
+                  `${new Date().getFullYear()}-${String(d.customMonth).padStart(2, '0')}-${String(d.customDate).padStart(2, '0')}`
+                )
+              : null,
           customMonth: d.customMonth || null,
           voucherStartOffset: d.voucherStartOffset || 0,
           voucherValidityDays: d.voucherValidityDays || 7,
@@ -95,7 +96,7 @@ return;
         navigate(ADMIN_ROUTES.VOUCHER_CAMPAIGNS);
       })
       .finally(() => setFetching(false));
-  }, [id, isEditMode]);
+  }, [id, isEditMode, navigate]);
 
   const handlePreview = async () => {
     if (!form.voucherName || !form.voucherValidityDays) {
@@ -163,9 +164,12 @@ return;
 
   if (fetching) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" style={{ color: '#0891b2' }} />
-      </Container>
+      <div className={styles.formRoot}>
+        <div className={styles.loadingWrap}>
+          <Spinner animation="border" style={{ color: '#4f46e5' }} />
+          <span>Loading campaign…</span>
+        </div>
+      </div>
     );
   }
 
@@ -173,394 +177,413 @@ return;
   const isPercent = form.discountType === 'percent';
 
   return (
-    <Container fluid className="py-4 px-4">
-      {/* Header */}
-      <div className="d-flex align-items-center mb-4 gap-3">
-        <Button
-          variant="link"
-          className="p-0 text-decoration-none"
-          onClick={() => navigate(ADMIN_ROUTES.VOUCHER_CAMPAIGNS)}
-        >
-          <div
-            className="rounded-circle border d-flex align-items-center justify-content-center"
-            style={{ width: 40, height: 40 }}
-          >
-            <i className="bi bi-arrow-left" />
+    <div className={styles.formRoot}>
+      <Form onSubmit={handleSubmit} className={styles.formLayout}>
+        <header className={styles.stickyHeader}>
+          <div className={styles.headerLeft}>
+            <button
+              type="button"
+              className={styles.backBtn}
+              onClick={() => navigate(ADMIN_ROUTES.VOUCHER_CAMPAIGNS)}
+              aria-label="Back to voucher campaigns"
+            >
+              <i className="bi bi-arrow-left fs-5" />
+            </button>
+            <h1 className={styles.headerTitle}>{isEditMode ? 'Edit campaign' : 'New voucher campaign'}</h1>
           </div>
-        </Button>
-        <div>
-          <h4 className="mb-0" style={{ color: '#164E63', fontWeight: 700 }}>
-            {isEditMode ? 'Edit Campaign' : 'New Voucher Campaign'}
-          </h4>
-          <p className="text-muted mb-0 small">
-            {isEditMode
-              ? 'Update campaign configuration'
-              : 'Create automated voucher distribution campaign'}
-          </p>
-        </div>
-      </div>
+        </header>
 
-      <Form onSubmit={handleSubmit}>
-        <Row>
-          {/* Left Column */}
-          <Col lg={8}>
-            {/* Campaign Identity */}
-            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
-              <Card.Header
-                className="bg-white border-0 pb-0"
-                style={{ borderRadius: '12px 12px 0 0' }}
-              >
-                <h6 className="mb-0" style={{ color: '#164E63' }}>
-                  <i className="bi bi-flag me-1" /> Campaign Identity
-                </h6>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Campaign Name *</Form.Label>
-                      <Form.Control
-                        value={form.name}
-                        onChange={(e) => set('name', e.target.value)}
-                        placeholder="e.g. Birthday Surprise 2026"
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Campaign Code *</Form.Label>
-                      <Form.Control
-                        value={form.code}
-                        onChange={(e) =>
-                          set('code', e.target.value.toUpperCase().replace(/\s/g, ''))
-                        }
-                        placeholder="e.g. BDAY2026"
-                        required
-                        maxLength={20}
-                      />
-                      <Form.Text className="text-muted">
-                        Unique identifier — cannot be changed later
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
+        <div className={styles.formScroll}>
+          <div className={styles.formMax}>
+            <div className={styles.grid}>
+              <div className={styles.colMain}>
+                <section className={styles.section}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={styles.sectionTitle}>
+                      <i className="bi bi-flag-fill" aria-hidden />
+                      Campaign identity
+                    </h2>
+                    <div className={styles.stack}>
+                      <div className={styles.row2}>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-name">
+                            Campaign name *
+                          </label>
+                          <input
+                            id="vc-name"
+                            className={styles.input}
+                            value={form.name}
+                            onChange={(e) => setField('name', e.target.value)}
+                            placeholder="e.g. Birthday Surprise 2026"
+                            required
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-code">
+                            Campaign code *
+                          </label>
+                          <input
+                            id="vc-code"
+                            className={`${styles.input} ${styles.inputMono}`}
+                            value={form.code}
+                            onChange={(e) => setField('code', e.target.value.toUpperCase().replace(/\s/g, ''))}
+                            placeholder="BDAY2026"
+                            required
+                            maxLength={20}
+                            autoComplete="off"
+                          />
+                          <p className={styles.hint}>Unique — cannot be changed later</p>
+                        </div>
+                      </div>
+                      <div className={styles.row2}>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-trigger">
+                            Trigger type *
+                          </label>
+                          <select
+                            id="vc-trigger"
+                            className={styles.select}
+                            value={form.triggerType}
+                            onChange={(e) => setField('triggerType', e.target.value)}
+                          >
+                            <option value="birthday">Birthday — on the user&apos;s birthday</option>
+                            <option value="occasion">Occasion — all users on a fixed day</option>
+                          </select>
+                        </div>
+                        {isOccasion && (
+                          <div>
+                            <label className={styles.label} htmlFor="vc-occasion">
+                              Occasion *
+                            </label>
+                            <select
+                              id="vc-occasion"
+                              className={styles.select}
+                              value={form.occasion}
+                              onChange={(e) => setField('occasion', e.target.value)}
+                            >
+                              <option value="">Select occasion…</option>
+                              {OCCASION_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                      {isOccasion && form.occasion === 'CUSTOM' && (
+                        <div>
+                          <label className={styles.label} htmlFor="vc-custom-date">
+                            Custom date *
+                          </label>
+                          <div id="vc-custom-date" className={styles.pickerWrap}>
+                            <Space direction="vertical" className="w-100">
+                              <DatePicker
+                                value={form.customDate}
+                                onChange={(val) => setField('customDate', val)}
+                                picker="date"
+                                placeholder="Pick a date"
+                                className="w-100"
+                                style={{ minWidth: 200 }}
+                                disabledDate={(current) => current && current.year() !== dayjs().year()}
+                              />
+                            </Space>
+                          </div>
+                          <p className={styles.hint}>Repeats every year on this date</p>
+                        </div>
+                      )}
+                      {isOccasion && form.occasion === 'LUNAR_NEW_YEAR' && (
+                        <div className={styles.lunarAlert}>
+                          <i className="bi bi-info-circle me-1" aria-hidden />
+                          <strong>Lunar New Year</strong> shifts yearly — use <strong>Custom date</strong> for the upcoming
+                          year.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Trigger Type *</Form.Label>
-                      <Form.Select
-                        value={form.triggerType}
-                        onChange={(e) => set('triggerType', e.target.value)}
-                      >
-                        <option value="birthday">🎂  Birthday — sent to user on their birthday</option>
-                        <option value="occasion">🎉  Occasion — sent to all users on a special day</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  {isOccasion && (
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Occasion *</Form.Label>
-                        <Form.Select
-                          value={form.occasion}
-                          onChange={(e) => set('occasion', e.target.value)}
+                <section className={styles.section}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={styles.sectionTitle}>
+                      <i className="bi bi-ticket-perforated" aria-hidden />
+                      Voucher template
+                    </h2>
+                    <div className={styles.stack}>
+                      <div>
+                        <label className={styles.label} htmlFor="vc-vname">
+                          Voucher display name *
+                        </label>
+                        <input
+                          id="vc-vname"
+                          className={styles.input}
+                          value={form.voucherName}
+                          onChange={(e) => setField('voucherName', e.target.value)}
+                          placeholder='e.g. "Birthday Special - 15% off"'
+                          required
+                          autoComplete="off"
+                        />
+                        <p className={styles.hint}>Shown to customers in wallet &amp; checkout</p>
+                      </div>
+                      <div className={styles.row3}>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-vtype">
+                            Voucher type *
+                          </label>
+                          <select
+                            id="vc-vtype"
+                            className={styles.select}
+                            value={form.voucherType}
+                            onChange={(e) => setField('voucherType', e.target.value)}
+                          >
+                            <option value="system_order">Order discount</option>
+                            <option value="system_shipping">Free shipping</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-dtype">
+                            Discount type *
+                          </label>
+                          <select
+                            id="vc-dtype"
+                            className={styles.select}
+                            value={form.discountType}
+                            onChange={(e) => setField('discountType', e.target.value)}
+                          >
+                            <option value="percent">Percentage (%)</option>
+                            <option value="amount">Fixed amount (₫)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-val">
+                            Value *
+                          </label>
+                          <input
+                            id="vc-val"
+                            className={styles.input}
+                            type="number"
+                            min="0"
+                            value={form.discountValue}
+                            onChange={(e) => setField('discountValue', e.target.value)}
+                            placeholder={isPercent ? 'e.g. 15' : 'e.g. 30000'}
+                            required
+                          />
+                        </div>
+                      </div>
+                      {isPercent && (
+                        <div className={styles.row2}>
+                          <div>
+                            <label className={styles.label} htmlFor="vc-max">
+                              Max discount (₫)
+                            </label>
+                            <input
+                              id="vc-max"
+                              className={styles.input}
+                              type="number"
+                              min="0"
+                              value={form.maxDiscountAmount}
+                              onChange={(e) => setField('maxDiscountAmount', e.target.value)}
+                              placeholder="e.g. 50000"
+                            />
+                            <p className={styles.hint}>Cap for percentage vouchers</p>
+                          </div>
+                          <div>
+                            <label className={styles.label} htmlFor="vc-minp">
+                              Min. basket (₫)
+                            </label>
+                            <input
+                              id="vc-minp"
+                              className={styles.input}
+                              type="number"
+                              min="0"
+                              value={form.minBasketPrice}
+                              onChange={(e) => setField('minBasketPrice', e.target.value)}
+                              placeholder="0 = none"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {!isPercent && (
+                        <div>
+                          <label className={styles.label} htmlFor="vc-minf">
+                            Min. basket (₫)
+                          </label>
+                          <input
+                            id="vc-minf"
+                            className={styles.input}
+                            type="number"
+                            min="0"
+                            value={form.minBasketPrice}
+                            onChange={(e) => setField('minBasketPrice', e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className={styles.colAside}>
+                <section className={`${styles.section} ${styles.asideSection}`}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={`${styles.sectionTitle} ${styles.sectionTitleSecondary}`}>
+                      <i className="bi bi-calendar-check" aria-hidden />
+                      Validity settings
+                    </h2>
+                    <div className={styles.stack}>
+                      <div>
+                        <label className={styles.label} htmlFor="vc-offset">
+                          Voucher start offset
+                        </label>
+                        <select
+                          id="vc-offset"
+                          className={styles.select}
+                          value={form.voucherStartOffset}
+                          onChange={(e) => setField('voucherStartOffset', Number(e.target.value))}
                         >
-                          <option value="">Select occasion...</option>
-                          {OCCASION_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
+                          {OFFSET_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
                           ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  )}
-                </Row>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={styles.label} htmlFor="vc-days">
+                          Validity duration (days) *
+                        </label>
+                        <input
+                          id="vc-days"
+                          className={styles.input}
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={form.voucherValidityDays}
+                          onChange={(e) => setField('voucherValidityDays', e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className={styles.previewBox}>
+                        <div className="fw-semibold mb-1">
+                          <i className="bi bi-calendar2-week me-1" aria-hidden />
+                          Validity preview
+                        </div>
+                        <div>
+                          {form.voucherStartOffset < 0
+                            ? `Issued ${Math.abs(form.voucherStartOffset)} day(s) before the event`
+                            : form.voucherStartOffset > 0
+                              ? `Issued ${form.voucherStartOffset} day(s) after the event`
+                              : 'Issued on the day'}
+                          <br />
+                          Expires after <strong>{form.voucherValidityDays}</strong> day(s)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
-                {isOccasion && form.occasion === 'CUSTOM' && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Custom Date *</Form.Label>
-                    <Space direction="vertical">
-                      <DatePicker
-                        value={form.customDate}
-                        onChange={(val) => set('customDate', val)}
-                        picker="date"
-                        placeholder="Pick a date"
-                        style={{ width: 200 }}
-                        disabledDate={(current) =>
-                          current && current.year() !== dayjs().year()
-                        }
+                <section className={`${styles.section} ${styles.asideSection}`}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={`${styles.sectionTitle} ${styles.sectionTitleTertiary}`}>
+                      <i className="bi bi-shield-lock" aria-hidden />
+                      Usage limits
+                    </h2>
+                    <div className={styles.stack}>
+                      <div>
+                        <label className={styles.label} htmlFor="vc-ulimit">
+                          Total usage limit
+                        </label>
+                        <input
+                          id="vc-ulimit"
+                          className={styles.input}
+                          type="number"
+                          min="1"
+                          value={form.usageLimit}
+                          onChange={(e) => setField('usageLimit', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className={styles.label} htmlFor="vc-maxb">
+                          Max per buyer
+                        </label>
+                        <input
+                          id="vc-maxb"
+                          className={styles.input}
+                          type="number"
+                          min="1"
+                          value={form.maxPerBuyer}
+                          onChange={(e) => setField('maxPerBuyer', e.target.value)}
+                        />
+                      </div>
+                      <Form.Check
+                        type="switch"
+                        id="vc-active"
+                        label="Campaign active"
+                        checked={form.isActive}
+                        onChange={(e) => setField('isActive', e.target.checked)}
+                        className="fw-semibold"
                       />
-                    </Space>
-                    <Form.Text className="text-muted d-block">
-                      Voucher will be created on this date every year
-                    </Form.Text>
-                  </Form.Group>
-                )}
+                    </div>
+                  </div>
+                </section>
 
-                {isOccasion && form.occasion === 'LUNAR_NEW_YEAR' && (
-                  <Alert variant="info" className="py-2 small">
-                    <i className="bi bi-info-circle me-1" />
-                    <strong>Lunar New Year</strong> date changes every year.
-                    Please use <strong>Custom Date</strong> and set the correct date
-                    for the upcoming year. The campaign will trigger on that date annually.
+                {preview && (
+                  <Alert variant="success" className="rounded-3 border-0 mb-0">
+                    <Alert.Heading className="fs-6">Preview</Alert.Heading>
+                    <p className="mb-1 small">{preview.message}</p>
+                    <strong>{preview.estimatedRecipients} recipient(s)</strong>
                   </Alert>
                 )}
-              </Card.Body>
-            </Card>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Voucher Template */}
-            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
-              <Card.Header
-                className="bg-white border-0 pb-0"
-                style={{ borderRadius: '12px 12px 0 0' }}
-              >
-                <h6 className="mb-0" style={{ color: '#164E63' }}>
-                  <i className="bi bi-ticket-perforated me-1" /> Voucher Template
-                </h6>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Voucher Display Name *</Form.Label>
-                  <Form.Control
-                    value={form.voucherName}
-                    onChange={(e) => set('voucherName', e.target.value)}
-                    placeholder='e.g. "Birthday Special - 15% Off"'
-                    required
-                  />
-                  <Form.Text className="text-muted">
-                    This name will be shown to users
-                  </Form.Text>
-                </Form.Group>
-
-                <Row>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Voucher Type *</Form.Label>
-                      <Form.Select
-                        value={form.voucherType}
-                        onChange={(e) => set('voucherType', e.target.value)}
-                      >
-                        <option value="system_order">💰 Order Discount</option>
-                        <option value="system_shipping">🚚 Free Shipping</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Discount Type *</Form.Label>
-                      <Form.Select
-                        value={form.discountType}
-                        onChange={(e) => set('discountType', e.target.value)}
-                      >
-                        <option value="percent">Percentage (%)</option>
-                        <option value="amount">Fixed Amount (₫)</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Value *</Form.Label>
-                      <Form.Control
-                        type="number"
-                        min="0"
-                        value={form.discountValue}
-                        onChange={(e) => set('discountValue', e.target.value)}
-                        placeholder={isPercent ? 'e.g. 15' : 'e.g. 30000'}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                {isPercent && (
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Max Discount Amount (₫)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          min="0"
-                          value={form.maxDiscountAmount}
-                          onChange={(e) => set('maxDiscountAmount', e.target.value)}
-                          placeholder="e.g. 50000"
-                        />
-                        <Form.Text className="text-muted">
-                          Cap for percentage vouchers
-                        </Form.Text>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Min. Basket Price (₫)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          min="0"
-                          value={form.minBasketPrice}
-                          onChange={(e) => set('minBasketPrice', e.target.value)}
-                          placeholder="0 = no minimum"
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                )}
-
-                {!isPercent && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Min. Basket Price (₫)</Form.Label>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      value={form.minBasketPrice}
-                      onChange={(e) => set('minBasketPrice', e.target.value)}
-                    />
-                  </Form.Group>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* Right Column */}
-          <Col lg={4}>
-            {/* Validity Settings */}
-            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
-              <Card.Header
-                className="bg-white border-0 pb-0"
-                style={{ borderRadius: '12px 12px 0 0' }}
-              >
-                <h6 className="mb-0" style={{ color: '#164E63' }}>
-                  <i className="bi bi-calendar-check me-1" /> Validity Settings
-                </h6>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Voucher Start Offset</Form.Label>
-                  <Form.Select
-                    value={form.voucherStartOffset}
-                    onChange={(e) => set('voucherStartOffset', Number(e.target.value))}
-                  >
-                    {OFFSET_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Validity Duration (days) *</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={form.voucherValidityDays}
-                    onChange={(e) => set('voucherValidityDays', e.target.value)}
-                    required
-                  />
-                </Form.Group>
-
-                {/* Validity Preview */}
-                <div
-                  className="p-3 rounded-3 mb-3"
-                  style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}
-                >
-                  <div className="small fw-semibold mb-1" style={{ color: '#166534' }}>
-                    <i className="bi bi-calendar-check me-1" />
-                    Validity Preview
-                  </div>
-                  <div className="small" style={{ color: '#15803d' }}>
-                    {form.voucherStartOffset < 0
-                      ? `Issued ${Math.abs(form.voucherStartOffset)} day(s) before the occasion`
-                      : form.voucherStartOffset > 0
-                        ? `Issued ${form.voucherStartOffset} day(s) after the occasion`
-                        : 'Issued on the day'}
-                    <br />
-                    Expires after <strong>{form.voucherValidityDays}</strong> day(s)
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Usage Limits */}
-            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: 12 }}>
-              <Card.Header
-                className="bg-white border-0 pb-0"
-                style={{ borderRadius: '12px 12px 0 0' }}
-              >
-                <h6 className="mb-0" style={{ color: '#164E63' }}>
-                  <i className="bi bi-shield-lock me-1" /> Usage Limits
-                </h6>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Total Usage Limit</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="1"
-                    value={form.usageLimit}
-                    onChange={(e) => set('usageLimit', e.target.value)}
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Max Per Buyer</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="1"
-                    value={form.maxPerBuyer}
-                    onChange={(e) => set('maxPerBuyer', e.target.value)}
-                  />
-                </Form.Group>
-                <Form.Check
-                  type="switch"
-                  id="isActive"
-                  label="Campaign Active"
-                  checked={form.isActive}
-                  onChange={(e) => set('isActive', e.target.checked)}
-                  className="fw-semibold"
-                />
-              </Card.Body>
-            </Card>
-
-            {/* Preview Result */}
-            {preview && (
-              <Alert variant="success" className="mb-4">
-                <Alert.Heading className="fs-6">Preview Result</Alert.Heading>
-                <p className="mb-1 small">{preview.message}</p>
-                <strong>{preview.estimatedRecipients} recipient(s)</strong>
-              </Alert>
-            )}
-
-            {/* Actions */}
-            <div className="d-flex flex-column gap-2">
-              <Button
-                type="submit"
-                className="fw-semibold"
-                style={{ backgroundColor: '#0891b2', borderColor: '#0891b2' }}
-                disabled={saving}
-              >
-                {saving ? <Spinner size="sm" /> : (
-                  <>{isEditMode ? 'Update Campaign' : 'Create Campaign'}</>
-                )}
-              </Button>
-              <Button
-                variant="outline-secondary"
-                onClick={handlePreview}
-                disabled={previewing || !isEditMode}
-              >
-                {previewing ? <Spinner size="sm" /> : (
-                  <><i className="bi bi-eye me-1" /> Preview Recipients</>
-                )}
-              </Button>
-              <Button
-                variant="link"
-                className="text-decoration-none"
+        <div className={styles.footerDock}>
+          <div className={styles.footerGrid}>
+            <div className={styles.footerActions}>
+              <button
+                type="button"
+                className={styles.btnCancel}
                 onClick={() => navigate(ADMIN_ROUTES.VOUCHER_CAMPAIGNS)}
               >
                 Cancel
-              </Button>
+              </button>
+              {isEditMode && (
+                <button
+                  type="button"
+                  className={styles.btnPreview}
+                  onClick={handlePreview}
+                  disabled={previewing}
+                >
+                  {previewing ? (
+                    <Spinner animation="border" size="sm" />
+                  ) : (
+                    <>
+                      <i className="bi bi-eye" /> Preview recipients
+                    </>
+                  )}
+                </button>
+              )}
+              <button type="submit" className={styles.btnSave} disabled={saving}>
+                {saving ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-1" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-lg" />
+                    {isEditMode ? 'Update campaign' : 'Create campaign'}
+                  </>
+                )}
+              </button>
             </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </Form>
-    </Container>
+    </div>
   );
 };
 

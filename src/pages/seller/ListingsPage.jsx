@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ProductDrawer from '../../components/seller/listings/ProductDrawer';
+import BulkUploadModal from '../../components/seller/listings/BulkUploadModal';
 import ListingsPagination from '../../components/seller/listings/ListingsPagination';
 import SortableHeader, { useSortState, sortRows } from '../../components/common/SortableHeader';
 import AiPriceSuggestModal from '../../components/seller/listings/AiPriceSuggestModal';
@@ -37,6 +38,7 @@ const ListingsPage = () => {
   const [actionLoading, setActionLoading] = useState(null); // productId being toggled
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [aiModalProduct, setAiModalProduct] = useState(null); // product for AI price modal
@@ -221,17 +223,29 @@ const ListingsPage = () => {
             <h1 className={styles.pageTitle}>Products</h1>
             <p className={styles.pageSubtitle}>Manage your product catalogue</p>
           </div>
-          <button className={styles.addButton} onClick={handleAddItem}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path
-                d="M7 1v12M1 7h12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            Add Product
-          </button>
+          <div className={styles.headerActions}>
+            <button
+              type="button"
+              className={styles.bulkOutlineBtn}
+              onClick={() => setShowBulkUpload(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Bulk upload
+            </button>
+            <button className={styles.addButton} onClick={handleAddItem}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M7 1v12M1 7h12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Add Product
+            </button>
+          </div>
         </div>
 
         {/* ── Stats row ─────────────────────────────────────── */}
@@ -591,6 +605,12 @@ const ListingsPage = () => {
           </>
         )}
       </div>
+
+      <BulkUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onCompleted={fetchListings}
+      />
 
       <ProductDrawer
         show={showAddModal}

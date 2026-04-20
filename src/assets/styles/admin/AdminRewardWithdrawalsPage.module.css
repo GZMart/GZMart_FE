@@ -1,0 +1,306 @@
+/* =============================================================
+   Admin Reward Withdrawals — bảng + filter theo mockup indigo
+   Tokens: AdminLayout.module.css
+   ============================================================= */
+
+.page {
+  padding: 0;
+  background: transparent;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  color: var(--admin-primary, #4f46e5);
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.header h1 {
+  margin: 0 0 4px;
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: var(--admin-text-1, #111827);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-muted, #6b7280);
+  margin: 0;
+  max-width: 560px;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.totalPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #f2f3f7;
+  border: 1px solid rgba(199, 196, 216, 0.35);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--admin-text-1, #111827);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.pulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--admin-primary, #4f46e5);
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.refreshBtn {
+  border: 1px solid rgba(79, 70, 229, 0.22) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+  box-shadow: 0 4px 14px rgba(53, 37, 205, 0.18) !important;
+}
+
+.refreshBtn:hover {
+  border-color: var(--admin-primary-hover, #4338ca) !important;
+  color: #fff !important;
+  filter: brightness(1.03);
+}
+
+/* ── Filter card ───────────────────────────────────────────── */
+.filterCard {
+  background: var(--admin-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid rgba(199, 196, 216, 0.35);
+  box-shadow: 0 12px 32px rgba(53, 37, 205, 0.03);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.filterGrow {
+  flex: 1;
+  min-width: 200px;
+}
+
+.clearBtn {
+  color: var(--admin-text-muted, #6b7280) !important;
+  font-weight: 500 !important;
+}
+
+.clearBtn:hover {
+  color: var(--admin-primary, #4f46e5) !important;
+  background: rgba(79, 70, 229, 0.06) !important;
+}
+
+/* ── Table card ───────────────────────────────────────────── */
+.tableCard {
+  background: var(--admin-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid rgba(199, 196, 216, 0.35);
+  box-shadow: 0 12px 32px rgba(53, 37, 205, 0.03);
+  overflow: hidden;
+}
+
+.tableCard :global(.ant-table-thead > tr > th) {
+  background: #f2f3f7 !important;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #464555 !important;
+  border-bottom: 1px solid rgba(199, 196, 216, 0.25) !important;
+  padding: 14px 16px !important;
+}
+
+.tableCard :global(.ant-table-tbody > tr > td) {
+  padding: 14px 16px !important;
+  vertical-align: middle;
+}
+
+.tableCard :global(.ant-table-tbody > tr:hover > td) {
+  background: rgba(77, 68, 227, 0.04) !important;
+}
+
+.tableCard :global(.ant-pagination) {
+  margin: 16px 24px !important;
+}
+
+.amountCell {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--admin-text-1, #111827);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rpCell {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--admin-primary, #4f46e5);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.sellerBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sellerText {
+  min-width: 0;
+}
+
+.sellerName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--admin-text-1, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sellerEmail {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dateCell {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-1, #111827);
+  font-variant-numeric: tabular-nums;
+}
+
+.actionWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.actionOk {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: #e0e7ff !important;
+  color: var(--admin-primary, #4f46e5) !important;
+  border: none !important;
+}
+
+.actionOk:hover {
+  background: var(--admin-primary, #4f46e5) !important;
+  color: #fff !important;
+}
+
+.actionReject {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: #ffdad6 !important;
+  color: #ba1a1a !important;
+  border: none !important;
+}
+
+.actionReject:hover {
+  background: #ef4444 !important;
+  color: #fff !important;
+}
+
+.modalSummary {
+  background: #f2f3f7;
+  border: 1px solid rgba(199, 196, 216, 0.35);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.modalSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875rem;
+  padding: 4px 0;
+}
+
+.modalSummaryLabel {
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.modalSummaryValue {
+  font-weight: 600;
+  color: var(--admin-text-1, #111827);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 576px) {
+  .filterCard {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -1,6 +1,12 @@
 import PropTypes from 'prop-types';
 import { Table, Tag, Tooltip, Dropdown, Button } from 'antd';
-import { EditOutlined, DeleteOutlined, EllipsisOutlined, EyeOutlined } from '@ant-design/icons';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  EllipsisOutlined,
+  EyeOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 
@@ -25,8 +31,33 @@ const CAMPAIGN_TYPE_CONFIG = {
   special: { label: '🎯 Special', color: '#ff6b81', bgColor: '#fff1f2' },
 };
 
+const sellerColumnAdmin = {
+  title: 'Shop / Seller',
+  key: 'seller',
+  width: 200,
+  render: (_, group) => {
+    const s = group.sellerId;
+    if (!s) {
+      return <span style={{ color: '#94a3b8' }}>—</span>;
+    }
+    if (typeof s === 'object' && s !== null) {
+      return (
+        <div>
+          <div style={{ fontWeight: 600, color: '#0f172a' }}>{s.shopName || s.fullName || '—'}</div>
+          {s.email ? (
+            <div style={{ fontSize: 11, color: '#64748b' }}>{s.email}</div>
+          ) : null}
+        </div>
+      );
+    }
+    return <span style={{ fontSize: 12, color: '#475569' }}>{String(s)}</span>;
+  },
+};
+
 // Campaign-level (parent) columns
-const campaignColumns = (handleViewCampaign, handleEditCampaign, handleDeleteCampaign) => [
+const campaignColumns = (handleViewCampaign, handleEditCampaign, handleDeleteCampaign, options = {}) => {
+  const { showSeller = false, moderationOnly = false, onWarnSeller } = options;
+  const cols = [
   {
     title: 'Campaign',
     key: 'campaign',
@@ -211,36 +242,70 @@ const campaignColumns = (handleViewCampaign, handleEditCampaign, handleDeleteCam
     width: 120,
     fixed: 'right',
     align: 'center',
-    render: (_, group) => (
+    render: (_, group) => {
+      const editDisabled = group.status === 'cancelled';
+      return (
       <div className={styles.rowActions}>
         <Tooltip title="View">
-          <button className={styles.actionBtn} onClick={(e) => {
+          <button type="button" className={styles.actionBtn} onClick={(e) => {
  e?.stopPropagation(); handleViewCampaign(group); 
 }}>
             <EyeOutlined />
           </button>
         </Tooltip>
-        <Tooltip title="Edit">
-          <button className={styles.actionBtn} onClick={(e) => {
- e?.stopPropagation(); handleEditCampaign(group); 
+        {moderationOnly && typeof onWarnSeller === 'function' && (
+          <Tooltip title="Cảnh cáo seller">
+            <button
+              type="button"
+              className={styles.actionBtn}
+              onClick={(e) => {
+                e?.stopPropagation();
+                onWarnSeller(group);
+              }}
+            >
+              <WarningOutlined />
+            </button>
+          </Tooltip>
+        )}
+        {!moderationOnly && (
+        <Tooltip title={editDisabled ? 'Campaign đã dừng/hủy — không thể chỉnh sửa' : 'Edit'}>
+          <button
+            type="button"
+            className={styles.actionBtn}
+            disabled={editDisabled}
+            style={editDisabled ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+            onClick={(e) => {
+ e?.stopPropagation();
+ if (!editDisabled) {
+handleEditCampaign(group);
+}
 }}>
             <EditOutlined />
           </button>
         </Tooltip>
+        )}
         <Tooltip title="Delete">
-          <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={(e) => {
+          <button type="button" className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={(e) => {
  e?.stopPropagation(); handleDeleteCampaign(group); 
 }}>
             <DeleteOutlined />
           </button>
         </Tooltip>
       </div>
-    ),
+    );
+    },
   },
 ];
+  if (showSeller) {
+    cols.splice(1, 0, sellerColumnAdmin);
+  }
+  return cols;
+};
 
 // Variant-level (child) columns shown when expanding a campaign row
-const variantColumns = (handleEdit, handleDelete) => [
+const variantColumns = (handleEdit, handleDelete, options = {}) => {
+  const { moderationOnly = false } = options;
+  return [
   {
     title: 'SKU',
     dataIndex: 'variantSku',
@@ -287,22 +352,31 @@ const variantColumns = (handleEdit, handleDelete) => [
     key: 'actions',
     width: 60,
     align: 'center',
-    render: (_, r) => (
-      <Dropdown
-        menu={{
-          items: [
-            { key: 'edit', icon: <EditOutlined />, label: 'Edit', onClick: () => handleEdit(r) },
+    render: (_, r) => {
+      const variantEditDisabled = r.status === 'cancelled';
+      const variantItems = moderationOnly
+        ? [
             { key: 'delete', icon: <DeleteOutlined />, label: 'Delete', danger: true, onClick: () => handleDelete(r._id) },
-          ],
-        }}
+          ]
+        : [
+            ...(variantEditDisabled
+              ? []
+              : [{ key: 'edit', icon: <EditOutlined />, label: 'Edit', onClick: () => handleEdit(r) }]),
+            { key: 'delete', icon: <DeleteOutlined />, label: 'Delete', danger: true, onClick: () => handleDelete(r._id) },
+          ];
+      return (
+      <Dropdown
+        menu={{ items: variantItems }}
         trigger={['click']}
         placement="bottomRight"
       >
         <Button type="text" icon={<EllipsisOutlined />} onClick={(e) => e.stopPropagation()} />
       </Dropdown>
-    ),
+    );
+    },
   },
 ];
+};
 
 const CampaignTable = ({ groupedCampaigns, pagination, loading: _loading, campaignColumns, variantColumns, handleTableChange, handleViewCampaign, handleViewDetail }) => (
     <div className={styles.tableSection}>

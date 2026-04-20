@@ -29,6 +29,36 @@
   margin-bottom: 16px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.bulkOutlineBtn {
+  background: #fff;
+  color: #1a56db;
+  border: 1px solid #bfdbfe;
+  padding: 0 14px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+}
+.bulkOutlineBtn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
 .titleSection {
   flex: 1;
 }
@@ -758,12 +788,649 @@
 }
 
 /* ─── Responsive ────────────────────────────────────────────────── */
+/* ─── Bulk upload modal ─────────────────────────────────────────── */
+.bulkModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.bulkModal {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 560px;
+  width: 100%;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+  border: 1px solid #e2e8f0;
+}
+
+.bulkModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 20px 0;
+}
+
+.bulkModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.bulkModalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bulkModalSubtitle code {
+  font-size: 12px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.bulkModalClose {
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.bulkModalClose:hover {
+  color: #0f172a;
+}
+
+.bulkModalTemplates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px 0;
+}
+
+.bulkModalTemplatesLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.bulkModalTemplateFormat {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 4px;
+  flex-wrap: wrap;
+}
+
+.bulkTemplateFormatOpt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulkTemplateFormatOpt input {
+  margin: 0;
+  cursor: pointer;
+  accent-color: #1a56db;
+}
+
+.bulkTemplateBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.bulkTemplateBtn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1a56db;
+}
+
+.bulkModalForm {
+  padding: 16px 20px 20px;
+}
+
+.bulkFileLabel {
+  display: block;
+  cursor: pointer;
+}
+
+.bulkFileInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bulkFileHint {
+  display: block;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #475569;
+  background: #f8fafc;
+  text-align: center;
+}
+.bulkFileLabel:hover .bulkFileHint {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.bulkModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.bulkCancelBtn {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 0 16px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bulkCancelBtn:hover {
+  background: #f8fafc;
+}
+
+.bulkSubmitBtn {
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  padding: 0 16px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bulkSubmitBtn:hover:not(:disabled) {
+  background: #1447c7;
+}
+.bulkSubmitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bulkResultBox {
+  padding: 0 20px 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.bulkResultSummary {
+  font-size: 13px;
+  color: #334155;
+  margin: 12px 0 0;
+}
+
+.bulkFailWrap {
+  margin-top: 12px;
+}
+
+.bulkFailTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+  margin: 0 0 8px;
+}
+
+.bulkFailList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 12px;
+}
+
+.bulkFailList li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  margin-bottom: 6px;
+}
+
+.bulkFailName {
+  display: block;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.bulkFailMsg {
+  color: #92400e;
+}
+
+.bulkHintFooter {
+  font-size: 11px;
+  color: #94a3b8;
+  padding: 0 20px 20px;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.bulkModalWide {
+  max-width: 960px;
+  width: 100%;
+}
+
+.bulkReviewWrap {
+  padding: 0 20px 16px;
+}
+
+.bulkReviewToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.bulkReviewHint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.bulkReviewTableScroll {
+  max-height: min(52vh, 440px);
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.bulkReviewTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.bulkReviewTable th,
+.bulkReviewTable td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+
+.bulkReviewTable th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.bulkReviewName {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.bulkReviewDesc {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.bulkReviewErrText {
+  color: #b45309;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.bulkReviewRowErr {
+  background: #fffbeb;
+}
+
+.bulkReviewSelect {
+  width: 100%;
+  min-width: 140px;
+  max-width: 300px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  background: #fff;
+}
+
+/* react-select trong bảng: full width cell, menu gắn vào document.body (ProductDrawer pattern) */
+.bulkReviewCategoryWrap {
+  width: 100%;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.bulkAiPillOk {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.bulkAiPillWarn {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.bulkAiPillMuted {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.bulkAiReviewLbl {
+  display: block;
+  font-size: 10px;
+  color: #b45309;
+  margin-top: 4px;
+}
+
+.bulkReviewRowAttention {
+  background: #fffbeb;
+  box-shadow: inset 3px 0 0 0 #f59e0b;
+}
+
+.bulkReviewNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bulkReviewEditedBadge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.bulkReviewThActions,
+.bulkReviewTdActions {
+  width: 1%;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.bulkReviewDetailBtn {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.bulkReviewDetailBtn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.bulkReviewDetailBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Drawer xem/sửa chi tiết (bulk preview) */
+.bulkReviewDrawerRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 1070;
+  pointer-events: none;
+}
+
+.bulkReviewDrawerRoot > * {
+  pointer-events: auto;
+}
+
+.bulkReviewDrawerBackdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+.bulkReviewDrawerBackdrop:disabled {
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.bulkReviewDrawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100%, 440px);
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+}
+
+.bulkReviewDrawerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.bulkReviewDrawerTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bulkReviewDrawerMeta {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.bulkReviewDrawerClose {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.bulkReviewDrawerClose:hover:not(:disabled) {
+  color: #0f172a;
+}
+
+.bulkReviewDrawerBody {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bulkReviewDrawerFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  background: #fafafa;
+}
+
+.bulkReviewField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bulkReviewFieldLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.bulkReviewInput,
+.bulkReviewTextarea,
+.bulkReviewSelectInput {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bulkReviewTextarea {
+  resize: vertical;
+  min-height: 96px;
+  font-family: inherit;
+}
+
+/* RichTextEditor (cùng pattern ProductDrawer) trong drawer bulk */
+.bulkReviewRichText {
+  min-width: 0;
+}
+
+.bulkReviewRichText :global(.ql-toolbar) {
+  position: relative;
+  z-index: 2;
+}
+
+.bulkReviewSelectInput {
+  cursor: pointer;
+}
+
+.bulkReviewFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bulkReviewFieldGroupTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.bulkReviewFieldRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .bulkReviewFieldRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bulkReviewTierList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.bulkReviewVariantScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(40vh, 320px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.bulkReviewVariantCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.bulkReviewVariantLabel {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
 @media (max-width: 768px) {
   .headerContent {
     flex-direction: column;
     align-items: flex-start;
   }
-  .addButton {
+  .headerActions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .addButton,
+  .bulkOutlineBtn {
     width: 100%;
     justify-content: center;
   }

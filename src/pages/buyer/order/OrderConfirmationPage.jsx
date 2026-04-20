@@ -7,11 +7,13 @@ import { fetchCart } from '@store/slices/cartSlice';
 import { useDispatch } from 'react-redux';
 import { PUBLIC_ROUTES, BUYER_ROUTES } from '@constants/routes';
 import { formatCurrency } from '@utils/formatters';
+import { useTranslation } from 'react-i18next';
 
 const OrderConfirmationPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t, i18n } = useTranslation();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -179,6 +181,24 @@ const OrderConfirmationPage = () => {
                 >
                   <div className="flex-grow-1">
                     <h6 className="mb-1">{item.productId?.name || 'Product Name'}</h6>
+                    {item.isPreOrder && (
+                      <div className="small mb-1">
+                        <span className="badge bg-warning text-dark me-1">
+                          {t('profile_page.orders.preorder_badge')}
+                        </span>
+                        <span className="text-muted">
+                          {item.estimatedShipBy
+                            ? t('profile_page.orders.preorder_ship_by', {
+                                date: new Date(item.estimatedShipBy).toLocaleDateString(
+                                  i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN',
+                                ),
+                              })
+                            : t('profile_page.orders.preorder_within_days', {
+                                count: item.preOrderDaysSnapshot ?? 0,
+                              })}
+                        </span>
+                      </div>
+                    )}
                     <div className="text-muted small">
                       {item.color && <span className="me-2">Color: {item.color}</span>}
                       {item.size && <span>Size: {item.size}</span>}

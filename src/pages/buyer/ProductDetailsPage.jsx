@@ -280,13 +280,13 @@ const ProductDetailsPage = () => {
       .then((res) => {
         const data = res?.data ?? res;
         if (!cancelled) {
-setActiveLive(data || null);
-}
+          setActiveLive(data || null);
+        }
       })
       .catch(() => {
         if (!cancelled) {
-setActiveLive(null);
-}
+          setActiveLive(null);
+        }
       });
     return () => {
       cancelled = true;
@@ -399,7 +399,7 @@ setActiveLive(null);
         // Transform related & freq bought ... (Use existing logic or simplify)
         const processRelated = (res) => {
           const list = Array.isArray(res) ? res : res.data || [];
-          return list.map((p) => {
+            return list.map((p) => {
             const minModelPrice =
               p.models?.length > 0 ? Math.min(...p.models.map((m) => m.price)) : p.originalPrice;
             return {
@@ -409,6 +409,7 @@ setActiveLive(null);
                 p.images?.[0] ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300',
               price: minModelPrice ?? p.originalPrice ?? 0,
+              preOrderDays: p.preOrderDays ?? 0,
             };
           });
         };
@@ -542,9 +543,13 @@ setActiveLive(null);
 
     const matchingModel = findModel(product, targetIndices);
 
-    // Disable if no matching model or stock is 0
     if (!matchingModel) {
       return true;
+    }
+    const preOrderActive =
+      Number.isFinite(Number(product?.preOrderDays)) && Number(product.preOrderDays) > 0;
+    if (preOrderActive) {
+      return false;
     }
     return matchingModel.stock <= 0;
   };
@@ -590,6 +595,21 @@ setActiveLive(null);
     return product?.stock || 0;
   }, [activeModel, product]);
 
+  const preOrderDaysNum = useMemo(() => {
+    const n = Number(product?.preOrderDays);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }, [product?.preOrderDays]);
+
+  /** Giới hạn số lượng trên UI: pre-order cho phép đặt cao hơn tồn hiện tại */
+  const maxOrderQty = useMemo(() => {
+    if (preOrderDaysNum > 0) {
+return 99;
+}
+    return Math.max(0, currentStock);
+  }, [preOrderDaysNum, currentStock]);
+
+  const canPurchaseByStock = preOrderDaysNum > 0 || currentStock > 0;
+
   const productImages = useMemo(() => {
     if (!product) {
       return [];
@@ -631,17 +651,18 @@ setActiveLive(null);
 
     setAddingToCart(true);
     try {
-      // Stock Check
-      const stockCheck = activeModel
-        ? await productService.checkStockAvailability(product.id, activeModel._id, quantity)
-        : { data: { available: true } };
+      if (preOrderDaysNum <= 0) {
+        const stockCheck = activeModel
+          ? await productService.checkStockAvailability(product.id, activeModel._id, quantity)
+          : { data: { available: true } };
 
-      if (!stockCheck.data?.available) {
-        toast.error(
-          `${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock || 0}`
-        );
-        setAddingToCart(false);
-        return;
+        if (!stockCheck.data?.available) {
+          toast.error(
+            `${t('product_details.toast_insufficient_stock')}${stockCheck.data?.currentStock ?? stockCheck.data?.stock ?? 0}`
+          );
+          setAddingToCart(false);
+          return;
+        }
       }
 
       // Determine Color and Size strings for Cart
@@ -734,6 +755,33 @@ setActiveLive(null);
     } finally {
       setWishlistLoading(false);
     }
+  };
+
+  const handleOpenProductReport = () => {
+    if (!product?._id) {
+      return;
+    }
+
+    const prefillProduct = {
+      _id: product._id,
+      name: product.name,
+      description: product.description,
+      image: product.image,
+      images: product.images,
+    };
+
+    navigate(
+      `/buyer/profile?tab=reports&openReport=1&reportType=product&subjectProductId=${encodeURIComponent(product._id)}`,
+      {
+        state: {
+          reportPrefill: {
+            openForm: true,
+            type: 'product',
+            product: prefillProduct,
+          },
+        },
+      }
+    );
   };
 
   if (loading) {
@@ -830,7 +878,10 @@ setActiveLive(null);
             {[...Array(4)].map((_, i) => (
               <div key={i} className={styles.skeletonLine} style={{ width: `${85 - i * 8}%` }} />
             ))}
-            <div className={styles.skeletonLine} style={{ height: 18, width: '30%', marginTop: 8 }} />
+            <div
+              className={styles.skeletonLine}
+              style={{ height: 18, width: '30%', marginTop: 8 }}
+            />
             {[...Array(3)].map((_, i) => (
               <div key={i} className={styles.skeletonLine} style={{ width: `${90 - i * 10}%` }} />
             ))}
@@ -908,6 +959,12 @@ setActiveLive(null);
                 {product.badge}
               </span>
             )}
+            {preOrderDaysNum > 0 && (
+              <div className={styles.mainImagePreOrder} role="status">
+                <i className="bi bi-clock-history" aria-hidden />
+                {t('product_details.pre_order_chip')}
+              </div>
+            )}
           </div>
           <div className={styles.thumbnails}>
             {productImages.map((img, index) => (
@@ -970,6 +1027,15 @@ setActiveLive(null);
                   ? `Saved (${formatSavedCount(product.wishlistCount)})`
                   : `Save (${formatSavedCount(product.wishlistCount)})`}
               </span>
+
+              <button
+                className={`${styles.shareButton} ${styles.unwishlist}`}
+                onClick={handleOpenProductReport}
+                title="Warning / Report this product"
+              >
+                <i className="bi bi-exclamation-triangle"></i>
+              </button>
+              <span className={styles.saveLabel}>Report</span>
             </div>
           </div>
         </div>
@@ -1009,6 +1075,18 @@ setActiveLive(null);
               Sold
             </span>
           </div>
+
+          {preOrderDaysNum > 0 && (
+            <div className={styles.preOrderBanner}>
+              <i className="bi bi-clock-history" aria-hidden />
+              <div>
+                <strong>{t('product_details.pre_order_banner_title')}</strong>
+                <p className={styles.preOrderBannerText}>
+                  {t('product_details.pre_order_eta', { days: preOrderDaysNum })}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* 3. Price Section */}
           <div className={styles.priceSection}>
@@ -1163,7 +1241,7 @@ setActiveLive(null);
                 -
               </button>
               <input type="text" value={quantity} readOnly />
-              <button onClick={() => handleQuantityChange(1)} disabled={quantity >= currentStock}>
+              <button onClick={() => handleQuantityChange(1)} disabled={quantity >= maxOrderQty}>
                 +
               </button>
             </div>
@@ -1171,22 +1249,22 @@ setActiveLive(null);
               <button
                 className={styles.addBtn}
                 onClick={handleAddToCart}
-                disabled={addingToCart || currentStock <= 0}
+                disabled={addingToCart || !canPurchaseByStock}
               >
                 {addingToCart ? t('product_details.loading') : t('product_details.btn_add_to_cart')}
               </button>
               <button
                 className={styles.buyBtn}
                 onClick={handleBuyNow}
-                disabled={addingToCart || currentStock <= 0}
+                disabled={addingToCart || !canPurchaseByStock}
               >
                 {t('product_details.btn_buy_now')}
               </button>
             </div>
-            {currentStock <= 0 && (
+            {preOrderDaysNum <= 0 && currentStock <= 0 && (
               <div className="text-danger mt-2">{t('product_details.stat_status_inactive')}</div>
             )}
-            {currentStock > 0 && currentStock < 10 && (
+            {preOrderDaysNum <= 0 && currentStock > 0 && currentStock < 10 && (
               <div className="text-warning mt-2">
                 {t('product_details.only_left', { stock: currentStock })}
               </div>
@@ -1202,6 +1280,12 @@ setActiveLive(null);
               <span>{t('product_details.label_sku')}:</span>{' '}
               {activeModel?.sku || product.models?.[0]?.sku || 'N/A'}
             </div>
+            {preOrderDaysNum > 0 && (
+              <div className={styles.metaItem}>
+                <span>{t('product_details.pre_order_meta_label')}:</span>{' '}
+                {t('product_details.pre_order_meta_value', { days: preOrderDaysNum })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1330,6 +1414,14 @@ setActiveLive(null);
                             <strong>{tier.name}:</strong> {tier.options.join(', ')}
                           </div>
                         ))}
+                      </td>
+                    </tr>
+                  )}
+                  {preOrderDaysNum > 0 && (
+                    <tr>
+                      <td className={styles.label}>{t('product_details.pre_order_meta_label')}</td>
+                      <td className={styles.value}>
+                        {t('product_details.pre_order_eta', { days: preOrderDaysNum })}
                       </td>
                     </tr>
                   )}

@@ -1721,7 +1721,9 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 1rem;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -1736,6 +1738,8 @@
 
 .orderSearchInput {
   flex: 1;
+  height: 100%;
+  line-height: 34px;
   border: none;
   outline: none;
   font-size: 0.875rem;
@@ -1745,6 +1749,35 @@
 
 .orderSearchInput::placeholder {
   color: var(--color-text-secondary);
+  line-height: 34px;
+}
+
+.reportsToolbarButton {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select) {
+  height: 36px;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select-selector) {
+  height: 36px !important;
+  min-height: 36px !important;
+  display: flex;
+  align-items: center;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select-selection-item),
+.reportsToolbarSelectWrap :global(.ant-select-selection-placeholder) {
+  line-height: 34px !important;
+}
+
+.reportsToolbarSelectWrap :global(.ant-select-selection-search-input) {
+  height: 34px !important;
 }
 
 /* ===== ORDER CARD STYLES ===== */
@@ -1877,6 +1910,33 @@
 .orderCardItemQuantity {
   font-size: 0.8125rem;
   color: #6b7280;
+  margin: 0;
+}
+
+.orderItemPreorderRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.125rem;
+}
+
+.orderItemPreorderBadge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.orderItemPreorderText {
+  font-size: 0.75rem;
+  color: #92400e;
   margin: 0;
 }
 
@@ -2149,6 +2209,29 @@
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
+}
+
+.orderDetailsPreorderRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.buyerPreorderSlaBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .orderDetailsItemPriceContainer {

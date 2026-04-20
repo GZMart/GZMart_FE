@@ -167,6 +167,7 @@ const ProductsPage = () => {
             tier_variations: product.tier_variations,
             isFeatured: product.isFeatured,
             isHot: product.isHot,
+            preOrderDays: product.preOrderDays ?? 0,
           };
         });
 

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import {
+  AlertCircle,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
@@ -9,8 +10,21 @@ import {
   Store,
 } from 'lucide-react';
 import { Spinner } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
 import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
+
+function formatPreorderShipDate(iso, language) {
+  if (!iso) {
+return '';
+}
+  const loc = language?.startsWith('en') ? 'en-US' : 'vi-VN';
+  return new Date(iso).toLocaleDateString(loc, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 const getStatusBadge = (status) => {
   const statusConfig = {
@@ -60,6 +74,8 @@ const ProfileOrdersTab = ({
   formatCurrency,
   setOrders,
 }) => {
+  const { i18n } = useTranslation();
+
   const filteredOrders = orders.filter((order) => {
     const statusMatch =
       orderStatusFilter === 'all' ||
@@ -197,6 +213,25 @@ const ProfileOrdersTab = ({
                               : 'Default'}
                           </p>
                           <p className={styles.orderCardItemQuantity}>x{item.quantity}</p>
+                          {item.isPreOrder && (
+                            <div className={styles.orderItemPreorderRow}>
+                              <span className={styles.orderItemPreorderBadge}>
+                                {t('profile_page.orders.preorder_badge')}
+                              </span>
+                              <p className={styles.orderItemPreorderText}>
+                                {item.estimatedShipBy
+                                  ? t('profile_page.orders.preorder_ship_by', {
+                                      date: formatPreorderShipDate(
+                                        item.estimatedShipBy,
+                                        i18n.language,
+                                      ),
+                                    })
+                                  : t('profile_page.orders.preorder_within_days', {
+                                      count: item.preOrderDaysSnapshot ?? 0,
+                                    })}
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <div className={styles.orderCardItemPrice}>
                           <span className={styles.orderCardItemOldPrice}>
@@ -313,6 +348,13 @@ const ProfileOrdersTab = ({
                 </div>
               </div>
 
+              {selectedOrderDetails.preOrderSlaBreached && (
+                <div className={styles.buyerPreorderSlaBanner} role="alert">
+                  <AlertCircle size={18} strokeWidth={2} />
+                  <span>{t('profile_page.orders.preorder_sla_buyer_notice')}</span>
+                </div>
+              )}
+
               <div className={styles.orderDetailsSection}>
                 <OrderTrackingEnhanced
                   order={selectedOrderDetails}
@@ -391,6 +433,25 @@ const ProfileOrdersTab = ({
                             : 'Default'}
                         </p>
                         <p className={styles.orderDetailsItemQuantity}>x{item.quantity}</p>
+                        {item.isPreOrder && (
+                          <div className={styles.orderDetailsPreorderRow}>
+                            <span className={styles.orderItemPreorderBadge}>
+                              {t('profile_page.orders.preorder_badge')}
+                            </span>
+                            <p className={styles.orderItemPreorderText}>
+                              {item.estimatedShipBy
+                                ? t('profile_page.orders.preorder_ship_by', {
+                                    date: formatPreorderShipDate(
+                                      item.estimatedShipBy,
+                                      i18n.language,
+                                    ),
+                                  })
+                                : t('profile_page.orders.preorder_within_days', {
+                                    count: item.preOrderDaysSnapshot ?? 0,
+                                  })}
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <div className={styles.orderDetailsItemPriceContainer}>
                         {item.originalPrice && item.originalPrice > item.price && (

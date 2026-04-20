@@ -159,6 +159,7 @@ const FlashDealsPage = () => {
             variantSku: rep.variantSku,
             purchaseLimit: rep.purchaseLimit,
             campaignTitle: rep.campaignTitle,
+            preOrderDays: product.preOrderDays ?? 0,
           };
         });
 
@@ -213,6 +214,7 @@ const FlashDealsPage = () => {
               dealPriceMax: deal.discountedMaxPrice || deal.dealPrice || 0,
               purchaseLimit: deal.purchaseLimitPerUser,
               campaignTitle: deal.title,
+              preOrderDays: product.preOrderDays ?? 0,
             };
           });
 

@@ -215,6 +215,43 @@
   transform: translateY(0);
 }
 
+.preorderSlaBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.preorderLineBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.preorderLineHint {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #92400e;
+}
+
 /* ─── Order Header Row ───────────────────────────────────────── */
 .orderHeaderRow {
   display: flex;

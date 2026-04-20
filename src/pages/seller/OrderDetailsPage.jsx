@@ -19,11 +19,13 @@ import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/OrderDetailsPage.module.css';
 import socketService from '@services/socket/socketService';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 
 const OrderDetailsPage = () => {
   const { id: orderId } = useParams();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
+  const { t, i18n } = useTranslation();
 
   const normalizeId = (value) => String(value || '').trim();
 
@@ -335,6 +337,8 @@ const OrderDetailsPage = () => {
       price: item.price,
       subtotal: item.subtotal,
       tierSelections: item.tierSelections,
+      isPreOrder: !!item.isPreOrder,
+      estimatedShipBy: item.estimatedShipBy || null,
     })) || [];
 
   // — Loading —
@@ -415,6 +419,13 @@ const OrderDetailsPage = () => {
           </p>
         </div>
       </div>
+
+      {order.preOrderSlaBreached && (
+        <div className={styles.preorderSlaBanner} role="alert">
+          <AlertCircle size={18} strokeWidth={2} style={{ flexShrink: 0 }} />
+          <span>{t('sellerOrders.preorder.sla_breach_banner')}</span>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className={styles.content}>
@@ -515,6 +526,22 @@ const OrderDetailsPage = () => {
                     <td>
                       <div className={styles.productCell}>
                         <span className={styles.productName}>{item.productName}</span>
+                        {item.isPreOrder && (
+                          <>
+                            <span className={styles.preorderLineBadge}>
+                              {t('sellerOrders.preorder.badge')}
+                            </span>
+                            {item.estimatedShipBy && (
+                              <span className={styles.preorderLineHint}>
+                                {t('sellerOrders.preorder.ship_by', {
+                                  date: new Date(item.estimatedShipBy).toLocaleDateString(
+                                    i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN',
+                                  ),
+                                })}
+                              </span>
+                            )}
+                          </>
+                        )}
                         {item.tierSelections && Object.keys(item.tierSelections).length > 0 && (
                           <span className={styles.productTier}>
                             {Object.entries(item.tierSelections)

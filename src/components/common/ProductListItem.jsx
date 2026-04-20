@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
@@ -8,6 +9,7 @@ import * as wishlistService from '@/services/api/wishlistService';
 import styles from '@assets/styles/buyer/Product/ProductListItem.module.css';
 
 const ProductListItem = React.forwardRef(({ product }, ref) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [isFav, setIsFav] = useState(false);
@@ -60,6 +62,7 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
   const fullStars = Math.floor(ratingValue);
   const hasHalfStar = ratingValue - fullStars >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+  const preOrderDays = Number(product.preOrderDays) || 0;
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -121,8 +124,29 @@ const ProductListItem = React.forwardRef(({ product }, ref) => {
       </div>
 
       <div className={styles.productInfo}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
           <h3 className={styles.productName}>{product.name}</h3>
+          {preOrderDays > 0 && (
+            <span
+              style={{
+                background: 'rgba(177, 60, 54, 0.12)',
+                color: '#8b2924',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <i className="bi bi-clock-history" aria-hidden />
+              {t('product_details.pre_order_chip')}
+            </span>
+          )}
           {isFlashSale && timeLeft && (
             <span
               style={{
@@ -246,6 +270,7 @@ ProductListItem.propTypes = {
     dealEndDate: PropTypes.string,
     dealSoldCount: PropTypes.number,
     dealQuantityLimit: PropTypes.number,
+    preOrderDays: PropTypes.number,
   }).isRequired,
 };
 

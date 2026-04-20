@@ -138,8 +138,11 @@ axiosClient.interceptors.response.use(
         // Refresh failed - logout user
         clearAuthData();
 
-        // Only redirect if not already on login page
-        if (window.location.pathname !== '/login') {
+        // Guest-friendly pages: stay on URL (e.g. watch live) instead of forcing login
+        const path = window.location.pathname || '';
+        const isLiveViewerRoute = /^\/shop\/[^/]+\/live\/[^/]+\/?$/.test(path);
+
+        if (window.location.pathname !== '/login' && !isLiveViewerRoute) {
           window.location.href = '/login';
         }
 

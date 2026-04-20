@@ -1,5 +1,12 @@
+const stripVietnameseDiacritics = (value = '') =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+
 export const normalizeAddressText = (value = '') =>
-  String(value).toLowerCase().replace(/\s+/g, ' ').trim();
+  stripVietnameseDiacritics(value).toLowerCase().replace(/\s+/g, ' ').trim();
 
 export const buildAddressDisplayString = (address = {}) => {
   const parts = [address.details, address.street, address.wardName, address.provinceName]

@@ -1,8 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bell, ShoppingBag, Tag, Wallet, Smartphone, Zap, Megaphone } from 'lucide-react';
+import {
+  Bell,
+  ShoppingBag,
+  Tag,
+  Wallet,
+  Smartphone,
+  Zap,
+  Megaphone,
+  AlertTriangle,
+} from 'lucide-react';
 import { notificationAPI } from '@services/api';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { selectUserRole } from '@store/slices/authSlice';
 
 const NOTIFICATION_CATEGORIES = [
   { id: 'all', labelKey: 'notifications.categories.all', icon: Bell },
@@ -12,6 +23,11 @@ const NOTIFICATION_CATEGORIES = [
   { id: 'voucher', labelKey: 'notifications.categories.voucher', icon: Tag },
   { id: 'wallet', labelKey: 'notifications.categories.wallet', icon: Wallet },
   { id: 'system', labelKey: 'notifications.categories.system', icon: Smartphone },
+  {
+    id: 'campaign_admin',
+    labelKey: 'notifications.categories.campaign_admin',
+    icon: AlertTriangle,
+  },
 ];
 
 const TYPE_MAP = {
@@ -20,11 +36,13 @@ const TYPE_MAP = {
   flash_sale: 'FLASH_SALE',
   voucher: 'VOUCHER',
   system: 'SYSTEM',
+  campaign_admin: 'CAMPAIGN_ADMIN',
 };
 
 const NotificationPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const userRole = useSelector(selectUserRole);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
@@ -111,6 +129,9 @@ const NotificationPage = () => {
       case 'FLASH_SALE':
         navigate('/deals');
         break;
+      case 'CAMPAIGN_ADMIN':
+        navigate(userRole === 'seller' ? '/seller/campaigns' : '/');
+        break;
       default:
         // No navigation for SYSTEM etc.
         break;
@@ -134,6 +155,8 @@ const NotificationPage = () => {
         return <Zap size={24} className="text-white" />;
       case 'ANNOUNCEMENT':
         return <Megaphone size={24} className="text-white" />;
+      case 'CAMPAIGN_ADMIN':
+        return <AlertTriangle size={24} className="text-white" />;
       default:
         return <Bell size={24} className="text-white" />;
     }
@@ -214,12 +237,27 @@ const NotificationPage = () => {
                   <h5>{t('notifications.empty')}</h5>
                 </div>
               ) : (
-                notifications.map((notification) => (
+                notifications.map((notification) => {
+                  const isCampaignAdmin = notification.type === 'CAMPAIGN_ADMIN';
+                  const campaignAdminBadgeKey =
+                    notification.relatedData?.action === 'admin_stop'
+                      ? 'notifications.campaign_stopped_badge'
+                      : 'notifications.campaign_warning_badge';
+                  const rowBg = isCampaignAdmin
+                    ? !notification.isRead
+                      ? '#fff7ed'
+                      : '#fffbeb'
+                    : !notification.isRead
+                      ? '#fff0ec'
+                      : '#fff';
+
+                  return (
                   <div
                     key={notification._id}
                     className="d-flex align-items-center p-3 border-bottom"
                     style={{
-                      backgroundColor: !notification.isRead ? '#fff0ec' : '#fff',
+                      backgroundColor: rowBg,
+                      borderLeft: isCampaignAdmin ? '4px solid #ea580c' : undefined,
                       transition: 'background-color 0.15s, filter 0.15s',
                       cursor: 'pointer',
                     }}
@@ -237,7 +275,18 @@ const NotificationPage = () => {
                         />
                       ) : (
                         <div
-                          className={`w-100 h-100 rounded d-flex align-items-center justify-content-center ${getIconBg(notification.type)}`}
+                          className={`w-100 h-100 rounded d-flex align-items-center justify-content-center ${
+                            isCampaignAdmin ? '' : getIconBg(notification.type)
+                          }`}
+                          style={
+                            isCampaignAdmin
+                              ? {
+                                  background:
+                                    'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                                  boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+                                }
+                              : undefined
+                          }
                         >
                           {renderIcon(notification.type)}
                         </div>
@@ -246,9 +295,26 @@ const NotificationPage = () => {
 
                     {/* Text content */}
                     <div className="flex-grow-1 ms-3" style={{ minWidth: 0 }}>
+                      {isCampaignAdmin && (
+                        <span
+                          className="badge rounded-pill mb-1 d-inline-block"
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            backgroundColor: '#c2410c',
+                            color: '#fff',
+                          }}
+                        >
+                          {t(campaignAdminBadgeKey)}
+                        </span>
+                      )}
                       <h6
                         className="mb-1"
-                        style={{ color: '#333', fontWeight: '500', fontSize: '1rem' }}
+                        style={{
+                          color: isCampaignAdmin ? '#9a3412' : '#333',
+                          fontWeight: isCampaignAdmin ? '700' : '500',
+                          fontSize: '1rem',
+                        }}
                       >
                         {notification.title}
                       </h6>
@@ -259,7 +325,7 @@ const NotificationPage = () => {
                           lineHeight: '1.4',
                           overflow: 'hidden',
                           display: '-webkit-box',
-                          WebkitLineClamp: 2,
+                          WebkitLineClamp: isCampaignAdmin ? 3 : 2,
                           WebkitBoxOrient: 'vertical',
                         }}
                       >
@@ -274,13 +340,20 @@ const NotificationPage = () => {
                     {!notification.isRead && (
                       <div className="flex-shrink-0 ms-3">
                         <div
-                          className="rounded-circle bg-danger"
-                          style={{ width: '10px', height: '10px' }}
+                          className={
+                            isCampaignAdmin ? 'rounded-circle' : 'rounded-circle bg-danger'
+                          }
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            ...(isCampaignAdmin ? { backgroundColor: '#ea580c' } : {}),
+                          }}
                         />
                       </div>
                     )}
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

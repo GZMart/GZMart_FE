@@ -42,9 +42,18 @@ export const orderSellerService = {
    * @param {number} [params.limit=10] - Items per page
    * @param {string} [params.status] - Filter by status (pending, processing, shipped, delivered, ...)
    * @param {string} [params.sortBy] - Sort field (createdAt, newest-first, oldest-first, total-high, total-low)
+   * @param {boolean|string} [params.hasPreOrder] - Only orders with at least one pre-order line (seller SKUs)
+   * @param {boolean|string} [params.preOrderSlaBreached] - Only orders past estimatedShipBy on pre-order lines, not yet shipped
    * @returns {Promise} Orders list with pagination info
    */
   getAll: async (params = {}) => await axiosClient.get(BASE_URL, { params }),
+
+  /**
+   * Admin — list all marketplace orders
+   * @param {object} params - page, limit, status, sortBy, orderNumber, userId, sellerId
+   */
+  getAdminPlatformOrders: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/admin/platform-orders`, { params }),
 
   /**
    * Get orders by status with pagination

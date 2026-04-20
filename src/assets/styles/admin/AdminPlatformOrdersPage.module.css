@@ -1,0 +1,282 @@
+/* =============================================================
+   Admin Platform Orders — Bento filters + data table (indigo system)
+   Tokens: align with AdminLayout.module.css
+   ============================================================= */
+
+.page {
+  padding: 0;
+  background: transparent;
+  min-height: 0;
+}
+
+/* ── Page header ───────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  color: var(--admin-primary, #4f46e5);
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.header h1 {
+  margin: 0 0 4px;
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: var(--admin-text-1, #111827);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-muted, #6b7280);
+  margin: 0;
+  max-width: 520px;
+}
+
+.metaLine {
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted, #6b7280);
+  margin-top: 6px;
+}
+
+.metaLine strong {
+  color: var(--admin-text-2, #374151);
+  font-weight: 600;
+}
+
+.refreshBtn {
+  border-color: rgba(79, 70, 229, 0.22) !important;
+  color: var(--admin-primary, #4f46e5) !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 12px rgba(53, 37, 205, 0.06) !important;
+}
+
+.refreshBtn:hover {
+  border-color: var(--admin-primary, #4f46e5) !important;
+  color: var(--admin-primary-hover, #4338ca) !important;
+  background: var(--admin-primary-light, #eef2ff) !important;
+}
+
+/* ── Filter card (bento) ───────────────────────────────────── */
+.filterCard {
+  background: var(--admin-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid rgba(199, 196, 216, 0.35);
+  box-shadow: 0 12px 32px rgba(53, 37, 205, 0.03);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.filterGridTop {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .filterGridTop {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.filterSellerRow {
+  margin-bottom: 20px;
+}
+
+.filterRowBottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterGrow {
+  flex: 1;
+  min-width: 8px;
+}
+
+.clearLink {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-muted, #6b7280);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  transition: color 0.2s ease;
+}
+
+.clearLink:hover {
+  color: var(--admin-primary, #4f46e5);
+}
+
+/* Date preset segmented control */
+.datePresetWrap {
+  display: inline-flex;
+  background: #e7e8ec;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.datePresetBtn {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--admin-text-muted, #6b7280);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.datePresetBtn:hover:not(:disabled) {
+  color: var(--admin-text-1, #111827);
+}
+
+.datePresetBtnActive {
+  background: #fff;
+  color: var(--admin-text-1, #111827);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.datePresetBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Table card ────────────────────────────────────────────── */
+.tableCard {
+  background: var(--admin-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid rgba(199, 196, 216, 0.35);
+  box-shadow: 0 12px 32px rgba(53, 37, 205, 0.03);
+  overflow: hidden;
+}
+
+.tableCard :global(.ant-table-thead > tr > th) {
+  background: #f2f3f7 !important;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #464555 !important;
+  border-bottom: 1px solid rgba(199, 196, 216, 0.25) !important;
+  padding: 14px 16px !important;
+}
+
+.tableCard :global(.ant-table-tbody > tr > td) {
+  padding: 14px 16px !important;
+  vertical-align: top;
+}
+
+.tableCard :global(.ant-table-tbody > tr:hover > td) {
+  background: rgba(77, 68, 227, 0.04) !important;
+}
+
+.tableCard :global(.ant-pagination) {
+  margin: 16px 24px !important;
+}
+
+.orderIdRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.orderNumberLink {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0 !important;
+  height: auto !important;
+}
+
+.copyOrderBtn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: #777587;
+  cursor: pointer;
+}
+
+.copyOrderBtn:hover {
+  color: var(--admin-primary, #4f46e5);
+}
+
+.tableCard :global(.ant-table-tbody > tr:hover) .copyOrderBtn {
+  opacity: 1;
+}
+
+.orderDateMuted {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted, #6b7280);
+  margin-top: 2px;
+}
+
+.shopPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #e7e8ec;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #464555;
+  max-width: 100%;
+}
+
+.shopMulti {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-1, #111827);
+}
+
+.amountCell {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--admin-text-1, #111827);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .filterCard {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

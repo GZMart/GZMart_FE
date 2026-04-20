@@ -14,6 +14,8 @@ export const campaignService = {
    * @param {number} [params.limit=10] - Items per page
    * @param {string} [params.status] - Filter by status (active, upcoming, expired, draft, paused)
    * @param {string} [params.sortBy] - Sort field (createdAt, newest-first, oldest-first, startDate, endDate)
+   * @param {string} [params.sellerId] - (Admin) chỉ lấy campaign của seller này
+   * @remarks Chỉ seller được POST tạo campaign / PUT sửa giá. Admin dùng pause/stop/delete.
    * @returns {Promise} Campaigns list with pagination info
    */
   getAll: async (params = {}) => await axiosClient.get(BASE_URL, { params }),
@@ -108,9 +110,17 @@ export const campaignService = {
   /**
    * Stop a campaign (sets status to "cancelled")
    * @param {string} id - Campaign ID
+   * @param {object} [payload] - Admin bắt buộc: { reason } (≥10 ký tự)
    * @returns {Promise} Updated campaign object
    */
-  stop: async (id) => await axiosClient.patch(`${BASE_URL}/${id}/stop`),
+  stop: async (id, payload = {}) => await axiosClient.patch(`${BASE_URL}/${id}/stop`, payload),
+
+  /**
+   * Admin cảnh cáo seller (notification + email)
+   * @param {string} id - Campaign / deal ID
+   * @param {object} body - { message } (≥10 ký tự), [title]
+   */
+  warnSeller: async (id, body) => await axiosClient.post(`${BASE_URL}/${id}/warn`, body),
 
   /**
    * Resume a paused campaign (sets status back to "active" or "pending")

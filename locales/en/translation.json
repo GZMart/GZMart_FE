@@ -277,7 +277,8 @@
       "color": "Color",
       "size": "Size",
       "per_item": "per item",
-      "remove_tooltip": "Remove item"
+      "remove_tooltip": "Remove item",
+      "pre_order_eta": "Est. dispatch: {{days}} business days (pre-order)"
     },
     "summary": {
       "title": "Order Summary",
@@ -373,6 +374,10 @@
       "error_invoice": "Failed to get invoice",
       "error_invoice_alert": "Could not generate invoice. Please try again.",
       "error_payment": "Failed to create payment link",
+      "preorder_badge": "Pre-order",
+      "preorder_ship_by": "Ship by {{date}}",
+      "preorder_within_days": "{{count}} days from order date",
+      "preorder_sla_buyer_notice": "This order includes pre-order item(s) past the estimated ship date. You can contact the shop for support.",
       "status": {
         "completed": "Completed",
         "pending": "Pending",
@@ -503,6 +508,11 @@
       }
     },
     "only_left": "Only {{stock}} left!",
+    "pre_order_chip": "Pre-order",
+    "pre_order_banner_title": "Pre-order item",
+    "pre_order_eta": "The seller expects to ship within {{days}} business days (excluding public holidays and Tet).",
+    "pre_order_meta_label": "Estimated dispatch",
+    "pre_order_meta_value": "{{days}} business days",
     "tab_home": "Home",
     "tab_all_products": "ALL PRODUCTS",
     "suggested_for_you": "SUGGESTED FOR YOU",
@@ -514,6 +524,8 @@
     "loading": "Loading...",
     "empty": "No notifications",
     "recent": "Recently Received Notifications",
+    "campaign_warning_badge": "Warning",
+    "campaign_stopped_badge": "Campaign stopped",
     "view_all": "View All",
     "view_details": "View Details",
     "page_title": "Your Notifications",
@@ -525,7 +537,8 @@
       "flash_sale": "Flash Sales",
       "voucher": "Vouchers",
       "wallet": "Wallet Updates",
-      "system": "System Updates"
+      "system": "System Updates",
+      "campaign_admin": "Campaign / Admin"
     }
   },
   "common": {
@@ -835,7 +848,8 @@
     "empty": {
       "title": "No Orders Found",
       "default": "You don't have any orders yet.",
-      "byStatus": "No \"{{status}}\" orders yet."
+      "byStatus": "No \"{{status}}\" orders yet.",
+      "byPreOrderFilter": "No orders match the pre-order filter."
     },
     "filters": {
       "payment": "Payment",
@@ -858,6 +872,12 @@
         "all": "All Methods",
         "standard": "Standard",
         "express": "Express"
+      },
+      "preOrder": {
+        "label": "Pre-order",
+        "all": "All orders",
+        "has_preorder": "Has pre-order line(s)",
+        "sla_breached": "Pre-order SLA overdue"
       }
     },
     "order": {
@@ -870,6 +890,11 @@
       "qty": "Qty:",
       "message": "Message",
       "opening": "Opening…"
+    },
+    "preorder": {
+      "badge": "Pre-order",
+      "ship_by": "Ship by {{date}}",
+      "sla_breach_banner": "Some pre-order line(s) are past the estimated ship date — please take action."
     },
     "paymentStatus": {
       "pending": "Pending",

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Bell } from 'lucide-react';
+import { Bell, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -139,6 +139,9 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
       case 'FLASH_SALE':
         navigate('/deals');
         break;
+      case 'CAMPAIGN_ADMIN':
+        navigate('/seller/campaigns');
+        break;
       default:
         break;
     }
@@ -213,12 +216,27 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
                 {t('notifications.empty')}
               </div>
             ) : (
-              notifications.map((notification) => (
+              notifications.map((notification) => {
+                const isCampaignAdmin = notification.type === 'CAMPAIGN_ADMIN';
+                const campaignAdminBadgeKey =
+                  notification.relatedData?.action === 'admin_stop'
+                    ? 'notifications.campaign_stopped_badge'
+                    : 'notifications.campaign_warning_badge';
+                const rowBg = isCampaignAdmin
+                  ? !notification.isRead
+                    ? '#fff7ed'
+                    : '#fffbeb'
+                  : !notification.isRead
+                    ? '#fff0ec'
+                    : '#fff';
+
+                return (
                 <div
                   key={notification._id}
                   className="d-flex align-items-start p-2 border-bottom position-relative"
                   style={{
-                    backgroundColor: !notification.isRead ? '#fff0ec' : '#fff',
+                    backgroundColor: rowBg,
+                    borderLeft: isCampaignAdmin ? '4px solid #ea580c' : undefined,
                     cursor: 'pointer',
                     transition: 'background-color 0.2s',
                   }}
@@ -231,6 +249,16 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
                         alt="Related"
                         className="w-100 h-100 object-fit-cover rounded"
                       />
+                    ) : isCampaignAdmin ? (
+                      <div
+                        className="w-100 h-100 rounded d-flex align-items-center justify-content-center"
+                        style={{
+                          background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+                        }}
+                      >
+                        <AlertTriangle size={22} color="#fff" strokeWidth={2.25} />
+                      </div>
                     ) : (
                       <div className="w-100 h-100 rounded d-flex align-items-center justify-content-center bg-light text-secondary">
                         <Bell size={20} />
@@ -239,12 +267,41 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
                   </div>
 
                   <div className="flex-grow-1 ms-2" style={{ minWidth: 0 }}>
+                    {isCampaignAdmin && (
+                      <span
+                        className="badge rounded-pill mb-1"
+                        style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.02em',
+                          backgroundColor: '#c2410c',
+                          color: '#fff',
+                        }}
+                      >
+                        {t(campaignAdminBadgeKey)}
+                      </span>
+                    )}
+                    {isCampaignAdmin && notification.title && (
+                      <div
+                        className="text-dark fw-bold mb-1"
+                        style={{
+                          fontSize: '0.88rem',
+                          lineHeight: 1.35,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {notification.title}
+                      </div>
+                    )}
                     <div
-                      className="text-dark mb-1"
+                      className={isCampaignAdmin ? 'text-secondary mb-1' : 'text-dark mb-1'}
                       style={{
-                        fontSize: '0.9rem',
+                        fontSize: isCampaignAdmin ? '0.82rem' : '0.9rem',
                         display: '-webkit-box',
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: isCampaignAdmin ? 3 : 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                       }}
@@ -277,13 +334,20 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
                   {!notification.isRead && (
                     <div className="ms-2 d-flex align-items-center">
                       <div
-                        className="rounded-circle bg-primary"
-                        style={{ width: '8px', height: '8px' }}
-                      ></div>
+                        className={
+                          isCampaignAdmin ? 'rounded-circle' : 'rounded-circle bg-primary'
+                        }
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          ...(isCampaignAdmin ? { backgroundColor: '#ea580c' } : {}),
+                        }}
+                      />
                     </div>
                   )}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 

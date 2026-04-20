@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { formatCurrency } from '@utils/formatters';
@@ -59,6 +60,7 @@ const PLACEHOLDER_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f1f5f9" width="200" height="200"/%3E%3Ctext fill="%2394a3b8" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="14"%3ENo image%3C/text%3E%3C/svg%3E';
 
 const ProductCard = React.forwardRef(({ product }, ref) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [isFav, setIsFav] = useState(false);
@@ -173,6 +175,7 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
   };
 
   const dealBadge = getDealBadge();
+  const preOrderDays = Number(product.preOrderDays) || 0;
 
   return (
     <div
@@ -233,6 +236,15 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
             {product.comboPromotion.comboType === 'percent'
               ? `Combo -${product.comboPromotion.bestDiscount}%`
               : 'Combo Deal'}
+          </div>
+        )}
+        {preOrderDays > 0 && (
+          <div
+            className={styles.preOrderChip}
+            title={t('product_details.pre_order_eta', { days: preOrderDays })}
+          >
+            <i className="bi bi-clock-history" aria-hidden />
+            <span>{t('product_details.pre_order_chip')}</span>
           </div>
         )}
       </div>
@@ -407,6 +419,7 @@ ProductCard.propTypes = {
       comboType: PropTypes.string,
       bestDiscount: PropTypes.number,
     }),
+    preOrderDays: PropTypes.number,
   }).isRequired,
 };
 
