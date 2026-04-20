@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
+import { Form, Spinner } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ADMIN_ROUTES } from '@constants/routes';
 import systemVoucherService from '@services/api/systemVoucherService';
 import { toast } from 'react-toastify';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import styles from './SystemVoucherForm.module.css';
 
 const { RangePicker } = DatePicker;
+
+const randomCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let s = '';
+  for (let i = 0; i < 8; i += 1) {
+    s += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return s;
+};
 
 const SystemVoucherForm = () => {
   const navigate = useNavigate();
@@ -28,13 +38,13 @@ const SystemVoucherForm = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEditMode);
 
-  // Fetch existing voucher data for Edit Mode
   useEffect(() => {
     if (isEditMode) {
       const fetchVoucher = async () => {
         try {
-          setLoading(true);
+          setFetching(true);
           const data = await systemVoucherService.getById(id);
           setFormData({
             ...data,
@@ -44,7 +54,7 @@ const SystemVoucherForm = () => {
           toast.error(error.message || 'Failed to fetch voucher details');
           navigate(ADMIN_ROUTES.SYSTEM_VOUCHERS);
         } finally {
-          setLoading(false);
+          setFetching(false);
         }
       };
       fetchVoucher();
@@ -78,7 +88,7 @@ const SystemVoucherForm = () => {
     try {
       const payload = {
         ...formData,
-        type: formData.type, // Values are already correct from dropdown
+        type: formData.type,
         isActive: formData.isActive,
       };
 
@@ -98,282 +108,286 @@ const SystemVoucherForm = () => {
     }
   };
 
-  // Styling
-  const styles = {
-    pageHeader: {
-      fontFamily: "'Fira Sans', sans-serif",
-      color: '#164E63',
-      fontWeight: '600',
-    },
-    primaryButton: {
-      backgroundColor: '#0891B2',
-      borderColor: '#0891B2',
-      color: '#ffffff',
-      fontWeight: '500',
-      padding: '10px 24px',
-    },
-    card: {
-      borderRadius: '8px',
-      border: 'none',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    },
-    cardHeader: {
-      backgroundColor: '#fff',
-      borderBottom: '1px solid #E2E8F0',
-      padding: '16px 24px',
-      color: '#0F172A',
-      fontWeight: '600',
-      fontSize: '1.1rem',
-    },
-    label: {
-      fontSize: '0.9rem',
-      fontWeight: '500',
-      color: '#475569',
-      marginBottom: '6px',
-    },
-    input: {
-      border: '1px solid #CBD5E1',
-      borderRadius: '6px',
-      padding: '10px 12px',
-      fontSize: '0.95rem',
-      color: '#334155',
-    },
-    infoAlert: {
-      backgroundColor: '#ECFEFF',
-      borderColor: '#CFFAFE',
-      color: '#0891B2',
-      fontSize: '0.95rem',
-    },
-  };
+  if (fetching) {
+    return (
+      <div className={styles.formRoot}>
+        <div className={styles.loadingWrap}>
+          <Spinner animation="border" style={{ color: '#4f46e5' }} />
+          <span>Loading voucher…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Container
-      fluid
-      className="p-4"
-      style={{
-        backgroundColor: '#F8FAFC',
-        minHeight: '100vh',
-        fontFamily: "'Fira Sans', sans-serif",
-      }}
-    >
-      <div className="d-flex justify-content-between align-items-center mb-5">
-        <div>
-          <h2 className="mb-0 fs-3" style={styles.pageHeader}>
-            {isEditMode ? 'Edit System Voucher' : 'Create System Voucher'}
-          </h2>
-          <p className="text-secondary mb-0 mt-1">Configure global pricing rules and constraints</p>
-        </div>
-        <Button
-          variant="link"
-          onClick={() => navigate(ADMIN_ROUTES.SYSTEM_VOUCHERS)}
-          className="text-decoration-none text-secondary fw-medium"
-        >
-          <i className="bi bi-arrow-left me-2"></i> Back to List
-        </Button>
-      </div>
+    <div className={styles.formRoot}>
+      <Form onSubmit={handleSubmit} className={styles.formLayout}>
+        <header className={styles.stickyHeader}>
+          <div className={styles.headerLeft}>
+            <button
+              type="button"
+              className={styles.backBtn}
+              onClick={() => navigate(ADMIN_ROUTES.SYSTEM_VOUCHERS)}
+              aria-label="Back to system vouchers"
+            >
+              <i className="bi bi-arrow-left fs-5" />
+            </button>
+            <h1 className={styles.headerTitle}>{isEditMode ? 'Edit system voucher' : 'Create system voucher'}</h1>
+          </div>
+        </header>
 
-      <Form onSubmit={handleSubmit}>
-        <Row className="g-4">
-          {/* Left Column: Main Info */}
-          <Col lg={8}>
-            {/* Basic Info Card */}
-            <Card className="mb-4" style={styles.card}>
-              <div style={styles.cardHeader}>Basic Information</div>
-              <Card.Body className="p-4">
-                <Row className="g-3">
-                  <Col md={12}>
-                    <Form.Group>
-                      <Form.Label style={styles.label}>Voucher Name</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="e.g., Free Ship Lunar New Year"
-                        required
-                        style={styles.input}
-                        className="shadow-sm"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label style={styles.label}>Voucher Code</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="code"
-                        value={formData.code}
-                        onChange={handleChange}
-                        placeholder="e.g., FREESHIP2024"
-                        required
-                        style={{
-                          ...styles.input,
-                          textTransform: 'uppercase',
-                          fontFamily: "'Fira Code', monospace",
-                        }}
-                        className="shadow-sm"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label style={styles.label}>Voucher Type</Form.Label>
-                      <Form.Select
-                        name="type"
-                        value={formData.type}
-                        onChange={handleChange}
-                        style={styles.input}
-                        className="shadow-sm"
-                      >
-                        <option value="system_shipping">Free Shipping (Fixed Amount)</option>
-                        <option value="system_order">Order Discount (Direct Deduction)</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-
-            {/* Discount Settings Card */}
-            <Card style={styles.card}>
-              <div style={styles.cardHeader}>Discount Rules</div>
-              <Card.Body className="p-4">
-                <Alert
-                  style={styles.infoAlert}
-                  className="d-flex align-items-center mb-4 border rounded-3"
-                >
-                  <i className="bi bi-info-circle-fill me-3 fs-5"></i>
-                  <div>
-                    <strong>Rule Explanation:</strong>{' '}
-                    {formData.type === 'system_shipping'
-                      ? 'The entered amount will be subtracted from the shipping cost.'
-                      : 'The entered amount will be subtracted from the order total.'}
-                  </div>
-                </Alert>
-
-                <Row className="g-3">
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label style={styles.label}>Discount Amount (VND)</Form.Label>
-                      <div className="input-group shadow-sm">
-                        <span className="input-group-text bg-light border-end-0">₫</span>
-                        <Form.Control
-                          type="number"
-                          name="discountValue"
-                          value={formData.discountValue}
+        <div className={styles.formScroll}>
+          <div className={styles.formMax}>
+            <div className={styles.grid}>
+              <div className={styles.colMain}>
+                <section className={styles.section}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={styles.sectionTitle}>
+                      <i className="bi bi-info-circle-fill" aria-hidden />
+                      Basic information
+                    </h2>
+                    <div className={styles.stack}>
+                      <div>
+                        <label className={styles.label} htmlFor="sv-name">
+                          Voucher name
+                        </label>
+                        <input
+                          id="sv-name"
+                          className={styles.input}
+                          type="text"
+                          name="name"
+                          value={formData.name}
                           onChange={handleChange}
-                          min="0"
+                          placeholder="e.g. Summer free ship 2026"
                           required
-                          style={styles.input}
-                          className="border-start-0"
+                          autoComplete="off"
                         />
                       </div>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label style={styles.label}>Min Basket Value (VND)</Form.Label>
-                      <div className="input-group shadow-sm">
-                        <span className="input-group-text bg-light border-end-0">
-                          <i className="bi bi-cart"></i>
-                        </span>
-                        <Form.Control
+                      <div className={styles.row2}>
+                        <div>
+                          <label className={styles.label} htmlFor="sv-code">
+                            Voucher code
+                          </label>
+                          <div className={styles.codeWrap}>
+                            <input
+                              id="sv-code"
+                              className={`${styles.input} ${styles.inputMono} ${styles.codeInput}`}
+                              type="text"
+                              name="code"
+                              value={formData.code}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  code: e.target.value.toUpperCase().replace(/\s/g, ''),
+                                }))
+                              }
+                              placeholder="FREESHIP2026"
+                              required
+                              maxLength={32}
+                              autoComplete="off"
+                            />
+                            <button
+                              type="button"
+                              className={styles.genBtn}
+                              title="Generate random code"
+                              onClick={() => setFormData((prev) => ({ ...prev, code: randomCode() }))}
+                            >
+                              <i className="bi bi-arrow-repeat" />
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className={styles.label} htmlFor="sv-type">
+                            Voucher type
+                          </label>
+                          <select
+                            id="sv-type"
+                            className={styles.select}
+                            name="type"
+                            value={formData.type}
+                            onChange={handleChange}
+                          >
+                            <option value="system_shipping">Free shipping (fixed ₫ off shipping)</option>
+                            <option value="system_order">Order discount (₫ off order total)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className={styles.section}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={styles.sectionTitle}>
+                      <i className="bi bi-sliders" aria-hidden />
+                      Discount rules
+                    </h2>
+                    <div className={styles.infoBox}>
+                      <i className="bi bi-lightbulb-fill" aria-hidden />
+                      <p>
+                        Define the discount amount and minimum basket value.{' '}
+                        {formData.type === 'system_shipping'
+                          ? 'The amount reduces shipping cost for qualifying carts.'
+                          : 'The amount is deducted from the order subtotal.'}{' '}
+                        Use 0 for min. basket if there is no minimum.
+                      </p>
+                    </div>
+                    <div className={styles.row2}>
+                      <div>
+                        <label className={styles.label} htmlFor="sv-discount">
+                          Discount amount (₫)
+                        </label>
+                        <div className={`${styles.inputPrefix}`}>
+                          <span className={styles.prefix}>₫</span>
+                          <input
+                            id="sv-discount"
+                            className={styles.input}
+                            type="number"
+                            name="discountValue"
+                            value={formData.discountValue}
+                            onChange={handleChange}
+                            min="0"
+                            required
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={styles.label} htmlFor="sv-min">
+                          Min. basket value (₫)
+                        </label>
+                        <div className={styles.inputPrefix}>
+                          <span className={styles.prefix}>₫</span>
+                          <input
+                            id="sv-min"
+                            className={styles.input}
+                            type="number"
+                            name="minBasketPrice"
+                            value={formData.minBasketPrice}
+                            onChange={handleChange}
+                            min="0"
+                            placeholder="0"
+                          />
+                        </div>
+                        <p className={styles.hint}>Leave 0 for no minimum requirement.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className={styles.colAside}>
+                <section className={`${styles.section} ${styles.asideSection}`}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={`${styles.sectionTitle} ${styles.sectionTitleSecondary}`}>
+                      <i className="bi bi-speedometer2" aria-hidden />
+                      Usage limits
+                    </h2>
+                    <div className={styles.stack}>
+                      <div>
+                        <label className={styles.label} htmlFor="sv-limit">
+                          Total usage limit
+                        </label>
+                        <input
+                          id="sv-limit"
+                          className={styles.input}
                           type="number"
-                          name="minBasketPrice"
-                          value={formData.minBasketPrice}
+                          name="usageLimit"
+                          value={formData.usageLimit}
                           onChange={handleChange}
-                          min="0"
-                          style={styles.input}
-                          className="border-start-0"
+                          min="1"
                         />
                       </div>
-                    </Form.Group>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
+                      <div>
+                        <label className={styles.label} htmlFor="sv-max-buyer">
+                          Limit per buyer
+                        </label>
+                        <input
+                          id="sv-max-buyer"
+                          className={styles.input}
+                          type="number"
+                          name="maxPerBuyer"
+                          value={formData.maxPerBuyer}
+                          onChange={handleChange}
+                          min="1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
-          {/* Right Column: Sidebar Settings */}
-          <Col lg={4}>
-            <Card className="mb-4" style={styles.card}>
-              <div style={styles.cardHeader}>Usage Limits</div>
-              <Card.Body className="p-4">
-                <Form.Group className="mb-3">
-                  <Form.Label style={styles.label}>Total Global Limit</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="usageLimit"
-                    value={formData.usageLimit}
-                    onChange={handleChange}
-                    min="1"
-                    style={styles.input}
-                    className="shadow-sm"
-                  />
-                </Form.Group>
-                <Form.Group>
-                  <Form.Label style={styles.label}>Max Per Buyer</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="maxPerBuyer"
-                    value={formData.maxPerBuyer}
-                    onChange={handleChange}
-                    min="1"
-                    style={styles.input}
-                    className="shadow-sm"
-                  />
-                </Form.Group>
-              </Card.Body>
-            </Card>
+                <section className={`${styles.section} ${styles.asideSection}`}>
+                  <div className={styles.sectionInner}>
+                    <h2 className={`${styles.sectionTitle} ${styles.sectionTitleTertiary}`}>
+                      <i className="bi bi-calendar3" aria-hidden />
+                      Validity period
+                    </h2>
+                    <div>
+                      <label className={styles.label} htmlFor="sv-range">
+                        Start &amp; end
+                      </label>
+                      <div id="sv-range" className={styles.pickerWrap}>
+                        <RangePicker
+                          showTime
+                          className="w-100"
+                          onChange={handleDateChange}
+                          value={
+                            formData.startTime && formData.endTime
+                              ? [dayjs(formData.startTime), dayjs(formData.endTime)]
+                              : []
+                          }
+                          placeholder={['Start', 'End']}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
-            <Card className="mb-4" style={styles.card}>
-              <div style={styles.cardHeader}>Validity Period</div>
-              <Card.Body className="p-4">
-                <Form.Group className="mb-3">
-                  <Form.Label style={styles.label}>Start & End Time</Form.Label>
-                  <RangePicker
-                    showTime
-                    className="w-100 py-2 shadow-sm"
-                    style={styles.input}
-                    onChange={handleDateChange}
-                    value={
-                      formData.startTime && formData.endTime
-                        ? [dayjs(formData.startTime), dayjs(formData.endTime)]
-                        : []
-                    }
-                    placeholder={['Start Time', 'End Time']}
-                  />
-                </Form.Group>
-                <hr className="my-3" />
-                <Form.Check
-                  type="switch"
-                  id="isActive"
-                  label="Activate Voucher Immediately"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  className="fw-medium text-dark"
-                />
-              </Card.Body>
-            </Card>
-
-            <div className="d-flex gap-3">
-              <Button
-                variant="light"
-                className="w-100 py-3 border fw-medium text-secondary"
-                onClick={() => navigate(ADMIN_ROUTES.SYSTEM_VOUCHERS)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" style={styles.primaryButton} className="w-100 shadow py-3">
-                <i className="bi bi-save me-2"></i>
-                {loading ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Voucher'}
-              </Button>
+                <div className={styles.switchCard}>
+                  <div>
+                    <h3>Activate immediately</h3>
+                    <p>Voucher will be live when you save (subject to validity window).</p>
+                  </div>
+                  <div className={styles.switchRow}>
+                    <Form.Check
+                      type="switch"
+                      id="isActive"
+                      name="isActive"
+                      checked={formData.isActive}
+                      onChange={handleChange}
+                      aria-label="Activate voucher immediately"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
+
+        <div className={styles.footerDock}>
+          <div className={styles.footerGrid}>
+            <div className={styles.footerActions}>
+            <button type="button" className={styles.btnCancel} onClick={() => navigate(ADMIN_ROUTES.SYSTEM_VOUCHERS)}>
+              Cancel
+            </button>
+            <button type="submit" className={styles.btnSave} disabled={loading}>
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-check-lg" />
+                  {isEditMode ? 'Save voucher' : 'Create voucher'}
+                </>
+              )}
+            </button>
+            </div>
+          </div>
+        </div>
       </Form>
-    </Container>
+    </div>
   );
 };
 

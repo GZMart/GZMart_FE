@@ -18,10 +18,8 @@ const PaymentSuccessPage = () => {
 
   useEffect(() => {
     const verifyPayment = async () => {
-      console.log('[PaymentSuccess] ========== START ==========');
-      console.log('[PaymentSuccess] OrderCode from URL:', orderCode);
-
       if (!orderCode) {
+        // eslint-disable-next-line no-console
         console.error('[PaymentSuccess] No orderCode provided!');
         setStatus('error');
         setMessage('Invalid payment information');
@@ -35,15 +33,9 @@ const PaymentSuccessPage = () => {
 
       const pollPaymentStatus = async () => {
         try {
-          console.log(
-            `[PaymentSuccess] Checking payment status (Attempt ${retryCount + 1}/${MAX_RETRIES})...`
-          );
-
           const response = await paymentService.checkPaymentFromPayOS(orderCode);
-          console.log('[PaymentSuccess] API Response:', response);
 
           if (response.success && response.data?.localPaymentStatus === 'paid') {
-            console.log('[PaymentSuccess] Payment verified successfully!');
             setStatus('success');
             setMessage('Payment successful! Redirecting to order details...');
 
@@ -62,12 +54,14 @@ const PaymentSuccessPage = () => {
             return false; // Continue polling
           } else {
             // Max retries reached
+            // eslint-disable-next-line no-console
             console.warn('[PaymentSuccess] Max retries reached, payment still pending');
             setStatus('error');
             setMessage('Payment verification timeout. Please check your orders page.');
             return true; // Stop polling
           }
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('[PaymentSuccess] Error during polling:', error);
 
           // If error and we have retries left, continue polling

@@ -50,7 +50,7 @@
    Dùng @container erp-main (định nghĩa trong ERPLayout .content). */
 .mainGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 520px);
   grid-template-rows: auto 1fr;
   gap: 28px;
   align-items: start;
@@ -834,7 +834,7 @@
   min-width: 0;
 }
 
-/* Fills space under tabs; Live Interaction stacks message / queue / composer inside */
+/* Fills space under tabs; Live Interaction = full-height chat; Product/Voucher tabs add .showcaseTabToolbar */
 .chatMainArea {
   flex: 1;
   min-height: 0;
@@ -843,18 +843,86 @@
   overflow: hidden;
 }
 
-.chatTabs {
+.showcaseTabToolbar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex-shrink: 0;
-  padding: 0 4px;
-  gap: 0;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--ls-surface-container);
   background: var(--ls-surface);
 }
 
+.showcaseTabTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ls-on-surface-variant);
+  font-family: var(--ls-font);
+  padding-top: 2px;
+}
+
+.sellerChatHistoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px;
+  flex-shrink: 0;
+  background: var(--ls-surface);
+}
+
+.sellerChatHistoryLabel {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ls-on-surface-variant);
+  font-family: var(--ls-font);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sellerChatRefreshBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  color: var(--ls-primary);
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.sellerChatRefreshBtn i {
+  font-size: 13px;
+}
+
+.sellerChatRefreshBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  color: var(--ls-outline);
+}
+
+.sellerChatRefreshBtn:not(:disabled):hover {
+  color: var(--ls-on-surface);
+}
+
+.chatTabs {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  padding: 0;
+  gap: 0;
+  border-bottom: 1px solid var(--ls-surface-container);
+  background: var(--ls-surface);
+  /* Four tabs share the row evenly; overflow hidden avoids phantom scrollbars. */
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+
 .chatTab {
   flex: 1;
+  min-width: 0;
   padding: 11px 6px;
   border: none;
   background: transparent;
@@ -868,6 +936,9 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  hyphens: auto;
 }
 
 .chatTabActive {
@@ -2166,21 +2237,14 @@
   }
 
   .chatTabs {
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
     flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .chatTabs::-webkit-scrollbar {
-    display: none;
   }
 
   .chatTab {
-    flex: 1 0 auto;
+    flex: 1;
     min-width: 0;
-    padding: 12px 10px;
+    padding: 12px 6px;
     font-size: 11px;
   }
 

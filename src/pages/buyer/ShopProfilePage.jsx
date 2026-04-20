@@ -1211,9 +1211,12 @@ const ShopProfilePage = () => {
             />
             <div className={styles.heroOverlay} />
             <div className={styles.heroProfile}>
-              <div className={styles.heroAvatarWrap}>
-                <div className={styles.heroAvatar}>
-                  {liveHref ? (
+              {liveHref ? (
+                <div
+                  className={`${styles.heroLiveAvatarWrap} ${styles.heroLiveAvatarRing}`}
+                >
+                  <span className={styles.heroLiveBadge}>LIVE</span>
+                  <div className={styles.heroAvatarInner}>
                     <Link
                       to={liveHref}
                       className={styles.heroAvatarLink}
@@ -1225,20 +1228,29 @@ const ShopProfilePage = () => {
                         className={styles.heroAvatarImg}
                       />
                     </Link>
-                  ) : (
+                    <span className={styles.heroFavBadge}>
+                      {seller.isPreferred
+                        ? t('product_details.shop_badge_favorite')
+                        : t('product_details.shop', 'Shop')}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.heroAvatarWrap}>
+                  <div className={styles.heroAvatar}>
                     <img
                       src={shopAvatarSrc}
                       alt={seller.fullName || 'Shop'}
                       className={styles.heroAvatarImg}
                     />
-                  )}
+                  </div>
+                  <span className={styles.heroFavBadge}>
+                    {seller.isPreferred
+                      ? t('product_details.shop_badge_favorite')
+                      : t('product_details.shop', 'Shop')}
+                  </span>
                 </div>
-                <span className={styles.heroFavBadge}>
-                  {seller.isPreferred
-                    ? t('product_details.shop_badge_favorite')
-                    : t('product_details.shop', 'Shop')}
-                </span>
-              </div>
+              )}
             </div>
           </section>
 

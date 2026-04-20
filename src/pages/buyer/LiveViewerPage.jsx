@@ -125,6 +125,27 @@ function WaitingForSeller() {
   );
 }
 
+// ── Stream ended (seller stopped broadcast) ────────────────────────────────
+function LiveStreamEnded({ onBack }) {
+  return (
+    <div className={styles['ls-ended-state']}>
+      <div className={styles['ls-grid-bg']} />
+      <div className={styles['ls-ended-icon-wrap']}>
+        <IconAlert size={36} />
+      </div>
+      <div className={styles['ls-ended-title']}>Phiên live đã kết thúc</div>
+      <p className={styles['ls-ended-sub']}>Cảm ơn bạn đã theo dõi.</p>
+      <button type="button" className={styles['ls-ended-btn']} onClick={onBack}>
+        Về cửa hàng
+      </button>
+    </div>
+  );
+}
+
+LiveStreamEnded.propTypes = {
+  onBack: PropTypes.func.isRequired,
+};
+
 // ── Inline SVG Icons ──────────────────────────────────────────────────────────
 const Icon = ({ size = 16, strokeWidth = 2, children, className = '', animated = false }) => (
   <svg
@@ -596,6 +617,27 @@ const buildVariantLabel = (color, size) => {
   return parts.length > 0 ? parts.join(' / ') : null;
 };
 
+/** Same sellable line: product + variant dimensions (not tempId). */
+const isSameLiveCartLine = (a, b) =>
+  String(a.productId) === String(b.productId) &&
+  String(a.color ?? '') === String(b.color ?? '') &&
+  String(a.size ?? '') === String(b.size ?? '');
+
+/** Append or merge quantity when the line already exists. */
+const upsertLiveCartItem = (prev, newItem) => {
+  const idx = prev.findIndex((p) => isSameLiveCartLine(p, newItem));
+  if (idx === -1) {
+    return [...prev, { ...newItem, tempId: newItem.tempId ?? generateTempId() }];
+  }
+  const copy = [...prev];
+  const cur = copy[idx];
+  copy[idx] = {
+    ...cur,
+    quantity: (Number(cur.quantity) || 0) + (Number(newItem.quantity) || 0),
+  };
+  return copy;
+};
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function LiveViewerPage() {
   const { shopId, sessionId } = useParams();
@@ -619,6 +661,8 @@ export default function LiveViewerPage() {
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [hasRemoteTrack, setHasRemoteTrack] = useState(false);
+  /** Seller ended live — show ended UI instead of “waiting for seller”. */
+  const [streamEnded, setStreamEnded] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [emotePickerOpen, setEmotePickerOpen] = useState(false);
@@ -644,6 +688,8 @@ export default function LiveViewerPage() {
   const prevMsgLen = useRef(0);
   const displayNameRef = useRef(user?.fullName || 'Viewer');
   const fetchedRef = useRef(false);
+  const everHadRemoteTrackRef = useRef(false);
+  const streamEndedRef = useRef(false);
   const buyerRoomRef = useRef(
     new Room({ adaptiveStream: true, dynacast: true }),
   );
@@ -830,6 +876,40 @@ setEmotePickerOpen(false);
     displayNameRef.current = user?.fullName || 'Viewer';
   }, [user]);
 
+  useEffect(() => {
+    streamEndedRef.current = streamEnded;
+  }, [streamEnded]);
+
+  useEffect(() => {
+    if (hasRemoteTrack) {
+      everHadRemoteTrackRef.current = true;
+    }
+  }, [hasRemoteTrack]);
+
+  /** If remote video drops after we had a stream, confirm session is still live (covers missed socket). */
+  useEffect(() => {
+    if (streamEnded || hasRemoteTrack || !everHadRemoteTrackRef.current || !sessionId) {
+      return undefined;
+    }
+    const t = setTimeout(async () => {
+      if (streamEndedRef.current) {
+        return;
+      }
+      try {
+        const res = await livestreamService.getSession(sessionId);
+        const payload = res?.data ?? res;
+        const s = payload?.data ?? payload;
+        const st = s?.status;
+        if (st && String(st) !== 'live') {
+          setStreamEnded(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [hasRemoteTrack, sessionId, streamEnded]);
+
   // Auto-show pinned overlay when seller changes pinned product
   useEffect(() => {
     if (pinnedProduct) {
@@ -866,14 +946,6 @@ return prev;
           { ...normalizeMessage(msg), isOwn: false },
         ].flat();
       });
-
-      const os = orderSyntaxRef.current;
-      if (os.enabled && os.prefix) {
-        const result = parseOrderSyntax(msg.content, os.prefix, os.productId, os.variantTiers);
-        if (result.matched) {
-          syntaxMatchedRef.current(result, msg.displayName || 'Buyer');
-        }
-      }
     };
 
     const handlePinUpdate = ({ pinnedProduct: pp, products: prodList }) => {
@@ -934,6 +1006,14 @@ return;
       spawnHeart();
     };
 
+    const handleSessionEnded = (payload) => {
+      if (String(payload?.sessionId) !== String(sessionId)) {
+        return;
+      }
+      setStreamEnded(true);
+      setSession((prev) => (prev ? { ...prev, status: 'ended' } : prev));
+    };
+
     socketService.on('livestream_viewer_update', handleViewerUpdate);
     socketService.on('livestream_chat_message', handleSocketChat);
     socketService.on('livestream_pin_update', handlePinUpdate);
@@ -944,6 +1024,7 @@ return;
     socketService.on('livestream_syntax_guide', handleSyntaxGuide);
     socketService.on('livestream_syntax_guide_clear', handleSyntaxGuideClear);
     socketService.on('livestream_like', handleRemoteLike);
+    socketService.on('livestream_session_ended', handleSessionEnded);
 
     return () => {
       socketService.off('livestream_viewer_update', handleViewerUpdate);
@@ -956,6 +1037,7 @@ return;
       socketService.off('livestream_syntax_guide', handleSyntaxGuide);
       socketService.off('livestream_syntax_guide_clear', handleSyntaxGuideClear);
       socketService.off('livestream_like', handleRemoteLike);
+      socketService.off('livestream_session_ended', handleSessionEnded);
     };
   }, [sessionId, user]);
 
@@ -994,15 +1076,7 @@ return;
           setVouchers(vouchersRes.data.vouchers || []);
         }
 
-        // Load buyer's saved voucher IDs so saved state survives page refresh
-        voucherService
-          .getSavedVoucherIds()
-          .then((res) => {
-            // axios interceptor returns response.data — body is { success, data: { ids } }
-            const ids = (res?.data?.ids || []).map((id) => String(id));
-            setSavedVoucherIds(new Set(ids));
-          })
-          .catch(() => {});
+        /* Saved voucher IDs: useEffect theo user._id — guest không gọi (tránh 401 + redirect login) */
 
         livestreamService.getSessionConfig(sessionId).then((res) => {
           const cfg = res?.data?.orderSyntax;
@@ -1100,6 +1174,20 @@ return;
         setLoading(false);
       });
   }, [sessionId, user]);
+
+  /** Đăng nhập sau khi đã vào live: nạp voucher đã lưu (tránh 401 khi guest). */
+  useEffect(() => {
+    if (!sessionId || !user?._id) {
+      return;
+    }
+    voucherService
+      .getSavedVoucherIds()
+      .then((res) => {
+        const ids = (res?.data?.ids || []).map((id) => String(id));
+        setSavedVoucherIds(new Set(ids));
+      })
+      .catch(() => {});
+  }, [sessionId, user?._id]);
 
   // ── LiveKit Connected event ─
   useEffect(() => {
@@ -1346,7 +1434,7 @@ return;
         variantLabel,
       };
 
-      setLiveCartItems((prev) => [...prev, liveItem]);
+      setLiveCartItems((prev) => upsertLiveCartItem(prev, liveItem));
       setActiveOverlay(LIVE_OVERLAY.LIVE_CART);
 
       toast.success(
@@ -1589,12 +1677,18 @@ return `${(count / 1000).toFixed(1)}k`;
               <LiveKitRoom
                 serverUrl={import.meta.env.VITE_LIVEKIT_URL}
                 token={token}
-                connect={true}
+                connect={!streamEnded}
                 room={buyerRoomRef.current}
                 audio={false}
                 video={false}
               >
-                {hasRemoteTrack ? <LiveStreamView /> : <WaitingForSeller />}
+                {streamEnded ? (
+                  <LiveStreamEnded onBack={handleBack} />
+                ) : hasRemoteTrack ? (
+                  <LiveStreamView />
+                ) : (
+                  <WaitingForSeller />
+                )}
               </LiveKitRoom>
             ) : (
               <div className={styles['ls-preview-state']}>
@@ -1658,11 +1752,15 @@ return `${(count / 1000).toFixed(1)}k`;
                 <IconChevronLeft size={16} />
               </button>
 
-              <div className={styles['ls-live-badge']}>
+              <div
+                className={`${styles['ls-live-badge']}${streamEnded ? ` ${styles['ls-live-badge--ended']}` : ''}`}
+              >
                 <div className={styles['ls-live-dot']}>
                   <div className={styles['ls-live-dot-ring']} />
                 </div>
-                <span className={styles['ls-live-text']}>LIVE</span>
+                <span className={styles['ls-live-text']}>
+                  {streamEnded ? 'KẾT THÚC' : 'LIVE'}
+                </span>
               </div>
 
               <div className={`${styles['ls-glass-chip']} ${styles['ls-viewer-chip']}`}>
@@ -2086,11 +2184,15 @@ handleQuickBuy(product);
               </button>
             </div>
 
+            {/* Ghim syntax — không nằm trong vùng scroll tin nhắn */}
+            {syntaxGuide && (
+              <div className={styles['ls-syntax-pin']}>
+                <SyntaxGuideCard guide={syntaxGuide} />
+              </div>
+            )}
+
             {/* Messages */}
             <div ref={chatRef} className={styles['ls-messages']}>
-              {/* Syntax guide pinned at top */}
-              {syntaxGuide && <SyntaxGuideCard guide={syntaxGuide} />}
-
               {messages.length === 0 && (
                 <div className={styles['ls-empty-chat']}>
                   <div className={styles['ls-empty-chat-icon']}>
@@ -2111,9 +2213,21 @@ handleQuickBuy(product);
               {messages.map((m, i) => {
                 const isOwn = String(m.userId) === String(user?._id);
                 const isHost = m.role === 'host' || m.role === 'seller' || m.isSupport;
-                const nameLabel = isOwn ? 'You' : isHost ? 'Seller' : m.displayName || 'Viewer';
+                const rawDisplay = typeof m.displayName === 'string' ? m.displayName.trim() : '';
+                const isGenericSellerName = !rawDisplay || /^seller$/i.test(rawDisplay);
+                const hostResolvedName =
+                  isHost && !isOwn
+                    ? (isGenericSellerName
+                        ? session?.shopId?.fullName || rawDisplay || 'Seller'
+                        : rawDisplay)
+                    : '';
+                const nameLabel = isOwn
+                  ? 'You'
+                  : isHost && !isOwn
+                    ? hostResolvedName
+                    : m.displayName || 'Viewer';
                 const initials = isHost && !isOwn
-                  ? 'SE'
+                  ? (hostResolvedName || 'SE').slice(0, 2).toUpperCase()
                   : isOwn
                     ? (user?.fullName || 'YO').slice(0, 2).toUpperCase()
                     : (m.displayName || 'V').slice(0, 2).toUpperCase();
@@ -2255,7 +2369,7 @@ sendChat();
         sessionId={sessionId}
         user={user}
         onAddToLiveCart={(item) => {
-          setLiveCartItems((prev) => [...prev, { ...item, tempId: generateTempId() }]);
+          setLiveCartItems((prev) => upsertLiveCartItem(prev, { ...item, tempId: generateTempId() }));
           setActiveOverlay(LIVE_OVERLAY.LIVE_CART);
           toast.success(
             <div>

@@ -11,6 +11,26 @@ import {
   hasGoongApiKey,
 } from '@utils/goongPlaces';
 
+const buildTypedFallbackSuggestion = (query = '') => {
+  const trimmed = String(query || '').trim();
+  if (trimmed.length < 3) {
+    return [];
+  }
+
+  return [
+    {
+      source: 'goong',
+      id: `typed-${trimmed.toLowerCase()}`,
+      placeId: '',
+      title: trimmed,
+      subtitle: 'Use typed address',
+      formattedAddress: trimmed,
+      addressComponents: [],
+      location: null,
+    },
+  ];
+};
+
 const useAddressAutocomplete = ({ addresses = [], formValues = {}, excludeId = null } = {}) => {
   const [activeField, setActiveField] = useState(null);
 
@@ -25,8 +45,9 @@ const useAddressAutocomplete = ({ addresses = [], formValues = {}, excludeId = n
     const normalizedQuery = String(query || '').trim();
 
     if (activeField !== 'street' && activeField !== 'details') {
-      setGoongSuggestions([]);
-      setSavedSuggestions([]);
+      // Tránh setState([]) mỗi lần effect chạy khi deps (vd. formValues) đổi reference → vòng lặp re-render
+      setGoongSuggestions((prev) => (prev.length === 0 ? prev : []));
+      setSavedSuggestions((prev) => (prev.length === 0 ? prev : []));
       return undefined;
     }
 
@@ -34,13 +55,17 @@ const useAddressAutocomplete = ({ addresses = [], formValues = {}, excludeId = n
       try {
         if (normalizedQuery.length < 3 || !hasGoongApiKey()) {
           if (!cancelled) {
-            setGoongSuggestions([]);
-            setSavedSuggestions(
-              getAddressAutocompleteSuggestions(addresses, formValues?.[activeField] || '', {
+            const savedItems = getAddressAutocompleteSuggestions(
+              addresses,
+              formValues?.[activeField] || '',
+              {
                 excludeId,
                 limit: 6,
-              })
+              }
             );
+
+            setGoongSuggestions(savedItems.length === 0 ? buildTypedFallbackSuggestion(query) : []);
+            setSavedSuggestions(savedItems);
           }
           return;
         }
@@ -57,20 +82,27 @@ const useAddressAutocomplete = ({ addresses = [], formValues = {}, excludeId = n
           }
         );
 
+        const nextGoongItems =
+          goongItems.length > 0 ? goongItems : buildTypedFallbackSuggestion(normalizedQuery);
+
         if (!cancelled) {
-          setGoongSuggestions(goongItems);
+          setGoongSuggestions(nextGoongItems);
           setSavedSuggestions(savedItems);
         }
       } catch (error) {
         console.error('Failed to fetch Goong address suggestions:', error);
         if (!cancelled) {
-          setGoongSuggestions([]);
-          setSavedSuggestions(
-            getAddressAutocompleteSuggestions(addresses, formValues?.[activeField] || '', {
+          const savedItems = getAddressAutocompleteSuggestions(
+            addresses,
+            formValues?.[activeField] || '',
+            {
               excludeId,
               limit: 6,
-            })
+            }
           );
+
+          setGoongSuggestions(savedItems.length === 0 ? buildTypedFallbackSuggestion(query) : []);
+          setSavedSuggestions(savedItems);
         }
       }
     }, 300);

@@ -41,12 +41,7 @@ function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={<LoadingSpinner />} persistor={persistor}>
-        <Router
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
+        <Router>
           <ScrollToTop />
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>

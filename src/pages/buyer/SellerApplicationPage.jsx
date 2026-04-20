@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button, Tag, message, Result, Spin, Input, Select, Form, Avatar } from 'antd';
 import {
   ShopOutlined,
@@ -13,10 +13,15 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser, getCurrentUser } from '@store/slices/authSlice';
 import * as sellerApplicationService from '@services/api/sellerApplicationService';
+import addressService from '@services/api/addressService';
 import locationService from '@services/api/locationService';
 import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
 import AddressAutocompleteDropdown from '@components/common/AddressAutocompleteDropdown';
-import { applyGoongSuggestion } from '@utils/addressAutocomplete';
+import {
+  applyAddressSuggestion,
+  applyGoongSuggestion,
+  buildAddressDisplayString,
+} from '@utils/addressAutocomplete';
 import styles from '@assets/styles/buyer/SellerApplicationPage.module.css';
 
 const STATUS_CONFIG = {
@@ -33,11 +38,22 @@ const SellerApplicationPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const [form] = Form.useForm();
 
   const watchedAddress = Form.useWatch('address', form);
   const watchedProvinceName = Form.useWatch('provinceName', form);
   const watchedWardName = Form.useWatch('wardName', form);
+
+  const addressAutocompleteFormValues = useMemo(
+    () => ({
+      street: watchedAddress || '',
+      details: '',
+      provinceName: watchedProvinceName || '',
+      wardName: watchedWardName || '',
+    }),
+    [watchedAddress, watchedProvinceName, watchedWardName],
+  );
 
   const {
     activeField: addressSuggestionField,
@@ -46,18 +62,14 @@ const SellerApplicationPage = () => {
     showSuggestions: showAddressSuggestions,
     resolveSuggestionDetails,
   } = useAddressAutocomplete({
-    addresses: [],
-    formValues: {
-      street: watchedAddress || '',
-      details: '',
-      provinceName: watchedProvinceName || '',
-      wardName: watchedWardName || '',
-    },
+    addresses: savedAddresses,
+    formValues: addressAutocompleteFormValues,
   });
 
   useEffect(() => {
     fetchApplications();
     fetchProvinces();
+    fetchSavedAddresses();
   }, []);
 
   useEffect(() => {
@@ -81,6 +93,23 @@ const SellerApplicationPage = () => {
   const fetchProvinces = async () => {
     const data = await locationService.getProvinces();
     setProvinces(data || []);
+  };
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const response = await addressService.getAddresses();
+      const addressList = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : response?.success && Array.isArray(response?.data)
+            ? response.data
+            : [];
+
+      setSavedAddresses(addressList);
+    } catch (error) {
+      console.error('Error fetching saved addresses:', error);
+    }
   };
 
   const handleProvinceChange = async (value) => {
@@ -110,20 +139,29 @@ const SellerApplicationPage = () => {
     const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
     const currentValues = form.getFieldsValue(true);
 
-    const addressPatch = applyGoongSuggestion({
-      suggestion: resolvedSuggestion,
-      activeField: 'street',
-      provinces,
-      wards,
-      currentFormValues: {
-        street: currentValues.address || '',
-        details: '',
-        provinceCode: currentValues.provinceCode,
-        provinceName: currentValues.provinceName,
-        wardCode: currentValues.wardCode,
-        wardName: currentValues.wardName,
-      },
-    });
+    let addressPatch;
+    if (resolvedSuggestion?.source === 'goong') {
+      addressPatch = applyGoongSuggestion({
+        suggestion: resolvedSuggestion,
+        activeField: 'street',
+        provinces,
+        wards,
+        currentFormValues: {
+          street: currentValues.address || '',
+          details: '',
+          provinceCode: currentValues.provinceCode,
+          provinceName: currentValues.provinceName,
+          wardCode: currentValues.wardCode,
+          wardName: currentValues.wardName,
+        },
+      });
+    } else {
+      const savedPatch = applyAddressSuggestion(resolvedSuggestion);
+      addressPatch = {
+        ...savedPatch,
+        street: buildAddressDisplayString(resolvedSuggestion),
+      };
+    }
 
     form.setFieldsValue({
       address: addressPatch.street || currentValues.address || '',

@@ -296,12 +296,199 @@
   font-size: 14px;
 }
 
-.modalApplicantInfo flexp {
+.modalApplicantInfo .flexp {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 0 0;
   color: #64748b;
   font-size: 14px;
   word-break: break-all;
+}
+
+.modalEmailIcon {
+  color: #94a3b8;
+}
+
+.modalApplicantTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.modalApplicantName {
+  margin: 0 !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.modalAppId {
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+.modalStatusWrap {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.modalFooterBar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detailTabs {
+  margin-top: 8px;
+}
+
+.detailTabs :global(.ant-tabs-nav) {
+  margin-bottom: 16px;
+}
+
+.detailTabs :global(.ant-tabs-tab) {
+  padding: 10px 14px;
+}
+
+.detailTabs :global(.ant-tabs-ink-bar) {
+  background: #4f46e5;
+}
+
+.tabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Một cột + table-layout fixed: cột value dùng phần còn lại, không bị ép hẹp kiểu “mỗi ký tự một dòng” */
+.modalDescriptions :global(table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.modalDescriptions :global(.ant-descriptions-item-label) {
+  font-weight: 600;
+  color: #475569 !important;
+  width: 200px;
+  max-width: 40%;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.modalDescriptions :global(.ant-descriptions-item-content) {
+  min-width: 0;
+  vertical-align: top;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Số điện thoại, CCCD, MST — giữ trên một dòng; màn hình rất hẹp thì cuộn ngang */
+.descValueNowrap {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.descValueNowrap :global(.ant-typography) {
+  white-space: nowrap !important;
+  margin-bottom: 0 !important;
+}
+
+/* Địa chỉ / tên tiếng Việt — ngắt theo từ, không “xếp dọc” từng chữ cái */
+.descValueWrap {
+  display: block;
+  max-width: 100%;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-break: auto;
+}
+
+.descValueWrap :global(.ant-typography) {
+  word-break: normal !important;
+  overflow-wrap: break-word;
+  margin-bottom: 0 !important;
+}
+
+.reviewNoteParagraph {
+  margin-bottom: 0 !important;
+  max-width: 100%;
+}
+
+/* AI detail tab */
+.aiPanelPending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 160px;
+  padding: 24px;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
+}
+
+.aiSuggestionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.aiTagRow {
+  margin-top: 6px;
+}
+
+.aiConfidence {
+  min-width: 200px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.aiBlockLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.aiSummary {
+  margin-bottom: 0 !important;
+  color: #334155;
+}
+
+.aiFlagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aiCheckList {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.aiCheckList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .aboutMe {
@@ -434,5 +621,901 @@
   
   .tableWrap {
     padding: 16px;
+  }
+}
+
+/* ── Luminous-style application detail modal ───────────────────────────── */
+.luminousModalShell :global(.ant-modal-content) {
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.lumRoot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(920px, 92vh);
+  background: linear-gradient(165deg, #f1f5f9 0%, #f7f9fb 40%, #f8fafc 100%);
+}
+
+.lumScroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #c7d2fe transparent;
+}
+
+.lumScroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lumScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lumScroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a5b4fc, #c4b5fd);
+  border-radius: 8px;
+}
+
+.lumScroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #818cf8, #a78bfa);
+}
+
+.lumHero {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 28px 22px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  overflow: hidden;
+}
+
+.lumHero::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -8%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.lumHero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed, #6366f1);
+  opacity: 0.35;
+  border-radius: 0 0 16px 16px;
+}
+
+.lumHeroMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.lumAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.lumAvatarImg {
+  width: 96px !important;
+  height: 96px !important;
+  border-radius: 14px !important;
+  object-fit: cover;
+  border: 3px solid #fff !important;
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.08),
+    0 12px 28px -8px rgba(79, 70, 229, 0.25);
+}
+
+.lumVbadge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  background: #006c49;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 0 2px 8px rgba(0, 108, 73, 0.35);
+}
+
+.lumHeroText {
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.lumHeroHint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+  max-width: 42rem;
+}
+
+.lumHeroTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.lumHeroTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #191c1e;
+}
+
+.lumHeroPill {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.lumPill_pending {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.lumPill_approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.lumPill_rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.lumHeroSub {
+  margin: 0;
+  font-size: 13px;
+  color: #464555;
+  font-weight: 500;
+}
+
+.lumHeroId {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.lumHeroTools {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.lumIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.lumIconBtn:hover {
+  background: #fff;
+  color: #4f46e5;
+  border-color: #e0e7ff;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12);
+  transform: translateY(-1px);
+}
+
+.lumIconBtn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.lumBento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  padding: 20px 24px 28px;
+}
+
+@media (min-width: 960px) {
+  .lumBento {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: start;
+    gap: 28px;
+    padding: 22px 28px 28px;
+  }
+}
+
+.lumMainStack {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px 22px 8px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.04),
+    0 8px 24px -6px rgba(15, 23, 42, 0.06);
+}
+
+@media (min-width: 640px) {
+  .lumMainStack {
+    padding: 26px 28px 12px;
+  }
+}
+
+.lumBentoSide {
+  min-width: 0;
+}
+
+.lumSideSticky {
+  position: sticky;
+  top: 8px;
+}
+
+.lumSection {
+  margin-bottom: 28px;
+}
+
+.lumSection:last-child {
+  margin-bottom: 0;
+}
+
+.lumSectionHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.lumSectionBar {
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3525cd, #4f46e5);
+  flex-shrink: 0;
+}
+
+.lumSectionTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #464555;
+}
+
+.lumFieldGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px 24px;
+}
+
+@media (min-width: 560px) {
+  .lumFieldGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 28px;
+  }
+}
+
+.lumField {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fafbfc 0%, #f8fafc 100%);
+  border: 1px solid #f1f5f9;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lumField:hover {
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.lumFieldWide {
+  grid-column: 1 / -1;
+}
+
+.lumLbl {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #777587;
+  margin-bottom: 6px;
+}
+
+.lumVal {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #191c1e;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.lumValMono {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.lumValMono :global(.ant-typography) {
+  white-space: nowrap;
+  margin-bottom: 0 !important;
+}
+
+.lumAbout {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #faf5ff 0%, #f8fafc 100%);
+  border: 1px solid #ede9fe;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lumLocationCard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 22px;
+  background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.lumLocationText {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.lumAddrLine {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #191c1e;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.lumAddrMeta {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #464555;
+}
+
+.lumAddrFull {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.lumMapPh {
+  flex: 0 0 180px;
+  height: 100px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+    linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.lumMapPhIcon {
+  font-size: 28px;
+}
+
+.lumTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.lumTimelineRow {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #f1f5f9;
+  background: #fafbfc;
+  margin-bottom: 10px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.lumTimelineRow:last-child {
+  margin-bottom: 0;
+}
+
+.lumTimelineRow:hover {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.lumTimelineRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.lumTimelineLine {
+  flex: 1;
+  width: 3px;
+  min-height: 12px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #a5b4fc 0%, #c4b5fd 55%, #e9d5ff 100%);
+  opacity: 0.9;
+}
+
+.lumTimelineContent {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.lumTimelineIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.lumTl_violet {
+  background: #e9ddff;
+  color: #5516be;
+}
+
+.lumTl_green {
+  background: #6cf8bb;
+  color: #005236;
+}
+
+.lumTl_slate {
+  background: #e6e8ea;
+  color: #334155;
+}
+
+.lumTimelineTitle {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #191c1e;
+}
+
+.lumTimelineTime {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.lumTimelineBody {
+  margin: 0;
+  font-size: 13px;
+  color: #464555;
+  line-height: 1.55;
+  font-style: italic;
+}
+
+/* Screening sidebar */
+.lumScreenCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lumScreenCard {
+  background: linear-gradient(165deg, rgba(124, 58, 237, 0.06) 0%, rgba(99, 102, 241, 0.04) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 28px -12px rgba(79, 70, 229, 0.2);
+}
+
+.lumScreenCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.lumScreenTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.lumScreenIcon {
+  color: #571ac0;
+  font-size: 20px;
+}
+
+.lumScreenTitle {
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #571ac0;
+}
+
+.lumScreenSubtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #464555;
+}
+
+.lumConfBlock {
+  text-align: right;
+}
+
+.lumConfNum {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #571ac0;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.lumConfLbl {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #777587;
+  margin-top: 4px;
+}
+
+.lumPendingInner {
+  text-align: center;
+  padding: 16px 8px 8px;
+}
+
+.lumPendingHint {
+  display: block;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.lumRiskRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  margin-bottom: 18px;
+}
+
+.lumRiskLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lumRiskIcon {
+  font-size: 18px;
+  color: #00714d;
+  background: rgba(108, 248, 187, 0.35);
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.lumRiskName {
+  font-size: 12px;
+  font-weight: 700;
+  color: #191c1e;
+}
+
+.lumRiskBadge {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.lumRiskTone_low {
+  color: #00714d;
+}
+
+.lumRiskTone_high {
+  color: #ba1a1a;
+}
+
+.lumRiskTone_mid {
+  color: #a16207;
+}
+
+.lumTagBlock {
+  margin-bottom: 16px;
+}
+
+.lumMiniCap {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #777587;
+  margin-bottom: 8px;
+}
+
+.lumTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lumFlagPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lumPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #191c1e;
+  background: #fff;
+  border: 1px solid rgba(119, 117, 135, 0.2);
+}
+
+.lumPillDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #006c49;
+}
+
+.lumProgWrap {
+  margin-bottom: 16px;
+}
+
+.lumSummaryBox {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(119, 117, 135, 0.12);
+  border-radius: 10px;
+}
+
+.lumSummaryCap {
+  font-size: 12px;
+  font-weight: 700;
+  color: #191c1e;
+  margin-bottom: 8px;
+}
+
+.lumSummaryText {
+  margin: 0 !important;
+  font-size: 12px !important;
+  color: #464555 !important;
+  line-height: 1.55 !important;
+}
+
+.lumLocalCard {
+  background: #eceef0;
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #e0e3e5;
+}
+
+.lumLocalHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.lumLocalHeadIcon {
+  font-size: 18px;
+  color: #464555;
+}
+
+.lumLocalTitle {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #191c1e;
+}
+
+.lumLocalList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lumLocalItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.lumLocalOk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00714d;
+}
+
+.lumLocalOkIcon {
+  font-size: 16px;
+}
+
+.lumFooter {
+  flex-shrink: 0;
+  padding: 20px 24px 22px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 -10px 40px -12px rgba(15, 23, 42, 0.1);
+}
+
+@media (min-width: 640px) {
+  .lumFooter {
+    padding: 22px 28px 24px;
+  }
+}
+
+.lumFooterGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: end;
+}
+
+@media (min-width: 768px) {
+  .lumFooterGrid {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.lumFooterLbl {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #777587;
+  margin-bottom: 8px;
+}
+
+.lumFooterTextarea {
+  border-radius: 12px !important;
+  border-color: #e2e8f0 !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.lumFooterTextarea:hover {
+  border-color: #cbd5e1 !important;
+}
+
+.lumFooterTextarea:focus,
+.lumFooterTextarea:focus-within {
+  border-color: #a5b4fc !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+.lumFooterActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.lumBtnClose {
+  min-width: 100px;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  background: #e6e8ea !important;
+  color: #191c1e !important;
+  border: none !important;
+}
+
+.lumBtnReject {
+  min-width: 160px;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+}
+
+.lumBtnApprove {
+  min-width: 160px;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #3525cd 0%, #4f46e5 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px -2px rgba(79, 70, 229, 0.55) !important;
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.lumBtnApprove:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px -4px rgba(79, 70, 229, 0.55) !important;
+}
+
+.lumBtnReject:hover {
+  transform: translateY(-1px);
+}
+
+@media print {
+  .lumHeroTools,
+  .lumFooterActions .lumBtnReject,
+  .lumFooterActions .lumBtnApprove,
+  .lumFooterNote {
+    display: none !important;
   }
 }
