@@ -92,6 +92,7 @@ const PAGE_TITLES = {
   [ADMIN_ROUTES.CATEGORIES]: 'Categories',
   [ADMIN_ROUTES.ATTRIBUTES]: 'Attributes',
   [ADMIN_ROUTES.SYSTEM_VOUCHERS]: 'System Vouchers',
+  [ADMIN_ROUTES.VOUCHER_CAMPAIGNS]: 'Voucher Campaigns',
   [ADMIN_ROUTES.SYSTEM_CONFIG]: 'Configuration',
   [ADMIN_ROUTES.SITE_SETTINGS]: 'Site Settings',
   [ADMIN_ROUTES.PAYMENT_SETTINGS]: 'Payment Settings',

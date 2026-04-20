@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button, Tag, message, Result, Spin, Input, Select, Form, Avatar } from 'antd';
 import {
   ShopOutlined,
@@ -45,6 +45,16 @@ const SellerApplicationPage = () => {
   const watchedProvinceName = Form.useWatch('provinceName', form);
   const watchedWardName = Form.useWatch('wardName', form);
 
+  const addressAutocompleteFormValues = useMemo(
+    () => ({
+      street: watchedAddress || '',
+      details: '',
+      provinceName: watchedProvinceName || '',
+      wardName: watchedWardName || '',
+    }),
+    [watchedAddress, watchedProvinceName, watchedWardName],
+  );
+
   const {
     activeField: addressSuggestionField,
     setActiveField: setAddressSuggestionField,
@@ -53,12 +63,7 @@ const SellerApplicationPage = () => {
     resolveSuggestionDetails,
   } = useAddressAutocomplete({
     addresses: savedAddresses,
-    formValues: {
-      street: watchedAddress || '',
-      details: '',
-      provinceName: watchedProvinceName || '',
-      wardName: watchedWardName || '',
-    },
+    formValues: addressAutocompleteFormValues,
   });
 
   useEffect(() => {

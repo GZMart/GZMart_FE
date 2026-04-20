@@ -45,8 +45,9 @@ const useAddressAutocomplete = ({ addresses = [], formValues = {}, excludeId = n
     const normalizedQuery = String(query || '').trim();
 
     if (activeField !== 'street' && activeField !== 'details') {
-      setGoongSuggestions([]);
-      setSavedSuggestions([]);
+      // Tránh setState([]) mỗi lần effect chạy khi deps (vd. formValues) đổi reference → vòng lặp re-render
+      setGoongSuggestions((prev) => (prev.length === 0 ? prev : []));
+      setSavedSuggestions((prev) => (prev.length === 0 ? prev : []));
       return undefined;
     }
 
