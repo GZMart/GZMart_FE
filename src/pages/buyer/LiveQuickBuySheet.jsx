@@ -232,6 +232,12 @@ return false;
       if (!matchingModel) {
 return true;
 }
+      const preOrderActive =
+        Number.isFinite(Number(detailProduct?.preOrderDays)) &&
+        Number(detailProduct.preOrderDays) > 0;
+      if (preOrderActive) {
+return false;
+}
       return matchingModel.stock <= 0;
     },
     [detailProduct, selectedTierIndex],
@@ -293,7 +299,15 @@ return min;
     [detailProduct, selectedTierIndex],
   );
 
+  const preOrderDaysNum = useMemo(() => {
+    const n = Number(detailProduct?.preOrderDays);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }, [detailProduct?.preOrderDays]);
+
   const maxStock = useMemo(() => {
+    if (preOrderDaysNum > 0) {
+return 99;
+}
     if (activeModel != null) {
 return Math.max(0, activeModel.stock || 0);
 }
@@ -301,13 +315,16 @@ return Math.max(0, activeModel.stock || 0);
 return Math.max(0, detailProduct.stock);
 }
     return 99;
-  }, [activeModel, detailProduct]);
+  }, [activeModel, detailProduct, preOrderDaysNum]);
 
   useEffect(() => {
+    if (preOrderDaysNum > 0) {
+return;
+}
     if (quantity > maxStock && maxStock > 0) {
 setQuantity(maxStock);
 }
-  }, [maxStock, quantity]);
+  }, [maxStock, quantity, preOrderDaysNum]);
 
   const computeLocalPreview = useCallback(() => {
     const subtotal = unitPrice * quantity;
@@ -353,7 +370,7 @@ setQuantity(maxStock);
     !detailLoading &&
     unitPrice > 0 &&
     !needsVariantSelection &&
-    maxStock > 0;
+    (preOrderDaysNum > 0 || maxStock > 0);
 
   const handleBuyNow = async () => {
     if (!user) {
@@ -372,7 +389,7 @@ return;
       }
     }
 
-    if (maxStock <= 0) {
+    if (preOrderDaysNum <= 0 && maxStock <= 0) {
       toast.error('This product is out of stock');
       return;
     }
@@ -380,7 +397,7 @@ return;
     setSubmitting(true);
 
     try {
-      if (activeModel) {
+      if (activeModel && preOrderDaysNum <= 0) {
         const stockRes = await productService.checkStockAvailability(
           liveProduct._id,
           activeModel._id,
@@ -388,7 +405,7 @@ return;
         );
         if (!stockRes.data?.available) {
           toast.error(
-            `Not enough stock. Remaining: ${stockRes.data?.currentStock ?? 0}`,
+            `Not enough stock. Remaining: ${stockRes.data?.currentStock ?? stockRes.data?.stock ?? 0}`,
           );
           setSubmitting(false);
           return;

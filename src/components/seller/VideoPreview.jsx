@@ -321,7 +321,7 @@ function buildCaptureConstraints(micDeviceId, camDeviceId) {
   return { video: videoConstraints, audio };
 }
 
-const SellerLiveController = forwardRef(function SellerLiveController(
+const SellerLiveController = forwardRef((
   {
     token,
     isMicOn,
@@ -337,7 +337,7 @@ const SellerLiveController = forwardRef(function SellerLiveController(
     onRoomConnect,
   },
   ref,
-) {
+) => {
   const [liveMeter, setLiveMeter] = useState(0);
   const onMeterFrame = useCallback((v) => {
     setLiveMeter(v);
@@ -427,7 +427,7 @@ const SellerLiveController = forwardRef(function SellerLiveController(
 });
 
 // ── Preview mode: local camera only, no LiveKit ───────────────────────────
-const CameraPreviewView = forwardRef(function CameraPreviewView(
+const CameraPreviewView = forwardRef((
   {
     videoRef,
     isCamOn,
@@ -442,7 +442,7 @@ const CameraPreviewView = forwardRef(function CameraPreviewView(
     onToggleFullscreen,
   },
   ref,
-) {
+) => {
   const [streamError, setStreamError] = useState(null);
   const [cameraReady, setCameraReady] = useState(false);
   const streamRef = useRef(null);
@@ -699,7 +699,7 @@ const CameraPreviewView = forwardRef(function CameraPreviewView(
   );
 });
 
-const VideoPreview = forwardRef(function VideoPreview(
+const VideoPreview = forwardRef((
   {
     styles = {},
     isLive,
@@ -716,7 +716,7 @@ const VideoPreview = forwardRef(function VideoPreview(
     onRoomConnect,
   },
   ref,
-) {
+) => {
   const videoRef = useRef(null);
 
   if (isLive && token) {

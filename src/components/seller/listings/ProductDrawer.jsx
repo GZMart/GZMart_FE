@@ -12,39 +12,34 @@ import AiPriceSuggestModal from './AiPriceSuggestModal';
 import AiPriceDetailModal from './AiPriceDetailModal';
 import RichTextEditor from '../../common/RichTextEditor';
 import { getProductDrawerSelectStyles } from '../../../utils/productDrawerSelectStyles';
+import {
+  compareCategoryPeers,
+  flattenCategoriesFromTree,
+} from '../../../utils/sellerCategoryTree';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
-/** Sort sibling categories: featured → product count → order → name (tree order preserved per level). */
-function compareCategoryPeers(a, b) {
-  const fa = a.isFeatured ? 1 : 0;
-  const fb = b.isFeatured ? 1 : 0;
-  if (fb !== fa) {
-    return fb - fa;
-  }
-  const pa = a.productCount ?? 0;
-  const pb = b.productCount ?? 0;
-  if (pb !== pa) {
-    return pb - pa;
-  }
-  const oa = a.order ?? 0;
-  const ob = b.order ?? 0;
-  if (oa !== ob) {
-    return oa - ob;
-  }
-  return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
-}
+/** Variant listing images are one per tier-0 option (e.g. color); any SKU in that group may carry the image. */
+const modelHasVariantImage = (m) =>
+  !!(m && (m.imageFile || m.image || m.imagePreview));
 
-function sortCategoryTree(nodes) {
-  if (!nodes?.length) {
-    return [];
+const tier0GroupHasImage = (allModels, t0Idx) =>
+  t0Idx != null &&
+  allModels.some((m) => m.tierIndex?.[0] === t0Idx && modelHasVariantImage(m));
+
+/** Prefer an existing server URL from any model in the same tier-0 group (for API payload). */
+const getTier0ImageUrlFromModels = (allModels, t0Idx) => {
+  if (t0Idx == null) {
+    return null;
   }
-  return [...nodes]
-    .sort(compareCategoryPeers)
-    .map((n) => ({
-      ...n,
-      children: n.children?.length ? sortCategoryTree(n.children) : [],
-    }));
-}
+  const withUrl = allModels.find(
+    (m) =>
+      m.tierIndex?.[0] === t0Idx &&
+      typeof m.image === 'string' &&
+      m.image.trim() &&
+      !m.imageFile
+  );
+  return withUrl?.image || null;
+};
 
 const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [loading, setLoading] = useState(false);
@@ -305,7 +300,17 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         };
       }
 
-      // Create new model with default values
+      // New combination: inherit tier-0 image from any existing SKU with the same first-tier option
+      // (e.g. new size for an existing color — same photo as other sizes).
+      const t0Idx = tierIndex[0];
+      const imageSource =
+        t0Idx != null
+          ? models.find(
+              (m) =>
+                m.tierIndex?.[0] === t0Idx && modelHasVariantImage(m)
+            )
+          : null;
+
       return {
         tierIndex,
         price: parseFloat(formData.originalPrice) || 0,
@@ -313,6 +318,11 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         stock: 0,
         sku: '',
         clientId: `m-${key}`,
+        ...(imageSource && {
+          image: imageSource.image,
+          imageFile: imageSource.imageFile,
+          imagePreview: imageSource.imagePreview,
+        }),
       };
     });
 
@@ -325,18 +335,7 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       const response = await categoryService.getTree();
 
       if (response.success) {
-        const flat = [];
-        const flatten = (nodes, depth = 0) => {
-          (nodes || []).forEach((node) => {
-            flat.push({ ...node, depth });
-            if (node.children?.length) {
-              flatten(node.children, depth + 1);
-            }
-          });
-        };
-
-        flatten(sortCategoryTree(response.data || []));
-        setCategories(flat);
+        setCategories(flattenCategoriesFromTree(response.data));
       } else {
         setCategories([]);
       }
@@ -617,11 +616,8 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       // Every Tier 1 option must have an image (unless saving as draft)
       if (forcedStatus !== 'draft' && tiers.length > 0) {
         const tier0Options = tiers[0]?.options || [];
-        const missingTier0Images = tier0Options.filter((_, t0Idx) => 
-          // Check if any model with this tier0Index has an image
-           !models.some(
-            (m) => m.tierIndex[0] === t0Idx && (m.imageFile || m.image)
-          )
+        const missingTier0Images = tier0Options.filter(
+          (_, t0Idx) => !tier0GroupHasImage(models, t0Idx)
         );
         if (missingTier0Images.length > 0) {
           const missingNames = missingTier0Images.map((opt) => opt.value || '?').join(', ');
@@ -693,14 +689,23 @@ e.preventDefault();
           },
         ];
       } else {
-        productModels = models.map((model) => ({
+        productModels = models.map((model) => {
+          const fallbackUrl =
+            !model.imageFile && !model.image
+              ? getTier0ImageUrlFromModels(models, model.tierIndex?.[0])
+              : null;
+          const imagePayload =
+            !model.imageFile && (model.image || fallbackUrl)
+              ? { image: model.image || fallbackUrl }
+              : {};
+          return {
           ...(model._id && { _id: model._id }),
           tierIndex: model.tierIndex,
           price: parseFloat(model.price),
           ...(!isEditMode && model.costPrice ? { costPrice: parseFloat(model.costPrice) } : {}),
           stock: safeStock(model.stock),
           ...(model.sku && model.sku.trim() && { sku: model.sku.trim().toUpperCase() }),
-          ...(!model.imageFile && model.image && { image: model.image }),
+          ...imagePayload,
           ...(shippingPerVariant
             ? {
                 weight: model.weight ?? 0,
@@ -716,7 +721,8 @@ e.preventDefault();
                 dimWidth: productDim.width || 0,
                 dimHeight: productDim.height || 0,
               }),
-        }));
+        };
+        });
       }
 
       // Check if we have files to upload
@@ -1086,14 +1092,18 @@ e.preventDefault();
     }
   };
 
-  // ── Save-guard: all SKUs need images ──────────────────────────
+  // ── Save-guard: every tier-0 option (e.g. color) needs at least one image in its SKU group ─────
   const missingVariantImages =
-    productType === 'variant' ? models.filter((m) => !m.imageFile && !m.image).length : 0;
+    productType === 'variant' && tiers.length > 0
+      ? (tiers[0]?.options || []).filter(
+          (_, t0Idx) => !tier0GroupHasImage(models, t0Idx)
+        ).length
+      : 0;
   const missingProductImage = productType === 'simple' && imagePreviews.length === 0;
   const publishBlocked = missingVariantImages > 0 || missingProductImage;
   const publishBlockReason =
     missingVariantImages > 0
-      ? `${missingVariantImages} SKU${missingVariantImages !== 1 ? 's are' : ' is'} missing an image`
+      ? `${missingVariantImages} variation option${missingVariantImages !== 1 ? 's' : ''} still need an image`
       : missingProductImage
         ? 'Add at least one product image to publish'
         : '';
@@ -1792,11 +1802,11 @@ e.preventDefault();
                             <line x1="12" y1="17" x2="12.01" y2="17" />
                           </svg>
                           <strong>
-                            {missingVariantImages} SKU{missingVariantImages !== 1 ? 's are' : ' is'}{' '}
-                            missing an image.
+                            {missingVariantImages} option{missingVariantImages !== 1 ? 's' : ''} still
+                            need an image ({tiers[0]?.name || 'first tier'}).
                           </strong>
-                          &nbsp;Upload an image for every variant — Save will be unlocked once all
-                          SKUs have images.
+                          &nbsp;Add one image per variation option (e.g. each color) — Save unlocks
+                          when every option has at least one photo.
                         </div>
                       )}
                       {errors.modelImages && (

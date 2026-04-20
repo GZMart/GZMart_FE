@@ -120,7 +120,7 @@ PaymentBadge.propTypes = { status: PropTypes.string, t: PropTypes.func.isRequire
 
 /* ─── Main Component ──────────────────────────────────────────── */
 const OrdersPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -139,6 +139,7 @@ const OrdersPage = () => {
     paymentMethod: 'all',
     shippingMethod: 'all',
     sortBy: 'newest-first',
+    preOrderScope: 'all',
   });
 
   /* ─── Fetch Data ────────────────────────────────────────────── */
@@ -162,6 +163,11 @@ const OrdersPage = () => {
         }
         if (filters.shippingMethod !== 'all') {
           params.shippingMethod = filters.shippingMethod;
+        }
+        if (filters.preOrderScope === 'has_preorder') {
+          params.hasPreOrder = true;
+        } else if (filters.preOrderScope === 'sla_breached') {
+          params.preOrderSlaBreached = true;
         }
 
         const response = await orderSellerService.getAll(params);
@@ -270,6 +276,7 @@ const OrdersPage = () => {
     paymentStatus: order.paymentStatus,
     shippingAddress: order.shippingAddress,
     createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
+    preOrderSlaBreached: !!order.preOrderSlaBreached,
     items: (order.items || []).map((item) => ({
       _id: item._id,
       productName: item.productId?.name || t('sellerOrders.order.product', 'Unknown Product'),
@@ -279,6 +286,9 @@ const OrdersPage = () => {
       sku: item.sku || '',
       tierDetails: item.tierDetails || {},
       model: item.tierSelections || {},
+      isPreOrder: !!item.isPreOrder,
+      preOrderDaysSnapshot: item.preOrderDaysSnapshot ?? 0,
+      estimatedShipBy: item.estimatedShipBy || null,
     })),
     _originalData: order,
   }));
@@ -410,6 +420,19 @@ const OrdersPage = () => {
               <option value="express">{t('sellerOrders.filters.shippingOptions.express')}</option>
             </select>
           </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>{t('sellerOrders.filters.preOrder.label')}</label>
+            <select
+              className={styles.filterSelect}
+              value={filters.preOrderScope}
+              onChange={(e) => handleFilterChange('preOrderScope', e.target.value)}
+            >
+              <option value="all">{t('sellerOrders.filters.preOrder.all')}</option>
+              <option value="has_preorder">{t('sellerOrders.filters.preOrder.has_preorder')}</option>
+              <option value="sla_breached">{t('sellerOrders.filters.preOrder.sla_breached')}</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -422,7 +445,9 @@ const OrdersPage = () => {
           <div className={styles.emptyStateText}>
             {filters.status !== 'all'
               ? t('sellerOrders.empty.byStatus', STATUS_CONFIG[filters.status]?.labelKey ? t(STATUS_CONFIG[filters.status].labelKey) : filters.status)
-              : t('sellerOrders.empty.default')}
+              : filters.preOrderScope !== 'all'
+                ? t('sellerOrders.empty.byPreOrderFilter')
+                : t('sellerOrders.empty.default')}
           </div>
         </div>
       ) : (
@@ -441,6 +466,17 @@ const OrdersPage = () => {
                 }
               }}
             >
+              {order.preOrderSlaBreached && (
+                <div
+                  className={styles.preorderSlaBanner}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  role="alert"
+                >
+                  <AlertCircle size={16} strokeWidth={2} style={{ flexShrink: 0 }} />
+                  <span>{t('sellerOrders.preorder.sla_breach_banner')}</span>
+                </div>
+              )}
               <div className={styles.orderHeaderRow}>
                 <div className={styles.orderMeta}>
                   <div className={styles.metaItem}>
@@ -489,6 +525,22 @@ const OrdersPage = () => {
 
                     <div className={styles.productDetails}>
                       <h3 className={styles.productName}>{item.productName}</h3>
+                      {item.isPreOrder && (
+                        <>
+                          <span className={styles.preorderLineBadge}>
+                            {t('sellerOrders.preorder.badge')}
+                          </span>
+                          {item.estimatedShipBy && (
+                            <p className={styles.preorderLineHint}>
+                              {t('sellerOrders.preorder.ship_by', {
+                                date: new Date(item.estimatedShipBy).toLocaleDateString(
+                                  i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN',
+                                ),
+                              })}
+                            </p>
+                          )}
+                        </>
+                      )}
                       <div className={styles.productAttributesList}>
                         <div className={styles.attributeItem}>
                           <span className={styles.attributeLabel}>{t('sellerOrders.order.qty')}</span>

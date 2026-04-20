@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 
-const EmptyState = ({ hasActiveFilters, onCreateClick }) => (
+const EmptyState = ({ hasActiveFilters, onCreateClick, showCreateCta = true }) => (
     <div className={styles.emptyState}>
       <div className={styles.emptyIconWrapper}>
         <svg
@@ -18,15 +18,21 @@ const EmptyState = ({ hasActiveFilters, onCreateClick }) => (
         </svg>
       </div>
       <p className={styles.emptyTitle}>
-        {hasActiveFilters ? 'No campaigns match your filter' : 'No flash sales yet'}
+        {hasActiveFilters
+          ? 'No campaigns match your filter'
+          : !showCreateCta
+            ? 'Chưa có flash sale'
+            : 'No flash sales yet'}
       </p>
       <p className={styles.emptyDesc}>
         {hasActiveFilters
           ? 'Try adjusting your search or filter criteria'
-          : 'Create your first flash sale campaign to start selling'}
+          : !showCreateCta
+            ? 'Chỉ seller tạo deal trong trang shop. Admin chỉ xem, tạm dừng hoặc gỡ khi xử lý vi phạm.'
+            : 'Create your first flash sale campaign to start selling'}
       </p>
-      {!hasActiveFilters && (
-        <button className={styles.emptyBtn} onClick={onCreateClick}>
+      {!hasActiveFilters && showCreateCta && (
+        <button type="button" className={styles.emptyBtn} onClick={onCreateClick}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -40,6 +46,7 @@ const EmptyState = ({ hasActiveFilters, onCreateClick }) => (
 EmptyState.propTypes = {
   hasActiveFilters: PropTypes.bool,
   onCreateClick: PropTypes.func,
+  showCreateCta: PropTypes.bool,
 };
 
 export default EmptyState;

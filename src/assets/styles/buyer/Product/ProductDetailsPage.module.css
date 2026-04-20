@@ -215,6 +215,58 @@
   font-weight: 600;
 }
 
+.preOrderBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(177, 60, 54, 0.25);
+  background: linear-gradient(135deg, #fff8f6 0%, #fff 100%);
+}
+
+.preOrderBanner i {
+  font-size: 1.35rem;
+  color: #b13c36;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.preOrderBanner strong {
+  display: block;
+  font-size: 14px;
+  color: #8b2924;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.preOrderBannerText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.mainImagePreOrder {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(177, 60, 54, 0.95);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
 .stock {
   display: flex;
   align-items: center;

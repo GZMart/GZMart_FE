@@ -233,6 +233,8 @@ const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
   const transformedProducts = products.map((product) => {
     const priceInfo = getProductPrice(product);
     const discount = calculateDiscount(priceInfo.originalPrice, priceInfo.price);
+    const preOrderDays = Number(product.preOrderDays) || 0;
+    const treatAsSoldOut = priceInfo.stock === 0 && preOrderDays <= 0;
 
     return {
       id: product._id,
@@ -243,12 +245,12 @@ const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
       stock: priceInfo.stock,
       sold: product.sold || 0, // <--- THÊM DÒNG NÀY ĐỂ LẤY SỐ LƯỢNG BÁN
       badges: [
-        priceInfo.stock === 0 && { text: 'SOLD OUT', bg: 'secondary', color: 'white' },
+        treatAsSoldOut && { text: 'SOLD OUT', bg: 'secondary', color: 'white' },
         discount > 0 && { text: `${discount}% OFF`, bg: 'warning', color: 'dark' },
         product.isHot && { text: 'HOT', bg: 'danger', color: 'white' },
         product.isNew && { text: 'NEW', bg: 'success', color: 'white' },
       ].filter(Boolean),
-      isSoldOut: priceInfo.stock === 0,
+      isSoldOut: treatAsSoldOut,
     };
   });
 

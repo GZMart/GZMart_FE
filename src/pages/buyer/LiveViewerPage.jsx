@@ -329,6 +329,11 @@ function optionIndexInTierOptions(productTier, optionDisplayValue) {
  */
 function buildSyntaxGuideOosMap(product, variantTiers) {
   const map = {};
+  const preOrderActive =
+    Number.isFinite(Number(product?.preOrderDays)) && Number(product.preOrderDays) > 0;
+  if (preOrderActive) {
+    return map;
+  }
   if (!Array.isArray(variantTiers) || variantTiers.length === 0) {
     return map;
   }
@@ -1400,8 +1405,13 @@ return;
       });
     } else {
       // No variant specified → use default first active model
-      const fallback = targetProduct.models?.find((m) => m.isActive !== false && m.stock > 0)
-        || targetProduct.models?.[0];
+      const preOrderLive =
+        Number.isFinite(Number(targetProduct?.preOrderDays)) &&
+        Number(targetProduct.preOrderDays) > 0;
+      const fallback = preOrderLive
+        ? targetProduct.models?.find((m) => m.isActive !== false) || targetProduct.models?.[0]
+        : targetProduct.models?.find((m) => m.isActive !== false && m.stock > 0) ||
+          targetProduct.models?.[0];
       if (!fallback) {
         toast.error('This product has no valid variant.');
         return;

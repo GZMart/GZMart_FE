@@ -11,9 +11,13 @@ const formatPrice = (price) =>
 
 /** Nếu tên toàn chữ hoa (dữ liệu cũ) thì hiển thị dạng câu; giữ nguyên nếu đã hỗn hợp */
 const formatProductDisplayName = (name) => {
-  if (!name || typeof name !== 'string') return '';
+  if (!name || typeof name !== 'string') {
+return '';
+}
   const t = name.trim();
-  if (t.length === 0) return t;
+  if (t.length === 0) {
+return t;
+}
   if (t === t.toUpperCase() && /[a-zÀ-ỹ]/i.test(t)) {
     const lower = t.toLowerCase();
     return lower.charAt(0).toUpperCase() + lower.slice(1);

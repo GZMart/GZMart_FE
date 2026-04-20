@@ -102,6 +102,9 @@ const CampaignDetailDrawer = ({
   onPause: _onPause,
   onStop,
   onResume,
+  /** Admin: chỉ xem / gỡ — không chỉnh giá thay seller */
+  moderationOnly = false,
+  onWarnSeller,
 }) => {
   const isCampaign = !!selectedCampaignGroup;
 
@@ -344,12 +347,14 @@ const CampaignDetailDrawer = ({
                       <th className={styles.detailTextRight}>Price</th>
                       <th className={styles.detailTextRight}>Sold</th>
                       <th className={styles.detailTextRight}>Stock</th>
-                      <th className={styles.detailTextCenter}>Action</th>
+                      <th className={styles.detailTextCenter}>{moderationOnly ? 'Gỡ deal' : 'Action'}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {variants.map((variant, index) => {
                       const remaining = variant.totalQuantity - variant.soldQuantity;
+                      const variantEditDisabled =
+                        selectedCampaignGroup?.status === 'cancelled' || variant.status === 'cancelled';
                       return (
                         <tr key={variant._id || index} className={index % 2 === 1 ? styles.detailVariantRowAlt : ''}>
                           <td>
@@ -377,17 +382,31 @@ const CampaignDetailDrawer = ({
                           </td>
                           <td>
                             <div className={styles.detailVariantActions}>
-                              <button 
-                                className={styles.detailVariantActionBtn}
-                                onClick={() => onEdit?.(variant)}
-                                title="Edit"
-                              >
-                                <span className="material-symbols-outlined">edit</span>
-                              </button>
-                              <button 
+                              {!moderationOnly && (
+                                <button
+                                  type="button"
+                                  className={styles.detailVariantActionBtn}
+                                  disabled={variantEditDisabled}
+                                  onClick={() => {
+                                    if (!variantEditDisabled) {
+onEdit?.(variant);
+}
+                                  }}
+                                  title={
+                                    variantEditDisabled
+                                      ? 'Campaign đã dừng/hủy — không thể chỉnh sửa'
+                                      : 'Edit'
+                                  }
+                                  style={variantEditDisabled ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                                >
+                                  <span className="material-symbols-outlined">edit</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
                                 className={`${styles.detailVariantActionBtn} ${styles.detailVariantActionBtnDanger}`}
                                 onClick={() => onDelete?.(variant._id)}
-                                title="Delete"
+                                title={moderationOnly ? 'Gỡ deal' : 'Delete'}
                               >
                                 <span className="material-symbols-outlined">delete</span>
                               </button>
@@ -435,21 +454,47 @@ const CampaignDetailDrawer = ({
             {/* Dynamic action buttons based on campaign status */}
             {isCampaign && (() => {
               const status = selectedCampaignGroup?.status;
+              const showWarn =
+                moderationOnly &&
+                typeof onWarnSeller === 'function' &&
+                status !== 'expired' &&
+                status !== 'cancelled';
+              const warnBtn = showWarn ? (
+                <button
+                  type="button"
+                  className={styles.detailWarnSellerBtn}
+                  onClick={() => onWarnSeller(selectedCampaignGroup)}
+                >
+                  <span className="material-symbols-outlined">warning</span>
+                  Cảnh cáo seller
+                </button>
+              ) : null;
               if (status === 'paused') {
                 return (
-                  <button className={styles.detailResumeBtn} onClick={() => onResume(selectedCampaignGroup, null)}>
-                    <span className="material-symbols-outlined">play_arrow</span>
-                    Resume Campaign
-                  </button>
+                  <>
+                    {warnBtn}
+                    <button
+                      type="button"
+                      className={styles.detailResumeBtn}
+                      onClick={() => onResume(selectedCampaignGroup, null)}
+                    >
+                      <span className="material-symbols-outlined">play_arrow</span>
+                      Resume Campaign
+                    </button>
+                  </>
                 );
               }
               if (status === 'expired' || status === 'cancelled') {
-                return null; // No actions for ended campaigns
+                return null;
               }
-              // active / pending
               return (
                 <>
-                  <button className={styles.detailStopBtn} onClick={() => onStop(selectedCampaignGroup, null)}>
+                  {warnBtn}
+                  <button
+                    type="button"
+                    className={styles.detailStopBtn}
+                    onClick={() => onStop(selectedCampaignGroup, null)}
+                  >
                     <span className="material-symbols-outlined">stop</span>
                     Stop Campaign
                   </button>
@@ -478,6 +523,8 @@ CampaignDetailDrawer.propTypes = {
   onDelete: PropTypes.func,
   onStop: PropTypes.func,
   onResume: PropTypes.func,
+  moderationOnly: PropTypes.bool,
+  onWarnSeller: PropTypes.func,
 };
 
 export default CampaignDetailDrawer;

@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Form, message, Spin } from 'antd';
+import { Form, message, Spin, Input, Button, Modal, Select } from 'antd';
+import PropTypes from 'prop-types';
 import dayjs from 'dayjs';
+import debounce from 'lodash/debounce';
 import { campaignService } from '../../services/api/campaignService';
+import { searchSellers } from '../../services/api/userService';
 import { productService } from '../../services/api';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 import {
@@ -17,6 +20,12 @@ import {
 } from '../../components/seller/CampaignComponents';
 
 /** Product models use `tierIndex` from API; support legacy `tier_index`. */
+const formatSellerOptionLabel = (s) => {
+  const shop = s.shopName || s.fullName || 'Shop';
+  const extra = [s.email, s.phone].filter(Boolean).join(' · ');
+  return extra ? `${shop} — ${extra}` : shop;
+};
+
 const modelTierIndex = (model) => {
   if (!model) {
     return [];
@@ -30,10 +39,16 @@ const modelTierIndex = (model) => {
   return [];
 };
 
-const CampaignsPage = () => {
+const CampaignsPage = ({ mode = 'seller' }) => {
+  const isAdminMode = mode === 'admin';
+
   // ── State ────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
+  /** Admin: lọc campaign theo seller (id từ autocomplete) */
+  const [selectedSeller, setSelectedSeller] = useState({ id: '', label: '' });
+  const [sellerOptions, setSellerOptions] = useState([]);
+  const [sellerSearchLoading, setSellerSearchLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -71,6 +86,19 @@ const CampaignsPage = () => {
   const [variantConfigs, setVariantConfigs] = useState({});
   const [selectedVariantKeys, setSelectedVariantKeys] = useState([]);
   const [productSearchText, setProductSearchText] = useState('');
+
+  /** Admin: modal dừng campaign — bắt buộc lý do */
+  const [adminStopOpen, setAdminStopOpen] = useState(false);
+  const [adminStopCampaignId, setAdminStopCampaignId] = useState(null);
+  const [adminStopReason, setAdminStopReason] = useState('');
+  const [adminStopLoading, setAdminStopLoading] = useState(false);
+
+  /** Admin: modal cảnh cáo seller */
+  const [warnOpen, setWarnOpen] = useState(false);
+  const [warnCampaignId, setWarnCampaignId] = useState(null);
+  const [warnTitle, setWarnTitle] = useState('');
+  const [warnMessage, setWarnMessage] = useState('');
+  const [warnLoading, setWarnLoading] = useState(false);
 
   // ── Derived data ─────────────────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
@@ -152,11 +180,65 @@ return cur > 0 ? 100 : 0;
     };
   }, [campaigns, overviewRange]);
 
+  const mergedSellerSelectOptions = useMemo(() => {
+    if (selectedSeller.id && !sellerOptions.some((o) => o.value === selectedSeller.id)) {
+      return [
+        {
+          value: selectedSeller.id,
+          label: selectedSeller.label || selectedSeller.id,
+        },
+        ...sellerOptions,
+      ];
+    }
+    return sellerOptions;
+  }, [selectedSeller.id, selectedSeller.label, sellerOptions]);
+
+  const debouncedSellerSearch = useMemo(
+    () =>
+      debounce((searchText) => {
+        const q = (searchText || '').trim();
+        if (q.length < 2) {
+          setSellerOptions([]);
+          setSellerSearchLoading(false);
+          return;
+        }
+        setSellerSearchLoading(true);
+        searchSellers(q, 20)
+          .then((rows) => {
+            setSellerOptions(
+              (rows || []).map((s) => ({
+                value: s._id,
+                label: formatSellerOptionLabel(s),
+              })),
+            );
+          })
+          .catch(() => setSellerOptions([]))
+          .finally(() => setSellerSearchLoading(false));
+      }, 320),
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      debouncedSellerSearch.cancel();
+    },
+    [debouncedSellerSearch],
+  );
+
   // ── Data fetching ─────────────────────────────────────────────────────────
-  const fetchCampaigns = async (page = 1, limit = 10) => {
+  /** @param {string} [sellerIdExplicit] - truyền khi vừa đổi seller để tránh stale state */
+  const fetchCampaigns = async (page = 1, limit = 10, sellerIdExplicit) => {
     try {
       setLoading(true);
-      const res = await campaignService.getAll({ page, limit });
+      const params = { page, limit };
+      const sid =
+        sellerIdExplicit !== undefined && sellerIdExplicit !== null
+          ? String(sellerIdExplicit).trim()
+          : selectedSeller.id.trim();
+      if (isAdminMode && sid) {
+        params.sellerId = sid;
+      }
+      const res = await campaignService.getAll(params);
 
       let campaignsData = [];
       let pageInfo = { page, limit, total: 0 };
@@ -221,6 +303,7 @@ return cur > 0 ? 100 : 0;
   useEffect(() => {
     fetchCampaigns();
   }, []);
+
   useEffect(() => {
     if (isModalVisible) {
       fetchProducts();
@@ -255,6 +338,10 @@ return cur > 0 ? 100 : 0;
   };
 
   const handleEditCampaign = async (group) => {
+    if (group?.status === 'cancelled') {
+      message.warning('Campaign đã bị dừng hoặc hủy — không thể chỉnh sửa.');
+      return;
+    }
     setIsDetailModalVisible(false);
     setCampaignInfo({
       title: group.campaignTitle || '',
@@ -315,6 +402,10 @@ return cur > 0 ? 100 : 0;
   };
 
   const handleEdit = async (record) => {
+    if (record?.status === 'cancelled') {
+      message.warning('Campaign đã bị dừng hoặc hủy — không thể chỉnh sửa.');
+      return;
+    }
     setIsDetailModalVisible(false);
     setSelectedCampaign(record);
     setCampaignInfo({
@@ -411,11 +502,78 @@ return;
     }
   };
 
+  const openWarnModalForGroup = (group) => {
+    const resolved = resolveCampaignId(group, null);
+    if (!resolved?.id) {
+      message.error('Không xác định được campaign');
+      return;
+    }
+    setWarnCampaignId(resolved.id);
+    setWarnTitle('');
+    setWarnMessage('');
+    setWarnOpen(true);
+  };
+
+  const submitWarnSeller = async () => {
+    const m = warnMessage.trim();
+    if (m.length < 10) {
+      message.warning('Nội dung cảnh cáo cần ít nhất 10 ký tự');
+      return;
+    }
+    if (!warnCampaignId) {
+      return;
+    }
+    try {
+      setWarnLoading(true);
+      await campaignService.warnSeller(warnCampaignId, {
+        message: m,
+        title: warnTitle.trim() || undefined,
+      });
+      message.success('Đã gửi cảnh cáo tới seller (thông báo + email nếu cấu hình)');
+      setWarnOpen(false);
+    } catch (error) {
+      message.error(error?.message || 'Gửi cảnh cáo thất bại');
+    } finally {
+      setWarnLoading(false);
+    }
+  };
+
+  const submitAdminStop = async () => {
+    const t = adminStopReason.trim();
+    if (t.length < 10) {
+      message.warning('Vui lòng nhập lý do dừng campaign (tối thiểu 10 ký tự)');
+      return;
+    }
+    if (!adminStopCampaignId) {
+      return;
+    }
+    try {
+      setAdminStopLoading(true);
+      await campaignService.stop(adminStopCampaignId, { reason: t });
+      message.success('Đã dừng campaign và thông báo cho seller');
+      setAdminStopOpen(false);
+      setAdminStopReason('');
+      setAdminStopCampaignId(null);
+      setIsDetailModalVisible(false);
+      fetchCampaigns(pagination.page);
+    } catch (error) {
+      message.error(error?.message || 'Không thể dừng campaign');
+    } finally {
+      setAdminStopLoading(false);
+    }
+  };
+
   const handleStop = async (group, record) => {
     const resolved = resolveCampaignId(group, record);
     if (!resolved) {
-return;
-}
+      return;
+    }
+    if (isAdminMode) {
+      setAdminStopCampaignId(resolved.id);
+      setAdminStopReason('');
+      setAdminStopOpen(true);
+      return;
+    }
     try {
       await campaignService.stop(resolved.id);
       message.success('Campaign stopped successfully');
@@ -450,6 +608,9 @@ return;
   };
 
   const handleOpenCreateModal = () => {
+    if (isAdminMode) {
+      return;
+    }
     setSelectedCampaign(null);
     setCurrentStep(0);
     setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
@@ -760,10 +921,15 @@ item.tierIndex = v.tierIndex;
     () =>
       campaigns.filter((item) => {
         const searchLower = searchText.toLowerCase();
+        const sellerLabel =
+          typeof item.sellerId === 'object' && item.sellerId
+            ? `${item.sellerId.shopName || ''} ${item.sellerId.fullName || ''} ${item.sellerId.email || ''}`
+            : '';
         const matchesSearch =
           !searchLower ||
           item.productId?.name?.toLowerCase().includes(searchLower) ||
-          item.campaignTitle?.toLowerCase().includes(searchLower);
+          item.campaignTitle?.toLowerCase().includes(searchLower) ||
+          sellerLabel.toLowerCase().includes(searchLower);
 
         const matchesStatus =
           statusFilter === 'all' ||
@@ -796,7 +962,12 @@ item.tierIndex = v.tierIndex;
   // ── Table handlers ───────────────────────────────────────────────────────
   const handleTableChange = (newPagination) =>
     fetchCampaigns(newPagination.current, newPagination.pageSize);
-  const hasActiveFilters = searchText || statusFilter !== 'all' || typeFilter !== 'all' || dateRangeFilter;
+  const hasActiveFilters =
+    searchText ||
+    statusFilter !== 'all' ||
+    typeFilter !== 'all' ||
+    dateRangeFilter ||
+    (isAdminMode && selectedSeller.id.trim());
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -804,13 +975,76 @@ item.tierIndex = v.tierIndex;
       <CampaignHeader
         groupedCampaigns={groupedCampaigns}
         onCreateClick={handleOpenCreateModal}
+        showCreateButton={!isAdminMode}
+        title={isAdminMode ? 'Flash Sale — Quản trị toàn hệ thống' : undefined}
+        description={
+          isAdminMode ? (
+            <>
+              Giám sát, tạm dừng hoặc gỡ deal: chỉ seller tạo/sửa giá trong trang shop — đúng thông lệ sàn.
+            </>
+          ) : undefined
+        }
       />
 
-      <OverviewStats
-        overviewRange={overviewRange}
-        setOverviewRange={setOverviewRange}
-        overviewStats={overviewStats}
-      />
+      {!isAdminMode && (
+        <OverviewStats
+          overviewRange={overviewRange}
+          setOverviewRange={setOverviewRange}
+          overviewStats={overviewStats}
+        />
+      )}
+
+      {isAdminMode && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+            padding: '12px 16px',
+            background: '#f8fafc',
+            borderRadius: 10,
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Lọc theo seller</span>
+          <Select
+            showSearch
+            allowClear
+            placeholder="Tìm theo tên shop, email hoặc số điện thoại…"
+            style={{ minWidth: 280, maxWidth: 480, flex: '1 1 280px' }}
+            filterOption={false}
+            loading={sellerSearchLoading}
+            onSearch={(t) => debouncedSellerSearch(t)}
+            notFoundContent={
+              sellerSearchLoading ? (
+                <Spin size="small" />
+              ) : (
+                <span style={{ color: '#64748b', fontSize: 13 }}>
+                  Gõ ít nhất 2 ký tự để tìm seller.
+                </span>
+              )
+            }
+            value={selectedSeller.id || undefined}
+            options={mergedSellerSelectOptions}
+            onChange={(value, option) => {
+              if (!value) {
+                setSelectedSeller({ id: '', label: '' });
+                setSellerOptions([]);
+                fetchCampaigns(1, pagination.limit, '');
+                return;
+              }
+              const label =
+                typeof option?.label === 'string'
+                  ? option.label
+                  : mergedSellerSelectOptions.find((o) => o.value === value)?.label || String(value);
+              setSelectedSeller({ id: value, label });
+              fetchCampaigns(1, pagination.limit, value);
+            }}
+          />
+        </div>
+      )}
 
       <Toolbar
         searchText={searchText}
@@ -833,43 +1067,54 @@ item.tierIndex = v.tierIndex;
             campaignColumns={campaignColumns(
               handleViewCampaign,
               handleEditCampaign,
-              handleDeleteCampaign
+              handleDeleteCampaign,
+              {
+                showSeller: isAdminMode,
+                moderationOnly: isAdminMode,
+                onWarnSeller: isAdminMode ? openWarnModalForGroup : undefined,
+              }
             )}
-            variantColumns={variantColumns(handleEdit, handleDelete)}
+            variantColumns={variantColumns(handleEdit, handleDelete, { moderationOnly: isAdminMode })}
             handleTableChange={handleTableChange}
             handleViewCampaign={handleViewCampaign}
             handleViewDetail={handleViewDetail}
           />
         ) : (
-          <EmptyState hasActiveFilters={hasActiveFilters} onCreateClick={handleOpenCreateModal} />
+          <EmptyState
+            hasActiveFilters={hasActiveFilters}
+            onCreateClick={handleOpenCreateModal}
+            showCreateCta={!isAdminMode}
+          />
         )}
       </Spin>
 
-      <CampaignDrawer
-        open={isModalVisible}
-        onClose={handleCloseModal}
-        currentStep={currentStep}
-        setCurrentStep={setCurrentStep}
-        selectedCampaign={selectedCampaign}
-        campaignInfo={campaignInfo}
-        setCampaignInfo={setCampaignInfo}
-        selectedProducts={selectedProducts}
-        variantConfigs={variantConfigs}
-        selectedVariantKeys={selectedVariantKeys}
-        setSelectedVariantKeys={setSelectedVariantKeys}
-        productSearchText={productSearchText}
-        setProductSearchText={setProductSearchText}
-        filteredProducts={filteredProducts}
-        variantTableData={variantTableData}
-        productsLoading={productsLoading}
-        onAddProduct={handleAddProduct}
-        onRemoveProduct={handleRemoveProduct}
-        onUpdateVariantConfig={updateVariantConfig}
-        onBulkUpdate={handleBulkUpdate}
-        onRemoveVariant={handleRemoveVariant}
-        onSubmit={handleSubmitCampaign}
-        loading={loading}
-      />
+      {!isAdminMode && (
+        <CampaignDrawer
+          open={isModalVisible}
+          onClose={handleCloseModal}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
+          selectedCampaign={selectedCampaign}
+          campaignInfo={campaignInfo}
+          setCampaignInfo={setCampaignInfo}
+          selectedProducts={selectedProducts}
+          variantConfigs={variantConfigs}
+          selectedVariantKeys={selectedVariantKeys}
+          setSelectedVariantKeys={setSelectedVariantKeys}
+          productSearchText={productSearchText}
+          setProductSearchText={setProductSearchText}
+          filteredProducts={filteredProducts}
+          variantTableData={variantTableData}
+          productsLoading={productsLoading}
+          onAddProduct={handleAddProduct}
+          onRemoveProduct={handleRemoveProduct}
+          onUpdateVariantConfig={updateVariantConfig}
+          onBulkUpdate={handleBulkUpdate}
+          onRemoveVariant={handleRemoveVariant}
+          onSubmit={handleSubmitCampaign}
+          loading={loading}
+        />
+      )}
 
       <CampaignDetailDrawer
         open={isDetailModalVisible}
@@ -888,9 +1133,87 @@ item.tierIndex = v.tierIndex;
         onPause={handlePause}
         onStop={handleStop}
         onResume={handleResume}
+        moderationOnly={isAdminMode}
+        onWarnSeller={isAdminMode ? openWarnModalForGroup : undefined}
       />
+
+      {isAdminMode && (
+        <>
+          <Modal
+            title="Dừng campaign — bắt buộc lý do"
+            open={adminStopOpen}
+            onOk={submitAdminStop}
+            onCancel={() => {
+              setAdminStopOpen(false);
+              setAdminStopReason('');
+              setAdminStopCampaignId(null);
+            }}
+            confirmLoading={adminStopLoading}
+            okText="Xác nhận dừng"
+            cancelText="Hủy"
+            width={520}
+          >
+            <p style={{ marginBottom: 12, color: '#475569', fontSize: 14 }}>
+              Seller sẽ nhận thông báo trong app và email (nếu hệ thống email đã cấu hình). Lý do được lưu
+              để đối soát.
+            </p>
+            <Input.TextArea
+              rows={5}
+              placeholder="Nhập lý do dừng campaign (tối thiểu 10 ký tự)…"
+              value={adminStopReason}
+              onChange={(e) => setAdminStopReason(e.target.value)}
+              maxLength={4000}
+              showCount
+            />
+          </Modal>
+
+          <Modal
+            title="Cảnh cáo seller (vi phạm campaign)"
+            open={warnOpen}
+            onOk={submitWarnSeller}
+            onCancel={() => {
+              setWarnOpen(false);
+              setWarnTitle('');
+              setWarnMessage('');
+              setWarnCampaignId(null);
+            }}
+            confirmLoading={warnLoading}
+            okText="Gửi cảnh cáo"
+            cancelText="Hủy"
+            width={560}
+          >
+            <p style={{ marginBottom: 8, color: '#475569', fontSize: 14 }}>
+              Gửi thông báo trong app và email tới chủ shop. Nội dung tối thiểu 10 ký tự.
+            </p>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 6, fontSize: 13, fontWeight: 600 }}>Tiêu đề (tuỳ chọn)</div>
+              <Input
+                placeholder="VD: Cảnh cáo nội dung flash sale"
+                value={warnTitle}
+                onChange={(e) => setWarnTitle(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: 6, fontSize: 13, fontWeight: 600 }}>Nội dung chi tiết</div>
+              <Input.TextArea
+                rows={6}
+                placeholder="Mô tả vi phạm, yêu cầu khắc phục…"
+                value={warnMessage}
+                onChange={(e) => setWarnMessage(e.target.value)}
+                maxLength={4000}
+                showCount
+              />
+            </div>
+          </Modal>
+        </>
+      )}
     </div>
   );
+};
+
+CampaignsPage.propTypes = {
+  mode: PropTypes.oneOf(['seller', 'admin']),
 };
 
 export default CampaignsPage;
