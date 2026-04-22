@@ -258,7 +258,9 @@
   font-size: 14px !important;
 }
 
-:global(.ant-input), :global(.ant-input-password), :global(.ant-select-selector) {
+:global(.ant-input),
+:global(.ant-input-password),
+:global(.ant-select-selector) {
   border-radius: 12px !important;
   border: 1px solid #cbd5e1 !important;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
@@ -267,24 +269,29 @@
 }
 
 :global(.ant-input-affix-wrapper) {
-    border-radius: 12px !important;
-    border: 1px solid #cbd5e1 !important;
-    background-color: #f8fafc !important;
-    padding: 0 11px !important;
+  border-radius: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  padding: 0 11px !important;
 }
 
 :global(.ant-input-affix-wrapper > input.ant-input) {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
-:global(.ant-input:hover), :global(.ant-select:hover .ant-select-selector), :global(.ant-input-affix-wrapper:hover) {
+:global(.ant-input:hover),
+:global(.ant-select:hover .ant-select-selector),
+:global(.ant-input-affix-wrapper:hover) {
   border-color: #94a3b8 !important;
   background-color: #fff !important;
 }
 
-:global(.ant-input:focus), :global(.ant-input-focused), :global(.ant-select-focused .ant-select-selector), :global(.ant-input-affix-wrapper-focused) {
+:global(.ant-input:focus),
+:global(.ant-input-focused),
+:global(.ant-select-focused .ant-select-selector),
+:global(.ant-input-affix-wrapper-focused) {
   border-color: #3b82f6 !important;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
   background-color: #fff !important;
@@ -302,12 +309,16 @@
   background: #0f172a !important; /* Premium Dark */
   border: none !important;
   transition: all 0.3s ease !important;
-  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.2), 0 2px 4px -2px rgba(15, 23, 42, 0.1) !important;
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.2),
+    0 2px 4px -2px rgba(15, 23, 42, 0.1) !important;
 }
 
 .submitBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.3), 0 4px 6px -4px rgba(15, 23, 42, 0.2) !important;
+  box-shadow:
+    0 10px 15px -3px rgba(15, 23, 42, 0.3),
+    0 4px 6px -4px rgba(15, 23, 42, 0.2) !important;
   background: #1e293b !important;
 }
 
@@ -363,4 +374,3 @@
   color: #475569;
   line-height: 1.6;
 }
-

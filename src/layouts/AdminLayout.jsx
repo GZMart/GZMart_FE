@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import PropTypes from 'prop-types';
 import { ADMIN_ROUTES } from '@constants/routes';
+import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/admin/AdminLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
 
@@ -95,6 +97,7 @@ const PAGE_TITLES = {
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [collapsed, setCollapsed] = useState(false);
 
   const isActive = useCallback(
@@ -116,7 +119,7 @@ const AdminLayout = ({ children }) => {
     )?.[1] ?? 'Admin';
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    dispatch(logoutUser());
     navigate('/login');
   };
 

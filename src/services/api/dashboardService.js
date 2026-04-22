@@ -105,7 +105,8 @@ export const dashboardService = {
    * @param {string} [params.period='30days'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @returns {Promise} P&L data grouped by period with { _id, revenue, cost, quantity, orders, profit }
    */
-  getProfitLossAnalysis: async (params = {}) => await axiosClient.get(`${BASE_URL}/profit-loss`, { params }),
+  getProfitLossAnalysis: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/profit-loss`, { params }),
 
   /**
    * Get expense analysis (product cost vs shipping cost)
@@ -113,7 +114,8 @@ export const dashboardService = {
    * @param {string} [params.period='12months'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @returns {Promise} Expense breakdown with { totalProductCost, totalShippingCost, totalExpense, breakdownByType }
    */
-  getExpenseAnalysis: async (params = {}) => await axiosClient.get(`${BASE_URL}/expense`, { params }),
+  getExpenseAnalysis: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/expense`, { params }),
 
   /**
    * Get top selling products with profit analysis
@@ -122,7 +124,8 @@ export const dashboardService = {
    * @param {string} [params.period='12months'] - Period type: '7days', '30days', '90days', '12months', 'yearly'
    * @returns {Promise} Array of products with { _id, name, totalQuantity, totalRevenue, cost, profit, profitMargin }
    */
-  getTopSellingProductsWithProfit: async (params = {}) => await axiosClient.get(`${BASE_URL}/top-products-profit`, { params }),
+  getTopSellingProductsWithProfit: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/top-products-profit`, { params }),
 
   /**
    * Get product analytics by category
@@ -191,6 +194,15 @@ export const dashboardService = {
   getQuickStats: async () => await axiosClient.get(`${BASE_URL}/quick-stats`),
 
   /**
+   * Get low-stock item list for admin drawer
+   * @param {object} params - Query params
+   * @param {number} [params.threshold=20] - Low stock threshold
+   * @param {number} [params.limit=30] - Number of items to return
+   */
+  getAdminLowStockItems: async (params = {}) =>
+    await axiosClient.get(`${BASE_URL}/admin/low-stock-items`, { params }),
+
+  /**
    * Get all dashboard data in one request (Admin only)
    * @param {object} params - Query parameters
    * @param {number} [params.topProductsLimit=5] - Number of top products
@@ -213,7 +225,7 @@ export const dashboardService = {
   processAdminRewardPointWithdrawal: async (transactionId, body) =>
     await axiosClient.put(
       `${BASE_URL}/admin/reward-point-withdrawals/${transactionId}/process`,
-      body,
+      body
     ),
 
   /**
@@ -237,8 +249,7 @@ export const dashboardService = {
    * Get seller wallet balance and earnings summary
    * @returns {Promise} { availableBalance, pendingBalance, totalBalance, totalEarning, totalRefund, totalPayout, totalOrders, completedOrders, pendingOrders }
    */
-  getSellerBalance: async () =>
-    await axiosClient.get(`${BASE_URL}/seller-balance`),
+  getSellerBalance: async () => await axiosClient.get(`${BASE_URL}/seller-balance`),
 
   /**
    * Get seller wallet transaction history

@@ -61,7 +61,7 @@ const OrderStatusModal = ({ show, order, onHide, onSuccess }) => {
       confirmed: ['packed', 'cancelled'],
       packed: ['shipped', 'cancelled'],
       shipped: ['delivered'],
-      delivered: ['completed'],
+      delivered: [],
       completed: [],
       cancelled: ['refund_pending'],
       refund_pending: ['refunded', 'under_investigation'],

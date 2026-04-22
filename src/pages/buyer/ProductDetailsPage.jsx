@@ -697,6 +697,7 @@ return 99;
           quantity,
           color,
           size,
+          modelId: activeModel?._id,
         })
       ).unwrap();
 

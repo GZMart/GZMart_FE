@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Drawer, Button, Form, Alert, Image, Spin, message, Input, Steps } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Drawer, Button, Form, Alert, Image, Spin, message, Input, Steps, Tooltip } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, SwapOutlined, DollarOutlined } from '@ant-design/icons';
 import { Truck, Hand, Undo2, PackageCheck, PackagePlus, Handshake, RefreshCcw } from 'lucide-react';
 import rmaService from '@services/api/rmaService';
 import DeliveryTrackingMap from '@components/buyer/DeliveryTrackingMap';
@@ -50,6 +50,61 @@ const normalizeAddressText = (value, fallback = '') => {
   return String(value).trim() || fallback;
 };
 
+const MAP_LEG_DEFAULT_DURATION_SECONDS = 10;
+
+const formatCategory = (item) => {
+  const product = item?.productId;
+  const direct = product?.categoryName || product?.category?.name || product?.category;
+  if (typeof direct === 'string' && direct.trim()) {
+    return direct.trim();
+  }
+  return 'General';
+};
+
+const getLogisticsStepByCode = (steps, code) =>
+  Array.isArray(steps) ? steps.find((step) => step.code === code) || null : null;
+
+const isLogisticsStepCompleted = (
+  steps,
+  code,
+  nowMs,
+  fallbackDurationSeconds = MAP_LEG_DEFAULT_DURATION_SECONDS
+) => {
+  const step = getLogisticsStepByCode(steps, code);
+  if (!step) {
+    return false;
+  }
+
+  if (step.completed) {
+    return true;
+  }
+
+  if (!step.startedAt) {
+    return false;
+  }
+
+  const startMs = new Date(step.startedAt).getTime();
+  if (!Number.isFinite(startMs)) {
+    return false;
+  }
+
+  const effectiveDuration = Math.max(
+    1,
+    Number(step.durationSeconds || fallbackDurationSeconds || MAP_LEG_DEFAULT_DURATION_SECONDS)
+  );
+
+  return nowMs >= startMs + effectiveDuration * 1000;
+};
+
+const resolveLogisticsStepStartTime = (steps, code) => {
+  const step = getLogisticsStepByCode(steps, code);
+  if (!step) {
+    return null;
+  }
+
+  return step.startedAt || step.completedAt || null;
+};
+
 const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -60,9 +115,21 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
   const [exchangeLegTwoCompleted, setExchangeLegTwoCompleted] = useState(false);
   const [receiptConfirmed, setReceiptConfirmed] = useState(false);
   const [liveReturnRequest, setLiveReturnRequest] = useState(null);
+  const [clockMs, setClockMs] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setClockMs(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+    let pollInterval = null;
 
     const loadLatestReturnRequest = async () => {
       if (!visible || !returnRequest?._original?._id) {
@@ -79,10 +146,21 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
       }
     };
 
+    // Load immediately when drawer opens
     loadLatestReturnRequest();
+
+    // Setup polling to auto-refresh every 3 seconds while drawer is open
+    if (visible) {
+      pollInterval = window.setInterval(() => {
+        loadLatestReturnRequest();
+      }, 3000);
+    }
 
     return () => {
       cancelled = true;
+      if (pollInterval) {
+        window.clearInterval(pollInterval);
+      }
     };
   }, [visible, returnRequest?._original?._id]);
 
@@ -108,6 +186,11 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
           ? `Request approved with ${resolution?.toUpperCase()} resolution`
           : `Return request ${decision}d successfully!`
       );
+
+      // Update liveReturnRequest immediately after successful approval
+      if (decision === 'approve' && response?.data) {
+        setLiveReturnRequest(response.data);
+      }
 
       if (onSuccess) {
         onSuccess(response.data, {
@@ -143,6 +226,11 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
         `Refund processed successfully! ${response.data.coinsAdded} coins added to customer wallet.`
       );
 
+      // Update liveReturnRequest immediately after successful refund processing
+      if (response?.data) {
+        setLiveReturnRequest(response.data);
+      }
+
       if (onSuccess) {
         onSuccess(response.data);
       }
@@ -157,7 +245,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
     }
   };
 
-  const handleConfirmReceipt = async () => {
+  const handleConfirmReceipt = async (resolution) => {
     try {
       setLoading(true);
       setError(null);
@@ -165,6 +253,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
       const values = await form.validateFields();
       const response = await rmaService.confirmItemsReceived(returnRequest._original._id, {
         notes: values.notes || '',
+        resolution,
       });
 
       const payload = response?.data?.data;
@@ -174,9 +263,14 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
       if (autoRefund) {
         message.success('Receipt confirmed. Refund has been auto-credited to buyer GZCoin wallet.');
       } else if (autoExchange) {
-        message.success('Receipt confirmed. Exchange has been completed automatically.');
+        message.success('Receipt confirmed. Exchange order has been created successfully.');
       } else {
         message.success('Receipt confirmed successfully!');
+      }
+
+      // Update liveReturnRequest immediately after successful confirmation
+      if (response?.data) {
+        setLiveReturnRequest(response.data);
       }
 
       if (onSuccess) {
@@ -197,56 +291,44 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
   };
 
   const sourceRequest = trackingSourceRequest || returnRequest?._original || {};
-  const isPending = returnRequest?.status === 'pending';
-  const isApproved = returnRequest?.status === 'approved';
-  const isItemsReturned = returnRequest?.status === 'items_returned';
-  const isProcessing = returnRequest?.status === 'processing';
-  const canExchange = Boolean(
-    sourceRequest?.exchangeEligibility?.canExchange ||
-    returnRequest?.exchangeEligibility?.canExchange
-  );
+  const effectiveStatus = sourceRequest?.status || returnRequest?.status;
+  const isPending = effectiveStatus === 'pending';
+  const isApproved = effectiveStatus === 'approved';
+  const isItemsReturned = effectiveStatus === 'items_returned';
+  const isProcessing = effectiveStatus === 'processing';
   const logistics = sourceRequest?.logistics || {};
   const logisticsSteps = Array.isArray(logistics.steps) ? logistics.steps : [];
   const currentStep = logistics.currentStep;
   const isRefundFlow = sourceRequest?.type === 'refund';
   const isExchangeFlow = sourceRequest?.type === 'exchange';
 
-  const getLogisticsStep = (code) => logisticsSteps.find((step) => step.code === code) || null;
-  const isStepCompleted = (code) => Boolean(getLogisticsStep(code)?.completed);
+  const getLogisticsStep = (code) => getLogisticsStepByCode(logisticsSteps, code);
+  const isStepCompleted = (code) => isLogisticsStepCompleted(logisticsSteps, code, clockMs);
+  const itemRows = Array.isArray(sourceRequest?.items) ? sourceRequest.items : [];
 
   const timeline = Array.isArray(sourceRequest?.timeline) ? sourceRequest.timeline : [];
   const approvedTimelineAt =
     timeline.find((entry) => entry?.status === 'approved')?.updatedAt || null;
   const legOneTransitStartTime =
     sourceRequest?.sellerResponse?.respondedAt || approvedTimelineAt || null;
-  const buildCompletedLegStartTime = (completedAt, durationSeconds = 10) => {
-    if (!completedAt) {
-      return null;
-    }
+  const refundLegOneStartTime =
+    resolveLogisticsStepStartTime(logisticsSteps, 'seller_to_buyer_in_transit') ||
+    legOneTransitStartTime;
 
-    const completedMs = new Date(completedAt).getTime();
-    if (!Number.isFinite(completedMs)) {
-      return null;
-    }
+  const refundLegTwoStartTime = resolveLogisticsStepStartTime(
+    logisticsSteps,
+    'buyer_to_seller_in_transit'
+  );
 
-    return new Date(Math.max(0, completedMs - durationSeconds * 1000)).toISOString();
-  };
+  const exchangeLegOneStartTime =
+    resolveLogisticsStepStartTime(logisticsSteps, 'seller_pack_and_handover') ||
+    resolveLogisticsStepStartTime(logisticsSteps, 'shipper_deliver_and_collect') ||
+    legOneTransitStartTime;
 
-  const refundLegOneStartTime = isStepCompleted('seller_to_buyer_in_transit')
-    ? buildCompletedLegStartTime(getLogisticsStep('seller_to_buyer_in_transit')?.completedAt)
-    : legOneTransitStartTime;
-
-  const refundLegTwoStartTime = isStepCompleted('buyer_to_seller_in_transit')
-    ? buildCompletedLegStartTime(getLogisticsStep('buyer_to_seller_in_transit')?.completedAt)
-    : getLogisticsStep('buyer_confirmed_handover')?.completedAt || null;
-
-  const exchangeLegOneStartTime = isStepCompleted('shipper_deliver_and_collect')
-    ? buildCompletedLegStartTime(getLogisticsStep('shipper_deliver_and_collect')?.completedAt)
-    : legOneTransitStartTime;
-
-  const exchangeLegTwoStartTime = isStepCompleted('shipper_return_to_seller')
-    ? buildCompletedLegStartTime(getLogisticsStep('shipper_return_to_seller')?.completedAt)
-    : getLogisticsStep('shipper_deliver_and_collect')?.completedAt || null;
+  const exchangeLegTwoStartTime = resolveLogisticsStepStartTime(
+    logisticsSteps,
+    'shipper_return_to_seller'
+  );
 
   useEffect(() => {
     if (!returnRequest) {
@@ -288,7 +370,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
     if (exchangeLegTwoDone) {
       setExchangeLegTwoCompleted(true);
     }
-  }, [currentStep, logisticsSteps, returnRequest?.status]);
+  }, [currentStep, logisticsSteps, returnRequest?.status, clockMs]);
 
   const refundTrackingSteps = [
     {
@@ -454,7 +536,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
   };
 
   return (
-    <Drawer title="Return Request Details" open={visible} onClose={onClose} width={800}>
+    <Drawer title="Return Request Details" open={visible} onClose={onClose} size={800}>
       {returnRequest && returnRequest._original ? (
         <Spin spinning={loading}>
           {error && (
@@ -585,14 +667,37 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>{returnRequest.product}</td>
-                  <td>{returnRequest.category}</td>
-                  <td>{returnRequest._original?.items?.length || 1}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    {returnRequest.price.toLocaleString('vi-VN')}₫
-                  </td>
-                </tr>
+                {itemRows.length > 0 ? (
+                  itemRows.map((item, index) => {
+                    const name =
+                      item?.productName ||
+                      item?.orderItemId?.productName ||
+                      item?.productId?.name ||
+                      returnRequest.product ||
+                      'Product';
+
+                    const quantity = Number(item?.quantity || 1);
+                    const price = Number(item?.price || 0) * quantity;
+
+                    return (
+                      <tr key={`${item?._id || item?.orderItemId?._id || index}`}>
+                        <td>{name}</td>
+                        <td>{formatCategory(item)}</td>
+                        <td>{quantity}</td>
+                        <td style={{ textAlign: 'right' }}>{price.toLocaleString('vi-VN')}₫</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td>{returnRequest.product}</td>
+                    <td>{returnRequest.category}</td>
+                    <td>{returnRequest._original?.items?.length || 1}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {returnRequest.price.toLocaleString('vi-VN')}₫
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -616,15 +721,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                 <Button
                   type="primary"
                   icon={<Truck />}
-                  onClick={() =>
-                    handleRespond(
-                      'approve',
-                      returnRequest._original?.type &&
-                        ['refund', 'exchange'].includes(returnRequest._original.type)
-                        ? returnRequest._original.type
-                        : 'refund'
-                    )
-                  }
+                  onClick={() => handleRespond('approve', 'refund')}
                   loading={loading}
                   block
                 >
@@ -649,7 +746,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
           {isExchangeFlow &&
             ['approved', 'items_returned', 'processing', 'completed'].includes(
               returnRequest?.status
-            ) && (
+            ) &&
+            logisticsSteps.length > 0 && (
               <div style={{ marginBottom: 12 }}>
                 <Alert
                   message="Exchange logistics is active"
@@ -695,7 +793,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                     <DeliveryTrackingMap
                       sellerCoords={getTrackingCoordinates().seller}
                       buyerCoords={getTrackingCoordinates().buyer}
-                      duration={10}
+                      duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                       startTime={exchangeLegOneStartTime}
                       syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                       syncTag="exchange_leg_1"
@@ -706,8 +804,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
 
                 {(currentStep === 'shipper_return_to_seller' ||
                   currentStep === 'exchange_completed' ||
-                  returnRequest.status === 'processing' ||
-                  returnRequest.status === 'completed' ||
+                  effectiveStatus === 'processing' ||
+                  effectiveStatus === 'completed' ||
                   exchangeLegOneCompleted) && (
                   <div>
                     <strong style={{ display: 'block', marginBottom: 8 }}>
@@ -716,13 +814,13 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                     <DeliveryTrackingMap
                       sellerCoords={getTrackingCoordinates().buyer}
                       buyerCoords={getTrackingCoordinates().seller}
-                      duration={10}
+                      duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                       startTime={exchangeLegTwoStartTime}
                       syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                       syncTag="exchange_leg_2"
                       onDeliveryComplete={() => setExchangeLegTwoCompleted(true)}
                     />
-                    {exchangeLegTwoCompleted && returnRequest.status !== 'completed' && (
+                    {exchangeLegTwoCompleted && effectiveStatus !== 'completed' && (
                       <Alert
                         type="info"
                         message="Waiting exchange completion"
@@ -736,15 +834,9 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
             )}
 
           {(sourceRequest?.type === 'refund' || sourceRequest?.type === 'undetermined') &&
-            ['approved', 'items_returned', 'processing'].includes(returnRequest.status) && (
+            ['approved', 'items_returned', 'processing'].includes(effectiveStatus) &&
+            logisticsSteps.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <Alert
-                  message="Refund two-leg logistics is active"
-                  description="Step 1: seller to buyer. Step 2: buyer back to seller after buyer confirms handover."
-                  type="info"
-                  style={{ marginBottom: 12 }}
-                />
-
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   <div className={trackingStyles.rmaTrackingCard} style={{ width: '100%' }}>
                     <Steps
@@ -767,8 +859,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                   </div>
                 </div>
 
-                {(currentStep === 'seller_to_buyer_in_transit' ||
-                  returnRequest.status === 'approved') &&
+                {(currentStep === 'seller_to_buyer_in_transit' || effectiveStatus === 'approved') &&
                   !isStepCompleted('buyer_confirmed_handover') && (
                     <div style={{ marginBottom: 16 }}>
                       <strong style={{ display: 'block', marginBottom: 8 }}>
@@ -777,7 +868,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                       <DeliveryTrackingMap
                         sellerCoords={getTrackingCoordinates().seller}
                         buyerCoords={getTrackingCoordinates().buyer}
-                        duration={10}
+                        duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                         startTime={refundLegOneStartTime}
                         syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                         syncTag="refund_leg_1"
@@ -806,7 +897,7 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                     <DeliveryTrackingMap
                       sellerCoords={getTrackingCoordinates().buyer}
                       buyerCoords={getTrackingCoordinates().seller}
-                      duration={10}
+                      duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                       startTime={refundLegTwoStartTime}
                       syncRoom={returnRequest._original?._id || returnRequest._original?._id}
                       syncTag="refund_leg_2"
@@ -817,21 +908,16 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
               </div>
             )}
 
-          {/* Confirm Receipt */}
+          {/* Confirm Receipt — Seller chooses Refund or Exchange */}
           {(isItemsReturned ||
+            isProcessing ||
             currentStep === 'buyer_to_seller_in_transit' ||
             currentStep === 'shipper_return_to_seller') &&
             (isRefundFlow || isExchangeFlow) && (
               <div style={{ marginTop: 16 }}>
                 <Alert
-                  message={
-                    isExchangeFlow ? 'Ready to complete exchange' : 'Ready to confirm receipt'
-                  }
-                  description={
-                    isExchangeFlow
-                      ? 'After seller confirms receipt of faulty item, exchange request is completed automatically.'
-                      : 'After seller confirms receipt of faulty item, refund amount is auto-credited to buyer GZCoin wallet.'
-                  }
+                  message="Items have arrived — Choose resolution"
+                  description="You have received the returned items. Choose how to resolve this request: Refund credits GzCoin to buyer's wallet, or Exchange ships the same product again as a new order."
                   type="info"
                   style={{ marginBottom: 12 }}
                 />
@@ -844,70 +930,69 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                     <TextArea rows={3} placeholder="Confirm receipt notes..." maxLength={500} />
                   </Form.Item>
                 </Form>
-                <Button
-                  type="primary"
-                  onClick={async () => {
-                    await handleConfirmReceipt();
-                    setReceiptConfirmed(true);
-                  }}
-                  loading={loading}
-                  disabled={
-                    !canSellerConfirmReceived &&
-                    !isStepCompleted(
-                      isExchangeFlow ? 'exchange_completed' : 'seller_confirmed_faulty_received'
-                    )
-                  }
-                  block
-                >
-                  {isExchangeFlow
-                    ? 'Confirm Faulty Item Received & Complete Exchange'
-                    : 'Confirm Faulty Item Received'}
-                </Button>
 
-                {/* After receipt confirmed, show action choices */}
-                {receiptConfirmed && (
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <Button type="primary" onClick={handleProcessRefund} loading={loading} block>
-                        Refund
-                      </Button>
-                      {canExchange && (
-                        <Button
-                          type="default"
-                          onClick={async () => {
-                            try {
-                              setLoading(true);
-                              const resp = await rmaService.processExchange(
-                                returnRequest._original._id
-                              );
-                              message.success('Exchange processed successfully');
-                              if (onSuccess) {
-                                onSuccess(resp.data);
-                              }
-                              onClose();
-                            } catch (err) {
-                              void err;
-                              message.error('Failed to process exchange');
-                            } finally {
-                              setLoading(false);
-                            }
-                          }}
-                          loading={loading}
-                          block
-                        >
-                          Exchange
-                        </Button>
-                      )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button
+                    type="primary"
+                    icon={<DollarOutlined />}
+                    onClick={async () => {
+                      await handleConfirmReceipt('refund');
+                      setReceiptConfirmed(true);
+                    }}
+                    loading={loading}
+                    disabled={
+                      !canSellerConfirmReceived &&
+                      !isStepCompleted('seller_confirmed_faulty_received')
+                    }
+                    style={{ flex: 1 }}
+                  >
+                    Refund as GzCoin
+                  </Button>
+
+                  <Tooltip
+                    title={
+                      !returnRequest.exchangeEligibility?.canExchange
+                        ? 'Exact variant is out of stock — cannot exchange'
+                        : ''
+                    }
+                  >
+                    <span style={{ flex: 1, display: 'inline-flex' }}>
                       <Button
-                        danger
-                        onClick={() => handleRespond('reject')}
+                        type="primary"
+                        icon={<SwapOutlined />}
+                        onClick={async () => {
+                          await handleConfirmReceipt('exchange');
+                          setReceiptConfirmed(true);
+                        }}
                         loading={loading}
-                        block
+                        disabled={
+                          !returnRequest.exchangeEligibility?.canExchange ||
+                          (!canSellerConfirmReceived &&
+                            !isStepCompleted('seller_confirmed_faulty_received'))
+                        }
+                        style={{
+                          flex: 1,
+                          background: returnRequest.exchangeEligibility?.canExchange
+                            ? '#389e0d'
+                            : undefined,
+                          borderColor: returnRequest.exchangeEligibility?.canExchange
+                            ? '#389e0d'
+                            : undefined,
+                        }}
                       >
-                        Reject Request
+                        Exchange (Same Item)
                       </Button>
-                    </div>
-                  </div>
+                    </span>
+                  </Tooltip>
+                </div>
+
+                {receiptConfirmed && (
+                  <Alert
+                    type="success"
+                    message="Receipt confirmed"
+                    description="System is processing your chosen resolution."
+                    style={{ marginTop: 12 }}
+                  />
                 )}
               </div>
             )}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+﻿import { useEffect, useRef, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import goongjs from '@goongmaps/goong-js';
 import '@goongmaps/goong-js/dist/goong-js.css';
@@ -7,15 +7,27 @@ import addressService from '@services/api/addressService';
 import rmaService from '@services/api/rmaService';
 import socketService from '@services/socket/socketService';
 
-// Đã thay thế base64 bằng đường dẫn local gọn gàng
 const defaultTruckIconUrl = '/icons/delivery-bike.png';
 const defaultStoreIconUrl = '/icons/store-marker.png';
 const defaultHomeIconUrl = '/icons/home-marker.png';
 
-const isValidCoord = (lat, lng) => Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
-
 const FALLBACK_SELLER_POS = [108.2062, 16.0471];
 const FALLBACK_BUYER_POS = [108.2429, 16.0878];
+const DEFAULT_ANIMATION_DURATION_SECONDS = 20;
+
+const isValidCoord = (lat, lng) => Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+
+const normalizeLngLat = (coord, fallback) => {
+  if (Array.isArray(coord) && isValidCoord(coord[1], coord[0])) {
+    return [Number(coord[0]), Number(coord[1])];
+  }
+
+  if (coord && typeof coord === 'object' && isValidCoord(coord.lat, coord.lng)) {
+    return [Number(coord.lng), Number(coord.lat)];
+  }
+
+  return [...fallback];
+};
 
 const isTrackingDebugEnabled = () => {
   if (typeof window === 'undefined') {
@@ -36,7 +48,18 @@ const isTrackingDebugEnabled = () => {
   }
 };
 
-const debugLog = () => {};
+const debugLog = (enabled, event, payload) => {
+  if (!enabled) {
+    return;
+  }
+
+  try {
+    // eslint-disable-next-line no-console
+    console.log(`[DeliveryTrackingMap] ${event}`, payload || {});
+  } catch (_error) {
+    // ignore debug logging failure
+  }
+};
 
 const toAddressText = (value, fallback = '') => {
   if (!value) {
@@ -58,7 +81,52 @@ const toAddressText = (value, fallback = '') => {
   return String(value).trim() || fallback;
 };
 
-const createMarkerElement = (iconUrl, size, emojiFallback = '📍', debugEnabled = false) => {
+// Decode Google/Goong encoded polyline into GeoJSON-compatible [lng, lat] pairs.
+const decodePolylineToLngLat = (encoded) => {
+  if (!encoded || typeof encoded !== 'string') {
+    return [];
+  }
+
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const coordinates = [];
+
+  while (index < encoded.length) {
+    let shift = 0;
+    let result = 0;
+    let byte = null;
+
+    do {
+      byte = encoded.charCodeAt(index) - 63;
+      index += 1;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index < encoded.length + 1);
+
+    const deltaLat = result & 1 ? ~(result >> 1) : result >> 1;
+    lat += deltaLat;
+
+    shift = 0;
+    result = 0;
+
+    do {
+      byte = encoded.charCodeAt(index) - 63;
+      index += 1;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index < encoded.length + 1);
+
+    const deltaLng = result & 1 ? ~(result >> 1) : result >> 1;
+    lng += deltaLng;
+
+    coordinates.push([lng / 1e5, lat / 1e5]);
+  }
+
+  return coordinates;
+};
+
+const createMarkerElement = (iconUrl, size, emojiFallback = '📍') => {
   const el = document.createElement('div');
   el.className = 'custom-marker';
   el.style.backgroundImage = `url(${iconUrl})`;
@@ -77,7 +145,6 @@ const createMarkerElement = (iconUrl, size, emojiFallback = '📍', debugEnabled
   fallback.style.fontSize = `${Math.max(14, Math.floor(size * 0.5))}px`;
   fallback.style.lineHeight = '1';
   fallback.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))';
-  // Keep emoji visible while image is loading to avoid blank marker flashes.
   fallback.style.opacity = '1';
   el.appendChild(fallback);
 
@@ -106,42 +173,35 @@ const DeliveryTrackingMap = ({
   syncRoom,
   syncTag,
 }) => {
-  const mapContainer = useRef(null);
+  const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const resizeObserverRef = useRef(null);
+  const sellerMarkerRef = useRef(null);
+  const buyerMarkerRef = useRef(null);
   const truckMarkerRef = useRef(null);
-  const animationRef = useRef(null);
-  const intervalRef = useRef(null);
-  const debugEnabledRef = useRef(isTrackingDebugEnabled());
   const joinedRoomRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const completionIntervalRef = useRef(null);
   const onDeliveryCompleteRef = useRef(onDeliveryComplete);
+  const debugEnabledRef = useRef(isTrackingDebugEnabled());
+  const routeRequestIdRef = useRef(0);
+
+  const [resolvedCoords, setResolvedCoords] = useState(null);
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [fetchedStartTime, setFetchedStartTime] = useState(null);
+
+  const MAPTILES_KEY =
+    import.meta.env.VITE_GOONG_MAPTILES_KEY || import.meta.env.GOONG_MAPTILES_KEY || '';
+  const REST_API_KEY = import.meta.env.VITE_GOONG_API_KEY || import.meta.env.GOONG_API_KEY || '';
+
+  const DELIVERY_VEHICLE_ICON_URL = vehicleIconUrl || defaultTruckIconUrl;
+  const DELIVERY_SELLER_ICON_URL = sellerIconUrl || defaultStoreIconUrl;
+  const DELIVERY_BUYER_ICON_URL = buyerIconUrl || defaultHomeIconUrl;
 
   useEffect(() => {
     onDeliveryCompleteRef.current = onDeliveryComplete;
   }, [onDeliveryComplete]);
 
-  // Read both VITE_ and GOONG_ prefixes for backward compatibility.
-  const MAPTILES_KEY =
-    import.meta.env.VITE_GOONG_MAPTILES_KEY || import.meta.env.GOONG_MAPTILES_KEY || '';
-  const REST_API_KEY = import.meta.env.VITE_GOONG_API_KEY || import.meta.env.GOONG_API_KEY || '';
-  const DELIVERY_VEHICLE_ICON_URL = vehicleIconUrl || defaultTruckIconUrl;
-  const DELIVERY_SELLER_ICON_URL = sellerIconUrl || defaultStoreIconUrl;
-  const DELIVERY_BUYER_ICON_URL = buyerIconUrl || defaultHomeIconUrl;
-
-  // Bóc tách biến nguyên thủy để tránh lỗi infinite loop khi bỏ vào array dependencies
-  const {
-    lat: sLat,
-    lng: sLng,
-    address: sAddress,
-    formattedAddress: sFormattedAddress,
-  } = sellerCoords || {};
-  const {
-    lat: bLat,
-    lng: bLng,
-    address: bAddress,
-    formattedAddress: bFormattedAddress,
-  } = buyerCoords || {};
-
-  // 1. Hàm tìm tọa độ thật từ địa chỉ chuỗi (Geocoding)
   const geocodeAddress = useCallback(
     async (address) => {
       if (!REST_API_KEY || !address) {
@@ -150,338 +210,184 @@ const DeliveryTrackingMap = ({
 
       try {
         const url = `https://rsapi.goong.io/geocode?address=${encodeURIComponent(address)}&api_key=${REST_API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data && data.results && data.results.length > 0) {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data?.results?.length > 0) {
           const { lat, lng } = data.results[0].geometry.location;
-          return [lng, lat]; // Goong dùng chuỗi [lng, lat]
+          if (isValidCoord(lat, lng)) {
+            return [Number(lng), Number(lat)];
+          }
         }
       } catch (error) {
         void error;
       }
+
       return null;
     },
     [REST_API_KEY]
   );
 
-  // --- Logic Animation (bám theo start time từ server) ---
-  const startTruckAnimation = useCallback(
-    (routeCoords, durationSeconds = 20, startedAt = null) => {
-      if (!routeCoords || routeCoords.length === 0) {
-        debugLog(debugEnabledRef.current, 'animation_skipped_empty_route', {
-          routeLength: routeCoords?.length || 0,
-        });
-        return;
-      }
-
-      const durationMs = Math.max(1000, Number(durationSeconds || 20) * 1000);
-      const startedAtMs = startedAt ? new Date(startedAt).getTime() : Date.now();
-      let hasCompleted = false;
-
-      const initialElapsed = Math.max(0, Date.now() - startedAtMs);
-      const initialProgress = Math.min(initialElapsed / durationMs, 1);
-
-      debugLog(debugEnabledRef.current, 'animation_start', {
-        durationSeconds,
-        durationMs,
-        startedAt,
-        startedAtMs,
-        now: Date.now(),
-        initialElapsed,
-        initialProgress,
-        routeLength: routeCoords.length,
-        firstPoint: routeCoords[0],
-        lastPoint: routeCoords[routeCoords.length - 1],
-      });
-
-      if (initialProgress >= 1) {
-        debugLog(debugEnabledRef.current, 'animation_expired_on_start', {
-          reason: 'elapsed_time_already_exceeds_duration',
-          initialElapsed,
-          durationMs,
-        });
-      }
-
-      const animate = () => {
-        const elapsed = Math.max(0, Date.now() - startedAtMs);
-        const progress = Math.min(elapsed / durationMs, 1); // Tính % tiến độ
-
-        if (progress < 1) {
-          const targetIndex = Math.floor(progress * (routeCoords.length - 1));
-          const nextIndex = Math.min(targetIndex + 1, routeCoords.length - 1);
-          const segmentProgress = progress * (routeCoords.length - 1) - targetIndex;
-
-          const currentPoint = routeCoords[targetIndex];
-          const nextPoint = routeCoords[nextIndex];
-
-          const lng = currentPoint[0] + (nextPoint[0] - currentPoint[0]) * segmentProgress;
-          const lat = currentPoint[1] + (nextPoint[1] - currentPoint[1]) * segmentProgress;
-
-          if (truckMarkerRef.current) {
-            truckMarkerRef.current.setLngLat([lng, lat]);
-          }
-
-          animationRef.current = requestAnimationFrame(animate);
-        } else {
-          if (truckMarkerRef.current) {
-            truckMarkerRef.current.setLngLat(routeCoords[routeCoords.length - 1]);
-          }
-          debugLog(debugEnabledRef.current, 'animation_completed', {
-            elapsed,
-            durationMs,
-            routeLength: routeCoords.length,
-          });
-          if (onDeliveryCompleteRef.current && !hasCompleted) {
-            hasCompleted = true;
-            onDeliveryCompleteRef.current();
-
-            // emit completion to sync room
-            if (syncRoom) {
-              try {
-                socketService.emit('rma:delivery-sync', {
-                  room: syncRoom,
-                  tag: syncTag || null,
-                  action: 'complete',
-                  timestamp: new Date().toISOString(),
-                });
-              } catch (err) {
-                void err;
-              }
-            }
-          }
-        }
-      };
-      animationRef.current = requestAnimationFrame(animate);
-
-      // Also start a background interval to ensure completion when tab is inactive
-      try {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-      } catch (e) {
-        /* silently ignore */
-      }
-      intervalRef.current = setInterval(() => {
-        const elapsed = Math.max(0, Date.now() - startedAtMs);
-        if (elapsed >= durationMs) {
-          debugLog(debugEnabledRef.current, 'interval_force_complete', {
-            elapsed,
-            durationMs,
-          });
-          // Force finish
-          try {
-            if (animationRef.current) {
-              cancelAnimationFrame(animationRef.current);
-            }
-          } catch (e) {
-            /* silently ignore */
-          }
-          if (truckMarkerRef.current) {
-            truckMarkerRef.current.setLngLat(routeCoords[routeCoords.length - 1]);
-          }
-          if (onDeliveryCompleteRef.current && !hasCompleted) {
-            hasCompleted = true;
-            onDeliveryCompleteRef.current();
-            if (syncRoom) {
-              try {
-                socketService.emit('rma:delivery-sync', {
-                  room: syncRoom,
-                  tag: syncTag || null,
-                  action: 'complete',
-                  timestamp: new Date().toISOString(),
-                });
-              } catch (err) {
-                void err;
-              }
-            }
-          }
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        } else {
-          // Optionally update marker position at coarse granularity in background
-          const progress = Math.min(elapsed / durationMs, 1);
-          const idx = Math.floor(progress * (routeCoords.length - 1));
-          const nextIdx = Math.min(idx + 1, routeCoords.length - 1);
-          const segmentProgress = progress * (routeCoords.length - 1) - idx;
-          const c = routeCoords[idx];
-          const n = routeCoords[nextIdx];
-          const lng = c[0] + (n[0] - c[0]) * segmentProgress;
-          const lat = c[1] + (n[1] - c[1]) * segmentProgress;
-          try {
-            if (truckMarkerRef.current) {
-              truckMarkerRef.current.setLngLat([lng, lat]);
-            }
-          } catch (e) {
-            /* silently ignore */
-          }
-        }
-      }, 1000);
-    },
-    [syncRoom, syncTag]
-  );
-
+  // Effect 1: Resolve seller/buyer coordinates only.
   useEffect(() => {
     let cancelled = false;
 
-    if (!MAPTILES_KEY || !REST_API_KEY) {
-      debugLog(debugEnabledRef.current, 'missing_goong_keys', {
-        hasMaptilesKey: Boolean(MAPTILES_KEY),
-        hasRestApiKey: Boolean(REST_API_KEY),
-      });
-      return;
-    }
+    const {
+      lat: sLat,
+      lng: sLng,
+      address: sAddress,
+      formattedAddress: sFormattedAddress,
+    } = sellerCoords || {};
+    const {
+      lat: bLat,
+      lng: bLng,
+      address: bAddress,
+      formattedAddress: bFormattedAddress,
+    } = buyerCoords || {};
 
-    if (!mapContainer.current) {
-      debugLog(debugEnabledRef.current, 'map_container_missing_on_effect_start');
+    const resolveCoords = async (lat, lng, formattedAddress, address) => {
+      if (isValidCoord(lat, lng)) {
+        return [Number(lng), Number(lat)];
+      }
+
+      if (formattedAddress || address) {
+        try {
+          const payload = { address: formattedAddress || address };
+          const resp = await addressService.geocodeString(payload);
+          const result = resp?.data?.location;
+          if (result && isValidCoord(result.lat, result.lng)) {
+            return [Number(result.lng), Number(result.lat)];
+          }
+        } catch (error) {
+          void error;
+        }
+      }
+
+      if (address) {
+        return geocodeAddress(address);
+      }
+
+      return null;
+    };
+
+    const resolve = async () => {
+      let seller = await resolveCoords(sLat, sLng, sFormattedAddress, sAddress);
+      let buyer = await resolveCoords(bLat, bLng, bFormattedAddress, bAddress);
+
+      if (!seller || !isValidCoord(seller[1], seller[0])) {
+        seller = [...FALLBACK_SELLER_POS];
+      }
+      if (!buyer || !isValidCoord(buyer[1], buyer[0])) {
+        buyer = [...FALLBACK_BUYER_POS];
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setResolvedCoords({
+        seller: normalizeLngLat(seller, FALLBACK_SELLER_POS),
+        buyer: normalizeLngLat(buyer, FALLBACK_BUYER_POS),
+      });
+      debugLog(debugEnabledRef.current, 'coords_resolved', { seller, buyer });
+    };
+
+    resolve().catch((error) => {
+      void error;
+      if (!cancelled) {
+        setResolvedCoords({
+          seller: [...FALLBACK_SELLER_POS],
+          buyer: [...FALLBACK_BUYER_POS],
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    sellerCoords?.lat,
+    sellerCoords?.lng,
+    sellerCoords?.address,
+    sellerCoords?.formattedAddress,
+    buyerCoords?.lat,
+    buyerCoords?.lng,
+    buyerCoords?.address,
+    buyerCoords?.formattedAddress,
+    geocodeAddress,
+  ]);
+
+  // Effect 2: Initialize map instance once.
+  useEffect(() => {
+    if (!MAPTILES_KEY || !REST_API_KEY || !mapContainerRef.current || mapRef.current) {
       return;
     }
 
     goongjs.accessToken = MAPTILES_KEY;
-    debugLog(debugEnabledRef.current, 'map_effect_start', {
-      sellerCoords,
-      buyerCoords,
-      duration,
-      startTime,
-      syncRoom,
-      syncTag,
-      debugMode: debugEnabledRef.current,
+
+    const map = new goongjs.Map({
+      container: mapContainerRef.current,
+      style: 'https://tiles.goong.io/assets/goong_map_web.json',
+      center: FALLBACK_SELLER_POS,
+      zoom: 12,
     });
 
-    let fetchedStartTime = null;
+    mapRef.current = map;
 
-    const initMapAndRoute = async () => {
-      if (cancelled || !mapContainer.current) {
-        debugLog(debugEnabledRef.current, 'init_aborted_before_resolve', {
-          cancelled,
-          hasContainer: Boolean(mapContainer.current),
-        });
-        return;
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => {
+        if (mapRef.current) {
+          mapRef.current.resize();
+        }
+      });
+
+      observer.observe(mapContainerRef.current);
+      resizeObserverRef.current = observer;
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
+      if (completionIntervalRef.current) {
+        clearInterval(completionIntervalRef.current);
+        completionIntervalRef.current = null;
+      }
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [MAPTILES_KEY, REST_API_KEY]);
 
-      // 2. Resolve coordinates
-      const resolveCoords = async (lat, lng, formattedAddress, address) => {
-        if (lat != null && lng != null) {
-          debugLog(debugEnabledRef.current, 'resolve_coords_direct', {
-            lat,
-            lng,
-          });
-          return [lng, lat];
-        }
-        if (formattedAddress || address) {
-          try {
-            const payload = { address: formattedAddress || address };
-            const resp = await addressService.geocodeString(payload);
-            if (resp && resp.success && resp.data && resp.data.location) {
-              return [resp.data.location.lng, resp.data.location.lat];
-            }
-          } catch (err) {
-            void err;
-          }
-        }
-        if (address) {
-          const clientGeo = await geocodeAddress(address);
-          if (clientGeo) {
-            return clientGeo;
-          }
-        }
-        return null;
+  // Effect 3: Build/update route and markers whenever map+coords are ready.
+  useEffect(() => {
+    if (!mapRef.current || !resolvedCoords || !REST_API_KEY) {
+      return;
+    }
+
+    const map = mapRef.current;
+    const seller = normalizeLngLat(resolvedCoords?.seller, FALLBACK_SELLER_POS);
+    const buyer = normalizeLngLat(resolvedCoords?.buyer, FALLBACK_BUYER_POS);
+    const requestId = routeRequestIdRef.current + 1;
+    routeRequestIdRef.current = requestId;
+    let cancelled = false;
+
+    const ensureRouteLayer = (coordinates) => {
+      const routeGeoJson = {
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates },
       };
 
-      let realSellerPos = await resolveCoords(sLat, sLng, sFormattedAddress, sAddress);
-      let realBuyerPos = await resolveCoords(bLat, bLng, bFormattedAddress, bAddress);
-
-      // Fallback nếu không tìm thấy địa chỉ thì dùng tọa độ truyền vào (nếu hợp lệ), rồi mới tới demo.
-      if (!realSellerPos) {
-        realSellerPos = isValidCoord(sLat, sLng)
-          ? [Number(sLng), Number(sLat)]
-          : [...FALLBACK_SELLER_POS];
-      }
-      if (!realBuyerPos) {
-        realBuyerPos = isValidCoord(bLat, bLng)
-          ? [Number(bLng), Number(bLat)]
-          : [...FALLBACK_BUYER_POS];
-      }
-
-      if (!isValidCoord(realSellerPos?.[1], realSellerPos?.[0])) {
-        realSellerPos = [...FALLBACK_SELLER_POS];
-      }
-      if (!isValidCoord(realBuyerPos?.[1], realBuyerPos?.[0])) {
-        realBuyerPos = [...FALLBACK_BUYER_POS];
-      }
-
-      if (cancelled || !mapContainer.current) {
-        return;
-      }
-
-      const centerPos = [
-        (realSellerPos[0] + realBuyerPos[0]) / 2,
-        (realSellerPos[1] + realBuyerPos[1]) / 2,
-      ];
-
-      // 3. Khởi tạo bản đồ Goong
-      const map = new goongjs.Map({
-        container: mapContainer.current,
-        style: 'https://tiles.goong.io/assets/goong_map_web.json',
-        center: centerPos,
-        zoom: 12,
-      });
-      mapRef.current = map;
-
-      // Some style sprites from provider styles can be missing in local/dev env.
-      // Add a transparent 1x1 fallback image to silence non-fatal style warnings.
-      map.on('styleimagemissing', (evt) => {
-        try {
-          const imageId = evt?.id;
-          if (!imageId || map.hasImage(imageId)) {
-            return;
-          }
-
-          map.addImage(imageId, {
-            width: 1,
-            height: 1,
-            data: new Uint8Array([0, 0, 0, 0]),
-          });
-        } catch (error) {
-          void error;
-        }
-      });
-
-      // 4. Lấy tuyến đường thực tế qua OSRM dựa trên tọa độ CHUẨN vừa quét được
-      const url = `https://router.project-osrm.org/route/v1/driving/${realSellerPos[0]},${realSellerPos[1]};${realBuyerPos[0]},${realBuyerPos[1]}?overview=full&geometries=geojson`;
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (cancelled) {
-        debugLog(debugEnabledRef.current, 'init_aborted_after_route_fetch');
-        return;
-      }
-
-      let routeCoordinates = [realSellerPos, realBuyerPos];
-      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-        routeCoordinates = data.routes[0].geometry.coordinates;
-      }
-
-      map.on('error', (err) => {
-        void err;
-      });
-
-      map.on('load', () => {
-        // Ensure proper render size in animated containers (drawer/modal/tab).
-        map.resize();
-        setTimeout(() => {
-          if (mapRef.current) {
-            mapRef.current.resize();
-          }
-        }, 250);
-
-        // Vẽ đường đi
-        map.addSource('route', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: routeCoordinates },
-          },
-        });
+      const source = map.getSource('route');
+      if (source) {
+        source.setData(routeGeoJson);
+      } else {
+        map.addSource('route', { type: 'geojson', data: routeGeoJson });
         map.addLayer({
           id: 'route',
           type: 'line',
@@ -489,118 +395,284 @@ const DeliveryTrackingMap = ({
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: { 'line-color': '#1890ff', 'line-width': 5, 'line-opacity': 0.8 },
         });
-
-        // Đặt Marker
-        new goongjs.Marker(
-          createMarkerElement(DELIVERY_SELLER_ICON_URL, 32, '🏬', debugEnabledRef.current)
-        )
-          .setLngLat(realSellerPos)
-          .addTo(map);
-        new goongjs.Marker(
-          createMarkerElement(DELIVERY_BUYER_ICON_URL, 32, '🏠', debugEnabledRef.current)
-        )
-          .setLngLat(realBuyerPos)
-          .addTo(map);
-
-        const truckMarker = new goongjs.Marker(
-          createMarkerElement(DELIVERY_VEHICLE_ICON_URL, 40, '🛵', debugEnabledRef.current)
-        )
-          .setLngLat(realSellerPos)
-          .addTo(map);
-        truckMarkerRef.current = truckMarker;
-
-        // Prefer explicit startTime prop, fallback to server-fetched start time
-        startTruckAnimation(routeCoordinates, duration, startTime || fetchedStartTime);
-      });
-
-      if (typeof ResizeObserver !== 'undefined' && mapContainer.current) {
-        const resizeObserver = new ResizeObserver(() => {
-          if (mapRef.current) {
-            mapRef.current.resize();
-          }
-        });
-        resizeObserver.observe(mapContainer.current);
-        map.__resizeObserver = resizeObserver;
       }
     };
 
-    if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
+    const upsertMarkers = () => {
+      const safeSeller = normalizeLngLat(seller, FALLBACK_SELLER_POS);
+      const safeBuyer = normalizeLngLat(buyer, FALLBACK_BUYER_POS);
 
-    // Prepare then initialize map
-    const prepareAndInit = async () => {
-      if (syncRoom && !startTime) {
+      if (!sellerMarkerRef.current) {
+        sellerMarkerRef.current = new goongjs.Marker(
+          createMarkerElement(DELIVERY_SELLER_ICON_URL, 32, '🏬')
+        )
+          .setLngLat(safeSeller)
+          .addTo(map);
+      }
+
+      if (!buyerMarkerRef.current) {
+        buyerMarkerRef.current = new goongjs.Marker(
+          createMarkerElement(DELIVERY_BUYER_ICON_URL, 32, '🏠')
+        )
+          .setLngLat(safeBuyer)
+          .addTo(map);
+      }
+
+      if (!truckMarkerRef.current) {
+        truckMarkerRef.current = new goongjs.Marker(
+          createMarkerElement(DELIVERY_VEHICLE_ICON_URL, 40, '🛵')
+        )
+          .setLngLat(safeSeller)
+          .addTo(map);
+      }
+
+      sellerMarkerRef.current.setLngLat(safeSeller);
+      buyerMarkerRef.current.setLngLat(safeBuyer);
+      truckMarkerRef.current.setLngLat(safeSeller);
+    };
+
+    const fetchDirectionRoute = async (origin, destination) => {
+      const endpointCandidates = [
+        `https://rsapi.goong.io/Direction?origin=${origin}&destination=${destination}&vehicle=bike&api_key=${REST_API_KEY}`,
+        `https://rsapi.goong.io/Direction/routing?origin=${origin}&destination=${destination}&vehicle=bike&api_key=${REST_API_KEY}`,
+      ];
+
+      for (const endpoint of endpointCandidates) {
         try {
-          const resp = await rmaService.getReturnRequestById(syncRoom);
-          const rr = resp && resp.data;
-          // Try common fields that might carry start time
-          fetchedStartTime =
-            rr?.logistics?.startTime ||
-            rr?.shippingStartedAt ||
-            rr?.logistics?.shippingStartedAt ||
-            null;
-        } catch (err) {
-          void err;
-          // ignore, fallback to local time
+          const response = await fetch(endpoint);
+          if (!response.ok) {
+            continue;
+          }
+
+          const data = await response.json();
+          const encoded = data?.routes?.[0]?.overview_polyline?.points;
+          const decoded = decodePolylineToLngLat(encoded);
+          if (decoded.length > 1) {
+            return decoded;
+          }
+        } catch (error) {
+          void error;
         }
       }
 
-      await initMapAndRoute();
+      return null;
     };
 
-    prepareAndInit().catch((error) => {
+    const fetchRoute = async () => {
+      const origin = `${seller[1]},${seller[0]}`;
+      const destination = `${buyer[1]},${buyer[0]}`;
+
+      let nextRoute = [seller, buyer];
+
+      try {
+        const decodedRoute = await fetchDirectionRoute(origin, destination);
+        if (decodedRoute?.length > 1) {
+          nextRoute = decodedRoute;
+        }
+      } catch (error) {
+        void error;
+      }
+
+      if (cancelled || requestId !== routeRequestIdRef.current || !mapRef.current) {
+        return;
+      }
+
+      const applyRoute = () => {
+        if (cancelled || requestId !== routeRequestIdRef.current || !mapRef.current) {
+          return;
+        }
+
+        ensureRouteLayer(nextRoute);
+        upsertMarkers();
+        setRouteCoordinates(nextRoute);
+
+        const bounds = new goongjs.LngLatBounds();
+        nextRoute.forEach((coord) => bounds.extend(coord));
+        map.fitBounds(bounds, { padding: 60, duration: 600, maxZoom: 15 });
+      };
+
+      if (map.isStyleLoaded()) {
+        applyRoute();
+      } else {
+        const onLoad = () => {
+          map.off('load', onLoad);
+          applyRoute();
+        };
+        map.on('load', onLoad);
+      }
+    };
+
+    fetchRoute().catch((error) => {
       void error;
     });
 
     return () => {
       cancelled = true;
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      if (mapRef.current) {
-        if (mapRef.current.__resizeObserver) {
-          mapRef.current.__resizeObserver.disconnect();
-          mapRef.current.__resizeObserver = null;
-        }
-        mapRef.current.remove();
-      }
-      mapRef.current = null;
     };
   }, [
-    MAPTILES_KEY,
+    resolvedCoords,
     REST_API_KEY,
-    sAddress,
-    sLat,
-    sLng,
-    sFormattedAddress,
-    bAddress,
-    bLat,
-    bLng,
-    bFormattedAddress,
-    duration,
-    startTime,
-    syncRoom,
-    syncTag,
-    geocodeAddress,
-    startTruckAnimation,
     DELIVERY_VEHICLE_ICON_URL,
     DELIVERY_SELLER_ICON_URL,
     DELIVERY_BUYER_ICON_URL,
   ]);
 
-  // Keep socket room join separate from map init to avoid repeated reconnect/join churn.
+  // Optional start-time hydration for synchronized playback when opening late.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!syncRoom || startTime) {
+      setFetchedStartTime(null);
+      return;
+    }
+
+    const loadStartTime = async () => {
+      try {
+        const resp = await rmaService.getReturnRequestById(syncRoom);
+        const rr = resp?.data;
+        const value =
+          rr?.logistics?.startTime ||
+          rr?.shippingStartedAt ||
+          rr?.logistics?.shippingStartedAt ||
+          null;
+        if (!cancelled) {
+          setFetchedStartTime(value);
+        }
+      } catch (error) {
+        void error;
+      }
+    };
+
+    loadStartTime().catch((error) => {
+      void error;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [syncRoom, startTime]);
+
+  // Effect 4: Animate vehicle by latest route coordinates.
+  useEffect(() => {
+    if (!truckMarkerRef.current || !routeCoordinates?.length) {
+      return;
+    }
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (completionIntervalRef.current) {
+      clearInterval(completionIntervalRef.current);
+      completionIntervalRef.current = null;
+    }
+
+    const durationSeconds = Math.max(1, Number(duration || DEFAULT_ANIMATION_DURATION_SECONDS));
+    const durationMs = durationSeconds * 1000;
+    const effectiveStartTime = startTime || fetchedStartTime || null;
+    const parsedStartMs = effectiveStartTime ? new Date(effectiveStartTime).getTime() : Date.now();
+    const startMs = Number.isFinite(parsedStartMs) ? parsedStartMs : Date.now();
+    let completed = false;
+
+    const finishAnimation = () => {
+      if (completed) {
+        return;
+      }
+      completed = true;
+
+      const last = routeCoordinates[routeCoordinates.length - 1];
+      if (truckMarkerRef.current && last) {
+        truckMarkerRef.current.setLngLat(last);
+      }
+
+      if (onDeliveryCompleteRef.current) {
+        onDeliveryCompleteRef.current();
+      }
+
+      if (syncRoom) {
+        try {
+          socketService.emit('rma:delivery-sync', {
+            room: syncRoom,
+            tag: syncTag || null,
+            action: 'complete',
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          void error;
+        }
+      }
+    };
+
+    const animate = () => {
+      const elapsed = Math.max(0, Date.now() - startMs);
+      const progress = Math.min(elapsed / durationMs, 1);
+
+      if (progress >= 1) {
+        finishAnimation();
+        return;
+      }
+
+      const segmentFloat = progress * (routeCoordinates.length - 1);
+      const index = Math.floor(segmentFloat);
+      const nextIndex = Math.min(index + 1, routeCoordinates.length - 1);
+      const segmentProgress = segmentFloat - index;
+
+      const current = routeCoordinates[index];
+      const next = routeCoordinates[nextIndex];
+
+      const lng = current[0] + (next[0] - current[0]) * segmentProgress;
+      const lat = current[1] + (next[1] - current[1]) * segmentProgress;
+      if (truckMarkerRef.current) {
+        truckMarkerRef.current.setLngLat([lng, lat]);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    // Interval fallback for inactive browser tabs.
+    completionIntervalRef.current = setInterval(() => {
+      const elapsed = Math.max(0, Date.now() - startMs);
+      if (elapsed >= durationMs) {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        finishAnimation();
+        if (completionIntervalRef.current) {
+          clearInterval(completionIntervalRef.current);
+          completionIntervalRef.current = null;
+        }
+      }
+    }, 1000);
+
+    debugLog(debugEnabledRef.current, 'animation_started', {
+      routeLength: routeCoordinates.length,
+      durationSeconds,
+      startMs,
+      effectiveStartTime,
+    });
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (completionIntervalRef.current) {
+        clearInterval(completionIntervalRef.current);
+        completionIntervalRef.current = null;
+      }
+    };
+  }, [routeCoordinates, duration, startTime, fetchedStartTime, syncRoom, syncTag]);
+
+  // Keep socket room join separate from map effects.
   useEffect(() => {
     if (!syncRoom) {
       return;
     }
 
     const roomName = `rma_${syncRoom}`;
-
     if (joinedRoomRef.current === roomName) {
       return;
     }
@@ -609,12 +681,12 @@ const DeliveryTrackingMap = ({
       socketService.connect();
       socketService.joinRoom(roomName);
       joinedRoomRef.current = roomName;
-    } catch (err) {
-      void err;
+    } catch (error) {
+      void error;
     }
-  }, [syncRoom, syncTag]);
+  }, [syncRoom]);
 
-  // Socket listener effect: reacts to remote 'complete' for the same syncRoom
+  // React to remote completion to keep both ends in sync.
   useEffect(() => {
     if (!syncRoom) {
       return undefined;
@@ -625,61 +697,42 @@ const DeliveryTrackingMap = ({
         if (!msg) {
           return;
         }
+
         const roomMatches = msg.room === syncRoom || msg.room === `rma_${syncRoom}`;
-        if (!roomMatches) {
-          return;
-        }
         const tagMatches = !syncTag || msg.tag === syncTag;
-        if (!tagMatches) {
+        if (!roomMatches || !tagMatches || msg.action !== 'complete') {
           return;
         }
-        if (msg.action === 'complete') {
-          try {
-            if (animationRef.current) {
-              cancelAnimationFrame(animationRef.current);
-            }
-          } catch (e) {
-            /* silently ignore */
-          }
-          try {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
-          } catch (e) {
-            /* silently ignore */
-          }
 
-          // Try to set marker to last coordinate from route source
-          try {
-            const src =
-              mapRef.current && mapRef.current.getSource && mapRef.current.getSource('route');
-            const data = src && (src._data || (src.serialize && src.serialize()));
-            const coords = data && data.geometry && data.geometry.coordinates;
-            if (coords && coords.length && truckMarkerRef.current) {
-              truckMarkerRef.current.setLngLat(coords[coords.length - 1]);
-            }
-          } catch (e) {
-            /* silently ignore */
-          }
-
-          if (onDeliveryComplete) {
-            onDeliveryComplete();
-          }
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
         }
-      } catch (e) {
-        void e;
+        if (completionIntervalRef.current) {
+          clearInterval(completionIntervalRef.current);
+          completionIntervalRef.current = null;
+        }
+
+        const last = routeCoordinates[routeCoordinates.length - 1];
+        if (truckMarkerRef.current && last) {
+          truckMarkerRef.current.setLngLat(last);
+        }
+
+        if (onDeliveryCompleteRef.current) {
+          onDeliveryCompleteRef.current();
+        }
+      } catch (error) {
+        void error;
       }
     };
 
     socketService.on('rma:delivery-sync', handler);
     return () => socketService.off('rma:delivery-sync', handler);
-  }, [syncRoom, syncTag, onDeliveryComplete]);
+  }, [syncRoom, syncTag, routeCoordinates]);
 
-  // Component render
   return (
     <div>
-      <div ref={mapContainer} style={{ height: '400px', width: '100%', borderRadius: '8px' }} />
+      <div ref={mapContainerRef} style={{ height: '400px', width: '100%', borderRadius: '8px' }} />
 
       <div className={styles['delivery-info']}>
         <div className={styles['delivery-route']}>

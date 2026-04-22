@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { cloneElement, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Alert, Badge, Button, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
 import { Steps } from 'antd';
@@ -10,15 +10,13 @@ import DeliveryTrackingMap from '@components/buyer/DeliveryTrackingMap';
 import socketService from '@services/socket/socketService';
 import trackingStyles from '@assets/styles/buyer/Order/RmaTrackingSteps.module.css';
 
-const statusLabelMap = {
-  pending: 'Pending',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  items_returned: 'Items Returned',
-  processing: 'Processing',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
+const formatStatusLabel = (status) =>
+  String(status || '')
+    .replace(/_/g, ' ')
+    .toUpperCase();
+
+const toWhiteIcon = (icon) =>
+  icon && typeof icon === 'object' ? cloneElement(icon, { color: '#fff' }) : icon;
 
 const normalizeAddressText = (value, fallback = '') => {
   if (!value) {
@@ -40,6 +38,52 @@ const normalizeAddressText = (value, fallback = '') => {
   return String(value).trim() || fallback;
 };
 
+const MAP_LEG_DEFAULT_DURATION_SECONDS = 10;
+
+const getLogisticsStepByCode = (steps, code) =>
+  Array.isArray(steps) ? steps.find((step) => step.code === code) || null : null;
+
+const isLogisticsStepCompleted = (
+  steps,
+  code,
+  nowMs,
+  fallbackDurationSeconds = MAP_LEG_DEFAULT_DURATION_SECONDS
+) => {
+  const step = getLogisticsStepByCode(steps, code);
+  if (!step) {
+    return false;
+  }
+
+  if (step.completed) {
+    return true;
+  }
+
+  if (!step.startedAt) {
+    return false;
+  }
+
+  const startMs = new Date(step.startedAt).getTime();
+  if (!Number.isFinite(startMs)) {
+    return false;
+  }
+
+  const effectiveDuration = Math.max(
+    1,
+    Number(step.durationSeconds || fallbackDurationSeconds || MAP_LEG_DEFAULT_DURATION_SECONDS)
+  );
+
+  return nowMs >= startMs + effectiveDuration * 1000;
+};
+
+const resolveLogisticsStepStartTime = (steps, code) => {
+  const step = getLogisticsStepByCode(steps, code);
+  if (!step) {
+    return null;
+  }
+
+  return step.startedAt || step.completedAt || null;
+};
+
 const BuyerReturnStatusPage = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
@@ -56,6 +100,17 @@ const BuyerReturnStatusPage = () => {
   const [refundLegTwoStartTime, setRefundLegTwoStartTime] = useState(null);
   const [exchangeLegOneStartTime, setExchangeLegOneStartTime] = useState(null);
   const [exchangeLegTwoStartTime, setExchangeLegTwoStartTime] = useState(null);
+  const [clockMs, setClockMs] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setClockMs(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const fetchReturnRequest = async ({ silent = false } = {}) => {
     try {
@@ -104,9 +159,6 @@ const BuyerReturnStatusPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId, user?._id]);
 
-  // Memoize key properties to use in dependency array
-  const logisticsStepsStr = returnRequest?.logistics?.steps?.map((s) => s.code).join(',');
-
   // Calculate startTime for map animations and sync leg completion flags
   useEffect(() => {
     if (!returnRequest) {
@@ -116,8 +168,21 @@ const BuyerReturnStatusPage = () => {
     const logistics = returnRequest.logistics || {};
     const logisticsSteps = Array.isArray(logistics.steps) ? logistics.steps : [];
 
-    const isStepCompleted = (code) =>
-      logisticsSteps.some((step) => step.code === code && step.completed);
+    const stepCompleted = (code) => isLogisticsStepCompleted(logisticsSteps, code, clockMs);
+
+    const timeline = Array.isArray(returnRequest.timeline) ? returnRequest.timeline : [];
+    const approvedTimelineAt =
+      timeline.find((entry) => entry?.status === 'approved')?.updatedAt || null;
+    const legOneTransitStartTime =
+      resolveLogisticsStepStartTime(
+        logisticsSteps,
+        returnRequest.type === 'exchange'
+          ? 'seller_pack_and_handover'
+          : 'seller_to_buyer_in_transit'
+      ) ||
+      returnRequest?.sellerResponse?.respondedAt ||
+      approvedTimelineAt ||
+      null;
 
     const refundLegs = {
       legOne: ['seller_to_buyer_in_transit', 'buyer_confirmed_handover'],
@@ -128,14 +193,6 @@ const BuyerReturnStatusPage = () => {
       legTwo: ['shipper_return_to_seller', 'exchange_completed'],
     };
 
-    const findLegStartTime = (legCodes) => {
-      const stepsInLeg = logisticsSteps.filter((s) => legCodes.includes(s.code));
-      const earliestWithTime = stepsInLeg
-        .filter((s) => s.completedAt)
-        .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))[0];
-      return earliestWithTime?.completedAt ? new Date(earliestWithTime.completedAt) : null;
-    };
-
     const resolutionType = returnRequest.type;
     const isRefundFlow =
       resolutionType === 'refund' || !resolutionType || resolutionType === 'undetermined';
@@ -143,33 +200,43 @@ const BuyerReturnStatusPage = () => {
 
     // Calculate start times
     if (isRefundFlow) {
-      setRefundLegOneStartTime(findLegStartTime(refundLegs.legOne));
-      setRefundLegTwoStartTime(findLegStartTime(refundLegs.legTwo));
+      setRefundLegOneStartTime(
+        resolveLogisticsStepStartTime(logisticsSteps, 'seller_to_buyer_in_transit') ||
+          legOneTransitStartTime
+      );
+      setRefundLegTwoStartTime(
+        resolveLogisticsStepStartTime(logisticsSteps, 'buyer_to_seller_in_transit')
+      );
     }
     if (isExchangeFlow) {
-      setExchangeLegOneStartTime(findLegStartTime(exchangeLegs.legOne));
-      setExchangeLegTwoStartTime(findLegStartTime(exchangeLegs.legTwo));
+      setExchangeLegOneStartTime(
+        resolveLogisticsStepStartTime(logisticsSteps, 'seller_pack_and_handover') ||
+          legOneTransitStartTime
+      );
+      setExchangeLegTwoStartTime(
+        resolveLogisticsStepStartTime(logisticsSteps, 'shipper_return_to_seller')
+      );
     }
 
     // Sync leg completion flags
     const refundLegOneDone =
-      isStepCompleted('seller_to_buyer_in_transit') ||
-      isStepCompleted('buyer_confirmed_handover') ||
+      stepCompleted('seller_to_buyer_in_transit') ||
+      stepCompleted('buyer_confirmed_handover') ||
       ['items_returned', 'processing', 'completed'].includes(returnRequest?.status);
 
     const refundLegTwoDone =
-      isStepCompleted('buyer_to_seller_in_transit') ||
-      isStepCompleted('seller_confirmed_faulty_received') ||
+      stepCompleted('buyer_to_seller_in_transit') ||
+      stepCompleted('seller_confirmed_faulty_received') ||
       ['processing', 'completed'].includes(returnRequest?.status);
 
     const exchangeLegOneDone =
-      isStepCompleted('seller_pack_and_handover') ||
-      isStepCompleted('shipper_deliver_and_collect') ||
+      stepCompleted('seller_pack_and_handover') ||
+      stepCompleted('shipper_deliver_and_collect') ||
       ['items_returned', 'processing', 'completed'].includes(returnRequest?.status);
 
     const exchangeLegTwoDone =
-      isStepCompleted('shipper_return_to_seller') ||
-      isStepCompleted('exchange_completed') ||
+      stepCompleted('shipper_return_to_seller') ||
+      stepCompleted('exchange_completed') ||
       ['processing', 'completed'].includes(returnRequest?.status);
 
     if (refundLegOneDone) {
@@ -184,7 +251,7 @@ const BuyerReturnStatusPage = () => {
     if (exchangeLegTwoDone) {
       setExchangeLegTwoCompleted(true);
     }
-  }, [returnRequest?.status, logisticsStepsStr]);
+  }, [returnRequest, clockMs]);
 
   if (loading) {
     return (
@@ -214,33 +281,32 @@ const BuyerReturnStatusPage = () => {
     resolutionType === 'refund' || !resolutionType || resolutionType === 'undetermined';
   const isExchangeFlow = resolutionType === 'exchange';
 
-  const isStepCompleted = (code) =>
-    logisticsSteps.some((step) => step.code === code && step.completed);
+  const isStepCompleted = (code) => isLogisticsStepCompleted(logisticsSteps, code, clockMs);
 
   const refundTrackingSteps = [
     {
       code: 'seller_to_buyer_in_transit',
       title: 'Leg 1: Seller to Buyer',
       description: 'Courier is moving toward buyer',
-      icon: <Truck size={14} />,
+      icon: toWhiteIcon(<Truck size={14} />),
     },
     {
       code: 'buyer_confirmed_handover',
       title: 'Buyer confirmed handover',
       description: 'Buyer handed faulty item to courier',
-      icon: <Hand size={14} />,
+      icon: toWhiteIcon(<Hand size={14} />),
     },
     {
       code: 'buyer_to_seller_in_transit',
       title: 'Leg 2: Buyer back to Seller',
       description: 'Courier is returning to seller',
-      icon: <Undo2 size={14} />,
+      icon: toWhiteIcon(<Undo2 size={14} />),
     },
     {
       code: 'seller_confirmed_faulty_received',
       title: 'Seller confirmed received faulty item',
       description: 'Refund can now be finalized',
-      icon: <PackageCheck size={14} />,
+      icon: toWhiteIcon(<PackageCheck size={14} />),
     },
   ];
 
@@ -404,14 +470,12 @@ const BuyerReturnStatusPage = () => {
             <Col md={6}>
               <div>
                 <strong>Status:</strong>{' '}
-                <Badge bg="info">
-                  {statusLabelMap[returnRequest.status] || returnRequest.status}
-                </Badge>
+                <Badge bg="info">{formatStatusLabel(returnRequest.status)}</Badge>
               </div>
               <div>
                 <strong>Resolution:</strong>{' '}
                 <Badge bg={resolutionType === 'exchange' ? 'warning' : 'primary'}>
-                  {resolutionType || 'undetermined'}
+                  {String(resolutionType || 'undetermined').toUpperCase()}
                 </Badge>
               </div>
             </Col>
@@ -498,9 +562,10 @@ const BuyerReturnStatusPage = () => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
-                    duration={10}
+                    duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                     startTime={exchangeLegOneStartTime}
                     syncRoom={returnRequest._id}
+                    syncTag="exchange_leg_1"
                     onDeliveryComplete={() => setExchangeLegOneCompleted(true)}
                   />
 
@@ -526,9 +591,10 @@ const BuyerReturnStatusPage = () => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().buyer}
                     buyerCoords={getTrackingCoordinates().seller}
-                    duration={10}
+                    duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                     startTime={exchangeLegTwoStartTime}
                     syncRoom={returnRequest._id}
+                    syncTag="exchange_leg_2"
                     onDeliveryComplete={() => setExchangeLegTwoCompleted(true)}
                   />
                   {exchangeLegTwoCompleted && returnRequest.status !== 'completed' && (
@@ -542,20 +608,6 @@ const BuyerReturnStatusPage = () => {
             </Card.Body>
           </Card>
         </>
-      )}
-
-      {isRefundFlow && (
-        <Alert variant="info">
-          <Alert.Heading>Refund Logistics Flow</Alert.Heading>
-          <ol className="mb-0">
-            <li>Leg 1: Shipper travels from seller to buyer.</li>
-            <li>Buyer confirms they have handed faulty item back.</li>
-            <li>Leg 2: Shipper returns faulty item from buyer to seller.</li>
-            <li>
-              After seller confirms receipt, refund amount is credited to buyer GZCoin wallet.
-            </li>
-          </ol>
-        </Alert>
       )}
 
       {isRefundFlow && (
@@ -591,9 +643,10 @@ const BuyerReturnStatusPage = () => {
                   <DeliveryTrackingMap
                     sellerCoords={getTrackingCoordinates().seller}
                     buyerCoords={getTrackingCoordinates().buyer}
-                    duration={10}
+                    duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                     startTime={refundLegOneStartTime}
                     syncRoom={returnRequest._id}
+                    syncTag="refund_leg_1"
                     onDeliveryComplete={() => setLegOneCompleted(true)}
                   />
 
@@ -619,9 +672,10 @@ const BuyerReturnStatusPage = () => {
                 <DeliveryTrackingMap
                   sellerCoords={getTrackingCoordinates().buyer}
                   buyerCoords={getTrackingCoordinates().seller}
-                  duration={10}
+                  duration={MAP_LEG_DEFAULT_DURATION_SECONDS}
                   startTime={refundLegTwoStartTime}
                   syncRoom={returnRequest._id}
+                  syncTag="refund_leg_2"
                   onDeliveryComplete={() => setLegTwoCompleted(true)}
                 />
                 {legTwoCompleted &&

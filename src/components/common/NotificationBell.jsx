@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from '@store/slices/authSlice';
+import { getAuthToken } from '@utils/storage';
 import socketService from '@services/socket/socketService';
 import { notificationAPI } from '@services/api';
 
@@ -18,6 +19,7 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   const { t } = useTranslation();
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const hasValidSession = isAuthenticated && !!getAuthToken();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,7 +33,7 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (hasValidSession) {
       if (notificationAPI && notificationAPI.fetchUnreadCount) {
         fetchUnreadCount();
       }
@@ -52,11 +54,17 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
       } catch (e) {
         console.error(e);
       }
+    } else {
+      setUnreadCount(0);
+      setNotifications([]);
     }
-  }, [isAuthenticated]);
+  }, [hasValidSession]);
 
   const fetchUnreadCount = async () => {
     try {
+      if (!hasValidSession) {
+        return;
+      }
       if (!notificationAPI || !notificationAPI.fetchUnreadCount) {
         return;
       }
@@ -70,6 +78,10 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   };
 
   const fetchNotifications = async () => {
+    if (!hasValidSession) {
+      return;
+    }
+
     if (loading) {
       return;
     }
@@ -91,7 +103,7 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   };
 
   const handleToggleDropdown = () => {
-    if (!isAuthenticated) {
+    if (!hasValidSession) {
       navigate('/login');
       return;
     }
@@ -104,6 +116,11 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
 
   const handleMarkAsRead = async (e, id) => {
     e.stopPropagation();
+
+    if (!hasValidSession) {
+      return;
+    }
+
     try {
       if (notificationAPI && notificationAPI.markAsRead) {
         await notificationAPI.markAsRead(id);
@@ -231,121 +248,121 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
                     : '#fff';
 
                 return (
-                <div
-                  key={notification._id}
-                  className="d-flex align-items-start p-2 border-bottom position-relative"
-                  style={{
-                    backgroundColor: rowBg,
-                    borderLeft: isCampaignAdmin ? '4px solid #ea580c' : undefined,
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s',
-                  }}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex-shrink-0" style={{ width: '50px', height: '50px' }}>
-                    {notification.relatedData?.imageUrl ? (
-                      <img
-                        src={notification.relatedData.imageUrl}
-                        alt="Related"
-                        className="w-100 h-100 object-fit-cover rounded"
-                      />
-                    ) : isCampaignAdmin ? (
-                      <div
-                        className="w-100 h-100 rounded d-flex align-items-center justify-content-center"
-                        style={{
-                          background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
-                          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
-                        }}
-                      >
-                        <AlertTriangle size={22} color="#fff" strokeWidth={2.25} />
-                      </div>
-                    ) : (
-                      <div className="w-100 h-100 rounded d-flex align-items-center justify-content-center bg-light text-secondary">
-                        <Bell size={20} />
-                      </div>
-                    )}
-                  </div>
+                  <div
+                    key={notification._id}
+                    className="d-flex align-items-start p-2 border-bottom position-relative"
+                    style={{
+                      backgroundColor: rowBg,
+                      borderLeft: isCampaignAdmin ? '4px solid #ea580c' : undefined,
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex-shrink-0" style={{ width: '50px', height: '50px' }}>
+                      {notification.relatedData?.imageUrl ? (
+                        <img
+                          src={notification.relatedData.imageUrl}
+                          alt="Related"
+                          className="w-100 h-100 object-fit-cover rounded"
+                        />
+                      ) : isCampaignAdmin ? (
+                        <div
+                          className="w-100 h-100 rounded d-flex align-items-center justify-content-center"
+                          style={{
+                            background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+                          }}
+                        >
+                          <AlertTriangle size={22} color="#fff" strokeWidth={2.25} />
+                        </div>
+                      ) : (
+                        <div className="w-100 h-100 rounded d-flex align-items-center justify-content-center bg-light text-secondary">
+                          <Bell size={20} />
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="flex-grow-1 ms-2" style={{ minWidth: 0 }}>
-                    {isCampaignAdmin && (
-                      <span
-                        className="badge rounded-pill mb-1"
-                        style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          letterSpacing: '0.02em',
-                          backgroundColor: '#c2410c',
-                          color: '#fff',
-                        }}
-                      >
-                        {t(campaignAdminBadgeKey)}
-                      </span>
-                    )}
-                    {isCampaignAdmin && notification.title && (
+                    <div className="flex-grow-1 ms-2" style={{ minWidth: 0 }}>
+                      {isCampaignAdmin && (
+                        <span
+                          className="badge rounded-pill mb-1"
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.02em',
+                            backgroundColor: '#c2410c',
+                            color: '#fff',
+                          }}
+                        >
+                          {t(campaignAdminBadgeKey)}
+                        </span>
+                      )}
+                      {isCampaignAdmin && notification.title && (
+                        <div
+                          className="text-dark fw-bold mb-1"
+                          style={{
+                            fontSize: '0.88rem',
+                            lineHeight: 1.35,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {notification.title}
+                        </div>
+                      )}
                       <div
-                        className="text-dark fw-bold mb-1"
+                        className={isCampaignAdmin ? 'text-secondary mb-1' : 'text-dark mb-1'}
                         style={{
-                          fontSize: '0.88rem',
-                          lineHeight: 1.35,
+                          fontSize: isCampaignAdmin ? '0.82rem' : '0.9rem',
                           display: '-webkit-box',
-                          WebkitLineClamp: 2,
+                          WebkitLineClamp: isCampaignAdmin ? 3 : 2,
                           WebkitBoxOrient: 'vertical',
                           overflow: 'hidden',
                         }}
                       >
-                        {notification.title}
+                        {notification.message}
+                      </div>
+                      {notification.relatedData?.images &&
+                        notification.relatedData.images.length > 0 && (
+                          <div className="d-flex gap-1 mb-1 mt-1">
+                            {notification.relatedData.images.slice(0, 3).map((img, idx) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                alt="Promo"
+                                style={{
+                                  width: '60px',
+                                  height: '60px',
+                                  objectFit: 'cover',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      <small className="text-secondary" style={{ fontSize: '0.75rem' }}>
+                        {new Date(notification.createdAt).toLocaleString()}
+                      </small>
+                    </div>
+
+                    {!notification.isRead && (
+                      <div className="ms-2 d-flex align-items-center">
+                        <div
+                          className={
+                            isCampaignAdmin ? 'rounded-circle' : 'rounded-circle bg-primary'
+                          }
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            ...(isCampaignAdmin ? { backgroundColor: '#ea580c' } : {}),
+                          }}
+                        />
                       </div>
                     )}
-                    <div
-                      className={isCampaignAdmin ? 'text-secondary mb-1' : 'text-dark mb-1'}
-                      style={{
-                        fontSize: isCampaignAdmin ? '0.82rem' : '0.9rem',
-                        display: '-webkit-box',
-                        WebkitLineClamp: isCampaignAdmin ? 3 : 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {notification.message}
-                    </div>
-                    {notification.relatedData?.images &&
-                      notification.relatedData.images.length > 0 && (
-                        <div className="d-flex gap-1 mb-1 mt-1">
-                          {notification.relatedData.images.slice(0, 3).map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt="Promo"
-                              style={{
-                                width: '60px',
-                                height: '60px',
-                                objectFit: 'cover',
-                                borderRadius: '4px',
-                              }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    <small className="text-secondary" style={{ fontSize: '0.75rem' }}>
-                      {new Date(notification.createdAt).toLocaleString()}
-                    </small>
                   </div>
-
-                  {!notification.isRead && (
-                    <div className="ms-2 d-flex align-items-center">
-                      <div
-                        className={
-                          isCampaignAdmin ? 'rounded-circle' : 'rounded-circle bg-primary'
-                        }
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          ...(isCampaignAdmin ? { backgroundColor: '#ea580c' } : {}),
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
                 );
               })
             )}

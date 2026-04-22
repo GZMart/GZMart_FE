@@ -26,13 +26,14 @@ export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, { rejectWi
 
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
-  async ({ product, quantity, color, size }, { dispatch, rejectWithValue }) => {
+  async ({ product, quantity, color, size, modelId }, { dispatch, rejectWithValue }) => {
     try {
       const payload = {
         productId: product._id || product.id,
         quantity,
         color,
         size,
+        modelId,
       };
       await cartService.addToCart(payload);
       // Refresh cart to get latest state and stock info
