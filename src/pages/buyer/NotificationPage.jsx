@@ -47,6 +47,9 @@ const NotificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
+  // Seller portal uses blue, buyer uses the default orange-red
+  const accentColor = userRole === 'seller' || userRole === 'admin' ? '#1a56db' : '#ee4d2d';
+
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
@@ -194,12 +197,12 @@ const NotificationPage = () => {
                   className="btn d-flex align-items-center gap-3 py-2 px-3 border-0 text-start"
                   style={{
                     backgroundColor: 'transparent',
-                    color: isActive ? '#ee4d2d' : '#333',
+                    color: isActive ? accentColor : '#333',
                     fontWeight: isActive ? '500' : '400',
                     fontSize: '0.95rem',
                   }}
                 >
-                  <Icon size={18} color={isActive ? '#ee4d2d' : '#888'} />
+                  <Icon size={18} color={isActive ? accentColor : '#888'} />
                   {t(labelKey)}
                 </button>
               );
@@ -341,12 +344,12 @@ const NotificationPage = () => {
                       <div className="flex-shrink-0 ms-3">
                         <div
                           className={
-                            isCampaignAdmin ? 'rounded-circle' : 'rounded-circle bg-danger'
+                            isCampaignAdmin ? 'rounded-circle' : 'rounded-circle'
                           }
                           style={{
                             width: '10px',
                             height: '10px',
-                            ...(isCampaignAdmin ? { backgroundColor: '#ea580c' } : {}),
+                            backgroundColor: isCampaignAdmin ? '#ea580c' : accentColor,
                           }}
                         />
                       </div>
