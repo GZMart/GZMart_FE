@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16121c"/>
+      <stop offset="42%" stop-color="#2a1424"/>
+      <stop offset="100%" stop-color="#0e0c12"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="78%" cy="35%" r="45%">
+      <stop offset="0%" stop-color="#e11d48" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#e11d48" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="520" fill="url(#bg)"/>
+  <rect width="1200" height="520" fill="url(#spot)"/>
+  <path fill="url(#glow)" d="M0 180h1200v80H0z" opacity="0.6"/>
+  <g fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.2">
+    <path d="M80 420 Q300 280 520 360 T960 320"/>
+    <path d="M120 440 Q340 300 580 380 T1000 340"/>
+  </g>
+  <g fill="rgba(255,255,255,0.06)">
+    <circle cx="980" cy="140" r="120"/>
+    <circle cx="1020" cy="180" r="72"/>
+  </g>
+  <g transform="translate(860 200)" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round">
+    <path d="M48 8c24 0 44 20 44 44s-20 44-44 44-44-20-44-44 20-44 44-44z"/>
+    <path d="M8 52h16M72 52h16M48 16v-12M48 88v12"/>
+    <circle cx="48" cy="52" r="10" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.28)"/>
+  </g>
+  <text x="72" y="200" fill="rgba(255,255,255,0.14)" font-family="system-ui,Segoe UI,sans-serif" font-size="120" font-weight="800" letter-spacing="-0.04em">LIVE</text>
+</svg>

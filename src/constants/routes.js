@@ -9,6 +9,8 @@ export const PUBLIC_ROUTES = {
   CATEGORIES: '/categories',
   CATEGORY_PRODUCTS: '/categories/:categoryId/products',
   PRODUCTS: '/products',
+  /** Buyer: browse all live sessions */
+  LIVE_STREAMS: '/live',
   DEALS: '/deals',
   PRODUCT_DETAILS: '/product/:id',
   SEARCH: '/search',
