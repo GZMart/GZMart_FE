@@ -116,14 +116,9 @@ const OrderTrackingEnhanced = ({ order, onOrderUpdate }) => {
     };
 
     // Listen for shipping started event
-    const handleShippingStarted = (data) => {
+    const handleShippingStarted = (_data) => {
       setCurrentStatus('shipped');
       setShowMap(true);
-
-      // Start map animation
-      if (data?.coordinates?.seller && data?.coordinates?.buyer) {
-        startMapAnimation(data.coordinates, data.duration || 20, data.startTime);
-      }
     };
 
     // Listen for delivery arrival

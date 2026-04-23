@@ -163,14 +163,6 @@
       "required_confirm_password": "Please confirm your password"
     }
   },
-  "common": {
-    "error": "Error",
-    "success": "Success",
-    "loading": "Loading...",
-    "email": "Email",
-    "password": "Password",
-    "submit": "Submit"
-  },
   "register_page": {
     "title": "Create an Account",
     "subtitle": "Join us today",
@@ -542,6 +534,12 @@
     }
   },
   "common": {
+    "error": "Error",
+    "success": "Success",
+    "loading": "Loading...",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Submit",
     "changeLanguage": "Change Language",
     "languageVietnamese": "Tiếng Việt",
     "languageEnglish": "English"

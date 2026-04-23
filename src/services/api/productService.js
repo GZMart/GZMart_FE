@@ -89,12 +89,22 @@ export const productService = {
     await axiosClient.get(`${BASE_URL}/trending`, { params: { limit } }),
 
   /**
-   * Get today's recommendations
+   * Get today's recommendations (Legacy/Fallback)
    * @param {number} limit - Number of products to fetch
    * @returns {Promise} Recommended products for today
    */
   getTodayRecommendations: async (limit = 10) =>
     await axiosClient.get(`${BASE_URL}/today-recommendations`, {
+      params: { limit },
+    }),
+
+  /**
+   * Get AI personalized hybrid recommendations
+   * @param {number} limit - Number of products to fetch
+   * @returns {Promise} Recommended products based on user behavior
+   */
+  getPersonalizedRecommendations: async (limit = 16) =>
+    await axiosClient.get(`${BASE_URL}/personalized-recommendations`, {
       params: { limit },
     }),
 

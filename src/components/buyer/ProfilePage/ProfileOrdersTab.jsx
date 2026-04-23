@@ -16,8 +16,8 @@ import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
 
 function formatPreorderShipDate(iso, language) {
   if (!iso) {
-return '';
-}
+    return '';
+  }
   const loc = language?.startsWith('en') ? 'en-US' : 'vi-VN';
   return new Date(iso).toLocaleDateString(loc, {
     year: 'numeric',
@@ -73,6 +73,7 @@ const ProfileOrdersTab = ({
   user,
   formatCurrency,
   setOrders,
+  onViewReturnStatus,
 }) => {
   const { i18n } = useTranslation();
 
@@ -108,6 +109,38 @@ const ProfileOrdersTab = ({
     { key: 'cancelled', label: 'Cancelled' },
     { key: 'return', label: 'Return/Refund' },
   ];
+
+  const resolveEntityId = (entity) => {
+    if (!entity) {
+      return null;
+    }
+    if (typeof entity === 'string') {
+      return entity;
+    }
+    if (typeof entity === 'object') {
+      return entity._id || entity.id || null;
+    }
+    return null;
+  };
+
+  const handleViewShop = (seller) => {
+    const sellerId = resolveEntityId(seller);
+    if (!sellerId) {
+      return;
+    }
+    navigate(`/shop/${sellerId}`);
+  };
+
+  const handleOpenProductDetails = (product, event) => {
+    if (event?.stopPropagation) {
+      event.stopPropagation();
+    }
+    const productId = resolveEntityId(product);
+    if (!productId) {
+      return;
+    }
+    navigate(`/product/${productId}`);
+  };
 
   return (
     <div>
@@ -180,7 +213,10 @@ const ProfileOrdersTab = ({
                         <MessageCircle size={16} strokeWidth={2} />
                         Chat
                       </button>
-                      <button className={styles.shopViewBtn}>
+                      <button
+                        className={styles.shopViewBtn}
+                        onClick={() => handleViewShop(order.items?.[0]?.productId?.sellerId)}
+                      >
                         <Store size={16} strokeWidth={2} />
                         View Shop
                       </button>
@@ -203,7 +239,11 @@ const ProfileOrdersTab = ({
                           className={styles.orderCardItemImage}
                         />
                         <div className={styles.orderCardItemInfo}>
-                          <h4 className={styles.orderCardItemName}>
+                          <h4
+                            className={styles.orderCardItemName}
+                            onClick={(event) => handleOpenProductDetails(item.productId, event)}
+                            style={{ cursor: 'pointer' }}
+                          >
                             {item.productId?.name || 'Product'}
                           </h4>
                           <p className={styles.orderCardItemVariant}>
@@ -223,7 +263,7 @@ const ProfileOrdersTab = ({
                                   ? t('profile_page.orders.preorder_ship_by', {
                                       date: formatPreorderShipDate(
                                         item.estimatedShipBy,
-                                        i18n.language,
+                                        i18n.language
                                       ),
                                     })
                                   : t('profile_page.orders.preorder_within_days', {
@@ -410,7 +450,14 @@ const ProfileOrdersTab = ({
                       <MessageCircle size={16} strokeWidth={2} />
                       Chat
                     </button>
-                    <button className={styles.orderDetailsShopBtn}>View Shop</button>
+                    <button
+                      className={styles.orderDetailsShopBtn}
+                      onClick={() =>
+                        handleViewShop(selectedOrderDetails.items?.[0]?.productId?.sellerId)
+                      }
+                    >
+                      View Shop
+                    </button>
                   </div>
                 </div>
 
@@ -423,7 +470,11 @@ const ProfileOrdersTab = ({
                         className={styles.orderDetailsItemImage}
                       />
                       <div className={styles.orderDetailsItemInfo}>
-                        <h4 className={styles.orderDetailsItemName}>
+                        <h4
+                          className={styles.orderDetailsItemName}
+                          onClick={(event) => handleOpenProductDetails(item.productId, event)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           {item.productId?.name || 'Product'}
                         </h4>
                         <p className={styles.orderDetailsItemVariant}>
@@ -443,7 +494,7 @@ const ProfileOrdersTab = ({
                                 ? t('profile_page.orders.preorder_ship_by', {
                                     date: formatPreorderShipDate(
                                       item.estimatedShipBy,
-                                      i18n.language,
+                                      i18n.language
                                     ),
                                   })
                                 : t('profile_page.orders.preorder_within_days', {
@@ -542,7 +593,9 @@ const ProfileOrdersTab = ({
                     className={styles.orderDetailsActionSecondary}
                     onClick={() => {
                       if (activeReturnRequest?._id) {
-                        navigate(`/buyer/returns/${activeReturnRequest._id}`);
+                        if (onViewReturnStatus) {
+                          onViewReturnStatus(activeReturnRequest._id);
+                        }
                         return;
                       }
                       setShowReturnModal(true);
@@ -569,23 +622,30 @@ ProfileOrdersTab.propTypes = {
       _id: PropTypes.string,
       status: PropTypes.string,
       items: PropTypes.arrayOf(
-        PropTypes.shape({
-          productId: PropTypes.shape({
-            name: PropTypes.string,
-            images: PropTypes.arrayOf(PropTypes.string),
-            sellerId: PropTypes.oneOfType([
+        PropTypes.oneOfType([
+          PropTypes.string,
+          PropTypes.shape({
+            productId: PropTypes.oneOfType([
               PropTypes.string,
               PropTypes.shape({
-                _id: PropTypes.string,
-                fullName: PropTypes.string,
+                name: PropTypes.string,
+                images: PropTypes.arrayOf(PropTypes.string),
+                sellerId: PropTypes.oneOfType([
+                  PropTypes.string,
+                  PropTypes.shape({
+                    _id: PropTypes.string,
+                    fullName: PropTypes.string,
+                  }),
+                ]),
               }),
             ]),
+            tierSelections: PropTypes.object,
+            quantity: PropTypes.number,
+            price: PropTypes.number,
+            originalPrice: PropTypes.number,
+            isPreOrder: PropTypes.bool,
           }),
-          tierSelections: PropTypes.object,
-          quantity: PropTypes.number,
-          price: PropTypes.number,
-          originalPrice: PropTypes.number,
-        })
+        ])
       ),
       totalPrice: PropTypes.number,
     })
@@ -601,10 +661,14 @@ ProfileOrdersTab.propTypes = {
     _id: PropTypes.string,
     orderNumber: PropTypes.string,
     status: PropTypes.string,
-    userId: PropTypes.shape({
-      fullName: PropTypes.string,
-      phone: PropTypes.string,
-    }),
+    userId: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        _id: PropTypes.string,
+        fullName: PropTypes.string,
+        phone: PropTypes.string,
+      }),
+    ]),
     shippingAddress: PropTypes.string,
     subtotal: PropTypes.number,
     shippingCost: PropTypes.number,
@@ -638,6 +702,7 @@ ProfileOrdersTab.propTypes = {
   }).isRequired,
   formatCurrency: PropTypes.func.isRequired,
   setOrders: PropTypes.func.isRequired,
+  onViewReturnStatus: PropTypes.func,
 };
 
 export default ProfileOrdersTab;

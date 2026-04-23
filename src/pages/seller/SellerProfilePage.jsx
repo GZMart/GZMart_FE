@@ -16,6 +16,7 @@ import {
   X,
   Palette,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Offcanvas } from 'react-bootstrap';
 import locationService from '@services/api/locationService';
 import useAddressAutocomplete from '@hooks/useAddressAutocomplete';
@@ -439,7 +440,7 @@ const SellerProfilePage = () => {
             <p className={styles.sectionHint}>
               Customize your shop page layout, banners, and modules.
             </p>
-            <a href="/seller/shop-decoration" className={styles.appearanceLink}>
+            <Link to="/seller/shop-decoration" className={styles.appearanceLink}>
               <div className={styles.appearanceLinkContent}>
                 <div className={styles.appearanceLinkIcon}>
                   <Palette size={28} />
@@ -452,7 +453,7 @@ const SellerProfilePage = () => {
                 </div>
               </div>
               <i className="bi bi-arrow-right" />
-            </a>
+            </Link>
           </section>
 
           {/* Address & Location */}

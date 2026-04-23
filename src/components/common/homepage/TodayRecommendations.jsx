@@ -100,6 +100,22 @@ const ProductCard = ({ product }) => (
           ))}
         </div>
       )}
+      
+      {/* AI Recommendation Source Badge */}
+      {product.recSource && (
+        <div className="position-absolute top-0 end-0 m-2 z-1">
+          <Badge
+            bg={product.recSource === 'trending' ? 'secondary' : 'primary'}
+            className="rounded-pill px-2 py-1 small shadow-sm"
+            style={{ fontSize: '0.65rem', opacity: 0.85 }}
+          >
+            {product.recSource === 'trending' ? 'HOT TREND' : 
+             product.recSource === 'content' ? '✨ AI: SIMILAR' : 
+             product.recSource === 'collab' ? '🤝 AI: BOUGHT TOGETHER' : 
+             '🌟 AI: HYBRID'}
+          </Badge>
+        </div>
+      )}
 
       <div
         className="d-flex align-items-center justify-content-center mb-3 rounded"
@@ -186,7 +202,7 @@ const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
         let response;
         try {
           // Fetch 40 products (8 rows of 5)
-          response = await productService.getTodayRecommendations(40);
+          response = await productService.getPersonalizedRecommendations(40);
         } catch (todayError) {
           // Backward-compatible fallback
           response = await productService.getTrendingProducts(40);
@@ -251,6 +267,7 @@ const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
         product.isNew && { text: 'NEW', bg: 'success', color: 'white' },
       ].filter(Boolean),
       isSoldOut: treatAsSoldOut,
+      recSource: product.recSource, // <-- TRUYỀN recSource VÀO ĐÂY
     };
   });
 

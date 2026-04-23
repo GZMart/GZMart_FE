@@ -11,6 +11,8 @@ export const livestreamService = {
   getViewerToken: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/token`),
   endSession: (sessionId) => axiosClient.post(`${BASE}/session/${sessionId}/end`),
   getActiveByShop: (shopId) => axiosClient.get(`${BASE}/active`, { params: { shopId } }),
+  /** Public: list all live sessions (homepage) */
+  listPublicLiveSessions: (params) => axiosClient.get(`${BASE}/sessions/live`, { params }),
   getSession: (sessionId) => axiosClient.get(`${BASE}/session/${sessionId}`),
   /** Seller-only: revenue, order count, per-product units for a live session */
   getSessionStats: (sessionId) => axiosClient.get(`${BASE}/session/${sessionId}/stats`),

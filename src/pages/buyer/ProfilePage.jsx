@@ -26,6 +26,7 @@ import ProfileOrdersTab from '@/components/buyer/ProfilePage/ProfileOrdersTab';
 import ProfileCoinTab from '@/components/buyer/ProfilePage/ProfileCoinTab';
 import ProfileAddressDrawer from '@/components/buyer/ProfilePage/ProfileAddressDrawer';
 import DisputeCenter from '@/components/common/disputes/DisputeCenter';
+import BuyerReturnStatusDrawer from '@/components/buyer/ProfilePage/BuyerReturnStatusDrawer';
 import { geocodeAddressForSave } from '@utils/addressGeocoding';
 
 const sanitizeOrderId = (value = '') => {
@@ -66,6 +67,10 @@ const ProfilePage = () => {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [activeReturnRequest, setActiveReturnRequest] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+
+  // Return Status Drawer state
+  const [showReturnStatusDrawer, setShowReturnStatusDrawer] = useState(false);
+  const [returnStatusRequestId, setReturnStatusRequestId] = useState(null);
 
   // Order Filter & Search State
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -791,6 +796,47 @@ const ProfilePage = () => {
     return { color, size };
   };
 
+  // Derive color/size from modelId + product.tiers + product.models
+  const deriveColorSizeFromModel = (item) => {
+    try {
+      const modelId = item?.modelId || item?.modelId?._id || item?.modelId;
+      const product = item?.productId;
+      if (!modelId || !product || !Array.isArray(product.models) || product.models.length === 0) {
+        return { color: null, size: null };
+      }
+
+      const model = product.models.find((m) => {
+        const id = m._id ? String(m._id) : null;
+        return id === String(modelId) || String(m._id) === String(modelId);
+      });
+
+      if (!model) return { color: null, size: null };
+
+      const tierIdx = Array.isArray(model.tierIndex) ? model.tierIndex : [];
+      const tiers = Array.isArray(product.tiers) ? product.tiers : [];
+
+      let color = null;
+      let size = null;
+
+      tiers.forEach((tier, idx) => {
+        const name = String(tier?.name || '').toLowerCase();
+        const optIdx = tierIdx[idx];
+        if (optIdx == null || optIdx < 0) return;
+        const value = tier.options?.[optIdx];
+        if (!value) return;
+        if (name.includes('color') || name.includes('màu') || name.includes('mau')) {
+          color = value;
+        } else if (name.includes('size') || name.includes('kích') || name.includes('kich')) {
+          size = value;
+        }
+      });
+
+      return { color, size };
+    } catch (e) {
+      return { color: null, size: null };
+    }
+  };
+
   const getSellerIdFromOrderItem = (item) => {
     const seller = item?.productId?.sellerId;
     return seller?._id || seller || null;
@@ -880,7 +926,14 @@ const ProfilePage = () => {
     for (const item of orderItems) {
       const productId = item?.productId?._id || item?.productId;
       const quantity = Number(item?.quantity || 1);
-      const { color, size } = getVariantFromTierSelections(item?.tierSelections, item);
+      let { color, size } = getVariantFromTierSelections(item?.tierSelections, item);
+
+      // Fallback: derive from modelId and populated product models/tiers
+      if ((!color || !size) && (item?.modelId || item?.modelId?._id) && item?.productId) {
+        const derived = deriveColorSizeFromModel(item);
+        color = color || derived.color;
+        size = size || derived.size;
+      }
 
       if (!productId || !quantity) {
         failedCount += 1;
@@ -997,6 +1050,10 @@ const ProfilePage = () => {
             user={user}
             formatCurrency={formatCurrency}
             setOrders={setOrders}
+            onViewReturnStatus={(reqId) => {
+              setReturnStatusRequestId(reqId);
+              setShowReturnStatusDrawer(true);
+            }}
           />
         </>
       );
@@ -1097,6 +1154,14 @@ const ProfilePage = () => {
           if (selectedOrderDetails?._id) {
             handleOrderClick(selectedOrderDetails._id, { syncUrl: false });
           }
+        }}
+      />
+      <BuyerReturnStatusDrawer
+        open={showReturnStatusDrawer}
+        requestId={returnStatusRequestId}
+        onClose={() => {
+          setShowReturnStatusDrawer(false);
+          setReturnStatusRequestId(null);
         }}
       />
     </div>

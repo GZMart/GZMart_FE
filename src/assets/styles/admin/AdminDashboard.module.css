@@ -1,219 +1,188 @@
-/* =============================================================
-   Admin Dashboard  —  aligned with indigo design system
-   ============================================================= */
+/* Custom Animations and Overrides cho Bootstrap */
 
-.adminDashboard {
-  padding: 0;
-  background: transparent;
-  min-height: 0;
+.adminWrapper {
+  overflow-x: hidden;
 }
 
-/* ── Page header ───────────────────────────────────────────── */
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.headerIcon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  color: #4f46e5;
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-.header h1 {
-  margin: 0 0 2px;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.2;
-}
-.header p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #9ca3af;
+/* Hiệu ứng xoay icon khi refresh */
+.spinAnimation {
+  animation: spin 1s linear infinite;
 }
 
-/* ── Stat cards ────────────────────────────────────────────── */
-.statsRow {
-  margin-bottom: 20px;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
+/* Card Thống kê trên cùng */
 .statCard {
-  border-radius: 12px;
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.05),
-    0 4px 16px rgba(0, 0, 0, 0.04);
+  border-top: 4px solid #4f46e5 !important; /* Viền trên màu tím */
   position: relative;
   overflow: hidden;
-  border: 1px solid #f0f0f0;
+  transition: transform 0.2s ease-in-out;
 }
 
-.statCard::before {
-  content: '';
+.statCard:hover {
+  transform: translateY(-5px);
+}
+
+.statIconBg {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #4f46e5, #6366f1);
+  top: -20px;
+  right: -20px;
+  color: #edeef2; /* Màu icon nền mờ nhạt */
+  opacity: 0.5;
+  transition: transform 0.5s ease-in-out;
+  z-index: 0;
 }
 
-.statIcon {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  font-size: 28px;
-  opacity: 0.15;
+.statCard:hover .statIconBg {
+  transform: scale(1.1);
 }
 
-.statTrend {
+/* Ghi đè màu primary của Bootstrap thành màu Tím của bạn */
+.text-primary {
+  color: #4f46e5 !important;
+}
+
+.bg-primary {
+  background-color: #4f46e5 !important;
+}
+
+.btn-primary {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca !important;
+  border-color: #4338ca !important;
+}
+
+/* Màu Custom cho Badge (lợi dụng bg-opacity của Bootstrap 5) */
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.clickableStat {
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.clickableStat:hover {
+  background-color: #f8f9ff;
+}
+
+.productIdentity {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 12px;
+  gap: 12px;
 }
 
-.trendUp {
-  color: #16a34a;
-  font-weight: 600;
-}
-
-.trendDown {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.trendText {
-  color: #9ca3af;
-}
-
-/* ── Content rows ──────────────────────────────────────────── */
-.contentRow {
-  margin-bottom: 20px;
-}
-
-.card {
-  border-radius: 12px;
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.05),
-    0 4px 16px rgba(0, 0, 0, 0.04);
-  height: 100%;
-  border: 1px solid #f0f0f0;
-}
-
-.card :global(.ant-card-head) {
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.card :global(.ant-card-head-title) {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #111827;
-}
-
-/* ── Category items ────────────────────────────────────────── */
-.categoryItem {
-  margin-bottom: 18px;
-}
-.categoryItem:last-child {
-  margin-bottom: 0;
-}
-.categoryInfo {
+.productInitial {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #f1f3ff;
+  color: #4f46e5;
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-.categoryName {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-.categorySales {
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
-  font-size: 0.875rem;
+  flex: 0 0 40px;
+}
+
+.productName {
+  line-height: 1.2;
+}
+
+.productNameBtn {
+  color: #111827;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.productNameBtn:hover {
   color: #4f46e5;
 }
 
-/* ── Quick stats ───────────────────────────────────────────── */
-.quickStat {
+.productCategoryBadge {
+  min-width: 92px;
   text-align: center;
-  padding: 18px 12px;
-  background: #f9fafb;
-  border: 1px solid #f0f0f0;
+}
+
+.orderIdBtn {
+  color: #4f46e5 !important;
+}
+
+.dashboardDrawer {
+  width: min(460px, 92vw) !important;
+}
+
+.drawerListItem {
+  border: 1px solid #eceff5;
   border-radius: 10px;
-  transition: all 0.2s;
-  cursor: default;
-}
-.quickStat:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
-}
-.quickStatValue {
-  font-size: 26px;
-  font-weight: 800;
-  color: #4f46e5;
-  margin-bottom: 6px;
-  line-height: 1;
-}
-.quickStatLabel {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6b7280;
+  padding: 10px 12px;
+  background: #fff;
 }
 
-/* ── Responsive ────────────────────────────────────────────── */
-@media (max-width: 992px) {
-  .header h1 {
-    font-size: 1.15rem;
-  }
-  .statIcon {
-    font-size: 22px;
-  }
-  .quickStatValue {
-    font-size: 22px;
-  }
+.drawerProductRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-@media (max-width: 576px) {
-  .header h1 {
-    font-size: 1rem;
-  }
-  .statsRow {
-    margin-bottom: 14px;
-  }
-  .contentRow {
-    margin-bottom: 14px;
-  }
-  .statIcon {
-    font-size: 18px;
-    top: 12px;
-    right: 12px;
-  }
-  .quickStat {
-    padding: 14px 10px;
-  }
-  .quickStatValue {
-    font-size: 18px;
-  }
-  .quickStatLabel {
-    font-size: 0.68rem;
-  }
+.drawerProductImage {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e7ebf4;
+  background: #f8f9ff;
+  flex: 0 0 56px;
+}
+
+.hoverInfoWrap {
+  position: relative;
+}
+
+.hoverInfoBubble {
+  position: absolute;
+  left: 14px;
+  bottom: calc(100% + 10px);
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.3);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.hoverInfoBubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 18px;
+  border-width: 7px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+}
+
+.hoverInfoWrap:hover .hoverInfoBubble {
+  opacity: 1;
+  transform: translateY(0);
 }

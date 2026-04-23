@@ -24,6 +24,12 @@ export const categoryService = {
     }),
 
   /**
+   * Get mega menu categories (with products)
+   * @returns {Promise} Mega menu categories
+   */
+  getMegaMenu: async () => await axiosClient.get(`${BASE_URL}/mega-menu`),
+
+  /**
    * Get top categories (most products)
    * @param {number} limit - Number of categories to fetch
    * @returns {Promise} Top categories
@@ -80,6 +86,20 @@ export const categoryService = {
    * @returns {Promise} Deletion response
    */
   delete: async (id) => await axiosClient.delete(`${BASE_URL}/${id}`),
+
+  /**
+   * Gợi ý danh mục từ ảnh (seller/admin). FormData field: image
+   * @param {File|Blob} imageFile
+   * @param {import('axios').AxiosRequestConfig} [config]
+   */
+  suggestFromImage: async (imageFile, config = {}) => {
+    const form = new FormData();
+    form.append('image', imageFile);
+    return axiosClient.post(`${BASE_URL}/suggest-from-image`, form, {
+      timeout: 90000,
+      ...config,
+    });
+  },
 };
 
 export default categoryService;
