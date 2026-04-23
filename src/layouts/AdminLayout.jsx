@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { Suspense, useState, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import PropTypes from 'prop-types';
@@ -6,6 +6,7 @@ import { ADMIN_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/admin/AdminLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
+import LoadingSpinner from '@components/common/LoadingSpinner';
 
 /** Only list routes declared in routeConfig (avoid 404 links). */
 const NAV_ITEMS = [
@@ -217,7 +218,11 @@ const AdminLayout = ({ children }) => {
       </header>
 
       {/* ── Main content ── */}
-      <main className={mainClass}>{children || <Outlet />}</main>
+      <main className={mainClass}>
+        <Suspense fallback={<LoadingSpinner variant="content" />}>
+          {children || <Outlet />}
+        </Suspense>
+      </main>
     </div>
   );
 };

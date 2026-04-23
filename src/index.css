@@ -190,6 +190,15 @@ body {
   min-height: 100vh;
 }
 
+/* Trong layout (seller/admin/buyer): chỉ vùng nội dung, không phủ cả màn hình */
+.loading-spinner-container--content {
+  min-height: min(50vh, 400px);
+  width: 100%;
+  flex: 1 1 auto;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
 /* Transition Effects */
 .fade-in {
   animation: fadeIn 0.3s ease-in;
