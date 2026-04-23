@@ -72,6 +72,7 @@ const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotifications
 const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
 const SellerFinancePage = lazy(() => import('@pages/seller/SellerFinancePage'));
 const SellerBannerAdsPage = lazy(() => import('@pages/seller/SellerBannerAdsPage'));
+const SellerInboxPage = lazy(() => import('@pages/seller/SellerInboxPage'));
 
 // Buyer - Seller Application
 const SellerApplicationPage = lazy(() => import('@pages/buyer/SellerApplicationPage'));
@@ -593,6 +594,13 @@ export const routeConfig = [
   {
     path: '/seller/notifications',
     element: ShopNotificationsPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.SELLER],
+    layout: 'erp',
+  },
+  {
+    path: '/seller/inbox',
+    element: SellerInboxPage,
     protected: true,
     allowedRoles: [USER_ROLES.SELLER],
     layout: 'erp',

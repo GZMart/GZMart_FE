@@ -28,7 +28,8 @@ const NAV_GROUPS = [
     items: [
       { to: '/seller/vouchers', icon: 'bi-ticket-perforated', label: 'Vouchers' },
       { to: '/seller/promotions', icon: 'bi-megaphone', label: 'Promotions' },
-      { to: '/seller/notifications', icon: 'bi-bell', label: 'Notifications' },
+      { to: '/seller/inbox', icon: 'bi-envelope', label: 'Notification' },
+      { to: '/seller/notifications', icon: 'bi-bell', label: 'Broadcast Info' },
       { to: '/seller/banner-ads', icon: 'bi-layout-wtf', label: 'Banner Ads' },
     ],
   },

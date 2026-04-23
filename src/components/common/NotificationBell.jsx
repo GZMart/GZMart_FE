@@ -296,7 +296,11 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
             }}
             onClick={() => {
               setShowDropdown(false);
-              navigate('/buyer/notifications');
+              if (window.location.pathname.startsWith('/seller')) {
+                navigate('/seller/inbox');
+              } else {
+                navigate('/buyer/notifications');
+              }
             }}
           >
             <span className="text-primary fw-medium" style={{ fontSize: '0.85rem' }}>
