@@ -18,6 +18,7 @@ const OTPVerificationPage = lazy(() => import('@pages/auth/OTPVerificationPage')
 const ChangePasswordPage = lazy(() => import('@pages/auth/ChangePasswordPage'));
 const ShopProfilePage = lazy(() => import('@pages/buyer/ShopProfilePage'));
 const LiveViewerPage = lazy(() => import('@pages/buyer/LiveViewerPage'));
+const LiveStreamsBrowsePage = lazy(() => import('@pages/buyer/LiveStreamsBrowsePage'));
 
 const OrderConfirmationPage = lazy(() => import('@/pages/buyer/order/OrderConfirmationPage'));
 const PaymentSuccessPage = lazy(() => import('@/pages/buyer/order/PaymentSuccessPage'));
@@ -138,6 +139,12 @@ export const routeConfig = [
   {
     path: '/deals',
     element: FlashDealsPage,
+    public: true,
+    layout: 'main',
+  },
+  {
+    path: '/live',
+    element: LiveStreamsBrowsePage,
     public: true,
     layout: 'main',
   },
