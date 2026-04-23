@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ProductDrawer from '../../components/seller/listings/ProductDrawer';
 import BulkUploadModal from '../../components/seller/listings/BulkUploadModal';
@@ -12,44 +13,41 @@ import { productService } from '../../services/api/productService';
 import { formatCurrency } from '../../utils/formatters';
 import styles from '../../assets/styles/seller/ListingsPage.module.css';
 
-/* ── Status config ─────────────────────────────────────────────────── */
-const STATUS_TABS = [
-  { value: 'all', label: 'All' },
-  { value: 'active', label: 'Active' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'inactive', label: 'Hidden' },
-];
-
-const STATUS_MAP = {
-  active: { label: 'Active', cls: styles.badgeActive },
-  inactive: { label: 'Hidden', cls: styles.badgeHidden },
-  draft: { label: 'Draft', cls: styles.badgeDraft },
-  out_of_stock: { label: 'Out of Stock', cls: styles.badgeOutOfStock },
-};
-
 const ITEMS_PER_PAGE = 10;
 
-/* ─────────────────────────────────────────────────────────────────── */
 const ListingsPage = () => {
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
+
+  const STATUS_TABS = [
+    { value: 'all', label: t('listings.statusAll') },
+    { value: 'active', label: t('listings.statusActive') },
+    { value: 'draft', label: t('listings.statusDraft') },
+    { value: 'inactive', label: t('listings.statusHidden') },
+  ];
+
+  const STATUS_MAP = {
+    active: { label: t('listings.statusActive'), cls: styles.badgeActive },
+    inactive: { label: t('listings.statusHidden'), cls: styles.badgeHidden },
+    draft: { label: t('listings.statusDraft'), cls: styles.badgeDraft },
+    out_of_stock: { label: t('listings.statusOutOfStock'), cls: styles.badgeOutOfStock },
+  };
 
   const [allListings, setAllListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null); // productId being toggled
+  const [actionLoading, setActionLoading] = useState(null);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [aiModalProduct, setAiModalProduct] = useState(null); // product for AI price modal
-  /** Competitor detail modal — separate from batch modal so closing batch keeps this open */
+  const [aiModalProduct, setAiModalProduct] = useState(null);
   const [aiVariantDetail, setAiVariantDetail] = useState(null);
 
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState(searchParams.get('status') || 'all');
   const { sortKey, sortDir, handleSort } = useSortState('_createdAt', 'desc');
 
-  /* ── Fetch ──────────────────────────────────────────────────────── */
   const fetchListings = useCallback(async () => {
     try {
       setLoading(true);
@@ -58,15 +56,15 @@ const ListingsPage = () => {
       if (response.success) {
         setAllListings(response.data.map(mapProduct));
       } else {
-        setError('Failed to load listings');
+        setError(t('listings.errorLoad'));
       }
     } catch (err) {
-      setError(err.message || 'Failed to load listings');
+      setError(err.message || t('listings.errorLoad'));
       setAllListings([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchListings();
@@ -74,7 +72,9 @@ const ListingsPage = () => {
 
   const mapProduct = (p) => {
     const categoryName =
-      typeof p.categoryId === 'object' ? p.categoryId?.name : (p.category?.name ?? 'Uncategorized');
+      typeof p.categoryId === 'object'
+        ? p.categoryId?.name
+        : (p.category?.name ?? t('listings.uncategorized'));
     const prices = (p.models || []).map((m) => m.price).filter((x) => typeof x === 'number');
     const minPrice = prices.length ? Math.min(...prices) : p.originalPrice || 0;
     const maxPrice = prices.length ? Math.max(...prices) : p.originalPrice || 0;
@@ -82,7 +82,7 @@ const ListingsPage = () => {
       id: p._id,
       image: p.images?.[0] || p.tiers?.[0]?.images?.[0] || null,
       name: p.name,
-      category: categoryName || 'Uncategorized',
+      category: categoryName || t('listings.uncategorized'),
       minPrice,
       maxPrice,
       status: p.status,
@@ -94,21 +94,17 @@ const ListingsPage = () => {
     };
   };
 
-  /* ── Filter + sort ──────────────────────────────────────────────── */
   const filtered = useMemo(() => {
     let list = [...allListings];
-
     if (statusTab !== 'all') {
       list = list.filter((p) => p.status === statusTab);
     }
-
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
         (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
       );
     }
-
     return sortRows(list, sortKey, sortDir, {
       _createdAt: (r) => new Date(r._createdAt).getTime(),
       status: (r) => ({ active: 0, draft: 1, inactive: 2 })[r.status] ?? 3,
@@ -130,7 +126,6 @@ const ListingsPage = () => {
     setCurrentPage(1);
   };
 
-  /* ── Actions ───────────────────────────────────────────────────── */
   const handleAddItem = () => {
     setEditingProduct(null);
     setShowAddModal(true);
@@ -156,33 +151,22 @@ const ListingsPage = () => {
     }
   };
 
-  // [Batch] Called when seller selects variants in AiPriceSuggestModal and clicks Apply.
-  // Opens ProductDrawer with pre-filled suggested prices per model.
   const handleAiBatchApply = useCallback(async (product, changes) => {
     try {
       setLoading(true);
       const response = await productService.getById(product.id);
       if (response.success) {
-        // Inject suggested prices into the models array
         const priceMap = new Map(changes.map((c) => [c.modelId, c.suggestedPrice]));
         const updatedModels = (response.data.models || []).map((m) => {
           const newPrice = priceMap.get(m._id?.toString());
           return newPrice != null ? { ...m, price: newPrice } : m;
         });
-        setEditingProduct({
-          ...response.data,
-          models: updatedModels,
-          _aiPriceChanges: changes, // track what AI suggested for audit
-        });
+        setEditingProduct({ ...response.data, models: updatedModels, _aiPriceChanges: changes });
         setShowAddModal(true);
       }
     } catch (error) {
       if (error.status === 404 && product.status === 'draft') {
-        setEditingProduct({
-          _id: product.id,
-          ...product,
-          _aiPriceChanges: changes,
-        });
+        setEditingProduct({ _id: product.id, ...product, _aiPriceChanges: changes });
         setShowAddModal(true);
       } else {
         console.error('Error opening product for AI batch price apply:', error);
@@ -213,15 +197,13 @@ const ListingsPage = () => {
     }
   }, []);
 
-  /* ── Render ─────────────────────────────────────────────────────── */
   return (
     <div className={styles.listingsPage}>
-      {/* ── Page Header ─────────────────────────────────────── */}
       <div className={styles.listingsHeader}>
         <div className={styles.headerContent}>
           <div className={styles.titleSection}>
-            <h1 className={styles.pageTitle}>Products</h1>
-            <p className={styles.pageSubtitle}>Manage your product catalogue</p>
+            <h1 className={styles.pageTitle}>{t('listings.pageTitle')}</h1>
+            <p className={styles.pageSubtitle}>{t('listings.pageSubtitle')}</p>
           </div>
           <div className={styles.headerActions}>
             <button
@@ -229,10 +211,21 @@ const ListingsPage = () => {
               className={styles.bulkOutlineBtn}
               onClick={() => setShowBulkUpload(true)}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
-              Bulk upload
+              {t('listings.btnBulkUpload')}
             </button>
             <button className={styles.addButton} onClick={handleAddItem}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -243,27 +236,26 @@ const ListingsPage = () => {
                   strokeLinecap="round"
                 />
               </svg>
-              Add Product
+              {t('listings.btnAddProduct')}
             </button>
           </div>
         </div>
 
-        {/* ── Stats row ─────────────────────────────────────── */}
         <div className={styles.statsRow}>
           {[
-            { label: 'Total', val: allListings.length },
+            { label: t('listings.statTotal'), val: allListings.length },
             {
-              label: 'Active',
+              label: t('listings.statusActive'),
               val: allListings.filter((p) => p.status === 'active').length,
               cls: styles.statActive,
             },
             {
-              label: 'Draft',
+              label: t('listings.statusDraft'),
               val: allListings.filter((p) => p.status === 'draft').length,
               cls: styles.statDraft,
             },
             {
-              label: 'Hidden',
+              label: t('listings.statusHidden'),
               val: allListings.filter((p) => p.status === 'inactive').length,
               cls: styles.statHidden,
             },
@@ -276,9 +268,7 @@ const ListingsPage = () => {
         </div>
       </div>
 
-      {/* ── Toolbar ─────────────────────────────────────────── */}
       <div className={styles.toolbar}>
-        {/* Status tabs */}
         <div className={styles.tabsGroup}>
           {STATUS_TABS.map((tab) => (
             <button
@@ -295,9 +285,7 @@ const ListingsPage = () => {
             </button>
           ))}
         </div>
-
         <div className={styles.toolbarRight}>
-          {/* Search */}
           <div className={styles.searchBox}>
             <svg
               className={styles.searchIcon}
@@ -312,7 +300,7 @@ const ListingsPage = () => {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="Search name or SKU…"
+              placeholder={t('listings.searchPlaceholder')}
               value={search}
               onChange={handleSearch}
             />
@@ -320,7 +308,6 @@ const ListingsPage = () => {
         </div>
       </div>
 
-      {/* ── Table Card ──────────────────────────────────────── */}
       <div className={styles.tableCard}>
         {loading ? (
           <div className={styles.centered}>
@@ -330,7 +317,7 @@ const ListingsPage = () => {
           <div className={styles.errorState}>
             <p>{error}</p>
             <button className={styles.addButton} onClick={fetchListings}>
-              Retry
+              {t('listings.btnRetry')}
             </button>
           </div>
         ) : paginated.length === 0 ? (
@@ -350,14 +337,14 @@ const ListingsPage = () => {
             </svg>
             <p>
               {search
-                ? `No results for "${search}"`
+                ? t('listings.emptySearch', { q: search })
                 : statusTab === 'inactive'
-                  ? 'No hidden products.'
-                  : 'No products found. Add your first product!'}
+                  ? t('listings.emptyHidden')
+                  : t('listings.emptyDefault')}
             </p>
             {!search && statusTab !== 'inactive' && (
               <button className={styles.addButton} onClick={handleAddItem}>
-                Add Product
+                {t('listings.btnAddProduct')}
               </button>
             )}
           </div>
@@ -372,7 +359,7 @@ const ListingsPage = () => {
                     </th>
                     <th className={styles.th} style={{ width: 52 }}></th>
                     <SortableHeader
-                      label="Product"
+                      label={t('listings.colProduct')}
                       colKey="name"
                       sortKey={sortKey}
                       sortDir={sortDir}
@@ -383,7 +370,7 @@ const ListingsPage = () => {
                       className={styles.th}
                     />
                     <SortableHeader
-                      label="Category"
+                      label={t('listings.colCategory')}
                       colKey="category"
                       sortKey={sortKey}
                       sortDir={sortDir}
@@ -394,7 +381,7 @@ const ListingsPage = () => {
                       className={styles.th}
                     />
                     <SortableHeader
-                      label="SKU"
+                      label={t('listings.colSku')}
                       colKey="sku"
                       sortKey={sortKey}
                       sortDir={sortDir}
@@ -405,7 +392,7 @@ const ListingsPage = () => {
                       className={styles.th}
                     />
                     <SortableHeader
-                      label="Price"
+                      label={t('listings.colPrice')}
                       colKey="price"
                       sortKey={sortKey}
                       sortDir={sortDir}
@@ -417,7 +404,7 @@ const ListingsPage = () => {
                       align="right"
                     />
                     <SortableHeader
-                      label="Stock"
+                      label={t('listings.colStock')}
                       colKey="stock"
                       sortKey={sortKey}
                       sortDir={sortDir}
@@ -429,7 +416,7 @@ const ListingsPage = () => {
                       align="center"
                     />
                     <SortableHeader
-                      label="Status"
+                      label={t('listings.colStatus')}
                       colKey="status"
                       sortKey={sortKey}
                       sortDir={sortDir}
@@ -498,23 +485,33 @@ const ListingsPage = () => {
                           <span className={styles.sku}>{product.sku}</span>
                         </td>
                         <td className={styles.td} style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              justifyContent: 'flex-end',
+                            }}
+                          >
                             {product.minPrice !== product.maxPrice ? (
                               <span className={styles.price}>
-                                {formatCurrency(product.minPrice)} &ndash; {formatCurrency(product.maxPrice)}
+                                {formatCurrency(product.minPrice)} &ndash;{' '}
+                                {formatCurrency(product.maxPrice)}
                               </span>
                             ) : (
-                              <span className={styles.price}>{formatCurrency(product.minPrice)}</span>
+                              <span className={styles.price}>
+                                {formatCurrency(product.minPrice)}
+                              </span>
                             )}
                             <button
                               className={styles.aiBtn}
                               onClick={() => handleOpenAiModal(product)}
-                              title="Gợi ý giá tham khảo cho tất cả variants"
+                              title={t('listings.aiPriceHint')}
                             >
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
                               </svg>
-                              Tham khảo giá
+                              {t('listings.aiPriceBtn')}
                             </button>
                           </div>
                         </td>
@@ -528,7 +525,7 @@ const ListingsPage = () => {
                                   : styles.stockOk
                             }
                           >
-                            {outOfStock ? 'Out' : `${product.stock}`}
+                            {outOfStock ? t('listings.stockOut') : `${product.stock}`}
                           </span>
                         </td>
                         <td className={styles.td} style={{ textAlign: 'center' }}>
@@ -557,21 +554,29 @@ const ListingsPage = () => {
                                 </svg>
                               )}
                             </Dropdown.Toggle>
-                            <Dropdown.Menu renderOnMount popperConfig={{ strategy: 'fixed', modifiers: [{ name: 'computeStyles', options: { adaptive: false } }] }}>
+                            <Dropdown.Menu
+                              renderOnMount
+                              popperConfig={{
+                                strategy: 'fixed',
+                                modifiers: [
+                                  { name: 'computeStyles', options: { adaptive: false } },
+                                ],
+                              }}
+                            >
                               <Dropdown.Item onClick={() => handleEditItem(product)}>
                                 <i className="bi bi-pencil me-2" />
-                                Edit
+                                {t('listings.menuEdit')}
                               </Dropdown.Item>
                               <Dropdown.Item onClick={() => handleToggleVisibility(product)}>
                                 {isHidden ? (
                                   <>
                                     <i className="bi bi-eye me-2" />
-                                    Unhide
+                                    {t('listings.menuUnhide')}
                                   </>
                                 ) : (
                                   <>
                                     <i className="bi bi-eye-slash me-2" />
-                                    Hide
+                                    {t('listings.menuHide')}
                                   </>
                                 )}
                               </Dropdown.Item>
@@ -585,20 +590,19 @@ const ListingsPage = () => {
               </table>
             </div>
 
-            {/* Footer */}
             <div className={styles.tableFooter}>
               <span className={styles.footerInfo}>
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
-                {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}{' '}
-                products
+                {t('listings.showing', {
+                  from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                  to: Math.min(currentPage * ITEMS_PER_PAGE, filtered.length),
+                  total: filtered.length,
+                })}
               </span>
               <ListingsPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={(p) => {
-                  if (p >= 1 && p <= totalPages) {
-                    setCurrentPage(p);
-                  }
+                  if (p >= 1 && p <= totalPages) setCurrentPage(p);
                 }}
               />
             </div>
@@ -626,17 +630,11 @@ const ListingsPage = () => {
         show={!!aiModalProduct}
         product={aiModalProduct}
         onApply={(changes) => {
-          if (aiModalProduct && changes.length > 0) {
-            handleAiBatchApply(aiModalProduct, changes);
-          }
+          if (aiModalProduct && changes.length > 0) handleAiBatchApply(aiModalProduct, changes);
         }}
         onClose={() => setAiModalProduct(null)}
         onViewDetail={({ detailResult, batchData }) => {
-          setAiVariantDetail({
-            detailResult,
-            batchData,
-            productSnapshot: aiModalProduct,
-          });
+          setAiVariantDetail({ detailResult, batchData, productSnapshot: aiModalProduct });
         }}
       />
 
@@ -652,11 +650,8 @@ const ListingsPage = () => {
             discountPct: aiVariantDetail.detailResult.discountPct,
             marketData: aiVariantDetail.batchData.marketData,
             competitors: aiVariantDetail.batchData.competitors,
-            // PO / landed cost: từng dòng batch hoặc top-level payload (trước đây thiếu → luôn báo "chưa có phiếu nhập")
             costData:
-              aiVariantDetail.detailResult.costData ??
-              aiVariantDetail.batchData.costData ??
-              null,
+              aiVariantDetail.detailResult.costData ?? aiVariantDetail.batchData.costData ?? null,
             product: {
               ...aiVariantDetail.batchData.product,
               currentPrice: aiVariantDetail.detailResult.currentPrice,
