@@ -55,6 +55,15 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+const handleDeactivatedAccount = () => {
+  clearAuthData();
+
+  const currentPath = window.location.pathname || '';
+  if (currentPath !== '/login' && currentPath !== '/403') {
+    window.location.href = '/403';
+  }
+};
+
 // Request interceptor - Add auth token to requests
 axiosClient.interceptors.request.use(
   (config) => {
@@ -152,9 +161,18 @@ axiosClient.interceptors.response.use(
       }
     }
 
+    const errorMessage =
+      error.response?.data?.message || error.response?.data?.error || error.message || '';
+    const isDeactivatedAccountError =
+      error.response?.status === 403 && /deactivated|deactivate/i.test(errorMessage);
+
+    if (isDeactivatedAccountError) {
+      handleDeactivatedAccount();
+    }
+
     // Return formatted error
     const formattedError = {
-      message: error.response?.data?.message || error.message || 'An error occurred',
+      message: errorMessage || 'An error occurred',
       status: error.response?.status,
       data: error.response?.data,
       originalError: error,

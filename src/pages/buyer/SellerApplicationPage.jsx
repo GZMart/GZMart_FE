@@ -52,7 +52,7 @@ const SellerApplicationPage = () => {
       provinceName: watchedProvinceName || '',
       wardName: watchedWardName || '',
     }),
-    [watchedAddress, watchedProvinceName, watchedWardName],
+    [watchedAddress, watchedProvinceName, watchedWardName]
   );
 
   const {
@@ -242,9 +242,10 @@ const SellerApplicationPage = () => {
             <div className={styles.benefitItem}>
               <div className={styles.benefitIconBox}>✨</div>
               <div>
-                <h4 className={styles.benefitTitle}>0% Commission for 3 Months</h4>
+                <h4 className={styles.benefitTitle}>Revenue Sharing 10% - 90%</h4>
                 <p className={styles.benefitDesc}>
-                  Keep 100% of your profits while you grow your store.
+                  Every successful order follows a transparent split: 10% platform service fee and
+                  90% payout to seller.
                 </p>
               </div>
             </div>

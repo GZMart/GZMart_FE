@@ -123,7 +123,14 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
   ];
 
   return (
-    <Modal title="Request Return/Refund" open={show} onCancel={onHide} footer={null} width={600}>
+    <Modal
+      title="Request Return/Refund"
+      open={show}
+      onCancel={onHide}
+      footer={null}
+      width={600}
+      forceRender
+    >
       <Form form={form} onFinish={handleSubmit} layout="vertical">
         {checkingEligibility ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>

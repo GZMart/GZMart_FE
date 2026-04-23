@@ -655,7 +655,7 @@ const OrderDetailsPage = () => {
               <button
                 className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
                 onClick={() => setShowStatusModal(true)}
-                disabled={isTerminal}
+                disabled={isTerminal || order.status === 'delivered'}
               >
                 <Edit size={15} />
                 Update Status

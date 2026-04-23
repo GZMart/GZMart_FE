@@ -24,6 +24,12 @@ export const categoryService = {
     }),
 
   /**
+   * Get mega menu categories (with products)
+   * @returns {Promise} Mega menu categories
+   */
+  getMegaMenu: async () => await axiosClient.get(`${BASE_URL}/mega-menu`),
+
+  /**
    * Get top categories (most products)
    * @param {number} limit - Number of categories to fetch
    * @returns {Promise} Top categories
