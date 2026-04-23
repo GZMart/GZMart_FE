@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Suspense } from 'react';
+import { Suspense, Fragment } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { ToastContainer } from 'react-toastify';
@@ -9,12 +9,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 import { store, persistor } from '@store/store';
+import { USER_ROLES } from '@constants';
 import MainLayout from '@layouts/MainLayout';
 import ERPLayout from '@layouts/ERPLayout';
 import AdminLayout from '@layouts/AdminLayout';
 import PrivateRoute from '@routes/PrivateRoute';
 import PublicRoute from '@routes/PublicRoute';
-import routeConfig from '@routes/routeConfig';
+import routeConfig, { sellerErpChildRoutes } from '@routes/routeConfig';
 import LoadingSpinner from '@components/common/LoadingSpinner';
 import ScrollToTop from '@components/common/ScrollToTop';
 
@@ -29,8 +30,14 @@ const getLayout = (layoutType) => {
       return ERPLayout;
     case 'admin':
       return AdminLayout;
+    case 'none': {
+      /** full-page routes (auth, 404) — cần Suspense vì không có shell bọc trang con */
+      return function NoneLayout({ children }) {
+        return <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>;
+      };
+    }
     default:
-      return ({ children }) => <>{children}</>;
+      return Fragment;
   }
 };
 
@@ -43,59 +50,76 @@ function App() {
       <PersistGate loading={<LoadingSpinner />} persistor={persistor}>
         <Router>
           <ScrollToTop />
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              {routeConfig.map((route, index) => {
-                const Layout = getLayout(route.layout);
-                const Element = route.element;
+          <Routes>
+            {routeConfig.map((route, index) => {
+              if (route._sellerErp) {
+                return (
+                  <Route
+                    key="seller-erp"
+                    path="/seller/*"
+                    element={
+                      <PrivateRoute allowedRoles={[USER_ROLES.SELLER]}>
+                        <ERPLayout />
+                      </PrivateRoute>
+                    }
+                  >
+                    {sellerErpChildRoutes.map((child) => {
+                      const Child = child.element;
+                      return <Route key={child.path} path={child.path} element={<Child />} />;
+                    })}
+                  </Route>
+                );
+              }
 
-                if (route.protected) {
-                  // Protected routes with role-based access
-                  return (
-                    <Route
-                      key={index}
-                      path={route.path}
-                      element={
-                        <PrivateRoute allowedRoles={route.allowedRoles}>
-                          <Layout>
-                            <Element />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                  );
-                } else if (route.public) {
-                  // Public routes (with optional restriction for authenticated users)
-                  return (
-                    <Route
-                      key={index}
-                      path={route.path}
-                      element={
-                        <PublicRoute restricted={route.restricted}>
-                          <Layout>
-                            <Element />
-                          </Layout>
-                        </PublicRoute>
-                      }
-                    />
-                  );
-                } else {
-                  // Default routes
-                  return (
-                    <Route
-                      key={index}
-                      path={route.path}
-                      element={
+              const Layout = getLayout(route.layout);
+              const Element = route.element;
+
+              if (route.protected) {
+                // Protected routes with role-based access
+                return (
+                  <Route
+                    key={index}
+                    path={route.path}
+                    element={
+                      <PrivateRoute allowedRoles={route.allowedRoles}>
                         <Layout>
                           <Element />
                         </Layout>
-                      }
-                    />
-                  );
-                }
-              })}
-            </Routes>
-          </Suspense>
+                      </PrivateRoute>
+                    }
+                  />
+                );
+              } else if (route.public) {
+                // Public routes (with optional restriction for authenticated users)
+                return (
+                  <Route
+                    key={index}
+                    path={route.path}
+                    element={
+                      <PublicRoute restricted={route.restricted}>
+                        <Layout>
+                          <Element />
+                        </Layout>
+                      </PublicRoute>
+                    }
+                  />
+                );
+              } else {
+                // Default routes
+                return (
+                  <Route
+                    key={index}
+                    path={route.path}
+                    element={
+                      <Layout>
+                        <Element />
+                      </Layout>
+                    }
+                  />
+                );
+              }
+            })}
+          </Routes>
 
           {/* Vercel Analytics */}
           <Analytics />

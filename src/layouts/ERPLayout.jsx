@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
@@ -7,6 +8,7 @@ import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/common/Layouts/ERPLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
+import LoadingSpinner from '@components/common/LoadingSpinner';
 import LanguageSwitcher from '@components/common/LanguageSwitcher';
 
 const NAV_GROUPS = [
@@ -290,8 +292,12 @@ const ERPLayout = ({ children }) => {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className={styles.content}>{children || <Outlet />}</main>
+        {/* Page content — Suspense ở đây thay vì ở App: lazy route chỉ thay nội dung, không mất shell */}
+        <main className={styles.content}>
+          <Suspense fallback={<LoadingSpinner variant="content" />}>
+            {children || <Outlet />}
+          </Suspense>
+        </main>
       </div>
     </div>
   );

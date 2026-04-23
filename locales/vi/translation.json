@@ -163,14 +163,6 @@
       "required_confirm_password": "Vui lòng xác nhận mật khẩu"
     }
   },
-  "common": {
-    "error": "Lỗi",
-    "success": "Thành công",
-    "loading": "Đang tải...",
-    "email": "Email",
-    "password": "Mật khẩu",
-    "submit": "Gửi"
-  },
   "register_page": {
     "title": "Tạo tài khoản",
     "subtitle": "Tham gia ngay hôm nay",
@@ -542,6 +534,12 @@
     }
   },
   "common": {
+    "error": "Lỗi",
+    "success": "Thành công",
+    "loading": "Đang tải...",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Gửi",
     "changeLanguage": "Đổi ngôn ngữ",
     "languageVietnamese": "Tiếng Việt",
     "languageEnglish": "English"

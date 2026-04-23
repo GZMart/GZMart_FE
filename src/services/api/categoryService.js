@@ -86,6 +86,20 @@ export const categoryService = {
    * @returns {Promise} Deletion response
    */
   delete: async (id) => await axiosClient.delete(`${BASE_URL}/${id}`),
+
+  /**
+   * Gợi ý danh mục từ ảnh (seller/admin). FormData field: image
+   * @param {File|Blob} imageFile
+   * @param {import('axios').AxiosRequestConfig} [config]
+   */
+  suggestFromImage: async (imageFile, config = {}) => {
+    const form = new FormData();
+    form.append('image', imageFile);
+    return axiosClient.post(`${BASE_URL}/suggest-from-image`, form, {
+      timeout: 90000,
+      ...config,
+    });
+  },
 };
 
 export default categoryService;

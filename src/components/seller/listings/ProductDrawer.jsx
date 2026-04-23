@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Form, Row, Col } from 'react-bootstrap';
 import Select from 'react-select';
@@ -80,6 +80,12 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   /** Stable id for AI rate-limit / cache while creating a product (avoid temp-${Date.now()} every render). */
   const [draftAiProductId, setDraftAiProductId] = useState(null);
 
+  /** Gợi ý danh mục từ ảnh (Groq + vector) — POST /api/categories/suggest-from-image */
+  const [categorySuggestLoading, setCategorySuggestLoading] = useState(false);
+  const [categorySuggestError, setCategorySuggestError] = useState(null);
+  const [categorySuggestData, setCategorySuggestData] = useState(null);
+  const categorySuggestAbortRef = useRef(null);
+
   const isEditMode = !!editingProduct;
   // Ref to skip generateModels when tiers are loaded from edit mode (prevent overwriting backend models)
   const skipGenerateModelsRef = useRef(false);
@@ -110,6 +116,10 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   // Pre-fill form when editing
   useEffect(() => {
     if (editingProduct && show) {
+      categorySuggestAbortRef.current?.abort();
+      setCategorySuggestLoading(false);
+      setCategorySuggestError(null);
+      setCategorySuggestData(null);
       setFormData({
         name: editingProduct.name || '',
         description: editingProduct.description || '',
@@ -241,8 +251,25 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
       setProductDim({ length: 0, width: 0, height: 0 });
       setPreOrderEnabled(false);
       setPreOrderDays(2);
+      categorySuggestAbortRef.current?.abort();
+      setCategorySuggestLoading(false);
+      setCategorySuggestError(null);
+      setCategorySuggestData(null);
     }
   }, [editingProduct, show]);
+
+  // Không còn ảnh local (blob) → huỷ gợi ý (tránh hiển thị kết quả cũ khi chỉ còn URL server)
+  useEffect(() => {
+    const hasBlobPreview = imagePreviews.some(
+      (url) => typeof url === 'string' && url.startsWith('blob:')
+    );
+    if (!hasBlobPreview) {
+      categorySuggestAbortRef.current?.abort();
+      setCategorySuggestLoading(false);
+      setCategorySuggestError(null);
+      setCategorySuggestData(null);
+    }
+  }, [imagePreviews]);
 
   // Generate models when tiers change (but not during edit mode initialization)
   useEffect(() => {
@@ -329,6 +356,61 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     setModels(newModels);
   };
 
+  /** Groq base64 ~4MB; backend giới hạn ~3MB file raw */
+  const runCategorySuggestForFile = useCallback(async (file) => {
+    if (!file || !(file instanceof File)) {
+      return;
+    }
+    const maxBytes = 3 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setCategorySuggestLoading(false);
+      setCategorySuggestData(null);
+      setCategorySuggestError(
+        'Ảnh > 3MB: không gửi lên gợi ý AI (giới hạn Groq). Vẫn có thể lưu sản phẩm với ảnh này.'
+      );
+      return;
+    }
+
+    categorySuggestAbortRef.current?.abort();
+    const ac = new AbortController();
+    categorySuggestAbortRef.current = ac;
+
+    setCategorySuggestLoading(true);
+    setCategorySuggestError(null);
+
+    try {
+      const res = await categoryService.suggestFromImage(file, { signal: ac.signal });
+      if (ac.signal.aborted) {
+        return;
+      }
+      if (res?.success && res.data) {
+        setCategorySuggestData(res.data);
+      } else {
+        setCategorySuggestData(null);
+        setCategorySuggestError(res?.message || 'Không lấy được gợi ý danh mục.');
+      }
+    } catch (err) {
+      if (ac.signal.aborted) {
+        return;
+      }
+      const canceled =
+        err?.originalError?.code === 'ERR_CANCELED' ||
+        err?.originalError?.name === 'CanceledError' ||
+        /canceled|aborted/i.test(err?.message || '');
+      if (canceled) {
+        return;
+      }
+      setCategorySuggestData(null);
+      setCategorySuggestError(
+        err?.message || err?.data?.message || 'Lỗi khi gợi ý danh mục từ ảnh.'
+      );
+    } finally {
+      if (!ac.signal.aborted) {
+        setCategorySuggestLoading(false);
+      }
+    }
+  }, []);
+
   const fetchCategories = async () => {
     try {
       // Match Admin Attribute Management: use tree endpoint and flatten with depth.
@@ -414,29 +496,56 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   };
 
   const handleImagesUpload = (e) => {
-    const files = Array.from(e.target.files);
+    const input = e.target;
+    const files = Array.from(input.files || []);
+
+    const isLikelyImage = (file) => {
+      if (file.type && file.type.startsWith('image/')) return true;
+      return /\.(jpe?g|png|gif|webp|heic|avif|bmp)$/i.test(file.name || '');
+    };
+
     const validFiles = files.filter((file) => {
-      if (!file.type.startsWith('image/')) {
-        return false;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        return false;
-      }
+      if (!isLikelyImage(file)) return false;
+      if (file.size > 5 * 1024 * 1024) return false;
       return true;
     });
 
-    if (validFiles.length + images.length > 10) {
-      setErrors((prev) => ({ ...prev, images: 'Maximum 10 images allowed' }));
+    if (files.length > 0 && validFiles.length === 0) {
+      setErrors((prev) => ({
+        ...prev,
+        images:
+          'Không thêm được ảnh: chỉ JPG/PNG/WEBP/GIF/HEIC… tối đa 5MB mỗi file (một số máy không gửi MIME — kiểm tra đuôi file).',
+      }));
+      input.value = '';
       return;
     }
+
+    if (validFiles.length + images.length > 10) {
+      setErrors((prev) => ({ ...prev, images: 'Maximum 10 images allowed' }));
+      input.value = '';
+      return;
+    }
+
+    const hadNoImagesYet = imagePreviews.length === 0;
+    const fileForMainAi = hadNoImagesYet ? validFiles[0] : null;
 
     setImages((prev) => [...prev, ...validFiles]);
     const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
     setImagePreviews((prev) => [...prev, ...newPreviews]);
     setErrors((prev) => ({ ...prev, images: null }));
+    input.value = '';
+
+    // Chỉ gọi AI khi đây là ảnh đầu tiên (MAIN) — thêm ảnh phụ không gọi lại.
+    if (fileForMainAi) {
+      runCategorySuggestForFile(fileForMainAi);
+    }
   };
 
   const handleRemoveImage = (index) => {
+    categorySuggestAbortRef.current?.abort();
+    setCategorySuggestLoading(false);
+    setCategorySuggestData(null);
+    setCategorySuggestError(null);
     URL.revokeObjectURL(imagePreviews[index]);
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
@@ -896,6 +1005,10 @@ e.preventDefault();
         setImagePreviews([]);
         setVideos([]);
         setVideoPreviews([]);
+        categorySuggestAbortRef.current?.abort();
+        setCategorySuggestLoading(false);
+        setCategorySuggestError(null);
+        setCategorySuggestData(null);
         onSuccess && onSuccess(response.data);
         onHide();
       } else {
@@ -921,6 +1034,10 @@ e.preventDefault();
 
   const handleClose = () => {
     if (!loading) {
+      categorySuggestAbortRef.current?.abort();
+      setCategorySuggestLoading(false);
+      setCategorySuggestError(null);
+      setCategorySuggestData(null);
       setFormData({
         name: '',
         description: '',
@@ -1946,9 +2063,93 @@ e.preventDefault();
                       </label>
                     )}
                   </div>
+                  <p className={styles.productImagesAiHint}>
+                    Gợi ý danh mục chỉ <strong>tự chạy</strong> khi bạn thêm <strong>ảnh đầu tiên</strong>{' '}
+                    (MAIN). Thêm ảnh phụ không gọi API.
+                  </p>
                   {errors.images && (
                     <div className={styles.invalidFeedback} style={{ marginTop: '0.375rem' }}>
                       {errors.images}
+                    </div>
+                  )}
+                  {(categorySuggestLoading ||
+                    categorySuggestError ||
+                    categorySuggestData) && (
+                    <div
+                      className={styles.categorySuggestPanel}
+                      role="region"
+                      aria-live="polite"
+                      aria-label="Gợi ý danh mục từ ảnh"
+                    >
+                      <div className={styles.categorySuggestTitle}>Gợi ý từ ảnh</div>
+                      {categorySuggestLoading && (
+                        <p className={styles.categorySuggestStatus}>
+                          Đang phân tích ảnh (từ khóa + danh mục)…
+                        </p>
+                      )}
+                      {!categorySuggestLoading && categorySuggestError && (
+                        <div className={styles.categorySuggestError}>{categorySuggestError}</div>
+                      )}
+                      {categorySuggestData && !categorySuggestLoading && (
+                        <>
+                          {categorySuggestData.caption && (
+                            <p className={styles.categorySuggestCaption}>
+                              {categorySuggestData.caption}
+                            </p>
+                          )}
+                          {Array.isArray(categorySuggestData.keywords) &&
+                            categorySuggestData.keywords.length > 0 && (
+                              <div className={styles.categorySuggestKeywords}>
+                                <span className={styles.categorySuggestLabel}>Từ khóa</span>
+                                <div className={styles.keywordChips}>
+                                  {categorySuggestData.keywords.map((kw, i) => (
+                                    <span key={`${i}-${kw}`} className={styles.keywordChip}>
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          {categorySuggestData.embeddingOk === false && (
+                            <p className={styles.categorySuggestHint}>
+                              Chưa so khớp vector — kiểm tra cấu hình embedding trên server
+                              (EMBEDDING_API_URL, AI_API_TOKEN).
+                            </p>
+                          )}
+                          {Array.isArray(categorySuggestData.suggestions) &&
+                            categorySuggestData.suggestions.length > 0 && (
+                              <div className={styles.categorySuggestList}>
+                                <span className={styles.categorySuggestLabel}>Danh mục gần nhất</span>
+                                <ul className={styles.categorySuggestUl}>
+                                  {categorySuggestData.suggestions.map((s) => (
+                                    <li key={s.categoryId} className={styles.categorySuggestLi}>
+                                      <span className={styles.suggestName}>{s.name}</span>
+                                      <span className={styles.suggestMeta}>
+                                        {Math.round((s.confidence ?? 0) * 100)}%
+                                        {typeof s.keywordHits === 'number' && s.keywordHits > 0
+                                          ? ` · ${s.keywordHits} từ khớp`
+                                          : ''}
+                                        {s.needsReview ? ' · cần xem lại' : ''}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className={styles.suggestApplyBtn}
+                                        onClick={() =>
+                                          handleChange({
+                                            target: { name: 'categoryId', value: s.categoryId },
+                                          })
+                                        }
+                                        disabled={loading}
+                                      >
+                                        Áp dụng
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </>
+                      )}
                     </div>
                   )}
                   {productType === 'simple' && missingProductImage && !errors.images && (
