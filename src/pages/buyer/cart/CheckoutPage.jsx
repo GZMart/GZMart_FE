@@ -118,12 +118,20 @@ const CheckoutPage = () => {
               !v.isLiveVoucher &&
               (v.type === 'shop' || v.type === 'private')
           );
-          if (eligibleShopVouchers.length > 0) {
-            const bestShopVoucher = eligibleShopVouchers.reduce((prev, current) =>
-              prev.estimatedSaving > current.estimatedSaving ? prev : current
-            );
-            setSelectedShopVoucherId(bestShopVoucher._id);
-          } else {
+          // Auto-select best saved shop voucher per seller
+          const shopAutoMap = {};
+          for (const group of sellerGroups) {
+            const sid = group.sellerId;
+            const sellerSub = sellerSubtotals[sid] || 0;
+            const best = eligibleShopVouchers
+              .filter((v) => v.shopId === sid && (!v.minBasketPrice || sellerSub >= v.minBasketPrice))
+              .reduce((prev, cur) => (!prev || cur.estimatedSaving > prev.estimatedSaving ? cur : prev), null);
+            if (best) shopAutoMap[sid] = best._id;
+          }
+          if (Object.keys(shopAutoMap).length > 0) {
+            setSelectedShopVoucherBySeller(shopAutoMap);
+          }
+          if (Object.keys(shopAutoMap).length === 0) {
             const eligibleSystem = vouchers.filter(
               (v) =>
                 voucherEligibleForCartSubtotal(v, subtotal) && isSystemVoucherType(v.type)
@@ -493,8 +501,8 @@ const CheckoutPage = () => {
   // Voucher state — live voucher is a fixed "live" slot (always applied from session)
   // Shop and product vouchers are user-selectable (auto-best on mount when not from live)
   const [applicableVouchers, setApplicableVouchers] = useState([]);
-  /** Chỉ shop + private; không dùng cho system_shipping / system_order / system_vip_daily */
-  const [selectedShopVoucherId, setSelectedShopVoucherId] = useState(null);
+  /** Map sellerId → voucherId; mỗi seller tối đa 1 mã shop/private */
+  const [selectedShopVoucherBySeller, setSelectedShopVoucherBySeller] = useState({});
   /** Tối đa 1 mã sàn: system_shipping | system_order | system_vip_daily */
   const [selectedSystemVoucherId, setSelectedSystemVoucherId] = useState(null);
   const [selectedProductVoucherId, setSelectedProductVoucherId] = useState(null);
@@ -609,29 +617,28 @@ const CheckoutPage = () => {
   const isMultiSeller = sellerGroups.length > 1;
   const getSelectedVoucherIds = useCallback(() => {
     const ids = [];
-    if (selectedShopVoucherId) {
-      const v = applicableVouchers.find((x) => x._id === selectedShopVoucherId);
-      if (v && (v.type === 'shop' || v.type === 'private')) {
-        ids.push(selectedShopVoucherId);
-      }
-    }
+    // System voucher — 1 toàn giỏ
     if (selectedSystemVoucherId) {
       const v = applicableVouchers.find((x) => x._id === selectedSystemVoucherId);
       if (v && isSystemVoucherType(v.type)) {
         ids.push(selectedSystemVoucherId);
       }
     }
-    if (selectedProductVoucherId) {
-      ids.push(selectedProductVoucherId);
+    // Shop vouchers — 1 per seller
+    for (const vid of Object.values(selectedShopVoucherBySeller)) {
+      if (!vid) continue;
+      const v = applicableVouchers.find((x) => x._id === vid);
+      if (v && (v.type === 'shop' || v.type === 'private')) {
+        ids.push(vid);
+      }
     }
-    if (selectedBuyerVoucherId) {
-      ids.push(selectedBuyerVoucherId);
-    }
+    if (selectedProductVoucherId) ids.push(selectedProductVoucherId);
+    if (selectedBuyerVoucherId) ids.push(selectedBuyerVoucherId);
     // Live voucher is NOT included here — it's sent as liveSessionVoucherId separately
     return ids;
   }, [
     applicableVouchers,
-    selectedShopVoucherId,
+    selectedShopVoucherBySeller,
     selectedSystemVoucherId,
     selectedProductVoucherId,
     selectedBuyerVoucherId,
@@ -642,16 +649,17 @@ const CheckoutPage = () => {
     if (!applicableVouchers.length) {
       return;
     }
-    setSelectedShopVoucherId((id) => {
-      if (!id) {
-        return id;
+    setSelectedShopVoucherBySeller((prev) => {
+      const next = { ...prev };
+      for (const [sid, vid] of Object.entries(next)) {
+        if (!vid) continue;
+        const v = applicableVouchers.find((x) => x._id === vid);
+        const sellerSub = sellerSubtotals[sid] || 0;
+        if (!v || !v.eligible || (v.minBasketPrice > 0 && sellerSub < v.minBasketPrice)) {
+          next[sid] = null;
+        }
       }
-      const v = applicableVouchers.find((x) => x._id === id);
-      return v &&
-        voucherEligibleForCartSubtotal(v, localSubtotal) &&
-        (v.type === 'shop' || v.type === 'private')
-        ? id
-        : null;
+      return next;
     });
     setSelectedSystemVoucherId((id) => {
       if (!id) {
@@ -678,18 +686,21 @@ const CheckoutPage = () => {
       const v = applicableVouchers.find((x) => x._id === id);
       return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
     });
-  }, [localSubtotal, applicableVouchers]);
+  }, [localSubtotal, applicableVouchers, sellerSubtotals]);
 
   // Fetch order preview when city/state, cart, or vouchers change
   useEffect(() => {
     const fetchPreview = async () => {
       // Resolve resolved voucher objects from IDs
-      const resolvedShopVoucher =
-        applicableVouchers.find(
-          (v) =>
-            v._id === selectedShopVoucherId &&
-            (v.type === 'shop' || v.type === 'private')
-        ) || null;
+      // Resolve tất cả shop vouchers đang được chọn (mỗi seller 1 mã)
+      const resolvedShopVouchers = Object.entries(selectedShopVoucherBySeller)
+        .map(([sid, vid]) => {
+          if (!vid) return null;
+          return applicableVouchers.find(
+            (v) => v._id === vid && (v.type === 'shop' || v.type === 'private') && v.shopId === sid
+          ) || null;
+        })
+        .filter(Boolean);
       const resolvedProductVoucher =
         applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
       const resolvedBuyerVoucher =
@@ -731,7 +742,11 @@ const CheckoutPage = () => {
         const afterLive = rawSubtotal - liveDiscount;
         const systemDiscount = calcDiscount(resolvedSystemVoucher, afterLive);
         const afterSystem = afterLive - systemDiscount;
-        const shopDiscount = calcDiscount(resolvedShopVoucher, afterSystem);
+        const shopDiscount = resolvedShopVouchers.reduce((sum, v) => {
+          const sid = v.shopId?.toString() || '__unknown__';
+          const sellerSub = sellerSubtotals[sid] || 0;
+          return sum + calcDiscount(v, sellerSub);
+        }, 0);
         const afterShop = afterSystem - shopDiscount;
         const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
         const afterProduct = afterShop - productDiscount;
@@ -778,7 +793,11 @@ const CheckoutPage = () => {
         }
         const systemDiscount = calcDiscount(resolvedSystemVoucher, rawSubtotal);
         const afterSys = rawSubtotal - systemDiscount;
-        const shopDiscount = calcDiscount(resolvedShopVoucher, afterSys);
+        const shopDiscount = resolvedShopVouchers.reduce((sum, v) => {
+          const sid = v.shopId?.toString() || '__unknown__';
+          const sellerSub = sellerSubtotals[sid] || 0;
+          return sum + calcDiscount(v, sellerSub);
+        }, 0);
         const afterShop = afterSys - shopDiscount;
         const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
         const afterProduct = afterShop - productDiscount;
@@ -808,7 +827,7 @@ const CheckoutPage = () => {
     includeCoin,
     shippingCompanies,
     applicableVouchers,
-    selectedShopVoucherId,
+    selectedShopVoucherBySeller,
     selectedSystemVoucherId,
     selectedProductVoucherId,
     selectedBuyerVoucherId,
@@ -1293,7 +1312,8 @@ const CheckoutPage = () => {
         // Auto-select only if this basket meets min order + API eligibility
         if (voucherEligibleForCartSubtotal(v, localSubtotal)) {
           if (v.type === 'shop' || v.type === 'private') {
-            setSelectedShopVoucherId(v._id);
+            const vid = v.shopId?.toString() || '__unknown__';
+            setSelectedShopVoucherBySeller((prev) => ({ ...prev, [vid]: v._id }));
           } else if (isSystemVoucherType(v.type)) {
             setSelectedSystemVoucherId(v._id);
           } else if (v.type === 'product') {
@@ -1326,7 +1346,8 @@ const CheckoutPage = () => {
         return;
       }
       if (voucher.type === 'shop' || voucher.type === 'private') {
-        setSelectedShopVoucherId(voucher._id);
+        const sid = voucher.shopId?.toString() || '__unknown__';
+        setSelectedShopVoucherBySeller((prev) => ({ ...prev, [sid]: voucher._id }));
       } else if (isSystemVoucherType(voucher.type)) {
         setSelectedSystemVoucherId(voucher._id);
       } else if (voucher.type === 'product') {
