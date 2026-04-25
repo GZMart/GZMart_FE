@@ -22,6 +22,12 @@ const randomDeliveryWindow = (minDays, maxDays) => {
   return `${start}-${end} days`;
 };
 
+const SYSTEM_VOUCHER_TYPES = ['system_shipping', 'system_order', 'system_vip_daily'];
+
+function isSystemVoucherType(type) {
+  return SYSTEM_VOUCHER_TYPES.includes(type);
+}
+
 /** API `eligible` can omit min-order checks; enforce minBasketPrice against cart subtotal in UI. */
 function voucherEligibleForCartSubtotal(voucher, cartSubtotal) {
   if (!voucher) {
@@ -117,6 +123,17 @@ const CheckoutPage = () => {
               prev.estimatedSaving > current.estimatedSaving ? prev : current
             );
             setSelectedShopVoucherId(bestShopVoucher._id);
+          } else {
+            const eligibleSystem = vouchers.filter(
+              (v) =>
+                voucherEligibleForCartSubtotal(v, subtotal) && isSystemVoucherType(v.type)
+            );
+            if (eligibleSystem.length > 0) {
+              const bestSystem = eligibleSystem.reduce((prev, current) =>
+                prev.estimatedSaving > current.estimatedSaving ? prev : current
+              );
+              setSelectedSystemVoucherId(bestSystem._id);
+            }
           }
 
           // Auto-select the best product voucher (only from saved vouchers)
@@ -476,7 +493,10 @@ const CheckoutPage = () => {
   // Voucher state — live voucher is a fixed "live" slot (always applied from session)
   // Shop and product vouchers are user-selectable (auto-best on mount when not from live)
   const [applicableVouchers, setApplicableVouchers] = useState([]);
+  /** Chỉ shop + private; không dùng cho system_shipping / system_order / system_vip_daily */
   const [selectedShopVoucherId, setSelectedShopVoucherId] = useState(null);
+  /** Tối đa 1 mã sàn: system_shipping | system_order | system_vip_daily */
+  const [selectedSystemVoucherId, setSelectedSystemVoucherId] = useState(null);
   const [selectedProductVoucherId, setSelectedProductVoucherId] = useState(null);
   // Buyer vouchers: new_buyer, repeat_buyer, follower — separate slot
   const [selectedBuyerVoucherId, setSelectedBuyerVoucherId] = useState(null);
@@ -559,11 +579,47 @@ const CheckoutPage = () => {
     ? liveItems.reduce((sum, item) => sum + (Number(item.price) || 0) * item.quantity, 0)
     : (rawItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
 
-  // Get selected voucher IDs for API calls
+  // Group cart items by seller for per-seller voucher UI
+  const sellerGroups = useMemo(() => {
+    const groups = new Map(); // Map<sellerId, { sellerId, shopName, items }>
+    for (const item of (rawItems || [])) {
+      const sid = item.sellerId?.toString() || '__unknown__';
+      if (!groups.has(sid)) {
+        groups.set(sid, {
+          sellerId: sid,
+          shopName: item.sellerName || 'Shop',
+          items: [],
+        });
+      }
+      groups.get(sid).items.push(item);
+    }
+    return Array.from(groups.values());
+  }, [rawItems]);
+
+  // Per-seller subtotals for minBasketPrice checks
+  const sellerSubtotals = useMemo(() => {
+    const map = {};
+    for (const item of (rawItems || [])) {
+      const sid = item.sellerId?.toString() || '__unknown__';
+      map[sid] = (map[sid] || 0) + (item.price || 0) * (item.quantity || 1);
+    }
+    return map; // { [sellerId]: subtotal }
+  }, [rawItems]);
+
+  const isMultiSeller = sellerGroups.length > 1;
   const getSelectedVoucherIds = useCallback(() => {
     const ids = [];
     if (selectedShopVoucherId) {
-      ids.push(selectedShopVoucherId);
+      const v = applicableVouchers.find((x) => x._id === selectedShopVoucherId);
+      if (v && (v.type === 'shop' || v.type === 'private')) {
+        ids.push(selectedShopVoucherId);
+      }
+    }
+    if (selectedSystemVoucherId) {
+      const v = applicableVouchers.find((x) => x._id === selectedSystemVoucherId);
+      if (v && isSystemVoucherType(v.type)) {
+        ids.push(selectedSystemVoucherId);
+      }
     }
     if (selectedProductVoucherId) {
       ids.push(selectedProductVoucherId);
@@ -573,7 +629,13 @@ const CheckoutPage = () => {
     }
     // Live voucher is NOT included here — it's sent as liveSessionVoucherId separately
     return ids;
-  }, [selectedShopVoucherId, selectedProductVoucherId, selectedBuyerVoucherId]);
+  }, [
+    applicableVouchers,
+    selectedShopVoucherId,
+    selectedSystemVoucherId,
+    selectedProductVoucherId,
+    selectedBuyerVoucherId,
+  ]);
 
   // Drop shop/product/buyer selection if cart no longer meets min order (or API eligibility changed)
   useEffect(() => {
@@ -585,7 +647,22 @@ const CheckoutPage = () => {
         return id;
       }
       const v = applicableVouchers.find((x) => x._id === id);
-      return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
+      return v &&
+        voucherEligibleForCartSubtotal(v, localSubtotal) &&
+        (v.type === 'shop' || v.type === 'private')
+        ? id
+        : null;
+    });
+    setSelectedSystemVoucherId((id) => {
+      if (!id) {
+        return id;
+      }
+      const v = applicableVouchers.find((x) => x._id === id);
+      return v &&
+        voucherEligibleForCartSubtotal(v, localSubtotal) &&
+        isSystemVoucherType(v.type)
+        ? id
+        : null;
     });
     setSelectedProductVoucherId((id) => {
       if (!id) {
@@ -608,13 +685,21 @@ const CheckoutPage = () => {
     const fetchPreview = async () => {
       // Resolve resolved voucher objects from IDs
       const resolvedShopVoucher =
-        applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+        applicableVouchers.find(
+          (v) =>
+            v._id === selectedShopVoucherId &&
+            (v.type === 'shop' || v.type === 'private')
+        ) || null;
       const resolvedProductVoucher =
         applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
       const resolvedBuyerVoucher =
         applicableVouchers.find((v) => v._id === selectedBuyerVoucherId) || null;
       const resolvedLiveVoucher =
         applicableVouchers.find((v) => v._id === selectedLiveVoucherId) || null;
+      const resolvedSystemVoucher =
+        applicableVouchers.find(
+          (v) => v._id === selectedSystemVoucherId && isSystemVoucherType(v.type)
+        ) || null;
 
       // Helper: compute discount from a single voucher against a subtotal
       const calcDiscount = (voucher, sub) => {
@@ -644,12 +729,15 @@ const CheckoutPage = () => {
           rawSubtotal
         );
         const afterLive = rawSubtotal - liveDiscount;
-        const shopDiscount = calcDiscount(resolvedShopVoucher, afterLive);
-        const afterShop = afterLive - shopDiscount;
+        const systemDiscount = calcDiscount(resolvedSystemVoucher, afterLive);
+        const afterSystem = afterLive - systemDiscount;
+        const shopDiscount = calcDiscount(resolvedShopVoucher, afterSystem);
+        const afterShop = afterSystem - shopDiscount;
         const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
         const afterProduct = afterShop - productDiscount;
         const buyerDiscount = calcDiscount(resolvedBuyerVoucher, afterProduct);
-        const totalDiscount = liveDiscount + shopDiscount + productDiscount + buyerDiscount;
+        const totalDiscount =
+          liveDiscount + systemDiscount + shopDiscount + productDiscount + buyerDiscount;
 
         setOrderSummary({
           subtotal: rawSubtotal,
@@ -688,12 +776,15 @@ const CheckoutPage = () => {
         if (error?.response?.status !== 404) {
           console.error('Failed to fetch order preview:', error);
         }
-        const shopDiscount = calcDiscount(resolvedShopVoucher, rawSubtotal);
-        const afterShop = rawSubtotal - shopDiscount;
+        const systemDiscount = calcDiscount(resolvedSystemVoucher, rawSubtotal);
+        const afterSys = rawSubtotal - systemDiscount;
+        const shopDiscount = calcDiscount(resolvedShopVoucher, afterSys);
+        const afterShop = afterSys - shopDiscount;
         const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
         const afterProduct = afterShop - productDiscount;
         const buyerDiscount = calcDiscount(resolvedBuyerVoucher, afterProduct);
-        const totalDiscount = shopDiscount + productDiscount + buyerDiscount;
+        const totalDiscount =
+          systemDiscount + shopDiscount + productDiscount + buyerDiscount;
         setOrderSummary({
           subtotal: rawSubtotal,
           shippingCost: previewShippingCost,
@@ -718,6 +809,7 @@ const CheckoutPage = () => {
     shippingCompanies,
     applicableVouchers,
     selectedShopVoucherId,
+    selectedSystemVoucherId,
     selectedProductVoucherId,
     selectedBuyerVoucherId,
     selectedLiveVoucherId,
@@ -1202,6 +1294,8 @@ const CheckoutPage = () => {
         if (voucherEligibleForCartSubtotal(v, localSubtotal)) {
           if (v.type === 'shop' || v.type === 'private') {
             setSelectedShopVoucherId(v._id);
+          } else if (isSystemVoucherType(v.type)) {
+            setSelectedSystemVoucherId(v._id);
           } else if (v.type === 'product') {
             setSelectedProductVoucherId(v._id);
           }
@@ -1233,6 +1327,8 @@ const CheckoutPage = () => {
       }
       if (voucher.type === 'shop' || voucher.type === 'private') {
         setSelectedShopVoucherId(voucher._id);
+      } else if (isSystemVoucherType(voucher.type)) {
+        setSelectedSystemVoucherId(voucher._id);
       } else if (voucher.type === 'product') {
         setSelectedProductVoucherId(voucher._id);
       } else if (['new_buyer', 'repeat_buyer', 'follower'].includes(voucher.type)) {
@@ -1246,11 +1342,34 @@ const CheckoutPage = () => {
   // Render Voucher Section (Minimized in Checkout Sidebar)
   const renderVoucherSection = () => {
     const selectedShopVoucher =
-      applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+      applicableVouchers.find(
+        (v) =>
+          v._id === selectedShopVoucherId && (v.type === 'shop' || v.type === 'private')
+      ) || null;
+    const selectedSystemVoucher =
+      applicableVouchers.find(
+        (v) => v._id === selectedSystemVoucherId && isSystemVoucherType(v.type)
+      ) || null;
     const selectedProductVoucher =
       applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
     const selectedBuyerVoucher =
       applicableVouchers.find((v) => v._id === selectedBuyerVoucherId) || null;
+
+    const shopSlotBadge = (v) => {
+      if (!v) {
+        return 'SHOP';
+      }
+      if (v.type === 'system_vip_daily') {
+        return 'VIP';
+      }
+      if (v.type === 'system_order') {
+        return 'ORDER';
+      }
+      if (v.type === 'system_shipping') {
+        return 'SHIP';
+      }
+      return 'SHOP';
+    };
 
     const voucherTypeInfo = {
       new_buyer: { label: 'NEW', color: '#9c27b0', bg: '#f3e5f5' },
@@ -1337,6 +1456,53 @@ const CheckoutPage = () => {
             )}
 
             {/* Show Selected Shop Voucher */}
+            {selectedSystemVoucher && (
+              <div
+                className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
+                style={{
+                  background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                  boxShadow: '0 2px 8px rgba(180, 83, 9, 0.1)',
+                  fontSize: '0.85rem',
+                }}
+              >
+                <div className="flex-grow-1">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center gap-2">
+                      <Badge
+                        bg=""
+                        style={{
+                          backgroundColor: '#b45309',
+                          fontSize: '0.7rem',
+                          padding: '0.35em 0.5em',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        {shopSlotBadge(selectedSystemVoucher)}
+                      </Badge>
+                      <span
+                        className="fw-semibold text-truncate"
+                        style={{ color: '#333', maxWidth: '160px' }}
+                      >
+                        {selectedSystemVoucher.name}
+                      </span>
+                    </div>
+                    <i
+                      className="bi bi-x-circle-fill text-muted"
+                      style={{ cursor: 'pointer', fontSize: '1rem' }}
+                      onClick={() => setSelectedSystemVoucherId(null)}
+                      title="Bỏ chọn"
+                    />
+                  </div>
+                  <div
+                    style={{ color: '#b45309', fontSize: '0.8rem', fontWeight: 600, marginTop: 6 }}
+                  >
+                    - {formatCurrency(selectedSystemVoucher.estimatedSaving || 0)}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {selectedShopVoucher && (
               <div
                 className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
@@ -1359,7 +1525,7 @@ const CheckoutPage = () => {
                           letterSpacing: '0.5px',
                         }}
                       >
-                        SHOP
+                        {shopSlotBadge(selectedShopVoucher)}
                       </Badge>
                       <span
                         className="fw-semibold text-truncate"
@@ -1514,7 +1680,10 @@ const CheckoutPage = () => {
                 );
               })()}
 
-            {!selectedShopVoucher && !selectedProductVoucher && !selectedBuyerVoucher && (
+            {!selectedShopVoucher &&
+              !selectedSystemVoucher &&
+              !selectedProductVoucher &&
+              !selectedBuyerVoucher && (
               <div
                 className="text-muted small text-center py-2"
                 style={{
@@ -2151,10 +2320,8 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              {/* System Vouchers: system_shipping, system_order */}
-              {applicableVouchers.filter((v) =>
-                ['system_shipping', 'system_order'].includes(v.type)
-              ).length > 0 && (
+              {/* System Vouchers: shipping, order, VIP subscription daily */}
+              {applicableVouchers.filter((v) => isSystemVoucherType(v.type)).length > 0 && (
                 <div className="mb-4">
                   <div className="d-flex align-items-center mb-3">
                     <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
@@ -2164,17 +2331,17 @@ const CheckoutPage = () => {
                       className="ms-2 badge rounded-pill"
                       style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}
                     >
-                      {
-                        applicableVouchers.filter((v) =>
-                          ['system_shipping', 'system_order'].includes(v.type)
-                        ).length
-                      }
+                      {applicableVouchers.filter((v) => isSystemVoucherType(v.type)).length}
                     </span>
                   </div>
+                  <p className="text-muted small mb-3" style={{ fontSize: '0.8rem' }}>
+                    Chỉ chọn 1 mã hệ thống (freeship / giảm đơn / VIP) mỗi đơn.
+                  </p>
                   {applicableVouchers
-                    .filter((v) => ['system_shipping', 'system_order'].includes(v.type))
+                    .filter((v) => isSystemVoucherType(v.type))
                     .map((v) => {
                       const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
+                      const isSel = selectedSystemVoucherId === v._id;
                       return (
                         <div
                           key={v._id}
@@ -2182,10 +2349,7 @@ const CheckoutPage = () => {
                             !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
                           }`}
                           style={{
-                            border:
-                              selectedShopVoucherId === v._id
-                                ? '2px solid #B13C36'
-                                : '1px solid transparent',
+                            border: isSel ? '2px solid #B13C36' : '1px solid transparent',
                             cursor: cartOk ? 'pointer' : 'not-allowed',
                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                             position: 'relative',
@@ -2195,9 +2359,7 @@ const CheckoutPage = () => {
                             if (!cartOk) {
                               return;
                             }
-                            setSelectedShopVoucherId(
-                              selectedShopVoucherId === v._id ? null : v._id
-                            );
+                            setSelectedSystemVoucherId((prev) => (prev === v._id ? null : v._id));
                           }}
                         >
                           <div
@@ -2208,7 +2370,7 @@ const CheckoutPage = () => {
                               bottom: 0,
                               width: '4px',
                               backgroundColor: '#0891b2',
-                              opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
+                              opacity: isSel ? 1 : 0.2,
                             }}
                           />
                           <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
@@ -2226,7 +2388,9 @@ const CheckoutPage = () => {
                                 className={
                                   v.type === 'system_shipping'
                                     ? 'bi bi-truck fs-4'
-                                    : 'bi bi-box-seam fs-4'
+                                    : v.type === 'system_vip_daily'
+                                      ? 'bi bi-gem fs-4'
+                                      : 'bi bi-box-seam fs-4'
                                 }
                               ></i>
                             </div>
@@ -2270,9 +2434,11 @@ const CheckoutPage = () => {
                               <input
                                 type="radio"
                                 className="form-check-input"
-                                checked={selectedShopVoucherId === v._id}
+                                name="checkoutSystemVoucher"
+                                checked={isSel}
                                 disabled={!cartOk}
                                 onChange={() => {}}
+                                onClick={(e) => e.stopPropagation()}
                                 style={{ cursor: 'pointer', accentColor: '#0891b2' }}
                               />
                             </div>
