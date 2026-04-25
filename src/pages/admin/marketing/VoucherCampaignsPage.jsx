@@ -37,6 +37,14 @@ const getOccasionBadge = (campaign) => {
       </span>
     );
   }
+  if (campaign.triggerType === 'vip_subscription_daily') {
+    return (
+      <span className={`${styles.triggerPill} ${styles.triggerVipDaily}`}>
+        <i className="bi bi-gem" aria-hidden />
+        VIP daily
+      </span>
+    );
+  }
   const emoji = OCCASION_BADGE_STYLE[campaign.occasion]?.text || '?';
   const label = OCCASION_LABELS[campaign.occasion] || campaign.occasion;
   return (
@@ -140,11 +148,11 @@ const VoucherCampaignsPage = () => {
   }, [filtered, safePage]);
 
   const stats = useMemo(() => {
-    const total = campaigns.length;
     const active = campaigns.filter((c) => c.isActive).length;
     const birthday = campaigns.filter((c) => c.triggerType === 'birthday').length;
     const occasion = campaigns.filter((c) => c.triggerType === 'occasion').length;
-    return { total, active, birthday, occasion };
+    const vipDaily = campaigns.filter((c) => c.triggerType === 'vip_subscription_daily').length;
+    return { active, birthday, occasion, vipDaily };
   }, [campaigns]);
 
   return (
@@ -174,13 +182,13 @@ const VoucherCampaignsPage = () => {
         <section className={styles.statGrid} aria-label="Summary">
           <div className={styles.statCard}>
             <div className={styles.statCardHeader}>
-              <span className={styles.statKicker}>Campaigns</span>
-              <div className={`${styles.statIcon} ${styles.statIconPrimary}`} aria-hidden>
-                <i className="bi bi-calendar-heart" />
+              <span className={styles.statKicker}>VIP daily</span>
+              <div className={`${styles.statIcon} ${styles.statIconVip}`} aria-hidden>
+                <i className="bi bi-gem" />
               </div>
             </div>
-            <p className={styles.statValue}>{stats.total.toLocaleString()}</p>
-            <p className={styles.statHint}>Total configured</p>
+            <p className={styles.statValue}>{stats.vipDaily.toLocaleString()}</p>
+            <p className={styles.statHint}>Per-day lines for active VIPs</p>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statCardHeader}>
@@ -238,6 +246,7 @@ const VoucherCampaignsPage = () => {
               <option value="all">Trigger: All</option>
               <option value="birthday">Birthday</option>
               <option value="occasion">Occasion</option>
+              <option value="vip_subscription_daily">VIP subscription daily</option>
             </select>
             <select
               className={styles.select}

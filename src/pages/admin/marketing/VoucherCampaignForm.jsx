@@ -129,6 +129,10 @@ const VoucherCampaignForm = () => {
       toast.warn('Please select an occasion.');
       return;
     }
+    if (form.triggerType === 'vip_subscription_daily' && form.voucherType !== 'system_vip_daily') {
+      toast.warn('VIP subscription daily campaigns must use voucher type "VIP order discount (daily)".');
+      return;
+    }
     if (form.occasion === 'CUSTOM' && !form.customDate) {
       toast.warn('Please select a custom date.');
       return;
@@ -174,6 +178,7 @@ const VoucherCampaignForm = () => {
   }
 
   const isOccasion = form.triggerType === 'occasion';
+  const isVipSubscriptionDaily = form.triggerType === 'vip_subscription_daily';
   const isPercent = form.discountType === 'percent';
 
   return (
@@ -245,10 +250,28 @@ const VoucherCampaignForm = () => {
                             id="vc-trigger"
                             className={styles.select}
                             value={form.triggerType}
-                            onChange={(e) => setField('triggerType', e.target.value)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setForm((prev) => ({
+                                ...prev,
+                                triggerType: v,
+                                occasion: v === 'occasion' ? prev.occasion : '',
+                                voucherType:
+                                  v === 'vip_subscription_daily'
+                                    ? 'system_vip_daily'
+                                    : prev.voucherType === 'system_vip_daily'
+                                      ? 'system_order'
+                                      : prev.voucherType,
+                                voucherValidityDays:
+                                  v === 'vip_subscription_daily' ? 1 : prev.voucherValidityDays,
+                              }));
+                            }}
                           >
                             <option value="birthday">Birthday — on the user&apos;s birthday</option>
                             <option value="occasion">Occasion — all users on a fixed day</option>
+                            <option value="vip_subscription_daily">
+                              VIP subscription — one voucher line per day for active VIP buyers
+                            </option>
                           </select>
                         </div>
                         {isOccasion && (
@@ -300,6 +323,14 @@ const VoucherCampaignForm = () => {
                           year.
                         </div>
                       )}
+                      {isVipSubscriptionDaily && (
+                        <div className={styles.lunarAlert}>
+                          <i className="bi bi-gem me-1" aria-hidden />
+                          Mỗi campaign là <strong>một ưu đãi trong ngày</strong> (ví dụ: giảm 15k, giảm 10%). Tạo nhiều
+                          campaign cùng loại này nếu buyer nhận nhiều dòng mỗi ngày. Job 08:00 sẽ phát voucher cho buyer
+                          đang VIP; trigger tay chạy tương tự.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
@@ -336,9 +367,11 @@ const VoucherCampaignForm = () => {
                             className={styles.select}
                             value={form.voucherType}
                             onChange={(e) => setField('voucherType', e.target.value)}
+                            disabled={isVipSubscriptionDaily}
                           >
                             <option value="system_order">Order discount</option>
                             <option value="system_shipping">Free shipping</option>
+                            <option value="system_vip_daily">VIP order discount (daily, subscription)</option>
                           </select>
                         </div>
                         <div>
@@ -431,55 +464,62 @@ const VoucherCampaignForm = () => {
                       <i className="bi bi-calendar-check" aria-hidden />
                       Validity settings
                     </h2>
-                    <div className={styles.stack}>
-                      <div>
-                        <label className={styles.label} htmlFor="vc-offset">
-                          Voucher start offset
-                        </label>
-                        <select
-                          id="vc-offset"
-                          className={styles.select}
-                          value={form.voucherStartOffset}
-                          onChange={(e) => setField('voucherStartOffset', Number(e.target.value))}
-                        >
-                          {OFFSET_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className={styles.label} htmlFor="vc-days">
-                          Validity duration (days) *
-                        </label>
-                        <input
-                          id="vc-days"
-                          className={styles.input}
-                          type="number"
-                          min="1"
-                          max="365"
-                          value={form.voucherValidityDays}
-                          onChange={(e) => setField('voucherValidityDays', e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className={styles.previewBox}>
-                        <div className="fw-semibold mb-1">
-                          <i className="bi bi-calendar2-week me-1" aria-hidden />
-                          Validity preview
+                    {isVipSubscriptionDaily ? (
+                      <p className={styles.hint} style={{ margin: 0 }}>
+                        Voucher VIP theo ngày: hiệu lực trong ngày phát (00:00–23:59). Các cài offset/duration ở form không
+                        áp dụng cho loại campaign này.
+                      </p>
+                    ) : (
+                      <div className={styles.stack}>
+                        <div>
+                          <label className={styles.label} htmlFor="vc-offset">
+                            Voucher start offset
+                          </label>
+                          <select
+                            id="vc-offset"
+                            className={styles.select}
+                            value={form.voucherStartOffset}
+                            onChange={(e) => setField('voucherStartOffset', Number(e.target.value))}
+                          >
+                            {OFFSET_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
-                          {form.voucherStartOffset < 0
-                            ? `Issued ${Math.abs(form.voucherStartOffset)} day(s) before the event`
-                            : form.voucherStartOffset > 0
-                              ? `Issued ${form.voucherStartOffset} day(s) after the event`
-                              : 'Issued on the day'}
-                          <br />
-                          Expires after <strong>{form.voucherValidityDays}</strong> day(s)
+                          <label className={styles.label} htmlFor="vc-days">
+                            Validity duration (days) *
+                          </label>
+                          <input
+                            id="vc-days"
+                            className={styles.input}
+                            type="number"
+                            min="1"
+                            max="365"
+                            value={form.voucherValidityDays}
+                            onChange={(e) => setField('voucherValidityDays', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className={styles.previewBox}>
+                          <div className="fw-semibold mb-1">
+                            <i className="bi bi-calendar2-week me-1" aria-hidden />
+                            Validity preview
+                          </div>
+                          <div>
+                            {form.voucherStartOffset < 0
+                              ? `Issued ${Math.abs(form.voucherStartOffset)} day(s) before the event`
+                              : form.voucherStartOffset > 0
+                                ? `Issued ${form.voucherStartOffset} day(s) after the event`
+                                : 'Issued on the day'}
+                            <br />
+                            Expires after <strong>{form.voucherValidityDays}</strong> day(s)
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </section>
 

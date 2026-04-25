@@ -251,6 +251,12 @@
   color: var(--sv-on-surface);
 }
 
+/* VIP subscription daily — vàng/amber, biểu tượng gem */
+.statIconVip {
+  background: linear-gradient(135deg, rgba(252, 211, 77, 0.4), rgba(245, 158, 11, 0.22));
+  color: #b45309;
+}
+
 .statValue {
   margin: 0;
   font-size: 1.85rem;
@@ -722,6 +728,17 @@ tr:hover .rowActions {
   background: linear-gradient(135deg, #fce7f3, #fbcfe8);
   color: #9d174d;
   border-color: rgba(219, 39, 119, 0.25);
+}
+
+.triggerVipDaily {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-color: rgba(180, 83, 9, 0.28);
+}
+
+.triggerVipDaily i {
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .switchCell :global(.form-check-input) {

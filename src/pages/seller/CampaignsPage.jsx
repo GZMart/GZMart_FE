@@ -3,6 +3,7 @@ import { Form, message, Spin, Input, Button, Modal, Select } from 'antd';
 import PropTypes from 'prop-types';
 import dayjs from 'dayjs';
 import debounce from 'lodash/debounce';
+import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/api/campaignService';
 import { searchSellers } from '../../services/api/userService';
 import { productService } from '../../services/api';
@@ -41,6 +42,7 @@ const modelTierIndex = (model) => {
 
 const CampaignsPage = ({ mode = 'seller' }) => {
   const isAdminMode = mode === 'admin';
+  const { t } = useTranslation();
 
   // ── State ────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
@@ -104,8 +106,8 @@ const CampaignsPage = ({ mode = 'seller' }) => {
   const filteredProducts = useMemo(() => {
     const q = productSearchText.trim().toLowerCase();
     if (!q) {
-return products;
-}
+      return products;
+    }
     return products.filter(
       (p) =>
         p.name?.toLowerCase().includes(q) ||
@@ -159,8 +161,8 @@ return products;
 
     const pctChange = (cur, pre) => {
       if (pre === 0) {
-return cur > 0 ? 100 : 0;
-}
+        return cur > 0 ? 100 : 0;
+      }
       return Math.round(((cur - pre) / pre) * 10000) / 100;
     };
 
@@ -209,20 +211,20 @@ return cur > 0 ? 100 : 0;
               (rows || []).map((s) => ({
                 value: s._id,
                 label: formatSellerOptionLabel(s),
-              })),
+              }))
             );
           })
           .catch(() => setSellerOptions([]))
           .finally(() => setSellerSearchLoading(false));
       }, 320),
-    [],
+    []
   );
 
   useEffect(
     () => () => {
       debouncedSellerSearch.cancel();
     },
-    [debouncedSellerSearch],
+    [debouncedSellerSearch]
   );
 
   // ── Data fetching ─────────────────────────────────────────────────────────
@@ -260,7 +262,9 @@ return cur > 0 ? 100 : 0;
       setCampaigns(campaignsData);
       setPagination(pageInfo);
     } catch (error) {
-      message.error(`Failed to fetch campaigns: ${error?.message || 'Unknown error'}`);
+      message.error(
+        t('campaigns.errorFetchCampaigns', { msg: error?.message || t('common.unknownError') })
+      );
       setCampaigns([]);
     } finally {
       setLoading(false);
@@ -273,7 +277,7 @@ return cur > 0 ? 100 : 0;
       const res = await campaignService.getStats(campaignId);
       setStats(res.data ?? res);
     } catch (error) {
-      message.error('Failed to load statistics');
+      message.error(t('campaigns.errorLoadStats'));
     } finally {
       setStatsLoading(false);
     }
@@ -293,7 +297,7 @@ return cur > 0 ? 100 : 0;
 
       setProducts(productsData);
     } catch (error) {
-      message.error('Failed to fetch products');
+      message.error(t('campaigns.errorFetchProducts'));
       setProducts([]);
     } finally {
       setProductsLoading(false);
@@ -315,10 +319,10 @@ return cur > 0 ? 100 : 0;
     try {
       setLoading(true);
       await campaignService.delete(id);
-      message.success('Flash sale deleted successfully');
+      message.success(t('campaigns.successDeleteFlashSale'));
       fetchCampaigns(pagination.page);
     } catch (error) {
-      message.error('Failed to delete flash sale');
+      message.error(t('campaigns.errorDeleteFlashSale'));
     } finally {
       setLoading(false);
     }
@@ -328,10 +332,10 @@ return cur > 0 ? 100 : 0;
     try {
       setLoading(true);
       await Promise.all(group.variants.map((r) => campaignService.delete(r._id)));
-      message.success(`Deleted campaign with ${group.variants.length} variant(s)`);
+      message.success(t('campaigns.successDeleteCampaign', { count: group.variants.length }));
       fetchCampaigns(pagination.page);
     } catch (error) {
-      message.error('Failed to delete campaign');
+      message.error(t('campaigns.errorDeleteCampaign'));
     } finally {
       setLoading(false);
     }
@@ -339,7 +343,7 @@ return cur > 0 ? 100 : 0;
 
   const handleEditCampaign = async (group) => {
     if (group?.status === 'cancelled') {
-      message.warning('Campaign đã bị dừng hoặc hủy — không thể chỉnh sửa.');
+      message.warning(t('campaigns.warningCancelled'));
       return;
     }
     setIsDetailModalVisible(false);
@@ -352,7 +356,7 @@ return cur > 0 ? 100 : 0;
     });
     const productId = typeof group.productId === 'object' ? group.productId._id : group.productId;
     if (!productId) {
-      message.error('Product information not found');
+      message.error(t('campaigns.errorProductNotFound'));
       return;
     }
 
@@ -360,7 +364,7 @@ return cur > 0 ? 100 : 0;
       const response = await productService.getById(productId);
       const fullProduct = response.data || response;
       if (!fullProduct?.models) {
-        message.error('Product has no variants');
+        message.error(t('campaigns.errorNoVariants'));
         return;
       }
 
@@ -397,13 +401,15 @@ return cur > 0 ? 100 : 0;
       setCurrentStep(0);
       setIsModalVisible(true);
     } catch (error) {
-      message.error(`Failed to load product: ${error?.message || 'Unknown error'}`);
+      message.error(
+        t('campaigns.errorLoadProduct', { msg: error?.message || t('common.unknownError') })
+      );
     }
   };
 
   const handleEdit = async (record) => {
     if (record?.status === 'cancelled') {
-      message.warning('Campaign đã bị dừng hoặc hủy — không thể chỉnh sửa.');
+      message.warning(t('campaigns.warningCancelled'));
       return;
     }
     setIsDetailModalVisible(false);
@@ -418,7 +424,7 @@ return cur > 0 ? 100 : 0;
     const productId =
       typeof record.productId === 'object' ? record.productId._id : record.productId;
     if (!productId) {
-      message.error('Product information not found');
+      message.error(t('campaigns.errorProductNotFound'));
       return;
     }
 
@@ -426,7 +432,7 @@ return cur > 0 ? 100 : 0;
       const response = await productService.getById(productId);
       const fullProduct = response.data || response;
       if (!fullProduct || !fullProduct.models) {
-        message.error('Product has no variants');
+        message.error(t('campaigns.errorNoVariants'));
         return;
       }
 
@@ -459,12 +465,14 @@ return cur > 0 ? 100 : 0;
         });
         setSelectedVariantKeys([key]);
       } else {
-        message.warning('Matching variant not found. Please re-select.');
+        message.warning(t('campaigns.warningVariantNotFound'));
       }
       setCurrentStep(0);
       setIsModalVisible(true);
     } catch (error) {
-      message.error(`Failed to load product details: ${error?.message || 'Unknown error'}`);
+      message.error(
+        t('campaigns.errorLoadProduct', { msg: error?.message || t('common.unknownError') })
+      );
     }
   };
 
@@ -479,33 +487,33 @@ return cur > 0 ? 100 : 0;
   // Lấy campaign ID từ group hoặc record đơn lẻ
   const resolveCampaignId = (group, record) => {
     if (group?._id) {
-return { id: group._id, status: group.status };
-}
+      return { id: group._id, status: group.status };
+    }
     if (record?._id) {
-return { id: record._id, status: record.status };
-}
+      return { id: record._id, status: record.status };
+    }
     return null;
   };
 
   const handlePause = async (group, record) => {
     const resolved = resolveCampaignId(group, record);
     if (!resolved) {
-return;
-}
+      return;
+    }
     try {
       await campaignService.pause(resolved.id);
-      message.success('Campaign paused successfully');
+      message.success(t('campaigns.successPause'));
       setIsDetailModalVisible(false);
       fetchCampaigns(pagination.page);
     } catch (error) {
-      message.error(error?.message || 'Failed to pause campaign');
+      message.error(error?.message || t('campaigns.errorPause'));
     }
   };
 
   const openWarnModalForGroup = (group) => {
     const resolved = resolveCampaignId(group, null);
     if (!resolved?.id) {
-      message.error('Không xác định được campaign');
+      message.error(t('campaigns.errorUnknownCampaign'));
       return;
     }
     setWarnCampaignId(resolved.id);
@@ -517,7 +525,7 @@ return;
   const submitWarnSeller = async () => {
     const m = warnMessage.trim();
     if (m.length < 10) {
-      message.warning('Nội dung cảnh cáo cần ít nhất 10 ký tự');
+      message.warning(t('campaigns.warningWarnMin10'));
       return;
     }
     if (!warnCampaignId) {
@@ -529,19 +537,19 @@ return;
         message: m,
         title: warnTitle.trim() || undefined,
       });
-      message.success('Đã gửi cảnh cáo tới seller (thông báo + email nếu cấu hình)');
+      message.success(t('campaigns.successWarn'));
       setWarnOpen(false);
     } catch (error) {
-      message.error(error?.message || 'Gửi cảnh cáo thất bại');
+      message.error(error?.message || t('campaigns.errorWarn'));
     } finally {
       setWarnLoading(false);
     }
   };
 
   const submitAdminStop = async () => {
-    const t = adminStopReason.trim();
-    if (t.length < 10) {
-      message.warning('Vui lòng nhập lý do dừng campaign (tối thiểu 10 ký tự)');
+    const reason = adminStopReason.trim();
+    if (reason.length < 10) {
+      message.warning(t('campaigns.warningStopMin10'));
       return;
     }
     if (!adminStopCampaignId) {
@@ -549,15 +557,15 @@ return;
     }
     try {
       setAdminStopLoading(true);
-      await campaignService.stop(adminStopCampaignId, { reason: t });
-      message.success('Đã dừng campaign và thông báo cho seller');
+      await campaignService.stop(adminStopCampaignId, { reason });
+      message.success(t('campaigns.successStop'));
       setAdminStopOpen(false);
       setAdminStopReason('');
       setAdminStopCampaignId(null);
       setIsDetailModalVisible(false);
       fetchCampaigns(pagination.page);
     } catch (error) {
-      message.error(error?.message || 'Không thể dừng campaign');
+      message.error(error?.message || t('campaigns.errorStop'));
     } finally {
       setAdminStopLoading(false);
     }
@@ -576,26 +584,26 @@ return;
     }
     try {
       await campaignService.stop(resolved.id);
-      message.success('Campaign stopped successfully');
+      message.success(t('campaigns.successStop'));
       setIsDetailModalVisible(false);
       fetchCampaigns(pagination.page);
     } catch (error) {
-      message.error(error?.message || 'Failed to stop campaign');
+      message.error(error?.message || t('campaigns.errorStop'));
     }
   };
 
   const handleResume = async (group, record) => {
     const resolved = resolveCampaignId(group, record);
     if (!resolved) {
-return;
-}
+      return;
+    }
     try {
       await campaignService.resume(resolved.id);
-      message.success('Campaign resumed successfully');
+      message.success(t('campaigns.successResume'));
       setIsDetailModalVisible(false);
       fetchCampaigns(pagination.page);
     } catch (error) {
-      message.error(error?.message || 'Failed to resume campaign');
+      message.error(error?.message || t('campaigns.errorResume'));
     }
   };
 
@@ -613,7 +621,13 @@ return;
     }
     setSelectedCampaign(null);
     setCurrentStep(0);
-    setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
+    setCampaignInfo({
+      title: '',
+      type: 'flash_sale',
+      timeSlot: null,
+      startTime: null,
+      endTime: null,
+    });
     setSelectedProducts([]);
     setVariantConfigs({});
     setSelectedVariantKeys([]);
@@ -625,7 +639,13 @@ return;
     form.resetFields();
     setSelectedCampaign(null);
     setCurrentStep(0);
-    setCampaignInfo({ title: '', type: 'flash_sale', timeSlot: null, startTime: null, endTime: null });
+    setCampaignInfo({
+      title: '',
+      type: 'flash_sale',
+      timeSlot: null,
+      startTime: null,
+      endTime: null,
+    });
     setSelectedProducts([]);
     setVariantConfigs({});
     setSelectedVariantKeys([]);
@@ -637,7 +657,7 @@ return;
       return;
     }
     if (selectedProducts.find((p) => p._id === productId)) {
-      message.warning('Product already added');
+      message.warning(t('campaigns.warningProductAlreadyAdded'));
       return;
     }
 
@@ -665,7 +685,7 @@ return;
       });
       setVariantConfigs((prev) => ({ ...prev, ...configs }));
     } else {
-      message.warning('This product has no variants (models)');
+      message.warning(t('campaigns.warningNoVariantModels'));
     }
   };
 
@@ -675,8 +695,8 @@ return;
       const newConfigs = { ...prev };
       Object.keys(newConfigs).forEach((key) => {
         if (key.startsWith(productId)) {
-delete newConfigs[key];
-}
+          delete newConfigs[key];
+        }
       });
       return newConfigs;
     });
@@ -685,8 +705,8 @@ delete newConfigs[key];
   const handleRemoveVariant = async (variantKey) => {
     const config = variantConfigs[variantKey];
     if (!config) {
-return;
-}
+      return;
+    }
     const pid = config.productId;
 
     const applyLocalRemove = () => {
@@ -695,9 +715,7 @@ return;
         delete next[variantKey];
         const stillHas = Object.values(next).some((c) => c.productId === pid);
         if (!stillHas) {
-          queueMicrotask(() =>
-            setSelectedProducts((sp) => sp.filter((p) => p._id !== pid))
-          );
+          queueMicrotask(() => setSelectedProducts((sp) => sp.filter((p) => p._id !== pid)));
         }
         return next;
       });
@@ -708,11 +726,11 @@ return;
       try {
         setLoading(true);
         await campaignService.delete(config._campaignId);
-        message.success('Variant removed from flash sale');
+        message.success(t('campaigns.successRemoveVariant'));
         applyLocalRemove();
         fetchCampaigns(pagination.page);
       } catch (error) {
-        message.error('Failed to remove variant');
+        message.error(t('campaigns.errorRemoveVariant'));
       } finally {
         setLoading(false);
       }
@@ -725,8 +743,8 @@ return;
     setVariantConfigs((prev) => {
       const row = prev[key];
       if (!row) {
-return prev;
-}
+        return prev;
+      }
       const list = row.originalPrice;
       const listOk = typeof list === 'number' && list > 0;
       return {
@@ -747,11 +765,11 @@ return prev;
 
   const handleBulkUpdate = (field, value) => {
     if (selectedVariantKeys.length === 0) {
-      message.warning('Please select at least one variant');
+      message.warning(t('campaigns.warningSelectVariant'));
       return;
     }
     selectedVariantKeys.forEach((key) => updateVariantConfig(key, field, value));
-    message.success(`Updated ${selectedVariantKeys.length} variant(s)`);
+    message.success(t('campaigns.successBulkUpdate', { count: selectedVariantKeys.length }));
   };
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -761,33 +779,33 @@ return prev;
 
       // Validate
       if (!campaignInfo.title?.trim()) {
-        message.error('Please enter a campaign title');
+        message.error(t('campaigns.errorNeedTitle'));
         setLoading(false);
         return;
       }
       if (!campaignInfo.startTime || !campaignInfo.endTime) {
-        message.error('Please select start and end time');
+        message.error(t('campaigns.errorNeedTime'));
         setLoading(false);
         return;
       }
       if (!dayjs.isDayjs(campaignInfo.startTime) || !dayjs.isDayjs(campaignInfo.endTime)) {
-        message.error('Error: Invalid time. Please go back to Step 1 and re-select.');
+        message.error(t('campaigns.errorInvalidTime'));
         setCurrentStep(0);
         setLoading(false);
         return;
       }
       if (campaignInfo.endTime.isBefore(campaignInfo.startTime)) {
-        message.error('End time must be after start time');
+        message.error(t('campaigns.errorEndBeforeStart'));
         setLoading(false);
         return;
       }
       if (!selectedCampaign && campaignInfo.startTime.isBefore(dayjs().subtract(1, 'minute'))) {
-        message.error('Start time cannot be in the past');
+        message.error(t('campaigns.errorStartInPast'));
         setLoading(false);
         return;
       }
       if (selectedProducts.length === 0) {
-        message.error('Please add at least one product');
+        message.error(t('campaigns.errorNeedProduct'));
         setLoading(false);
         return;
       }
@@ -805,7 +823,7 @@ return prev;
         .map(([_, config]) => config);
 
       if (enabledVariants.length === 0) {
-        message.error('Please select at least one variant');
+        message.error(t('campaigns.errorNeedVariant'));
         setLoading(false);
         return;
       }
@@ -815,8 +833,8 @@ return prev;
         await Promise.all(
           enabledVariants.map((variant) => {
             if (!variant._campaignId) {
-return Promise.resolve();
-}
+              return Promise.resolve();
+            }
             return campaignService.update(variant._campaignId, {
               salePrice: variant.salePrice,
               totalQuantity: variant.quantity,
@@ -827,7 +845,7 @@ return Promise.resolve();
             });
           })
         );
-        message.success(`Campaign updated (${enabledVariants.length} variant(s))`);
+        message.success(t('campaigns.successUpdateCampaign', { count: enabledVariants.length }));
         handleCloseModal();
         fetchCampaigns(pagination.page);
         return;
@@ -836,7 +854,7 @@ return Promise.resolve();
       // EDIT SINGLE MODE
       if (selectedCampaign) {
         if (enabledVariants.length !== 1) {
-          message.warning('Edit mode only supports 1 variant.');
+          message.warning(t('campaigns.warningEditOneVariant'));
           setLoading(false);
           return;
         }
@@ -845,7 +863,7 @@ return Promise.resolve();
           variant.variantSku === selectedCampaign.variantSku ||
           (!variant.variantSku && !selectedCampaign.variantSku);
         if (!isSameVariant) {
-          message.warning('Cannot change variant in edit mode.');
+          message.warning(t('campaigns.warningCannotChangeVariant'));
           setLoading(false);
           return;
         }
@@ -858,7 +876,7 @@ return Promise.resolve();
           endAt: campaignInfo.endTime.toISOString(),
           campaignTitle: campaignInfo.title,
         });
-        message.success('Flash sale updated successfully');
+        message.success(t('campaigns.successUpdateFlashSale'));
         handleCloseModal();
         fetchCampaigns(pagination.page);
         return;
@@ -868,8 +886,8 @@ return Promise.resolve();
       const variantsByProduct = enabledVariants.reduce((acc, variant) => {
         const pid = variant.productId;
         if (!acc[pid]) {
-acc[pid] = [];
-}
+          acc[pid] = [];
+        }
         acc[pid].push(variant);
         return acc;
       }, {});
@@ -890,8 +908,8 @@ acc[pid] = [];
                 purchaseLimit: v.purchaseLimit,
               };
               if (v.tierIndex) {
-item.tierIndex = v.tierIndex;
-}
+                item.tierIndex = v.tierIndex;
+              }
               return item;
             }),
           })
@@ -899,7 +917,10 @@ item.tierIndex = v.tierIndex;
       );
 
       message.success(
-        `Created ${Object.keys(variantsByProduct).length} campaign(s) with ${enabledVariants.length} variant(s) successfully`
+        t('campaigns.successCreate', {
+          products: Object.keys(variantsByProduct).length,
+          variants: enabledVariants.length,
+        })
       );
       handleCloseModal();
       fetchCampaigns(pagination.page);
@@ -907,8 +928,8 @@ item.tierIndex = v.tierIndex;
       const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
       message.error(
         selectedCampaign
-          ? `Failed to update flash sale: ${errorMsg}`
-          : `Failed to create flash sale campaign: ${errorMsg}`
+          ? t('campaigns.errorUpdateFlashSale', { msg: errorMsg })
+          : t('campaigns.errorCreateFlashSale', { msg: errorMsg })
       );
     } finally {
       setLoading(false);
@@ -976,14 +997,8 @@ item.tierIndex = v.tierIndex;
         groupedCampaigns={groupedCampaigns}
         onCreateClick={handleOpenCreateModal}
         showCreateButton={!isAdminMode}
-        title={isAdminMode ? 'Flash Sale — Quản trị toàn hệ thống' : undefined}
-        description={
-          isAdminMode ? (
-            <>
-              Giám sát, tạm dừng hoặc gỡ deal: chỉ seller tạo/sửa giá trong trang shop — đúng thông lệ sàn.
-            </>
-          ) : undefined
-        }
+        title={isAdminMode ? t('campaigns.adminTitle') : undefined}
+        description={isAdminMode ? <>{t('campaigns.adminDescription')}</> : undefined}
       />
 
       {!isAdminMode && (
@@ -1008,11 +1023,13 @@ item.tierIndex = v.tierIndex;
             border: '1px solid #e2e8f0',
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Lọc theo seller</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+            {t('campaigns.filterBySeller')}
+          </span>
           <Select
             showSearch
             allowClear
-            placeholder="Tìm theo tên shop, email hoặc số điện thoại…"
+            placeholder={t('campaigns.sellerSearchPlaceholder')}
             style={{ minWidth: 280, maxWidth: 480, flex: '1 1 280px' }}
             filterOption={false}
             loading={sellerSearchLoading}
@@ -1022,7 +1039,7 @@ item.tierIndex = v.tierIndex;
                 <Spin size="small" />
               ) : (
                 <span style={{ color: '#64748b', fontSize: 13 }}>
-                  Gõ ít nhất 2 ký tự để tìm seller.
+                  {t('campaigns.sellerSearchHint')}
                 </span>
               )
             }
@@ -1038,7 +1055,8 @@ item.tierIndex = v.tierIndex;
               const label =
                 typeof option?.label === 'string'
                   ? option.label
-                  : mergedSellerSelectOptions.find((o) => o.value === value)?.label || String(value);
+                  : mergedSellerSelectOptions.find((o) => o.value === value)?.label ||
+                    String(value);
               setSelectedSeller({ id: value, label });
               fetchCampaigns(1, pagination.limit, value);
             }}
@@ -1074,7 +1092,9 @@ item.tierIndex = v.tierIndex;
                 onWarnSeller: isAdminMode ? openWarnModalForGroup : undefined,
               }
             )}
-            variantColumns={variantColumns(handleEdit, handleDelete, { moderationOnly: isAdminMode })}
+            variantColumns={variantColumns(handleEdit, handleDelete, {
+              moderationOnly: isAdminMode,
+            })}
             handleTableChange={handleTableChange}
             handleViewCampaign={handleViewCampaign}
             handleViewDetail={handleViewDetail}
@@ -1140,7 +1160,7 @@ item.tierIndex = v.tierIndex;
       {isAdminMode && (
         <>
           <Modal
-            title="Dừng campaign — bắt buộc lý do"
+            title={t('campaigns.modalStopTitle')}
             open={adminStopOpen}
             onOk={submitAdminStop}
             onCancel={() => {
@@ -1149,17 +1169,16 @@ item.tierIndex = v.tierIndex;
               setAdminStopCampaignId(null);
             }}
             confirmLoading={adminStopLoading}
-            okText="Xác nhận dừng"
-            cancelText="Hủy"
+            okText={t('campaigns.modalStopOk')}
+            cancelText={t('common.cancel')}
             width={520}
           >
             <p style={{ marginBottom: 12, color: '#475569', fontSize: 14 }}>
-              Seller sẽ nhận thông báo trong app và email (nếu hệ thống email đã cấu hình). Lý do được lưu
-              để đối soát.
+              {t('campaigns.modalStopHint')}
             </p>
             <Input.TextArea
               rows={5}
-              placeholder="Nhập lý do dừng campaign (tối thiểu 10 ký tự)…"
+              placeholder={t('campaigns.modalStopPlaceholder')}
               value={adminStopReason}
               onChange={(e) => setAdminStopReason(e.target.value)}
               maxLength={4000}
@@ -1168,7 +1187,7 @@ item.tierIndex = v.tierIndex;
           </Modal>
 
           <Modal
-            title="Cảnh cáo seller (vi phạm campaign)"
+            title={t('campaigns.modalWarnTitle')}
             open={warnOpen}
             onOk={submitWarnSeller}
             onCancel={() => {
@@ -1178,27 +1197,31 @@ item.tierIndex = v.tierIndex;
               setWarnCampaignId(null);
             }}
             confirmLoading={warnLoading}
-            okText="Gửi cảnh cáo"
-            cancelText="Hủy"
+            okText={t('campaigns.modalWarnOk')}
+            cancelText={t('common.cancel')}
             width={560}
           >
             <p style={{ marginBottom: 8, color: '#475569', fontSize: 14 }}>
-              Gửi thông báo trong app và email tới chủ shop. Nội dung tối thiểu 10 ký tự.
+              {t('campaigns.modalWarnHint')}
             </p>
             <div style={{ marginBottom: 12 }}>
-              <div style={{ marginBottom: 6, fontSize: 13, fontWeight: 600 }}>Tiêu đề (tuỳ chọn)</div>
+              <div style={{ marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
+                {t('campaigns.modalWarnLabelTitle')}
+              </div>
               <Input
-                placeholder="VD: Cảnh cáo nội dung flash sale"
+                placeholder={t('campaigns.modalWarnTitlePlaceholder')}
                 value={warnTitle}
                 onChange={(e) => setWarnTitle(e.target.value)}
                 maxLength={200}
               />
             </div>
             <div>
-              <div style={{ marginBottom: 6, fontSize: 13, fontWeight: 600 }}>Nội dung chi tiết</div>
+              <div style={{ marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
+                {t('campaigns.modalWarnLabelContent')}
+              </div>
               <Input.TextArea
                 rows={6}
-                placeholder="Mô tả vi phạm, yêu cầu khắc phục…"
+                placeholder={t('campaigns.modalWarnContentPlaceholder')}
                 value={warnMessage}
                 onChange={(e) => setWarnMessage(e.target.value)}
                 maxLength={4000}

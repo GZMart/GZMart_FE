@@ -31,6 +31,7 @@ const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const BuyerDisputesPage = lazy(() => import('@pages/buyer/DisputesPage'));
 const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
+const VipSubscriptionPage = lazy(() => import('@pages/buyer/VipSubscriptionPage'));
 const BuyerReturnStatusPage = lazy(() => import('@/pages/buyer/order/BuyerReturnStatusPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@/pages/buyer/order/TrackOrderPage'));
@@ -70,6 +71,7 @@ const ChatPage = lazy(() => import('@pages/seller/ChatPage'));
 const SellerProfilePage = lazy(() => import('@pages/seller/SellerProfilePage'));
 const ShopDecorationPage = lazy(() => import('@pages/seller/ShopDecorationPage'));
 const ShopNotificationsPage = lazy(() => import('@pages/seller/ShopNotificationsPage'));
+const SellerMyNotificationsPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const LiveStreamPage = lazy(() => import('@pages/seller/LiveStreamPage'));
 const LiveStreamMobilePage = lazy(() => import('@pages/seller/LiveStreamMobilePage'));
 const SellerFinancePage = lazy(() => import('@pages/seller/SellerFinancePage'));
@@ -157,6 +159,7 @@ export const sellerErpChildRoutes = [
   { path: 'promotions/edit/combo/:id', element: ComboPromotionForm },
   { path: 'promotions/edit/addon/:id', element: AddOnDealForm },
   { path: 'notifications', element: ShopNotificationsPage },
+  { path: 'my-notifications', element: SellerMyNotificationsPage },
   { path: 'banner-ads', element: SellerBannerAdsPage },
   { path: 'finance', element: SellerFinancePage },
 ];
@@ -374,6 +377,13 @@ export const routeConfig = [
     layout: 'main',
   },
   {
+    path: '/buyer/vip',
+    element: VipSubscriptionPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
     path: '/buyer/returns/:requestId',
     element: BuyerReturnStatusPage,
     protected: true,
@@ -532,6 +542,13 @@ export const routeConfig = [
     element: TestMapPage,
     public: true,
     layout: 'none',
+  },
+  {
+    path: '/admin/notifications',
+    element: NotificationPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.ADMIN],
+    layout: 'admin',
   },
 
   // Error Routes

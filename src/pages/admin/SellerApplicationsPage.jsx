@@ -30,6 +30,7 @@ import {
   SafetyCertificateOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import * as sellerApplicationService from '@services/api/sellerApplicationService';
 import styles from '@assets/styles/admin/SellerApplicationsPage.module.css';
 
@@ -37,9 +38,24 @@ import styles from '@assets/styles/admin/SellerApplicationsPage.module.css';
 const { TextArea } = Input;
 
 const STATUS_CONFIG = {
-  pending: { color: 'processing', icon: <ClockCircleOutlined />, label: 'PENDING', className: 'pending' },
-  approved: { color: 'success', icon: <CheckCircleOutlined />, label: 'APPROVED', className: 'approved' },
-  rejected: { color: 'error', icon: <CloseCircleOutlined />, label: 'REJECTED', className: 'rejected' },
+  pending: {
+    color: 'processing',
+    icon: <ClockCircleOutlined />,
+    label: 'PENDING',
+    className: 'pending',
+  },
+  approved: {
+    color: 'success',
+    icon: <CheckCircleOutlined />,
+    label: 'APPROVED',
+    className: 'approved',
+  },
+  rejected: {
+    color: 'error',
+    icon: <CloseCircleOutlined />,
+    label: 'REJECTED',
+    className: 'rejected',
+  },
 };
 
 const { Text, Paragraph } = Typography;
@@ -136,13 +152,20 @@ function LuminousScreeningColumn({ ai, styles: css }) {
             <SafetyCertificateOutlined className={css.lumRiskIcon} />
             <span className={css.lumRiskName}>Risk profile</span>
           </div>
-          <span className={`${css.lumRiskBadge} ${css[`lumRiskTone_${risk.tone}`]}`}>{risk.label}</span>
+          <span className={`${css.lumRiskBadge} ${css[`lumRiskTone_${risk.tone}`]}`}>
+            {risk.label}
+          </span>
         </div>
 
         <div className={css.lumTagBlock}>
           <Text className={css.lumMiniCap}>Assessment</Text>
           <div className={css.lumTagRow}>
-            <Tag color={rec === 'likely_approve' ? 'success' : rec === 'likely_reject' ? 'error' : 'warning'} icon={<FileSearchOutlined />}>
+            <Tag
+              color={
+                rec === 'likely_approve' ? 'success' : rec === 'likely_reject' ? 'error' : 'warning'
+              }
+              icon={<FileSearchOutlined />}
+            >
               {recLabel}
             </Tag>
           </div>
@@ -171,7 +194,13 @@ function LuminousScreeningColumn({ ai, styles: css }) {
               percent={Math.round(ai.confidence * 100)}
               size="small"
               status={rec === 'likely_reject' ? 'exception' : 'active'}
-              strokeColor={rec === 'likely_approve' ? '#16a34a' : rec === 'likely_reject' ? '#dc2626' : '#ca8a04'}
+              strokeColor={
+                rec === 'likely_approve'
+                  ? '#16a34a'
+                  : rec === 'likely_reject'
+                    ? '#dc2626'
+                    : '#ca8a04'
+              }
             />
           </div>
         )}
@@ -224,13 +253,10 @@ const SellerApplicationsPage = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState(undefined);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [detailModal, setDetailModal] = useState({ open: false, record: null });
   const [detailDecisionNote, setDetailDecisionNote] = useState('');
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchApplications();
@@ -250,8 +276,8 @@ const SellerApplicationsPage = () => {
         limit: pagination.pageSize,
       };
       if (statusFilter) {
-params.status = statusFilter;
-}
+        params.status = statusFilter;
+      }
 
       const data = await sellerApplicationService.listSellerApplications(params);
       setApplications(data.applications || []);
@@ -261,7 +287,7 @@ params.status = statusFilter;
       }));
     } catch (error) {
       console.error('Error fetching applications:', error);
-      message.error('Failed to load seller applications');
+      message.error(t('sellerApps.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -281,22 +307,29 @@ params.status = statusFilter;
     Modal.confirm({
       title: (
         <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
-          {action === 'approve' ? 'Approve Application' : 'Reject Application'}
+          {action === 'approve'
+            ? t('sellerApps.confirmApproveTitle')
+            : t('sellerApps.confirmRejectTitle')}
         </div>
       ),
-      icon: action === 'approve' ?
-        <CheckCircleOutlined style={{ color: '#10b981', fontSize: 24 }} /> :
-        <CloseCircleOutlined style={{ color: '#ef4444', fontSize: 24 }} />,
+      icon:
+        action === 'approve' ? (
+          <CheckCircleOutlined style={{ color: '#10b981', fontSize: 24 }} />
+        ) : (
+          <CloseCircleOutlined style={{ color: '#ef4444', fontSize: 24 }} />
+        ),
       content: (
         <div style={{ marginTop: 12 }}>
           <p style={{ color: '#475569', marginBottom: 16 }}>
             {action === 'approve'
-              ? 'This will upgrade the user to the seller role and allow them to manage a shop.'
-              : 'This will reject the application. The user will be notified and can re-apply later.'}
+              ? t('sellerApps.confirmApproveDesc')
+              : t('sellerApps.confirmRejectDesc')}
           </p>
-          <div style={{ fontWeight: 500, marginBottom: 8, color: '#0f172a' }}>Add a note (optional):</div>
+          <div style={{ fontWeight: 500, marginBottom: 8, color: '#0f172a' }}>
+            {t('sellerApps.noteLabel')}
+          </div>
           <TextArea
-            placeholder="Type your feedback or internal note here..."
+            placeholder={t('sellerApps.notePlaceholder')}
             rows={4}
             onChange={(e) => {
               noteValue = e.target.value;
@@ -305,10 +338,13 @@ params.status = statusFilter;
           />
         </div>
       ),
-      okText: action === 'approve' ? 'Confirm Approval' : 'Confirm Rejection',
+      okText: action === 'approve' ? t('sellerApps.okApprove') : t('sellerApps.okReject'),
       okButtonProps: {
         danger: action === 'reject',
-        style: action === 'approve' ? { background: '#10b981', borderColor: '#10b981', borderRadius: 8 } : { borderRadius: 8 }
+        style:
+          action === 'approve'
+            ? { background: '#10b981', borderColor: '#10b981', borderRadius: 8 }
+            : { borderRadius: 8 },
       },
       cancelButtonProps: { style: { borderRadius: 8 } },
       width: 480,
@@ -317,15 +353,15 @@ params.status = statusFilter;
         try {
           if (action === 'approve') {
             await sellerApplicationService.approveSellerApplication(applicationId, noteValue);
-            message.success('Application approved — user is now a seller');
+            message.success(t('sellerApps.successApprove'));
           } else {
             await sellerApplicationService.rejectSellerApplication(applicationId, noteValue);
-            message.success('Application rejected');
+            message.success(t('sellerApps.successReject'));
           }
           setDetailModal({ open: false, record: null });
           fetchApplications();
         } catch (error) {
-          message.error(error.message || `Failed to ${action} application`);
+          message.error(error.message || t('sellerApps.errorAction', { action }));
         }
       },
     });
@@ -339,22 +375,22 @@ params.status = statusFilter;
     try {
       if (action === 'approve') {
         await sellerApplicationService.approveSellerApplication(id, detailDecisionNote);
-        message.success('Application approved — user is now a seller');
+        message.success(t('sellerApps.successApprove'));
       } else {
         await sellerApplicationService.rejectSellerApplication(id, detailDecisionNote);
-        message.success('Application rejected');
+        message.success(t('sellerApps.successReject'));
       }
       setDetailModal({ open: false, record: null });
       setDetailDecisionNote('');
       fetchApplications();
     } catch (error) {
-      message.error(error.message || `Failed to ${action} application`);
+      message.error(error.message || t('sellerApps.errorAction', { action }));
     }
   };
 
   const columns = [
     {
-      title: 'Applicant',
+      title: t('sellerApps.colApplicant'),
       key: 'user',
       render: (_, record) => {
         const user = record.user || {};
@@ -374,17 +410,15 @@ params.status = statusFilter;
       },
     },
     {
-      title: 'Phone',
+      title: t('sellerApps.colPhone'),
       key: 'phone',
       responsive: ['md'],
       render: (_, record) => (
-        <span style={{ fontWeight: 500, color: '#334155' }}>
-          {record.user?.phone || 'N/A'}
-        </span>
+        <span style={{ fontWeight: 500, color: '#334155' }}>{record.user?.phone || 'N/A'}</span>
       ),
     },
     {
-      title: 'Screening',
+      title: t('sellerApps.colScreening'),
       key: 'aiScreening',
       width: 168,
       responsive: ['lg'],
@@ -429,7 +463,7 @@ params.status = statusFilter;
       },
     },
     {
-      title: 'Status',
+      title: t('sellerApps.colStatus'),
       dataIndex: 'status',
       key: 'status',
       width: 140,
@@ -443,7 +477,7 @@ params.status = statusFilter;
       },
     },
     {
-      title: 'Submitted',
+      title: t('sellerApps.colSubmitted'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 140,
@@ -453,17 +487,17 @@ params.status = statusFilter;
           {new Date(date).toLocaleDateString(undefined, {
             year: 'numeric',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
           })}
         </span>
       ),
     },
     {
-      title: 'Actions',
+      title: t('sellerApps.colActions'),
       key: 'actions',
       render: (_, record) => (
         <div style={{ display: 'flex', gap: 6 }}>
-          <Tooltip title="Review Application">
+          <Tooltip title={t('sellerApps.tooltipReview')}>
             <Button
               className={`${styles.actionBtn} ${styles.actionBtnReview}`}
               icon={<EyeOutlined style={{ fontSize: 18 }} />}
@@ -472,14 +506,14 @@ params.status = statusFilter;
           </Tooltip>
           {record.status === 'pending' && (
             <>
-              <Tooltip title="Approve">
+              <Tooltip title={t('sellerApps.tooltipApprove')}>
                 <Button
                   className={`${styles.actionBtn} ${styles.actionBtnApprove}`}
                   icon={<CheckCircleOutlined style={{ fontSize: 18 }} />}
                   onClick={() => handleAction(record._id, 'approve')}
                 />
               </Tooltip>
-              <Tooltip title="Reject">
+              <Tooltip title={t('sellerApps.tooltipReject')}>
                 <Button
                   className={`${styles.actionBtn} ${styles.actionBtnReject}`}
                   icon={<CloseCircleOutlined style={{ fontSize: 18 }} />}
@@ -523,7 +557,7 @@ params.status = statusFilter;
           });
         } else {
           await navigator.clipboard.writeText(window.location.href);
-          message.success('Link copied to clipboard');
+          message.success(t('sellerApps.linkCopied'));
         }
       } catch {
         /* user cancelled share */
@@ -558,7 +592,9 @@ params.status = statusFilter;
           hour: '2-digit',
           minute: '2-digit',
         }),
-        body: ai.summary ? `"${ai.summary.slice(0, 220)}${ai.summary.length > 220 ? '…' : ''}"` : 'Pre-screening finished.',
+        body: ai.summary
+          ? `"${ai.summary.slice(0, 220)}${ai.summary.length > 220 ? '…' : ''}"`
+          : 'Pre-screening finished.',
       });
     }
     if (record.status !== 'pending' && record.adminReviewer) {
@@ -634,15 +670,19 @@ params.status = statusFilter;
                     <h2 className={styles.lumHeroTitle} id="seller-app-detail-title">
                       Application details
                     </h2>
-                    <span className={`${styles.lumHeroPill} ${styles[`lumPill_${statusCfg.className}`]}`}>
+                    <span
+                      className={`${styles.lumHeroPill} ${styles[`lumPill_${statusCfg.className}`]}`}
+                    >
                       {statusCfg.label}
                     </span>
                   </div>
-                  <p className={styles.lumHeroHint}>Verify identity, address, and screening before approving.</p>
+                  <p className={styles.lumHeroHint}>{t('sellerApps.heroHint')}</p>
                   <p className={styles.lumHeroSub}>
-                    Application ID:{' '}
+                    {t('sellerApps.applicationId')}{' '}
                     <Text copyable={{ text: String(record._id) }} className={styles.lumHeroId}>
-                      {String(record._id).length > 18 ? `${String(record._id).slice(0, 10)}…${String(record._id).slice(-6)}` : String(record._id)}
+                      {String(record._id).length > 18
+                        ? `${String(record._id).slice(0, 10)}…${String(record._id).slice(-6)}`
+                        : String(record._id)}
                     </Text>
                   </p>
                 </div>
@@ -676,29 +716,33 @@ params.status = statusFilter;
                 <section className={styles.lumSection}>
                   <div className={styles.lumSectionHead}>
                     <span className={styles.lumSectionBar} />
-                    <h3 className={styles.lumSectionTitle}>Identity &amp; business</h3>
+                    <h3 className={styles.lumSectionTitle}>{t('sellerApps.sectionIdentity')}</h3>
                   </div>
                   <div className={styles.lumFieldGrid}>
                     <div className={styles.lumField}>
-                      <span className={styles.lumLbl}>Full legal name</span>
+                      <span className={styles.lumLbl}>{t('sellerApps.fieldFullName')}</span>
                       <p className={styles.lumVal}>{user.fullName || '—'}</p>
                     </div>
                     <div className={styles.lumField}>
-                      <span className={styles.lumLbl}>Email</span>
+                      <span className={styles.lumLbl}>{t('sellerApps.fieldEmail')}</span>
                       <p className={styles.lumVal}>
-                        {user.email ? <Text copyable={{ text: user.email }}>{user.email}</Text> : '—'}
+                        {user.email ? (
+                          <Text copyable={{ text: user.email }}>{user.email}</Text>
+                        ) : (
+                          '—'
+                        )}
                       </p>
                     </div>
                     <div className={styles.lumField}>
-                      <span className={styles.lumLbl}>Phone</span>
+                      <span className={styles.lumLbl}>{t('sellerApps.fieldPhone')}</span>
                       <p className={styles.lumVal}>{copyMono(user.phone)}</p>
                     </div>
                     <div className={styles.lumField}>
-                      <span className={styles.lumLbl}>National ID (CCCD)</span>
+                      <span className={styles.lumLbl}>{t('sellerApps.fieldCccd')}</span>
                       <p className={styles.lumVal}>{copyMono(user.citizenId)}</p>
                     </div>
                     <div className={`${styles.lumField} ${styles.lumFieldWide}`}>
-                      <span className={styles.lumLbl}>Tax code (MST)</span>
+                      <span className={styles.lumLbl}>{t('sellerApps.fieldTax')}</span>
                       <p className={styles.lumVal}>{copyMono(user.taxId)}</p>
                     </div>
                   </div>
@@ -712,7 +756,7 @@ params.status = statusFilter;
                 <section className={styles.lumSection}>
                   <div className={styles.lumSectionHead}>
                     <span className={styles.lumSectionBar} />
-                    <h3 className={styles.lumSectionTitle}>Registered location</h3>
+                    <h3 className={styles.lumSectionTitle}>{t('sellerApps.sectionLocation')}</h3>
                   </div>
                   <div className={styles.lumLocationCard}>
                     <div className={styles.lumLocationText}>
@@ -735,14 +779,20 @@ params.status = statusFilter;
                 <section className={styles.lumSection}>
                   <div className={styles.lumSectionHead}>
                     <span className={styles.lumSectionBar} />
-                    <h3 className={styles.lumSectionTitle}>Review history</h3>
+                    <h3 className={styles.lumSectionTitle}>{t('sellerApps.sectionHistory')}</h3>
                   </div>
                   <div className={styles.lumTimeline}>
                     {timelineItems.map((ev, idx) => (
                       <div key={ev.key} className={styles.lumTimelineRow}>
                         <div className={styles.lumTimelineRail}>
-                          <div className={`${styles.lumTimelineIcon} ${styles[`lumTl_${ev.tone}`]}`}>{ev.icon}</div>
-                          {idx < timelineItems.length - 1 ? <span className={styles.lumTimelineLine} aria-hidden /> : null}
+                          <div
+                            className={`${styles.lumTimelineIcon} ${styles[`lumTl_${ev.tone}`]}`}
+                          >
+                            {ev.icon}
+                          </div>
+                          {idx < timelineItems.length - 1 ? (
+                            <span className={styles.lumTimelineLine} aria-hidden />
+                          ) : null}
                         </div>
                         <div className={styles.lumTimelineContent}>
                           <p className={styles.lumTimelineTitle}>{ev.title}</p>
@@ -766,26 +816,40 @@ params.status = statusFilter;
           <footer className={styles.lumFooter}>
             <div className={styles.lumFooterGrid}>
               <div className={styles.lumFooterNote}>
-                <label className={styles.lumFooterLbl}>Decision reasoning / internal note</label>
+                <label className={styles.lumFooterLbl}>{t('sellerApps.footerNoteLabel')}</label>
                 <TextArea
                   value={detailDecisionNote}
                   onChange={(e) => setDetailDecisionNote(e.target.value)}
-                  placeholder="Provide specific reasons for approval or rejection…"
+                  placeholder={t('sellerApps.footerNotePlaceholder')}
                   rows={4}
                   className={styles.lumFooterTextarea}
                 />
               </div>
               <div className={styles.lumFooterActions}>
-                <Button size="large" className={styles.lumBtnClose} onClick={() => setDetailModal({ open: false, record: null })}>
-                  Close
+                <Button
+                  size="large"
+                  className={styles.lumBtnClose}
+                  onClick={() => setDetailModal({ open: false, record: null })}
+                >
+                  {t('sellerApps.btnClose')}
                 </Button>
                 {record.status === 'pending' && (
                   <>
-                    <Button size="large" danger className={styles.lumBtnReject} onClick={() => submitDetailDecision('reject')}>
-                      Reject application
+                    <Button
+                      size="large"
+                      danger
+                      className={styles.lumBtnReject}
+                      onClick={() => submitDetailDecision('reject')}
+                    >
+                      {t('sellerApps.btnReject')}
                     </Button>
-                    <Button size="large" type="primary" className={styles.lumBtnApprove} onClick={() => submitDetailDecision('approve')}>
-                      Approve seller
+                    <Button
+                      size="large"
+                      type="primary"
+                      className={styles.lumBtnApprove}
+                      onClick={() => submitDetailDecision('approve')}
+                    >
+                      {t('sellerApps.btnApprove')}
                     </Button>
                   </>
                 )}
@@ -798,12 +862,14 @@ params.status = statusFilter;
   };
 
   return (
-    <ConfigProvider theme={{
-      token: {
-        colorPrimary: '#4f46e5',
-        borderRadius: 8,
-      }
-    }}>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#4f46e5',
+          borderRadius: 8,
+        },
+      }}
+    >
       <div className={styles.sellerApplicationsPage}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -811,8 +877,8 @@ params.status = statusFilter;
               <i className="bi bi-shop" />
             </div>
             <div>
-              <h1>Seller Applications</h1>
-              <p className={styles.subtitle}>Review and manage requests from users wanting to become sellers</p>
+              <h1>{t('sellerApps.pageTitle')}</h1>
+              <p className={styles.subtitle}>{t('sellerApps.pageSubtitle')}</p>
             </div>
           </div>
           <Button
@@ -821,16 +887,20 @@ params.status = statusFilter;
             icon={<ReloadOutlined />}
             onClick={fetchApplications}
             loading={loading}
-            style={{ background: '#4f46e5', borderColor: '#4f46e5', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.3)' }}
+            style={{
+              background: '#4f46e5',
+              borderColor: '#4f46e5',
+              boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.3)',
+            }}
           >
-            Refresh Data
+            {t('sellerApps.btnRefresh')}
           </Button>
         </div>
 
         <div className={styles.tableWrap}>
           <div className={styles.filterBar}>
             <Select
-              placeholder="Filter by application status"
+              placeholder={t('sellerApps.filterPlaceholder')}
               allowClear
               size="large"
               style={{ width: 240 }}
@@ -840,9 +910,9 @@ params.status = statusFilter;
                 setPagination((prev) => ({ ...prev, current: 1 }));
               }}
               options={[
-                { value: 'pending', label: 'Pending Review' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'rejected', label: 'Rejected' },
+                { value: 'pending', label: t('sellerApps.filterPending') },
+                { value: 'approved', label: t('sellerApps.filterApproved') },
+                { value: 'rejected', label: t('sellerApps.filterRejected') },
               ]}
             />
           </div>
@@ -854,7 +924,7 @@ params.status = statusFilter;
             pagination={{
               ...pagination,
               showSizeChanger: true,
-              showTotal: (total) => `Total ${total} applications`
+              showTotal: (total) => t('sellerApps.totalApplications', { total }),
             }}
             onChange={handleTableChange}
             rowKey="_id"

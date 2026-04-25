@@ -13,7 +13,7 @@ import ReturnRequestModal from '@components/buyer/ReturnRequestModal';
 import locationService from '@services/api/locationService';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next'; // Added import
-import { Coins, FileText, Package } from 'lucide-react';
+import { Coins, FileText, Package, Ticket } from 'lucide-react';
 import ReviewModal from '@components/common/ReviewModal';
 import socketService from '@services/socket/socketService';
 import { addToCart as addToCartApi } from '@services/api/cartService';
@@ -24,6 +24,7 @@ import ProfileAccountTab from '@/components/buyer/ProfilePage/ProfileAccountTab'
 import ProfileAddressTab from '@/components/buyer/ProfilePage/ProfileAddressTab';
 import ProfileOrdersTab from '@/components/buyer/ProfilePage/ProfileOrdersTab';
 import ProfileCoinTab from '@/components/buyer/ProfilePage/ProfileCoinTab';
+import ProfileVouchersTab from '@/components/buyer/ProfilePage/ProfileVouchersTab';
 import ProfileAddressDrawer from '@/components/buyer/ProfilePage/ProfileAddressDrawer';
 import DisputeCenter from '@/components/common/disputes/DisputeCenter';
 import BuyerReturnStatusDrawer from '@/components/buyer/ProfilePage/BuyerReturnStatusDrawer';
@@ -1064,6 +1065,15 @@ const ProfilePage = () => {
         <>
           {renderTabHeader('My Reports', FileText)}
           <DisputeCenter mode="buyer" embedded />
+        </>
+      );
+    }
+
+    if (activeTab === 'vouchers') {
+      return (
+        <>
+          {renderTabHeader('My Vouchers', Ticket)}
+          <ProfileVouchersTab />
         </>
       );
     }

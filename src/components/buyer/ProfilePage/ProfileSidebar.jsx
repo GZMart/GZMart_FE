@@ -4,13 +4,16 @@ import {
   Check,
   ChevronDown,
   Coins,
+  Crown,
   Edit2,
   Package,
   Store,
+  Ticket,
   User,
   X,
   Clipboard,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
 
 const ProfileSidebar = ({
@@ -28,7 +31,9 @@ const ProfileSidebar = ({
   onSaveAvatar,
   onCancelAvatar,
   onBecomeSeller,
-}) => (
+}) => {
+  const navigate = useNavigate();
+  return (
   <div className={styles.sidebarNav}>
     <div className={styles.avatarHeader}>
       <div className={styles.avatarSection}>
@@ -129,11 +134,28 @@ const ProfileSidebar = ({
       </div>
 
       <div
+        className={`${styles.navItem} ${activeTab === 'vouchers' ? styles.navItemActive : ''}`}
+        onClick={() => onTabChange('vouchers')}
+      >
+        <Ticket className={styles.navIcon} size={20} strokeWidth={2} />
+        <span className={styles.navText}>My Vouchers</span>
+      </div>
+
+      <div
         className={`${styles.navItem} ${activeTab === 'reports' ? styles.navItemActive : ''}`}
         onClick={() => onTabChange('reports')}
       >
         <Clipboard className={styles.navIcon} size={20} strokeWidth={2} />
         <span className={styles.navText}>Reports</span>
+      </div>
+
+      <div
+        className={styles.navItem}
+        onClick={() => navigate('/buyer/vip')}
+        style={{ color: '#b45309' }}
+      >
+        <Crown className={styles.navIcon} size={20} strokeWidth={2} />
+        <span className={styles.navText} style={{ fontWeight: 600 }}>VIP Membership</span>
       </div>
 
       {user?.role === 'buyer' && (
@@ -145,6 +167,7 @@ const ProfileSidebar = ({
     </div>
   </div>
 );
+};
 
 // Khai báo PropTypes
 ProfileSidebar.propTypes = {

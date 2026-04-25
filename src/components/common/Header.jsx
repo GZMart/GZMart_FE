@@ -21,6 +21,7 @@ import {
   Loader2,
   ChevronRight,
   Camera,
+  Crown,
 } from 'lucide-react';
 
 import NotificationBell from './NotificationBell';
@@ -531,6 +532,20 @@ const Header = () => {
         <UserCircle size={18} />
         <span>{t('header.profile')}</span>
       </Link>
+
+      {user?.role === USER_ROLES.BUYER && (
+        <Link
+          to={BUYER_ROUTES.VIP_SUBSCRIPTION}
+          className="d-flex align-items-center gap-2 text-decoration-none px-3 py-2"
+          style={{ transition: 'background-color 0.2s', color: '#b45309' }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fffbeb')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          onClick={() => closeDropdownFn(false)}
+        >
+          <Crown size={18} />
+          <span className="fw-semibold">VIP Membership</span>
+        </Link>
+      )}
 
       <div className="border-top my-1"></div>
 

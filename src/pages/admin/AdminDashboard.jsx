@@ -35,6 +35,15 @@ const AdminDashboard = () => {
     newUsersToday: 0,
     customerSatisfaction: '0%',
   });
+  const [subscriptionStats, setSubscriptionStats] = useState({
+    totalRevenue: 0,
+    lastMonthRevenue: 0,
+    previousMonthRevenue: 0,
+    trend: 0,
+    isPositive: true,
+    activeSubscribers: 0,
+  });
+  const [recentSubscriptionPayments, setRecentSubscriptionPayments] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [categorySales, setCategorySales] = useState([]);
@@ -125,6 +134,25 @@ const AdminDashboard = () => {
       year: data.userGrowth.yearly,
     });
     setQuickStats(data.quickStats);
+    setSubscriptionStats({
+      totalRevenue: 0,
+      lastMonthRevenue: 0,
+      previousMonthRevenue: 0,
+      trend: 0,
+      isPositive: true,
+      activeSubscribers: 0,
+      ...(rawData?.subscriptionStats && typeof rawData.subscriptionStats === 'object'
+        ? rawData.subscriptionStats
+        : {}),
+    });
+    setRecentSubscriptionPayments(
+      Array.isArray(rawData?.recentSubscriptionPayments)
+        ? rawData.recentSubscriptionPayments.map((row, index) => ({
+            ...row,
+            key: row._id || String(index),
+          }))
+        : []
+    );
   }, []);
 
   const fetchAllDashboardData = useCallback(async (forceRefresh = false) => {
@@ -144,6 +172,7 @@ const AdminDashboard = () => {
       const response = await dashboardService.getAllDashboardData({
         topProductsLimit: 5,
         recentOrdersLimit: 5,
+        recentSubscriptionsLimit: 10,
       });
 
       if (response.success) {
@@ -246,6 +275,15 @@ const AdminDashboard = () => {
                   newUsersToday: 0,
                   customerSatisfaction: '0%',
                 },
+          subscriptionStats: {
+            totalRevenue: 0,
+            lastMonthRevenue: 0,
+            previousMonthRevenue: 0,
+            trend: 0,
+            isPositive: true,
+            activeSubscribers: 0,
+          },
+          recentSubscriptionPayments: [],
         };
 
         const fulfilledCount = [
@@ -406,56 +444,113 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Overview Stats Row */}
-      <div className="row g-4 mb-4">
+      {/* Overview stats: 5 equal columns on xl+ */}
+      <div className="row g-2 g-md-3 mb-4 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-5">
         {loading
-          ? [...Array(4)].map((_, i) => (
-              <div key={i} className="col-12 col-sm-6 col-xl-3">
-                <div className="card border-0 shadow-sm rounded-4 h-100 p-4 placeholder-glow">
-                  <span className="placeholder col-6 mb-3"></span>
-                  <span className="placeholder col-8 placeholder-lg"></span>
+          ? [...Array(5)].map((_, i) => (
+              <div key={i} className="col">
+                <div className="card border-0 shadow-sm rounded-4 h-100 p-3 placeholder-glow">
+                  <span className="placeholder col-7 mb-2" style={{ minHeight: '0.7rem' }}></span>
+                  <span className="placeholder col-10 placeholder-lg"></span>
                 </div>
               </div>
             ))
-          : overviewStats.map((stat, index) => (
-              <div key={index} className="col-12 col-sm-6 col-xl-3">
-                <HoverInfoCard
-                  hint={`${stat.label || stat.title}: the percentage badge is calculated from the change between the latest full month and the month before it.`}
-                  className={`card border-0 shadow-sm rounded-4 h-100 p-4 ${styles.statCard}`}
-                >
-                  <div className={styles.statIconBg}>
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: '6rem', fontVariationSettings: "'FILL' 1" }}
+          : (
+              <>
+                {overviewStats.map((stat, index) => (
+                  <div key={index} className="col">
+                    <HoverInfoCard
+                      hint={`${stat.label || stat.title}: the percentage badge is calculated from the change between the latest full month and the month before it.`}
+                      className={`card border-0 shadow-sm rounded-4 h-100 p-3 ${styles.statCard}`}
                     >
-                      {stat.icon}
-                    </span>
-                  </div>
-                  <div className="position-relative z-1">
-                    <h6
-                      className="text-muted text-uppercase fw-bold mb-3"
-                      style={{ fontSize: '0.75rem', letterSpacing: '1px' }}
-                    >
-                      {stat.label || stat.title}
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h3 className="fw-bolder mb-0">
-                        {stat.prefix}
-                        {stat.value?.toLocaleString()}
-                      </h3>
-                      <span
-                        className={`badge rounded-pill ${stat.isPositive ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'} d-flex align-items-center gap-1`}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
-                          {stat.isPositive ? 'trending_up' : 'trending_down'}
+                      <div className={styles.statIconBg}>
+                        <span
+                          className="material-symbols-outlined"
+                          style={{
+                            fontSize: '3.25rem',
+                            fontVariationSettings: "'FILL' 1",
+                          }}
+                        >
+                          {stat.icon}
                         </span>
-                        {stat.trend}%
+                      </div>
+                      <div className="position-relative z-1" style={{ minWidth: 0 }}>
+                        <h6
+                          className="text-muted text-uppercase fw-bold mb-2"
+                          style={{ fontSize: '0.6rem', letterSpacing: '0.06em', lineHeight: 1.2 }}
+                        >
+                          {stat.label || stat.title}
+                        </h6>
+                        <div className="d-flex align-items-end gap-1 flex-wrap">
+                          <p className="fw-bolder mb-0" style={{ fontSize: '1.05rem', lineHeight: 1.2 }}>
+                            {stat.prefix}
+                            {stat.value?.toLocaleString()}
+                          </p>
+                          <span
+                            className={`badge rounded-pill ${stat.isPositive ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'} d-flex align-items-center gap-1`}
+                            style={{ fontSize: '0.65rem' }}
+                          >
+                            <span
+                              className="material-symbols-outlined"
+                              style={{ fontSize: '10px' }}
+                            >
+                              {stat.isPositive ? 'trending_up' : 'trending_down'}
+                            </span>
+                            {stat.trend}%
+                          </span>
+                        </div>
+                      </div>
+                    </HoverInfoCard>
+                  </div>
+                ))}
+                <div className="col">
+                  <HoverInfoCard
+                    hint="Total VIP subscription revenue (paid). Trend compares the latest full month to the previous month, same logic as the cards above."
+                    className={`card border-0 shadow-sm rounded-4 h-100 p-3 ${styles.statCard}`}
+                  >
+                    <div className={styles.statIconBg}>
+                      <span
+                        className="material-symbols-outlined"
+                        style={{
+                          fontSize: '3.25rem',
+                          fontVariationSettings: "'FILL' 1",
+                        }}
+                      >
+                        workspace_premium
                       </span>
                     </div>
-                  </div>
-                </HoverInfoCard>
-              </div>
-            ))}
+                    <div className="position-relative z-1" style={{ minWidth: 0 }}>
+                      <h6
+                        className="text-muted text-uppercase fw-bold mb-2"
+                        style={{ fontSize: '0.6rem', letterSpacing: '0.06em', lineHeight: 1.2 }}
+                      >
+                        Subscription revenue
+                      </h6>
+                      <div className="d-flex align-items-end gap-1 flex-wrap">
+                        <p
+                          className="fw-bolder mb-0"
+                          style={{ fontSize: '1.05rem', lineHeight: 1.2 }}
+                        >
+                          ₫{Number(subscriptionStats.totalRevenue || 0).toLocaleString('en-US')}
+                        </p>
+                        <span
+                          className={`badge rounded-pill ${subscriptionStats.isPositive ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'} d-flex align-items-center gap-1`}
+                          style={{ fontSize: '0.65rem' }}
+                        >
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: '10px' }}
+                          >
+                            {subscriptionStats.isPositive ? 'trending_up' : 'trending_down'}
+                          </span>
+                          {subscriptionStats.trend}%
+                        </span>
+                      </div>
+                    </div>
+                  </HoverInfoCard>
+                </div>
+              </>
+            )}
       </div>
 
       {/* Charts Row */}
@@ -727,11 +822,11 @@ const AdminDashboard = () => {
           </HoverInfoCard>
         </div>
 
-        {/* Recent Orders */}
-        <div className="col-12 col-lg-6">
+        {/* Recent Orders + VIP payments (right column) */}
+        <div className="col-12 col-lg-6 d-flex flex-column gap-4">
           <HoverInfoCard
             hint="Recent Orders: the latest orders with their status and payment value."
-            className="card border-0 shadow-sm rounded-4 p-4 h-100"
+            className="card border-0 shadow-sm rounded-4 p-4"
           >
             <h5 className="fw-bold mb-4">Recent Orders</h5>
             <div className="table-responsive">
@@ -785,6 +880,100 @@ const AdminDashboard = () => {
                 </tbody>
               </table>
             </div>
+          </HoverInfoCard>
+
+          <HoverInfoCard
+            hint="Recent completed VIP checkouts. Hover a row for plan name and PayOS reference."
+            className="card border-0 shadow-sm rounded-4 p-3"
+          >
+            <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+              <h5 className="fw-bold mb-0 small">Recent VIP payments</h5>
+              <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                All-time{' '}
+                <strong>₫{Number(subscriptionStats.totalRevenue || 0).toLocaleString('en-US')}</strong>
+              </span>
+            </div>
+            <table
+              className="table table-sm table-hover align-middle mb-0 w-100"
+              style={{ tableLayout: 'fixed' }}
+            >
+              <thead>
+                <tr className="border-bottom">
+                  <th
+                    className="text-secondary fw-semibold border-0 pt-0 pb-1"
+                    style={{ fontSize: '0.7rem', width: '30%' }}
+                  >
+                    Date
+                  </th>
+                  <th
+                    className="text-secondary fw-semibold border-0 pt-0 pb-1"
+                    style={{ fontSize: '0.7rem', width: '50%' }}
+                  >
+                    Buyer
+                  </th>
+                  <th
+                    className="text-secondary fw-semibold text-end border-0 pt-0 pb-1"
+                    style={{ fontSize: '0.7rem', width: '20%' }}
+                  >
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {!loading && recentSubscriptionPayments.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="text-muted text-center py-3 small border-0">
+                      No paid VIP checkouts yet.
+                    </td>
+                  </tr>
+                )}
+                {!loading &&
+                  recentSubscriptionPayments.map((row) => {
+                    const rowTitle = [
+                      row.planName || 'GZMart VIP',
+                      row.orderCode ? `PayOS #${row.orderCode}` : null,
+                      row.email,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ');
+                    return (
+                      <tr
+                        key={row.key}
+                        title={rowTitle}
+                        style={{ cursor: 'default' }}
+                      >
+                        <td
+                          className="small text-muted text-nowrap border-0 py-1"
+                          style={{ fontSize: '0.8rem' }}
+                        >
+                          {row.paidAt
+                            ? new Date(row.paidAt).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : '—'}
+                        </td>
+                        <td className="border-0 py-1" style={{ minWidth: 0 }}>
+                          <div
+                            className="text-truncate small mb-0"
+                            style={{ fontSize: '0.8rem' }}
+                            title={rowTitle}
+                          >
+                            {row.customer}
+                          </div>
+                        </td>
+                        <td
+                          className="text-end text-nowrap small fw-semibold border-0 py-1"
+                          style={{ fontSize: '0.8rem' }}
+                        >
+                          ₫{Number(row.amount || 0).toLocaleString('en-US')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
           </HoverInfoCard>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@hooks/useMediaQuery';
 import { SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
@@ -11,44 +12,64 @@ import NotificationBell from '@components/common/NotificationBell';
 import LoadingSpinner from '@components/common/LoadingSpinner';
 import LanguageSwitcher from '@components/common/LanguageSwitcher';
 
-const NAV_GROUPS = [
+const buildNavGroups = (t) => [
   {
-    label: 'STORE',
+    labelKey: 'erpLayout.groupStore',
     items: [
-      { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
-      { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', label: 'Orders' },
-      { to: SELLER_ROUTES.DISPUTES, icon: 'bi-shield-exclamation', label: 'Disputes' },
-      { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', label: 'Products' },
-      { to: '/seller/inventory', icon: 'bi-boxes', label: 'Inventory' },
-      { to: '/seller/returns', icon: 'bi-arrow-return-left', label: 'Returns' },
-      { to: SELLER_ROUTES.CAMPAIGNS, icon: 'bi-lightning-charge-fill', label: 'Campaigns' },
-      { to: SELLER_ROUTES.LIVE, icon: 'bi-broadcast', label: 'Live' },
-      { to: '/seller/messages', icon: 'bi-chat-dots', label: 'Messages' },
+      { to: SELLER_ROUTES.DASHBOARD, icon: 'bi-speedometer2', labelKey: 'erpLayout.nav.dashboard' },
+      { to: SELLER_ROUTES.ORDERS, icon: 'bi-bag-check', labelKey: 'erpLayout.nav.orders' },
+      {
+        to: SELLER_ROUTES.DISPUTES,
+        icon: 'bi-shield-exclamation',
+        labelKey: 'erpLayout.nav.disputes',
+      },
+      { to: '/seller/products', icon: 'bi-grid-3x3-gap-fill', labelKey: 'erpLayout.nav.products' },
+      { to: '/seller/inventory', icon: 'bi-boxes', labelKey: 'erpLayout.nav.inventory' },
+      { to: '/seller/returns', icon: 'bi-arrow-return-left', labelKey: 'erpLayout.nav.returns' },
+      {
+        to: SELLER_ROUTES.CAMPAIGNS,
+        icon: 'bi-lightning-charge-fill',
+        labelKey: 'erpLayout.nav.campaigns',
+      },
+      { to: SELLER_ROUTES.LIVE, icon: 'bi-broadcast', labelKey: 'erpLayout.nav.live' },
+      { to: '/seller/messages', icon: 'bi-chat-dots', labelKey: 'erpLayout.nav.messages' },
     ],
   },
   {
-    label: 'MARKETING',
+    labelKey: 'erpLayout.groupMarketing',
     items: [
-      { to: '/seller/vouchers', icon: 'bi-ticket-perforated', label: 'Vouchers' },
-      { to: '/seller/promotions', icon: 'bi-megaphone', label: 'Promotions' },
-      { to: '/seller/notifications', icon: 'bi-bell', label: 'Notifications' },
-      { to: '/seller/banner-ads', icon: 'bi-layout-wtf', label: 'Banner Ads' },
+      { to: '/seller/vouchers', icon: 'bi-ticket-perforated', labelKey: 'erpLayout.nav.vouchers' },
+      { to: '/seller/promotions', icon: 'bi-megaphone', labelKey: 'erpLayout.nav.promotions' },
+      { to: '/seller/notifications', icon: 'bi-bell', labelKey: 'erpLayout.nav.notifications' },
+      { to: '/seller/banner-ads', icon: 'bi-layout-wtf', labelKey: 'erpLayout.nav.bannerAds' },
     ],
   },
   {
-    label: 'ERP',
+    labelKey: 'erpLayout.groupErp',
     items: [
-      { to: '/seller/erp/dashboard', icon: 'bi-bar-chart-line', label: 'ERP Dashboard' },
-      { to: '/seller/erp/suppliers', icon: 'bi-truck', label: 'Suppliers' },
-      { to: '/seller/erp/purchase-orders', icon: 'bi-file-earmark-text', label: 'Purchase Orders' },
+      {
+        to: '/seller/erp/dashboard',
+        icon: 'bi-bar-chart-line',
+        labelKey: 'erpLayout.nav.erpDashboard',
+      },
+      { to: '/seller/erp/suppliers', icon: 'bi-truck', labelKey: 'erpLayout.nav.suppliers' },
+      {
+        to: '/seller/erp/purchase-orders',
+        icon: 'bi-file-earmark-text',
+        labelKey: 'erpLayout.nav.purchaseOrders',
+      },
     ],
   },
   {
-    label: 'SETTINGS',
+    labelKey: 'erpLayout.groupSettings',
     items: [
-      { to: SELLER_ROUTES.PROFILE, icon: 'bi-person', label: 'Profile' },
-      { to: SELLER_ROUTES.SHOP_DECORATION, icon: 'bi-palette', label: 'Shop Decoration' },
-      { to: SELLER_ROUTES.FINANCE, icon: 'bi-wallet2', label: 'Finance & Topup' },
+      { to: SELLER_ROUTES.PROFILE, icon: 'bi-person', labelKey: 'erpLayout.nav.profile' },
+      {
+        to: SELLER_ROUTES.SHOP_DECORATION,
+        icon: 'bi-palette',
+        labelKey: 'erpLayout.nav.shopDecoration',
+      },
+      { to: SELLER_ROUTES.FINANCE, icon: 'bi-wallet2', labelKey: 'erpLayout.nav.finance' },
     ],
   },
 ];
@@ -57,6 +78,7 @@ const ERPLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const user = useSelector((state) => state.auth?.user);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -64,6 +86,7 @@ const ERPLayout = ({ children }) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   /** Trên mobile luôn hiển thị nhãn đầy đủ trong drawer; desktop giữ collapse */
   const effectiveCollapsed = isMobile ? false : collapsed;
+  const NAV_GROUPS = buildNavGroups(t);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -119,7 +142,7 @@ const ERPLayout = ({ children }) => {
         <button
           type="button"
           className={styles.drawerBackdrop}
-          aria-label="Đóng menu"
+          aria-label={t('erpLayout.closeMenu')}
           onClick={closeMobileNav}
         />
       )}
@@ -152,8 +175,8 @@ const ERPLayout = ({ children }) => {
               type="button"
               className={styles.drawerCloseBtn}
               onClick={closeMobileNav}
-              title="Đóng menu"
-              aria-label="Đóng menu"
+              title={t('erpLayout.closeMenu')}
+              aria-label={t('erpLayout.closeMenu')}
             >
               <i className="bi bi-x-lg" />
             </button>
@@ -163,7 +186,7 @@ const ERPLayout = ({ children }) => {
               type="button"
               className={styles.collapseBtn}
               onClick={() => setCollapsed((c) => !c)}
-              title="Collapse sidebar"
+              title={t('erpLayout.collapseSidebar')}
             >
               <i className="bi bi-chevron-left" />
             </button>
@@ -173,14 +196,16 @@ const ERPLayout = ({ children }) => {
         {/* Navigation */}
         <nav className={styles.nav}>
           {NAV_GROUPS.map((group) => (
-            <div key={group.label} className={styles.navGroup}>
-              {!effectiveCollapsed && <span className={styles.navGroupLabel}>{group.label}</span>}
+            <div key={group.labelKey} className={styles.navGroup}>
+              {!effectiveCollapsed && (
+                <span className={styles.navGroupLabel}>{t(group.labelKey)}</span>
+              )}
               {group.items.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   className={`${styles.navItem} ${isActive(item.to) ? styles.navItemActive : ''}`}
-                  title={!effectiveCollapsed ? undefined : item.label}
+                  title={!effectiveCollapsed ? undefined : t(item.labelKey)}
                   onClick={() => {
                     if (isMobile) {
                       closeMobileNav();
@@ -188,8 +213,12 @@ const ERPLayout = ({ children }) => {
                   }}
                 >
                   <i className={`bi ${item.icon} ${styles.navIcon}`} />
-                  {!effectiveCollapsed && <span className={styles.navLabel}>{item.label}</span>}
-                  {isActive(item.to) && !effectiveCollapsed && <span className={styles.navActiveDot} />}
+                  {!effectiveCollapsed && (
+                    <span className={styles.navLabel}>{t(item.labelKey)}</span>
+                  )}
+                  {isActive(item.to) && !effectiveCollapsed && (
+                    <span className={styles.navActiveDot} />
+                  )}
                 </Link>
               ))}
             </div>
@@ -221,8 +250,8 @@ const ERPLayout = ({ children }) => {
                 type="button"
                 className={styles.iconBtn}
                 onClick={() => setMobileNavOpen((o) => !o)}
-                title={mobileNavOpen ? 'Đóng menu' : 'Mở menu'}
-                aria-label={mobileNavOpen ? 'Đóng menu' : 'Mở menu'}
+                title={mobileNavOpen ? t('erpLayout.closeMenu') : t('erpLayout.openMenu')}
+                aria-label={mobileNavOpen ? t('erpLayout.closeMenu') : t('erpLayout.openMenu')}
                 aria-expanded={mobileNavOpen}
                 aria-controls="seller-sidebar"
               >
@@ -234,7 +263,7 @@ const ERPLayout = ({ children }) => {
                 type="button"
                 className={styles.iconBtn}
                 onClick={() => setCollapsed(false)}
-                title="Expand sidebar"
+                title={t('erpLayout.expandSidebar')}
                 style={{ marginRight: 8 }}
               >
                 <i className="bi bi-layout-sidebar" />
@@ -270,21 +299,21 @@ const ERPLayout = ({ children }) => {
                     className={styles.dropdownItem}
                     onClick={() => setProfileOpen(false)}
                   >
-                    <i className="bi bi-person me-2" /> Profile
+                    <i className="bi bi-person me-2" /> {t('erpLayout.nav.profile')}
                   </Link>
                   <Link
                     to={SELLER_ROUTES.FINANCE}
                     className={styles.dropdownItem}
                     onClick={() => setProfileOpen(false)}
                   >
-                    <i className="bi bi-wallet2 me-2" /> Finance & Topup
+                    <i className="bi bi-wallet2 me-2" /> {t('erpLayout.nav.finance')}
                   </Link>
                   <div className={styles.dropdownDivider} />
                   <button
                     className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                     onClick={handleLogout}
                   >
-                    <i className="bi bi-box-arrow-right me-2" /> Logout
+                    <i className="bi bi-box-arrow-right me-2" /> {t('erpLayout.logout')}
                   </button>
                 </div>
               )}
