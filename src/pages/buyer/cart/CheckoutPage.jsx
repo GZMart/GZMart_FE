@@ -515,6 +515,8 @@ const CheckoutPage = () => {
   const [codeLoading, setCodeLoading] = useState(false);
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [showVoucherDrawer, setShowVoucherDrawer] = useState(false);
+  // When multi-seller, tracks which seller's shop voucher drawer is open
+  const [activeSellerDrawer, setActiveSellerDrawer] = useState(null);
 
   // Payment methods data
   const paymentMethods = [
@@ -1146,64 +1148,130 @@ const CheckoutPage = () => {
   const renderStep3 = () => (
     <Card className="border-0 shadow-sm" style={{ backgroundColor: '#F9FAFB' }}>
       <Card.Body className="p-4">
-        {/* Shopping items */}
+        {/* Shopping items — grouped by seller */}
         <div className="mb-4">
           <h5 className="mb-3">Shopping items</h5>
-          <div className="d-flex flex-column gap-3">
-            {cartItems.map((item) => (
-              <div key={item.id}>
-                <Row className="align-items-center">
-                  <Col xs="auto">
-                    <img
-                      src={item.image || '/placeholder-image.png'}
-                      alt={item.name}
-                      style={{
-                        width: '80px',
-                        height: '80px',
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                      }}
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/placeholder-image.png';
-                      }}
-                    />
-                  </Col>
-                  <Col>
-                    <h6 className="mb-1">{item.name}</h6>
-                    <p className="text-muted small mb-1">{item.variant || item.description}</p>
-                    <div className="d-flex align-items-center gap-2">
-                      {item.color && (
-                        <div className="d-flex align-items-center gap-1">
-                          <div
-                            className="rounded-circle"
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              backgroundColor: item.colorCode || '#ccc',
-                              border: '1px solid #ddd',
-                            }}
-                            title={item.color}
+          {sellerGroups.map((group) => {
+            const sellerVouchers = applicableVouchers.filter(
+              (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
+            );
+            const currentVid = selectedShopVoucherBySeller[group.sellerId] || null;
+            const selectedV = currentVid
+              ? applicableVouchers.find((v) => v._id === currentVid)
+              : null;
+            const sellerSub = sellerSubtotals[group.sellerId] || 0;
+
+            return (
+              <div
+                key={group.sellerId}
+                className="mb-3 rounded-3"
+                style={{ border: '1px solid #eee', overflow: 'hidden' }}
+              >
+                {/* Seller header */}
+                {isMultiSeller && (
+                  <div
+                    className="px-3 py-2 d-flex align-items-center gap-2"
+                    style={{ backgroundColor: '#fafafa', borderBottom: '1px solid #eee' }}
+                  >
+                    <i className="bi bi-shop" style={{ color: '#B13C36', fontSize: '0.9rem' }} />
+                    <span className="fw-semibold small" style={{ color: '#444' }}>
+                      {group.shopName}
+                    </span>
+                  </div>
+                )}
+
+                {/* Items */}
+                <div className="d-flex flex-column gap-3 p-3">
+                  {group.items.map((item) => (
+                    <div key={item.id}>
+                      <Row className="align-items-center">
+                        <Col xs="auto">
+                          <img
+                            src={item.image || '/placeholder-image.png'}
+                            alt={item.name}
+                            style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-image.png'; }}
                           />
-                          <span className="small">{item.color}</span>
-                        </div>
-                      )}
-                      {item.size && item.size !== 'N/A' && (
-                        <span className="small text-muted">Size: {item.size}</span>
+                        </Col>
+                        <Col>
+                          <h6 className="mb-1">{item.name}</h6>
+                          <p className="text-muted small mb-1">{item.variant || item.description}</p>
+                          <div className="d-flex align-items-center gap-2">
+                            {item.color && (
+                              <div className="d-flex align-items-center gap-1">
+                                <div
+                                  className="rounded-circle"
+                                  style={{ width: '16px', height: '16px', backgroundColor: item.colorCode || '#ccc', border: '1px solid #ddd' }}
+                                  title={item.color}
+                                />
+                                <span className="small">{item.color}</span>
+                              </div>
+                            )}
+                            {item.size && item.size !== 'N/A' && (
+                              <span className="small text-muted">Size: {item.size}</span>
+                            )}
+                          </div>
+                        </Col>
+                        <Col xs="auto" className="text-end">
+                          <div className="small text-muted mb-1">{formatCurrency(item.price || 0)}</div>
+                          <div className="small text-muted mb-1">x{item.quantity || 1}</div>
+                          <div className="fw-bold">{formatCurrency((item.price || 0) * (item.quantity || 1))}</div>
+                        </Col>
+                      </Row>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Inline shop voucher picker — only shown when multi-seller (single-seller uses sidebar) */}
+                {isMultiSeller && sellerVouchers.length > 0 && (
+                  <div
+                    className="px-3 py-2 d-flex align-items-center justify-content-between"
+                    style={{ borderTop: '1px dashed #eee', backgroundColor: '#fff9f8' }}
+                  >
+                    <div className="d-flex align-items-center gap-2">
+                      <i className="bi bi-tag-fill" style={{ color: '#B13C36', fontSize: '0.85rem' }} />
+                      {selectedV ? (
+                        <span className="small fw-semibold" style={{ color: '#B13C36' }}>
+                          {selectedV.name}
+                          {selectedV.estimatedSaving > 0 && (
+                            <span className="ms-1 text-muted fw-normal">
+                              (-{formatCurrency(selectedV.estimatedSaving)})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="small text-muted">Chọn mã giảm giá shop</span>
                       )}
                     </div>
-                  </Col>
-                  <Col xs="auto" className="text-end">
-                    <div className="small text-muted mb-1">{formatCurrency(item.price || 0)}</div>
-                    <div className="small text-muted mb-1">x{item.quantity || 1}</div>
-                    <div className="fw-bold">
-                      {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                    <div className="d-flex align-items-center gap-2">
+                      {selectedV && (
+                        <button
+                          className="btn btn-link btn-sm p-0 text-muted"
+                          style={{ fontSize: '0.75rem' }}
+                          onClick={() =>
+                            setSelectedShopVoucherBySeller((prev) => ({ ...prev, [group.sellerId]: null }))
+                          }
+                        >
+                          <i className="bi bi-x-circle" />
+                        </button>
+                      )}
+                      <Button
+                        variant="link"
+                        className="p-0 text-decoration-none"
+                        style={{ fontSize: '0.8rem', color: '#B13C36', fontWeight: 600 }}
+                        onClick={() => {
+                          setActiveSellerDrawer(group.sellerId);
+                          setShowVoucherDrawer(true);
+                        }}
+                      >
+                        {selectedV ? 'Đổi' : 'Chọn'}
+                      </Button>
                     </div>
-                  </Col>
-                </Row>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         <hr />
@@ -1527,8 +1595,8 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {/* Per-seller shop voucher chips */}
-            {selectedShopVouchersBySellerResolved
+            {/* Per-seller shop voucher chips — only in sidebar for single-seller carts */}
+            {!isMultiSeller && selectedShopVouchersBySellerResolved
               .filter((s) => s.voucher)
               .map(({ sellerId, shopName, voucher }) => (
                 <div
@@ -1691,7 +1759,7 @@ const CheckoutPage = () => {
                 );
               })()}
 
-            {selectedShopVouchersBySellerResolved.every((s) => !s.voucher) &&
+            {(isMultiSeller || selectedShopVouchersBySellerResolved.every((s) => !s.voucher)) &&
               !selectedSystemVoucher &&
               !selectedProductVoucher &&
               !selectedBuyerVoucher && (
@@ -1925,7 +1993,7 @@ const CheckoutPage = () => {
         </Row>
         {/* VOUCHER SELECTION DRAWER */}
         {showVoucherDrawer && (
-          <div className="voucher-drawer-overlay" onClick={() => setShowVoucherDrawer(false)} />
+          <div className="voucher-drawer-overlay" onClick={() => { setShowVoucherDrawer(false); setActiveSellerDrawer(null); }} />
         )}
         <div className={`voucher-drawer${showVoucherDrawer ? ' open' : ''}`}>
           {/* Drawer handle */}
@@ -1946,7 +2014,7 @@ const CheckoutPage = () => {
               </span>
             </div>
             <button
-              onClick={() => setShowVoucherDrawer(false)}
+              onClick={() => { setShowVoucherDrawer(false); setActiveSellerDrawer(null); }}}
               style={{
                 background: 'none',
                 border: 'none',
@@ -2007,12 +2075,14 @@ const CheckoutPage = () => {
               style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '8px' }}
               className="custom-scrollbar"
             >
-              {/* Shop Vouchers — grouped by seller */}
-              {sellerGroups.map((group) => {
-                const sellerVouchers = applicableVouchers.filter(
-                  (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
-                );
-                if (sellerVouchers.length === 0) return null;
+              {/* Shop Vouchers — in drawer only for single-seller; multi-seller uses inline picker per group */}
+              {sellerGroups
+                .filter((group) => !isMultiSeller || activeSellerDrawer === group.sellerId)
+                .map((group) => {
+                  const sellerVouchers = applicableVouchers.filter(
+                    (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
+                  );
+                  if (sellerVouchers.length === 0) return null;
                 const sellerSub = sellerSubtotals[group.sellerId] || 0;
                 const currentVid = selectedShopVoucherBySeller[group.sellerId] || null;
 
@@ -2047,6 +2117,11 @@ const CheckoutPage = () => {
                               ...prev,
                               [group.sellerId]: isSel ? null : v._id,
                             }));
+                            // Auto-close drawer after selection when opened from inline picker
+                            if (activeSellerDrawer) {
+                              setShowVoucherDrawer(false);
+                              setActiveSellerDrawer(null);
+                            }
                           }}
                         >
                           <div
