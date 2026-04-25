@@ -91,6 +91,9 @@ export const SELLER_ROUTES = {
 
   // Finance & Topup
   FINANCE: '/seller/finance',
+
+  // Notifications (received inbox — send-to-followers is /seller/notifications)
+  NOTIFICATIONS: '/seller/my-notifications',
 };
 
 // Admin Routes
@@ -143,6 +146,9 @@ export const ADMIN_ROUTES = {
 
   // Banner Ads Management
   BANNER_ADS: '/admin/banner-ads',
+
+  // Notifications
+  NOTIFICATIONS: '/admin/notifications',
 };
 
 // Error Routes

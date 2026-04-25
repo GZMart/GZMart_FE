@@ -4,10 +4,11 @@ import { Bell, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { selectIsAuthenticated } from '@store/slices/authSlice';
+import { selectIsAuthenticated, selectUserRole } from '@store/slices/authSlice';
 import { getAuthToken } from '@utils/storage';
 import socketService from '@services/socket/socketService';
 import { notificationAPI } from '@services/api';
+import { USER_ROLES } from '@constants';
 
 const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) => {
   const [notifications, setNotifications] = useState([]);
@@ -19,7 +20,14 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   const { t } = useTranslation();
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectUserRole);
   const hasValidSession = isAuthenticated && !!getAuthToken();
+
+  const getNotificationsPath = () => {
+    if (userRole === USER_ROLES.SELLER) return '/seller/my-notifications';
+    if (userRole === USER_ROLES.ADMIN) return '/admin/notifications';
+    return '/buyer/notifications';
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -377,7 +385,7 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
             }}
             onClick={() => {
               setShowDropdown(false);
-              navigate('/buyer/notifications');
+              navigate(getNotificationsPath());
             }}
           >
             <span className="text-primary fw-medium" style={{ fontSize: '0.85rem' }}>

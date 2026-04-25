@@ -57,13 +57,30 @@ return null;
                   <Sparkles size={18} className="text-warning" />
                   AI Identified Features
                 </h6>
+                {analyzedInfo.model && (
+                  <p className="small text-muted mb-2">
+                    {analyzedInfo.provider === 'groq' ? 'Groq' : 'AI'} · {analyzedInfo.model}
+                  </p>
+                )}
                 <ul className="list-group list-group-flush small">
-                  {analyzedInfo.category && (
+                  {analyzedInfo.caption_en && (
+                    <li className="list-group-item px-0 bg-transparent border-0 pb-2">
+                      <span className="text-muted d-block text-uppercase mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Caption (EN)</span>
+                      <span className="fw-medium">{analyzedInfo.caption_en}</span>
+                    </li>
+                  )}
+                  {analyzedInfo.caption_vi && (
+                    <li className="list-group-item px-0 bg-transparent border-0 pb-2">
+                      <span className="text-muted d-block text-uppercase mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Caption (VI)</span>
+                      <span className="fw-medium">{analyzedInfo.caption_vi}</span>
+                    </li>
+                  )}
+                  {(analyzedInfo.product_type || analyzedInfo.category) && (
                     <li className="list-group-item px-0 d-flex gap-2 bg-transparent border-0 pb-2">
                       <Package size={16} className="text-muted mt-1 flex-shrink-0" />
                       <div>
-                        <span className="text-muted d-block text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Category & Type</span>
-                        <span className="fw-medium">{analyzedInfo.category}</span>
+                        <span className="text-muted d-block text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Product type</span>
+                        <span className="fw-medium">{analyzedInfo.product_type || analyzedInfo.category}</span>
                       </div>
                     </li>
                   )}
@@ -73,6 +90,26 @@ return null;
                       <div>
                         <span className="text-muted d-block text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Brand</span>
                         <span className="fw-medium">{analyzedInfo.brand}</span>
+                      </div>
+                    </li>
+                  )}
+                  {analyzedInfo.keywords_en && analyzedInfo.keywords_en.length > 0 && (
+                    <li className="list-group-item px-0 bg-transparent border-0 pb-2">
+                      <span className="text-muted d-block text-uppercase mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Keywords (EN)</span>
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        {analyzedInfo.keywords_en.map((kw, i) => (
+                          <span key={`en-${i}-${kw}`} className="badge bg-light text-dark border fw-normal">{kw}</span>
+                        ))}
+                      </div>
+                    </li>
+                  )}
+                  {analyzedInfo.keywords_vi && analyzedInfo.keywords_vi.length > 0 && (
+                    <li className="list-group-item px-0 bg-transparent border-0 pb-2">
+                      <span className="text-muted d-block text-uppercase mb-1" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Keywords (VI)</span>
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        {analyzedInfo.keywords_vi.map((kw, i) => (
+                          <span key={`vi-${i}-${kw}`} className="badge bg-white text-dark border border-secondary border-opacity-25 fw-normal">{kw}</span>
+                        ))}
                       </div>
                     </li>
                   )}
@@ -110,8 +147,7 @@ return null;
             <div className="alert d-flex align-items-start gap-2 mb-4 border-0 rounded" style={{ backgroundColor: '#FFF8E7', borderLeft: '4px solid #FF8A00' }}>
               <AlertCircle size={18} className="flex-shrink-0 mt-1" style={{ color: '#FF8A00' }} />
               <div className="small">
-                <strong>AI analysis unavailable</strong> — The Gemini Vision API is not accessible in your current region.
-                Showing <strong>popular products</strong> as a fallback. To enable AI image search, configure a VPN or use an API key from a supported region.
+                <strong>AI analysis unavailable</strong> — Set <code className="small">GROQ_API_KEY</code> (Groq vision, same as category image suggest) on the server, or configure Gemini / AI proxy for fallback. Showing <strong>popular products</strong> for now.
               </div>
             </div>
           )}

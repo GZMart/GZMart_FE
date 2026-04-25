@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectUser, updateUserProfile } from '@store/slices/authSlice';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import {
   Camera,
   Save,
@@ -12,9 +13,8 @@ import {
   Phone,
   Calendar,
   Shield,
-  ImagePlus,
-  X,
   Palette,
+  X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Offcanvas } from 'react-bootstrap';
@@ -28,6 +28,7 @@ import styles from '@assets/styles/seller/SellerProfilePage.module.css';
 const SellerProfilePage = () => {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
 
   const [saving, setSaving] = useState(false);
@@ -166,7 +167,7 @@ const SellerProfilePage = () => {
 
   const handleAddressSuggestionSelect = async (suggestion) => {
     const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
-    const autocompleteFormValues = {
+    const currentVals = {
       street: formData.address,
       details: '',
       wardName: formData.wardName,
@@ -174,7 +175,6 @@ const SellerProfilePage = () => {
       provinceCode: formData.provinceCode,
       wardCode: formData.wardCode,
     };
-
     const addressPatch =
       resolvedSuggestion.source === 'goong'
         ? applyGoongSuggestion({
@@ -182,13 +182,9 @@ const SellerProfilePage = () => {
             activeField: 'street',
             provinces,
             wards,
-            currentFormValues: autocompleteFormValues,
+            currentFormValues: currentVals,
           })
-        : {
-            ...autocompleteFormValues,
-            ...applyAddressSuggestion(resolvedSuggestion),
-          };
-
+        : { ...currentVals, ...applyAddressSuggestion(resolvedSuggestion) };
     setFormData((prev) => ({
       ...prev,
       address: addressPatch.street || prev.address,
@@ -207,11 +203,9 @@ const SellerProfilePage = () => {
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
+      toast.error(t('sellerProfile.errorAvatarSize'));
       return;
     }
     setAvatarFile(file);
@@ -223,7 +217,7 @@ const SellerProfilePage = () => {
 
   const handleSave = async () => {
     if (!formData.fullName.trim()) {
-      toast.error('Full name is required');
+      toast.error(t('sellerProfile.errorNameRequired'));
       return;
     }
     setSaving(true);
@@ -235,7 +229,6 @@ const SellerProfilePage = () => {
         provinceName: formData.provinceName,
         goongPlaceId: formData.goongPlaceId,
       });
-
       const submitData = new FormData();
       submitData.append('fullName', formData.fullName.trim());
       submitData.append('phone', formData.phone);
@@ -247,9 +240,7 @@ const SellerProfilePage = () => {
       submitData.append('provinceName', formData.provinceName);
       submitData.append('wardCode', formData.wardCode);
       submitData.append('wardName', formData.wardName);
-
       const resolvedLocation = geocodedAddress?.location || formData.location;
-
       if (resolvedLocation?.lat != null && resolvedLocation?.lng != null) {
         submitData.append(
           'location',
@@ -260,22 +251,19 @@ const SellerProfilePage = () => {
           })
         );
       }
-
-      if (avatarFile) {
-        submitData.append('avatar', avatarFile);
-      }
+      if (avatarFile) submitData.append('avatar', avatarFile);
 
       const result = await dispatch(updateUserProfile({ formData: submitData }));
       if (updateUserProfile.fulfilled.match(result)) {
-        toast.success('Profile updated successfully!');
+        toast.success(t('sellerProfile.successSave'));
         setAvatarFile(null);
         setHasChanges(false);
       } else {
-        toast.error(result.payload || 'Failed to update profile');
+        toast.error(result.payload || t('sellerProfile.errorSave'));
       }
     } catch (err) {
       console.error('Save profile error:', err);
-      toast.error('An error occurred while saving');
+      toast.error(t('sellerProfile.errorSaveGeneric'));
     } finally {
       setSaving(false);
     }
@@ -291,21 +279,18 @@ const SellerProfilePage = () => {
 
   return (
     <div className={styles.container}>
-      {/* Page Header */}
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Profile Settings</h1>
-        <p className={styles.pageSubtitle}>Manage your personal information and shop settings</p>
+        <h1 className={styles.pageTitle}>{t('sellerProfile.pageTitle')}</h1>
+        <p className={styles.pageSubtitle}>{t('sellerProfile.pageSubtitle')}</p>
       </div>
 
-      {/* Two-Column Layout */}
       <div className={styles.layout}>
-        {/* LEFT - Sidebar Avatar Card (sticky) */}
         <aside className={styles.sidebar}>
           <div className={styles.profileCard}>
             <div className={styles.avatarWrapper} onClick={handleAvatarClick}>
               <img
                 src={displayAvatar}
-                alt="Profile avatar"
+                alt={t('sellerProfile.avatarAlt')}
                 className={styles.avatarImage}
                 onError={(e) => {
                   e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.fullName || 'S')}&background=0d6efd&color=fff&size=120`;
@@ -313,7 +298,7 @@ const SellerProfilePage = () => {
               />
               <div className={styles.avatarOverlay}>
                 <Camera size={22} />
-                <span>Change</span>
+                <span>{t('sellerProfile.avatarChange')}</span>
               </div>
               <input
                 ref={fileInputRef}
@@ -323,15 +308,16 @@ const SellerProfilePage = () => {
                 className={styles.hiddenInput}
               />
             </div>
-            <h3 className={styles.profileName}>{formData.fullName || 'Seller'}</h3>
+            <h3 className={styles.profileName}>
+              {formData.fullName || t('sellerProfile.defaultName')}
+            </h3>
             <p className={styles.profileEmail}>{formData.email}</p>
             <span className={styles.roleBadge}>
               <Shield size={12} />
-              Seller Account
+              {t('sellerProfile.roleBadge')}
             </span>
           </div>
 
-          {/* Quick Info */}
           <div className={styles.quickInfo}>
             <div className={styles.quickInfoItem}>
               <Mail size={16} />
@@ -339,31 +325,29 @@ const SellerProfilePage = () => {
             </div>
             <div className={styles.quickInfoItem}>
               <Phone size={16} />
-              <span>{formData.phone || 'Not set'}</span>
+              <span>{formData.phone || t('sellerProfile.notSet')}</span>
             </div>
             <div className={styles.quickInfoItem}>
               <Calendar size={16} />
-              <span>Joined {memberSince}</span>
+              <span>{t('sellerProfile.joined', { date: memberSince })}</span>
             </div>
             <div className={styles.quickInfoItem}>
               <MapPin size={16} />
-              <span>{formData.provinceName || 'No location'}</span>
+              <span>{formData.provinceName || t('sellerProfile.noLocation')}</span>
             </div>
           </div>
         </aside>
 
-        {/* RIGHT - Form Sections */}
         <main className={styles.mainContent}>
-          {/* Personal Information */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
               <User size={20} />
-              <h2 className={styles.cardTitle}>Personal Information</h2>
+              <h2 className={styles.cardTitle}>{t('sellerProfile.sectionPersonal')}</h2>
             </div>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>
-                  Full Name <span className={styles.required}>*</span>
+                  {t('sellerProfile.labelFullName')} <span className={styles.required}>*</span>
                 </label>
                 <input
                   type="text"
@@ -371,11 +355,11 @@ const SellerProfilePage = () => {
                   value={formData.fullName}
                   onChange={handleChange}
                   className={styles.input}
-                  placeholder="Enter your full name"
+                  placeholder={t('sellerProfile.placeholderFullName')}
                 />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Email</label>
+                <label className={styles.label}>{t('sellerProfile.labelEmail')}</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -384,31 +368,31 @@ const SellerProfilePage = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Phone Number</label>
+                <label className={styles.label}>{t('sellerProfile.labelPhone')}</label>
                 <input
                   type="text"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                   className={styles.input}
-                  placeholder="e.g. 0901234567"
+                  placeholder={t('sellerProfile.placeholderPhone')}
                 />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Gender</label>
+                <label className={styles.label}>{t('sellerProfile.labelGender')}</label>
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
                   className={styles.input}
                 >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="male">{t('sellerProfile.genderMale')}</option>
+                  <option value="female">{t('sellerProfile.genderFemale')}</option>
+                  <option value="other">{t('sellerProfile.genderOther')}</option>
                 </select>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Date of Birth</label>
+                <label className={styles.label}>{t('sellerProfile.labelDob')}</label>
                 <input
                   type="date"
                   name="dateOfBirth"
@@ -418,37 +402,36 @@ const SellerProfilePage = () => {
                 />
               </div>
               <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-                <label className={styles.label}>About Me</label>
+                <label className={styles.label}>{t('sellerProfile.labelAboutMe')}</label>
                 <textarea
                   name="aboutMe"
                   value={formData.aboutMe}
                   onChange={handleChange}
                   className={styles.textarea}
                   rows={3}
-                  placeholder="Tell buyers a little about yourself..."
+                  placeholder={t('sellerProfile.placeholderAboutMe')}
                 />
               </div>
             </div>
           </section>
 
-          {/* Shop Appearance */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
               <Palette size={20} />
-              <h2 className={styles.cardTitle}>Shop Appearance</h2>
+              <h2 className={styles.cardTitle}>{t('sellerProfile.sectionAppearance')}</h2>
             </div>
-            <p className={styles.sectionHint}>
-              Customize your shop page layout, banners, and modules.
-            </p>
+            <p className={styles.sectionHint}>{t('sellerProfile.appearanceHint')}</p>
             <Link to="/seller/shop-decoration" className={styles.appearanceLink}>
               <div className={styles.appearanceLinkContent}>
                 <div className={styles.appearanceLinkIcon}>
                   <Palette size={28} />
                 </div>
                 <div className={styles.appearanceLinkText}>
-                  <span className={styles.appearanceLinkTitle}>Customize Shop Design</span>
+                  <span className={styles.appearanceLinkTitle}>
+                    {t('sellerProfile.appearanceLinkTitle')}
+                  </span>
                   <span className={styles.appearanceLinkDesc}>
-                    Go to Shop Decoration to manage your shop homepage layout
+                    {t('sellerProfile.appearanceLinkDesc')}
                   </span>
                 </div>
               </div>
@@ -456,34 +439,32 @@ const SellerProfilePage = () => {
             </Link>
           </section>
 
-          {/* Address & Location */}
           <section className={styles.card}>
             <div className={styles.cardHeader}>
               <MapPin size={20} />
-              <h2 className={styles.cardTitle}>Address & Location</h2>
+              <h2 className={styles.cardTitle}>{t('sellerProfile.sectionAddress')}</h2>
             </div>
             <div className={styles.addressSummaryBlock}>
               <p className={styles.addressSummaryText}>
-                {formData.address || 'No street address added yet'}
+                {formData.address || t('sellerProfile.noAddress')}
               </p>
               <p className={styles.addressSummarySubtext}>
                 {[formData.wardName, formData.provinceName].filter(Boolean).join(', ') ||
-                  'No province/ward selected'}
+                  t('sellerProfile.noProvinceWard')}
               </p>
               <button
                 type="button"
                 className={styles.openAddressDrawerBtn}
                 onClick={() => setShowAddressDrawer(true)}
               >
-                Edit Address
+                {t('sellerProfile.btnEditAddress')}
               </button>
             </div>
           </section>
 
-          {/* Save Button — always at the bottom of form */}
           <div className={styles.saveSection}>
             <p className={styles.saveHint}>
-              {hasChanges ? 'You have unsaved changes' : 'All changes saved'}
+              {hasChanges ? t('sellerProfile.unsavedChanges') : t('sellerProfile.allSaved')}
             </p>
             <button
               className={`${styles.saveBtn} ${hasChanges ? styles.saveBtnActive : ''}`}
@@ -491,7 +472,7 @@ const SellerProfilePage = () => {
               disabled={saving}
             >
               {saving ? <Loader2 size={18} className={styles.spinIcon} /> : <Save size={18} />}
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('sellerProfile.btnSaving') : t('sellerProfile.btnSave')}
             </button>
           </div>
         </main>
@@ -504,7 +485,7 @@ const SellerProfilePage = () => {
         className={styles.addressDrawer}
       >
         <div className={styles.drawerHeader}>
-          <h3 className={styles.drawerTitle}>Edit Address</h3>
+          <h3 className={styles.drawerTitle}>{t('sellerProfile.drawerTitle')}</h3>
           <button
             type="button"
             className={styles.drawerCloseBtn}
@@ -513,10 +494,9 @@ const SellerProfilePage = () => {
             <X size={20} />
           </button>
         </div>
-
         <Offcanvas.Body className={styles.drawerBody}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Address</label>
+            <label className={styles.label}>{t('sellerProfile.labelAddress')}</label>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
@@ -527,7 +507,7 @@ const SellerProfilePage = () => {
                 onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
                 autoComplete="street-address"
                 className={styles.input}
-                placeholder="Street address, building, etc."
+                placeholder={t('sellerProfile.placeholderAddress')}
               />
               <AddressAutocompleteDropdown
                 show={showAddressSuggestions && addressSuggestionField === 'street'}
@@ -536,15 +516,14 @@ const SellerProfilePage = () => {
               />
             </div>
           </div>
-
           <div className={styles.formGroup}>
-            <label className={styles.label}>Province / City</label>
+            <label className={styles.label}>{t('sellerProfile.labelProvince')}</label>
             <select
               value={formData.provinceCode}
               onChange={handleProvinceChange}
               className={styles.input}
             >
-              <option value="">Select province</option>
+              <option value="">{t('sellerProfile.selectProvince')}</option>
               {provinces.map((p) => (
                 <option key={p.code} value={p.code}>
                   {p.name}
@@ -552,16 +531,15 @@ const SellerProfilePage = () => {
               ))}
             </select>
           </div>
-
           <div className={styles.formGroup}>
-            <label className={styles.label}>Ward / Commune</label>
+            <label className={styles.label}>{t('sellerProfile.labelWard')}</label>
             <select
               value={formData.wardCode}
               onChange={handleWardChange}
               className={styles.input}
               disabled={!formData.provinceCode}
             >
-              <option value="">Select ward</option>
+              <option value="">{t('sellerProfile.selectWard')}</option>
               {wards.map((w) => (
                 <option key={w.code} value={w.code}>
                   {w.name}
@@ -569,17 +547,14 @@ const SellerProfilePage = () => {
               ))}
             </select>
           </div>
-
-          {/* GPS Location removed: not required anymore */}
         </Offcanvas.Body>
-
         <div className={styles.drawerFooter}>
           <button
             type="button"
             className={styles.drawerSecondaryBtn}
             onClick={() => setShowAddressDrawer(false)}
           >
-            Done
+            {t('sellerProfile.btnDone')}
           </button>
         </div>
       </Offcanvas>
