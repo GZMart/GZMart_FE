@@ -2036,7 +2036,7 @@ const CheckoutPage = () => {
             >
               {/* Shop Vouchers — in drawer only for single-seller; multi-seller uses inline picker per group */}
               {sellerGroups
-                .filter((group) => !activeSellerDrawer || activeSellerDrawer === group.sellerId)
+                .filter((group) => activeSellerDrawer === group.sellerId)
                 .map((group) => {
                   const sellerVouchers = applicableVouchers.filter(
                     (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
