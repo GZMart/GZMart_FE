@@ -1222,8 +1222,8 @@ const CheckoutPage = () => {
                   ))}
                 </div>
 
-                {/* Inline shop voucher picker — only shown when multi-seller (single-seller uses sidebar) */}
-                {isMultiSeller && sellerVouchers.length > 0 && (
+                {/* Inline shop voucher picker — always shown in product group */}
+                {sellerVouchers.length > 0 && (
                   <div
                     className="px-3 py-2 d-flex align-items-center justify-content-between"
                     style={{ borderTop: '1px dashed #eee', backgroundColor: '#fff9f8' }}
@@ -1595,47 +1595,7 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {/* Per-seller shop voucher chips — only in sidebar for single-seller carts */}
-            {!isMultiSeller && selectedShopVouchersBySellerResolved
-              .filter((s) => s.voucher)
-              .map(({ sellerId, shopName, voucher }) => (
-                <div
-                  key={sellerId}
-                  className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
-                  style={{
-                    backgroundColor: '#fffdfc',
-                    boxShadow: '0 2px 8px rgba(177, 60, 54, 0.08)',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <div className="flex-grow-1">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div className="d-flex align-items-center gap-2">
-                        <Badge
-                          bg=""
-                          style={{ backgroundColor: '#B13C36', fontSize: '0.7rem', padding: '0.35em 0.5em', fontWeight: 600 }}
-                        >
-                          SHOP
-                        </Badge>
-                        <span className="fw-semibold text-truncate" style={{ color: '#333', maxWidth: '140px' }}>
-                          {isMultiSeller ? `${shopName}: ` : ''}{voucher.name}
-                        </span>
-                      </div>
-                      <i
-                        className="bi bi-x-circle-fill text-muted"
-                        style={{ cursor: 'pointer', fontSize: '1rem' }}
-                        onClick={() =>
-                          setSelectedShopVoucherBySeller((prev) => ({ ...prev, [sellerId]: null }))
-                        }
-                        title="Bỏ chọn"
-                      />
-                    </div>
-                    <div style={{ color: '#B13C36', fontSize: '0.8rem', fontWeight: 600, marginTop: 6 }}>
-                      - {formatCurrency(voucher.estimatedSaving || 0)}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            {/* Shop voucher chips không hiển thị ở sidebar — chọn inline trong product list */}
 
             {/* Show Selected Product Voucher */}
             {selectedProductVoucher && (
@@ -1759,8 +1719,7 @@ const CheckoutPage = () => {
                 );
               })()}
 
-            {(isMultiSeller || selectedShopVouchersBySellerResolved.every((s) => !s.voucher)) &&
-              !selectedSystemVoucher &&
+            {!selectedSystemVoucher &&
               !selectedProductVoucher &&
               !selectedBuyerVoucher && (
               <div
@@ -2014,7 +1973,7 @@ const CheckoutPage = () => {
               </span>
             </div>
             <button
-              onClick={() => { setShowVoucherDrawer(false); setActiveSellerDrawer(null); }}}
+              onClick={() => { setShowVoucherDrawer(false); setActiveSellerDrawer(null); }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -2077,7 +2036,7 @@ const CheckoutPage = () => {
             >
               {/* Shop Vouchers — in drawer only for single-seller; multi-seller uses inline picker per group */}
               {sellerGroups
-                .filter((group) => !isMultiSeller || activeSellerDrawer === group.sellerId)
+                .filter((group) => !activeSellerDrawer || activeSellerDrawer === group.sellerId)
                 .map((group) => {
                   const sellerVouchers = applicableVouchers.filter(
                     (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
