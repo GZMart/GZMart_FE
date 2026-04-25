@@ -15,6 +15,8 @@ const PaymentCancelledPage = () => {
   const [error, setError] = useState(null);
 
   const orderCode = searchParams.get('orderCode');
+  const redirectTo = searchParams.get('redirect') || searchParams.get('next');
+  const afterCancelPath = redirectTo || BUYER_ROUTES.ORDERS;
 
   useEffect(() => {
     // CRITICAL FIX: Cancel the order when user lands on this page
@@ -45,11 +47,11 @@ const PaymentCancelledPage = () => {
 
     // Auto redirect after 5 seconds
     const timer = setTimeout(() => {
-      navigate(BUYER_ROUTES.ORDERS);
+      navigate(afterCancelPath);
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [orderCode, navigate]);
+  }, [orderCode, navigate, afterCancelPath]);
 
   return (
     <Container
@@ -96,11 +98,13 @@ const PaymentCancelledPage = () => {
                 >
                   Continue Shopping
                 </button>
-                <button className="btn btn-primary" onClick={() => navigate(BUYER_ROUTES.ORDERS)}>
-                  View My Orders
+                <button className="btn btn-primary" onClick={() => navigate(afterCancelPath)}>
+                  {redirectTo ? 'Back' : 'View My Orders'}
                 </button>
               </div>
-              <p className="text-muted small mt-3">Redirecting to orders page in 5 seconds...</p>
+              <p className="text-muted small mt-3">
+                Redirecting{redirectTo ? '' : ' to orders page'} in 5 seconds...
+              </p>
             </>
           )}
         </Card.Body>

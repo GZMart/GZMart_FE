@@ -15,6 +15,8 @@ const PaymentSuccessPage = () => {
   const [message, setMessage] = useState('Verifying your payment...');
 
   const orderCode = searchParams.get('orderCode');
+  const redirectTo = searchParams.get('redirect') || searchParams.get('next');
+  const afterSuccessPath = redirectTo || BUYER_ROUTES.ORDERS;
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -37,11 +39,14 @@ const PaymentSuccessPage = () => {
 
           if (response.success && response.data?.localPaymentStatus === 'paid') {
             setStatus('success');
-            setMessage('Payment successful! Redirecting to order details...');
+            setMessage(
+              redirectTo
+                ? 'Payment successful! Redirecting...'
+                : 'Payment successful! Redirecting to order details...'
+            );
 
-            // Redirect to orders page after 2 seconds
             setTimeout(() => {
-              navigate(BUYER_ROUTES.ORDERS);
+              navigate(afterSuccessPath);
             }, 2000);
             return true; // Stop polling
           }
@@ -83,7 +88,7 @@ const PaymentSuccessPage = () => {
     };
 
     verifyPayment();
-  }, [orderCode, navigate]);
+  }, [orderCode, navigate, afterSuccessPath, redirectTo]);
 
   return (
     <Container
@@ -125,9 +130,9 @@ const PaymentSuccessPage = () => {
               <div className="d-flex gap-2 justify-content-center">
                 <button
                   className="btn btn-outline-primary"
-                  onClick={() => navigate(BUYER_ROUTES.ORDERS)}
+                  onClick={() => navigate(afterSuccessPath)}
                 >
-                  View My Orders
+                  {redirectTo ? 'Continue' : 'View My Orders'}
                 </button>
               </div>
             </>

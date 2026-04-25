@@ -1,7 +1,7 @@
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { selectCartItems, fetchCart } from '@store/slices/cartSlice';
 
 import { PUBLIC_ROUTES } from '@constants/routes';
@@ -19,19 +19,29 @@ const CartPage = () => {
   const dispatch = useDispatch();
   const cartItems = useSelector(selectCartItems);
   const [selectedItems, setSelectedItems] = useState(new Set());
+  const isInitializedRef = useRef(false);
 
   // Fetch cart data on mount
   useEffect(() => {
     dispatch(fetchCart());
   }, [dispatch]);
 
-  // Auto-select all items when cart items change
+  // Auto-select all on first load; prune removed items on subsequent updates
   useEffect(() => {
-    if (cartItems.length > 0 && selectedItems.size === 0) {
-      setSelectedItems(new Set(cartItems.map((item) => item.id)));
+    const cartIds = new Set(cartItems.map((item) => item.id));
+
+    if (!isInitializedRef.current) {
+      // First load — select everything
+      setSelectedItems(cartIds);
+      if (cartItems.length > 0) isInitializedRef.current = true;
+    } else {
+      // Cart changed — only remove IDs that no longer exist
+      setSelectedItems((prev) => {
+        const pruned = new Set([...prev].filter((id) => cartIds.has(id)));
+        return pruned.size !== prev.size ? pruned : prev;
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartItems.length, selectedItems.size]);
+  }, [cartItems]);
 
   const handleBack = () => navigate(PUBLIC_ROUTES.HOME);
 
