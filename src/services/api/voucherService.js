@@ -50,6 +50,9 @@ const voucherService = {
 
   // Get all saved voucher IDs for current buyer
   getSavedVoucherIds: async () => await api.get('/api/vouchers/saved/ids'),
+
+  // Get full details of all saved vouchers for current buyer
+  getSavedVouchers: async () => await api.get('/api/vouchers/saved'),
 };
 
 export default voucherService;

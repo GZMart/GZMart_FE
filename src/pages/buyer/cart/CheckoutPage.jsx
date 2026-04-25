@@ -22,6 +22,12 @@ const randomDeliveryWindow = (minDays, maxDays) => {
   return `${start}-${end} days`;
 };
 
+const SYSTEM_VOUCHER_TYPES = ['system_shipping', 'system_order', 'system_vip_daily'];
+
+function isSystemVoucherType(type) {
+  return SYSTEM_VOUCHER_TYPES.includes(type);
+}
+
 /** API `eligible` can omit min-order checks; enforce minBasketPrice against cart subtotal in UI. */
 function voucherEligibleForCartSubtotal(voucher, cartSubtotal) {
   if (!voucher) {
@@ -112,11 +118,30 @@ const CheckoutPage = () => {
               !v.isLiveVoucher &&
               (v.type === 'shop' || v.type === 'private')
           );
-          if (eligibleShopVouchers.length > 0) {
-            const bestShopVoucher = eligibleShopVouchers.reduce((prev, current) =>
-              prev.estimatedSaving > current.estimatedSaving ? prev : current
+          // Auto-select best saved shop voucher per seller
+          const shopAutoMap = {};
+          for (const group of sellerGroups) {
+            const sid = group.sellerId;
+            const sellerSub = sellerSubtotals[sid] || 0;
+            const best = eligibleShopVouchers
+              .filter((v) => v.shopId === sid && (!v.minBasketPrice || sellerSub >= v.minBasketPrice))
+              .reduce((prev, cur) => (!prev || cur.estimatedSaving > prev.estimatedSaving ? cur : prev), null);
+            if (best) shopAutoMap[sid] = best._id;
+          }
+          if (Object.keys(shopAutoMap).length > 0) {
+            setSelectedShopVoucherBySeller(shopAutoMap);
+          }
+          if (Object.keys(shopAutoMap).length === 0) {
+            const eligibleSystem = vouchers.filter(
+              (v) =>
+                voucherEligibleForCartSubtotal(v, subtotal) && isSystemVoucherType(v.type)
             );
-            setSelectedShopVoucherId(bestShopVoucher._id);
+            if (eligibleSystem.length > 0) {
+              const bestSystem = eligibleSystem.reduce((prev, current) =>
+                prev.estimatedSaving > current.estimatedSaving ? prev : current
+              );
+              setSelectedSystemVoucherId(bestSystem._id);
+            }
           }
 
           // Auto-select the best product voucher (only from saved vouchers)
@@ -476,7 +501,10 @@ const CheckoutPage = () => {
   // Voucher state — live voucher is a fixed "live" slot (always applied from session)
   // Shop and product vouchers are user-selectable (auto-best on mount when not from live)
   const [applicableVouchers, setApplicableVouchers] = useState([]);
-  const [selectedShopVoucherId, setSelectedShopVoucherId] = useState(null);
+  /** Map sellerId → voucherId; mỗi seller tối đa 1 mã shop/private */
+  const [selectedShopVoucherBySeller, setSelectedShopVoucherBySeller] = useState({});
+  /** Tối đa 1 mã sàn: system_shipping | system_order | system_vip_daily */
+  const [selectedSystemVoucherId, setSelectedSystemVoucherId] = useState(null);
   const [selectedProductVoucherId, setSelectedProductVoucherId] = useState(null);
   // Buyer vouchers: new_buyer, repeat_buyer, follower — separate slot
   const [selectedBuyerVoucherId, setSelectedBuyerVoucherId] = useState(null);
@@ -487,6 +515,10 @@ const CheckoutPage = () => {
   const [codeLoading, setCodeLoading] = useState(false);
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [showVoucherDrawer, setShowVoucherDrawer] = useState(false);
+  // Separate drawer for shop voucher selection (opened from inline picker per seller)
+  const [showShopVoucherDrawer, setShowShopVoucherDrawer] = useState(false);
+  // When multi-seller, tracks which seller's shop voucher drawer is open
+  const [activeSellerDrawer, setActiveSellerDrawer] = useState(null);
 
   // Payment methods data
   const paymentMethods = [
@@ -559,33 +591,90 @@ const CheckoutPage = () => {
     ? liveItems.reduce((sum, item) => sum + (Number(item.price) || 0) * item.quantity, 0)
     : (rawItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
 
-  // Get selected voucher IDs for API calls
+  // Group cart items by seller for per-seller voucher UI
+  const sellerGroups = useMemo(() => {
+    const groups = new Map(); // Map<sellerId, { sellerId, shopName, items }>
+    for (const item of (rawItems || [])) {
+      const sid = item.sellerId?.toString() || '__unknown__';
+      if (!groups.has(sid)) {
+        groups.set(sid, {
+          sellerId: sid,
+          shopName: item.sellerName || 'Shop',
+          items: [],
+        });
+      }
+      groups.get(sid).items.push(item);
+    }
+    return Array.from(groups.values());
+  }, [rawItems]);
+
+  // Per-seller subtotals for minBasketPrice checks
+  const sellerSubtotals = useMemo(() => {
+    const map = {};
+    for (const item of (rawItems || [])) {
+      const sid = item.sellerId?.toString() || '__unknown__';
+      map[sid] = (map[sid] || 0) + (item.price || 0) * (item.quantity || 1);
+    }
+    return map; // { [sellerId]: subtotal }
+  }, [rawItems]);
+
+  const isMultiSeller = sellerGroups.length > 1;
   const getSelectedVoucherIds = useCallback(() => {
     const ids = [];
-    if (selectedShopVoucherId) {
-      ids.push(selectedShopVoucherId);
+    // System voucher — 1 toàn giỏ
+    if (selectedSystemVoucherId) {
+      const v = applicableVouchers.find((x) => x._id === selectedSystemVoucherId);
+      if (v && isSystemVoucherType(v.type)) {
+        ids.push(selectedSystemVoucherId);
+      }
     }
-    if (selectedProductVoucherId) {
-      ids.push(selectedProductVoucherId);
+    // Shop vouchers — 1 per seller
+    for (const vid of Object.values(selectedShopVoucherBySeller)) {
+      if (!vid) continue;
+      const v = applicableVouchers.find((x) => x._id === vid);
+      if (v && (v.type === 'shop' || v.type === 'private')) {
+        ids.push(vid);
+      }
     }
-    if (selectedBuyerVoucherId) {
-      ids.push(selectedBuyerVoucherId);
-    }
+    if (selectedProductVoucherId) ids.push(selectedProductVoucherId);
+    if (selectedBuyerVoucherId) ids.push(selectedBuyerVoucherId);
     // Live voucher is NOT included here — it's sent as liveSessionVoucherId separately
     return ids;
-  }, [selectedShopVoucherId, selectedProductVoucherId, selectedBuyerVoucherId]);
+  }, [
+    applicableVouchers,
+    selectedShopVoucherBySeller,
+    selectedSystemVoucherId,
+    selectedProductVoucherId,
+    selectedBuyerVoucherId,
+  ]);
 
   // Drop shop/product/buyer selection if cart no longer meets min order (or API eligibility changed)
   useEffect(() => {
     if (!applicableVouchers.length) {
       return;
     }
-    setSelectedShopVoucherId((id) => {
+    setSelectedShopVoucherBySeller((prev) => {
+      const next = { ...prev };
+      for (const [sid, vid] of Object.entries(next)) {
+        if (!vid) continue;
+        const v = applicableVouchers.find((x) => x._id === vid);
+        const sellerSub = sellerSubtotals[sid] || 0;
+        if (!v || !v.eligible || (v.minBasketPrice > 0 && sellerSub < v.minBasketPrice)) {
+          next[sid] = null;
+        }
+      }
+      return next;
+    });
+    setSelectedSystemVoucherId((id) => {
       if (!id) {
         return id;
       }
       const v = applicableVouchers.find((x) => x._id === id);
-      return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
+      return v &&
+        voucherEligibleForCartSubtotal(v, localSubtotal) &&
+        isSystemVoucherType(v.type)
+        ? id
+        : null;
     });
     setSelectedProductVoucherId((id) => {
       if (!id) {
@@ -601,20 +690,31 @@ const CheckoutPage = () => {
       const v = applicableVouchers.find((x) => x._id === id);
       return v && voucherEligibleForCartSubtotal(v, localSubtotal) ? id : null;
     });
-  }, [localSubtotal, applicableVouchers]);
+  }, [localSubtotal, applicableVouchers, sellerSubtotals]);
 
   // Fetch order preview when city/state, cart, or vouchers change
   useEffect(() => {
     const fetchPreview = async () => {
       // Resolve resolved voucher objects from IDs
-      const resolvedShopVoucher =
-        applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+      // Resolve tất cả shop vouchers đang được chọn (mỗi seller 1 mã)
+      const resolvedShopVouchers = Object.entries(selectedShopVoucherBySeller)
+        .map(([sid, vid]) => {
+          if (!vid) return null;
+          return applicableVouchers.find(
+            (v) => v._id === vid && (v.type === 'shop' || v.type === 'private') && v.shopId === sid
+          ) || null;
+        })
+        .filter(Boolean);
       const resolvedProductVoucher =
         applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
       const resolvedBuyerVoucher =
         applicableVouchers.find((v) => v._id === selectedBuyerVoucherId) || null;
       const resolvedLiveVoucher =
         applicableVouchers.find((v) => v._id === selectedLiveVoucherId) || null;
+      const resolvedSystemVoucher =
+        applicableVouchers.find(
+          (v) => v._id === selectedSystemVoucherId && isSystemVoucherType(v.type)
+        ) || null;
 
       // Helper: compute discount from a single voucher against a subtotal
       const calcDiscount = (voucher, sub) => {
@@ -644,12 +744,19 @@ const CheckoutPage = () => {
           rawSubtotal
         );
         const afterLive = rawSubtotal - liveDiscount;
-        const shopDiscount = calcDiscount(resolvedShopVoucher, afterLive);
-        const afterShop = afterLive - shopDiscount;
+        const systemDiscount = calcDiscount(resolvedSystemVoucher, afterLive);
+        const afterSystem = afterLive - systemDiscount;
+        const shopDiscount = resolvedShopVouchers.reduce((sum, v) => {
+          const sid = v.shopId?.toString() || '__unknown__';
+          const sellerSub = sellerSubtotals[sid] || 0;
+          return sum + calcDiscount(v, sellerSub);
+        }, 0);
+        const afterShop = afterSystem - shopDiscount;
         const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
         const afterProduct = afterShop - productDiscount;
         const buyerDiscount = calcDiscount(resolvedBuyerVoucher, afterProduct);
-        const totalDiscount = liveDiscount + shopDiscount + productDiscount + buyerDiscount;
+        const totalDiscount =
+          liveDiscount + systemDiscount + shopDiscount + productDiscount + buyerDiscount;
 
         setOrderSummary({
           subtotal: rawSubtotal,
@@ -688,12 +795,19 @@ const CheckoutPage = () => {
         if (error?.response?.status !== 404) {
           console.error('Failed to fetch order preview:', error);
         }
-        const shopDiscount = calcDiscount(resolvedShopVoucher, rawSubtotal);
-        const afterShop = rawSubtotal - shopDiscount;
+        const systemDiscount = calcDiscount(resolvedSystemVoucher, rawSubtotal);
+        const afterSys = rawSubtotal - systemDiscount;
+        const shopDiscount = resolvedShopVouchers.reduce((sum, v) => {
+          const sid = v.shopId?.toString() || '__unknown__';
+          const sellerSub = sellerSubtotals[sid] || 0;
+          return sum + calcDiscount(v, sellerSub);
+        }, 0);
+        const afterShop = afterSys - shopDiscount;
         const productDiscount = calcDiscount(resolvedProductVoucher, afterShop);
         const afterProduct = afterShop - productDiscount;
         const buyerDiscount = calcDiscount(resolvedBuyerVoucher, afterProduct);
-        const totalDiscount = shopDiscount + productDiscount + buyerDiscount;
+        const totalDiscount =
+          systemDiscount + shopDiscount + productDiscount + buyerDiscount;
         setOrderSummary({
           subtotal: rawSubtotal,
           shippingCost: previewShippingCost,
@@ -717,7 +831,8 @@ const CheckoutPage = () => {
     includeCoin,
     shippingCompanies,
     applicableVouchers,
-    selectedShopVoucherId,
+    selectedShopVoucherBySeller,
+    selectedSystemVoucherId,
     selectedProductVoucherId,
     selectedBuyerVoucherId,
     selectedLiveVoucherId,
@@ -1035,64 +1150,130 @@ const CheckoutPage = () => {
   const renderStep3 = () => (
     <Card className="border-0 shadow-sm" style={{ backgroundColor: '#F9FAFB' }}>
       <Card.Body className="p-4">
-        {/* Shopping items */}
+        {/* Shopping items — grouped by seller */}
         <div className="mb-4">
           <h5 className="mb-3">Shopping items</h5>
-          <div className="d-flex flex-column gap-3">
-            {cartItems.map((item) => (
-              <div key={item.id}>
-                <Row className="align-items-center">
-                  <Col xs="auto">
-                    <img
-                      src={item.image || '/placeholder-image.png'}
-                      alt={item.name}
-                      style={{
-                        width: '80px',
-                        height: '80px',
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                      }}
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/placeholder-image.png';
-                      }}
-                    />
-                  </Col>
-                  <Col>
-                    <h6 className="mb-1">{item.name}</h6>
-                    <p className="text-muted small mb-1">{item.variant || item.description}</p>
-                    <div className="d-flex align-items-center gap-2">
-                      {item.color && (
-                        <div className="d-flex align-items-center gap-1">
-                          <div
-                            className="rounded-circle"
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              backgroundColor: item.colorCode || '#ccc',
-                              border: '1px solid #ddd',
-                            }}
-                            title={item.color}
+          {sellerGroups.map((group) => {
+            const sellerVouchers = applicableVouchers.filter(
+              (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
+            );
+            const currentVid = selectedShopVoucherBySeller[group.sellerId] || null;
+            const selectedV = currentVid
+              ? applicableVouchers.find((v) => v._id === currentVid)
+              : null;
+            const sellerSub = sellerSubtotals[group.sellerId] || 0;
+
+            return (
+              <div
+                key={group.sellerId}
+                className="mb-3 rounded-3"
+                style={{ border: '1px solid #eee', overflow: 'hidden' }}
+              >
+                {/* Seller header */}
+                {isMultiSeller && (
+                  <div
+                    className="px-3 py-2 d-flex align-items-center gap-2"
+                    style={{ backgroundColor: '#fafafa', borderBottom: '1px solid #eee' }}
+                  >
+                    <i className="bi bi-shop" style={{ color: '#B13C36', fontSize: '0.9rem' }} />
+                    <span className="fw-semibold small" style={{ color: '#444' }}>
+                      {group.shopName}
+                    </span>
+                  </div>
+                )}
+
+                {/* Items */}
+                <div className="d-flex flex-column gap-3 p-3">
+                  {group.items.map((item) => (
+                    <div key={item.id}>
+                      <Row className="align-items-center">
+                        <Col xs="auto">
+                          <img
+                            src={item.image || '/placeholder-image.png'}
+                            alt={item.name}
+                            style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-image.png'; }}
                           />
-                          <span className="small">{item.color}</span>
-                        </div>
-                      )}
-                      {item.size && item.size !== 'N/A' && (
-                        <span className="small text-muted">Size: {item.size}</span>
+                        </Col>
+                        <Col>
+                          <h6 className="mb-1">{item.name}</h6>
+                          <p className="text-muted small mb-1">{item.variant || item.description}</p>
+                          <div className="d-flex align-items-center gap-2">
+                            {item.color && (
+                              <div className="d-flex align-items-center gap-1">
+                                <div
+                                  className="rounded-circle"
+                                  style={{ width: '16px', height: '16px', backgroundColor: item.colorCode || '#ccc', border: '1px solid #ddd' }}
+                                  title={item.color}
+                                />
+                                <span className="small">{item.color}</span>
+                              </div>
+                            )}
+                            {item.size && item.size !== 'N/A' && (
+                              <span className="small text-muted">Size: {item.size}</span>
+                            )}
+                          </div>
+                        </Col>
+                        <Col xs="auto" className="text-end">
+                          <div className="small text-muted mb-1">{formatCurrency(item.price || 0)}</div>
+                          <div className="small text-muted mb-1">x{item.quantity || 1}</div>
+                          <div className="fw-bold">{formatCurrency((item.price || 0) * (item.quantity || 1))}</div>
+                        </Col>
+                      </Row>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Inline shop voucher picker — always shown in product group */}
+                {sellerVouchers.length > 0 && (
+                  <div
+                    className="px-3 py-2 d-flex align-items-center justify-content-between"
+                    style={{ borderTop: '1px dashed #eee', backgroundColor: '#fff9f8' }}
+                  >
+                    <div className="d-flex align-items-center gap-2">
+                      <i className="bi bi-tag-fill" style={{ color: '#B13C36', fontSize: '0.85rem' }} />
+                      {selectedV ? (
+                        <span className="small fw-semibold" style={{ color: '#B13C36' }}>
+                          {selectedV.name}
+                          {selectedV.estimatedSaving > 0 && (
+                            <span className="ms-1 text-muted fw-normal">
+                              (-{formatCurrency(selectedV.estimatedSaving)})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="small text-muted">Chọn mã giảm giá shop</span>
                       )}
                     </div>
-                  </Col>
-                  <Col xs="auto" className="text-end">
-                    <div className="small text-muted mb-1">{formatCurrency(item.price || 0)}</div>
-                    <div className="small text-muted mb-1">x{item.quantity || 1}</div>
-                    <div className="fw-bold">
-                      {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                    <div className="d-flex align-items-center gap-2">
+                      {selectedV && (
+                        <button
+                          className="btn btn-link btn-sm p-0 text-muted"
+                          style={{ fontSize: '0.75rem' }}
+                          onClick={() =>
+                            setSelectedShopVoucherBySeller((prev) => ({ ...prev, [group.sellerId]: null }))
+                          }
+                        >
+                          <i className="bi bi-x-circle" />
+                        </button>
+                      )}
+                      <Button
+                        variant="link"
+                        className="p-0 text-decoration-none"
+                        style={{ fontSize: '0.8rem', color: '#B13C36', fontWeight: 600 }}
+                        onClick={() => {
+                          setActiveSellerDrawer(group.sellerId);
+                          setShowShopVoucherDrawer(true);
+                        }}
+                      >
+                        {selectedV ? 'Đổi' : 'Chọn'}
+                      </Button>
                     </div>
-                  </Col>
-                </Row>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         <hr />
@@ -1201,7 +1382,10 @@ const CheckoutPage = () => {
         // Auto-select only if this basket meets min order + API eligibility
         if (voucherEligibleForCartSubtotal(v, localSubtotal)) {
           if (v.type === 'shop' || v.type === 'private') {
-            setSelectedShopVoucherId(v._id);
+            const vid = v.shopId?.toString() || '__unknown__';
+            setSelectedShopVoucherBySeller((prev) => ({ ...prev, [vid]: v._id }));
+          } else if (isSystemVoucherType(v.type)) {
+            setSelectedSystemVoucherId(v._id);
           } else if (v.type === 'product') {
             setSelectedProductVoucherId(v._id);
           }
@@ -1232,7 +1416,10 @@ const CheckoutPage = () => {
         return;
       }
       if (voucher.type === 'shop' || voucher.type === 'private') {
-        setSelectedShopVoucherId(voucher._id);
+        const sid = voucher.shopId?.toString() || '__unknown__';
+        setSelectedShopVoucherBySeller((prev) => ({ ...prev, [sid]: voucher._id }));
+      } else if (isSystemVoucherType(voucher.type)) {
+        setSelectedSystemVoucherId(voucher._id);
       } else if (voucher.type === 'product') {
         setSelectedProductVoucherId(voucher._id);
       } else if (['new_buyer', 'repeat_buyer', 'follower'].includes(voucher.type)) {
@@ -1245,12 +1432,38 @@ const CheckoutPage = () => {
 
   // Render Voucher Section (Minimized in Checkout Sidebar)
   const renderVoucherSection = () => {
-    const selectedShopVoucher =
-      applicableVouchers.find((v) => v._id === selectedShopVoucherId) || null;
+    // Per-seller selected shop vouchers
+    const selectedShopVouchersBySellerResolved = sellerGroups.map((group) => {
+      const vid = selectedShopVoucherBySeller[group.sellerId];
+      const voucher = vid
+        ? applicableVouchers.find((v) => v._id === vid && (v.type === 'shop' || v.type === 'private'))
+        : null;
+      return { sellerId: group.sellerId, shopName: group.shopName, voucher };
+    });
+    const selectedSystemVoucher =
+      applicableVouchers.find(
+        (v) => v._id === selectedSystemVoucherId && isSystemVoucherType(v.type)
+      ) || null;
     const selectedProductVoucher =
       applicableVouchers.find((v) => v._id === selectedProductVoucherId) || null;
     const selectedBuyerVoucher =
       applicableVouchers.find((v) => v._id === selectedBuyerVoucherId) || null;
+
+    const shopSlotBadge = (v) => {
+      if (!v) {
+        return 'SHOP';
+      }
+      if (v.type === 'system_vip_daily') {
+        return 'VIP';
+      }
+      if (v.type === 'system_order') {
+        return 'ORDER';
+      }
+      if (v.type === 'system_shipping') {
+        return 'SHIP';
+      }
+      return 'SHOP';
+    };
 
     const voucherTypeInfo = {
       new_buyer: { label: 'NEW', color: '#9c27b0', bg: '#f3e5f5' },
@@ -1337,12 +1550,12 @@ const CheckoutPage = () => {
             )}
 
             {/* Show Selected Shop Voucher */}
-            {selectedShopVoucher && (
+            {selectedSystemVoucher && (
               <div
                 className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
                 style={{
-                  backgroundColor: '#fffdfc',
-                  boxShadow: '0 2px 8px rgba(177, 60, 54, 0.08)',
+                  background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                  boxShadow: '0 2px 8px rgba(180, 83, 9, 0.1)',
                   fontSize: '0.85rem',
                 }}
               >
@@ -1352,45 +1565,39 @@ const CheckoutPage = () => {
                       <Badge
                         bg=""
                         style={{
-                          backgroundColor: '#B13C36',
+                          backgroundColor: '#b45309',
                           fontSize: '0.7rem',
                           padding: '0.35em 0.5em',
                           fontWeight: 600,
                           letterSpacing: '0.5px',
                         }}
                       >
-                        SHOP
+                        {shopSlotBadge(selectedSystemVoucher)}
                       </Badge>
                       <span
                         className="fw-semibold text-truncate"
                         style={{ color: '#333', maxWidth: '160px' }}
                       >
-                        {selectedShopVoucher.name}
+                        {selectedSystemVoucher.name}
                       </span>
                     </div>
-                    {/* Clear Button */}
                     <i
                       className="bi bi-x-circle-fill text-muted"
-                      style={{ cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }}
-                      onMouseEnter={(e) => (e.target.style.color = '#B13C36')}
-                      onMouseLeave={(e) => (e.target.style.color = '#6c757d')}
-                      onClick={() => setSelectedShopVoucherId(null)}
-                      title="Deselect"
-                    ></i>
+                      style={{ cursor: 'pointer', fontSize: '1rem' }}
+                      onClick={() => setSelectedSystemVoucherId(null)}
+                      title="Bỏ chọn"
+                    />
                   </div>
                   <div
-                    style={{
-                      color: '#B13C36',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      marginTop: '6px',
-                    }}
+                    style={{ color: '#b45309', fontSize: '0.8rem', fontWeight: 600, marginTop: 6 }}
                   >
-                    - {formatCurrency(selectedShopVoucher.estimatedSaving)}
+                    - {formatCurrency(selectedSystemVoucher.estimatedSaving || 0)}
                   </div>
                 </div>
               </div>
             )}
+
+            {/* Shop voucher chips không hiển thị ở sidebar — chọn inline trong product list */}
 
             {/* Show Selected Product Voucher */}
             {selectedProductVoucher && (
@@ -1514,7 +1721,9 @@ const CheckoutPage = () => {
                 );
               })()}
 
-            {!selectedShopVoucher && !selectedProductVoucher && !selectedBuyerVoucher && (
+            {!selectedSystemVoucher &&
+              !selectedProductVoucher &&
+              !selectedBuyerVoucher && (
               <div
                 className="text-muted small text-center py-2"
                 style={{
@@ -1743,9 +1952,143 @@ const CheckoutPage = () => {
 
           <Col lg={4}>{renderOrderSummary()}</Col>
         </Row>
+        {/* SHOP VOUCHER DRAWER — separate from system voucher drawer */}
+        {showShopVoucherDrawer && (
+          <div
+            className="voucher-drawer-overlay"
+            onClick={() => { setShowShopVoucherDrawer(false); setActiveSellerDrawer(null); }}
+          />
+        )}
+        <div className={`voucher-drawer${showShopVoucherDrawer ? ' open' : ''}`}>
+          <div className="drawer-handle" />
+          <div
+            className="d-flex align-items-center justify-content-between px-4 py-3"
+            style={{ borderBottom: '1px solid #eee', background: '#fff', flexShrink: 0 }}
+          >
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-shop" style={{ color: '#B13C36', fontSize: '1.2rem' }} />
+              <span className="fw-bold fs-5" style={{ color: '#2b2b2b' }}>
+                {activeSellerDrawer
+                  ? sellerGroups.find((g) => g.sellerId === activeSellerDrawer)?.shopName || 'Voucher Shop'
+                  : 'Voucher Shop'}
+              </span>
+            </div>
+            <button
+              onClick={() => { setShowShopVoucherDrawer(false); setActiveSellerDrawer(null); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#888' }}
+            >
+              <i className="bi bi-x-lg" />
+            </button>
+          </div>
+
+          <div
+            className="flex-grow-1"
+            style={{ overflowY: 'auto', backgroundColor: '#fafbfe', padding: '1.5rem' }}
+          >
+            {activeSellerDrawer && (() => {
+              const group = sellerGroups.find((g) => g.sellerId === activeSellerDrawer);
+              if (!group) return null;
+              const sellerVouchers = applicableVouchers.filter(
+                (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
+              );
+              const sellerSub = sellerSubtotals[group.sellerId] || 0;
+              const currentVid = selectedShopVoucherBySeller[group.sellerId] || null;
+
+              if (sellerVouchers.length === 0) {
+                return (
+                  <div className="text-center text-muted py-5">
+                    <i className="bi bi-ticket-perforated fs-1 mb-3 d-block" />
+                    <p>Không có voucher shop nào</p>
+                  </div>
+                );
+              }
+
+              return sellerVouchers.map((v) => {
+                const cartOk = v.eligible && (!v.minBasketPrice || sellerSub >= v.minBasketPrice);
+                const isSel = currentVid === v._id;
+                return (
+                  <div
+                    key={v._id}
+                    className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${!cartOk ? 'opacity-50' : 'bg-white shadow-sm'}`}
+                    style={{
+                      border: isSel ? '2px solid #B13C36' : '1px solid transparent',
+                      cursor: cartOk ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s ease',
+                      position: 'relative', overflow: 'hidden',
+                    }}
+                    onClick={() => {
+                      if (!cartOk || !v.isSaved) return;
+                      setSelectedShopVoucherBySeller((prev) => ({
+                        ...prev,
+                        [group.sellerId]: isSel ? null : v._id,
+                      }));
+                      setShowShopVoucherDrawer(false);
+                      setActiveSellerDrawer(null);
+                    }}
+                  >
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: '#B13C36', opacity: isSel ? 1 : 0.2 }} />
+                    <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                        style={{ width: 54, height: 54, backgroundColor: '#fff5f0', color: '#B13C36', border: '1px solid #ffeada' }}
+                      >
+                        <i className="bi bi-shop fs-4" />
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="fw-bold text-truncate" style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: 200 }}>
+                          {v.name}
+                        </div>
+                        <div className="text-muted small mt-1">
+                          {v.minBasketPrice > 0 ? `Min. đơn ${formatCurrency(v.minBasketPrice)}` : 'Không yêu cầu đơn tối thiểu'}
+                        </div>
+                        {cartOk && v.estimatedSaving > 0 && (
+                          <div className="mt-1 d-inline-block px-2 py-1 rounded" style={{ backgroundColor: '#ffe9e6', color: '#B13C36', fontSize: '0.75rem', fontWeight: 700 }}>
+                            Tiết kiệm {formatCurrency(v.estimatedSaving)}
+                          </div>
+                        )}
+                        {!cartOk && (
+                          <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>
+                            {v.ineligibleReason || (v.minBasketPrice > 0 ? `Cần tối thiểu ${formatCurrency(v.minBasketPrice)}` : '')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ms-3 flex-shrink-0 pe-2">
+                      {!v.isSaved ? (
+                        <Button
+                          size="sm"
+                          className="fw-semibold px-3"
+                          style={{ backgroundColor: '#B13C36', borderColor: '#B13C36', fontSize: '0.85rem', borderRadius: '6px' }}
+                          onClick={(e) => handleSaveAndUseVoucher(e, v)}
+                          disabled={!cartOk}
+                        >
+                          Save
+                        </Button>
+                      ) : (
+                        <div className="form-check m-0">
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            id={`shop-v-${v._id}`}
+                            name={`shopVoucher_${group.sellerId}`}
+                            checked={isSel}
+                            disabled={!cartOk}
+                            onChange={() => {}}
+                            style={{ width: '1.4em', height: '1.4em', cursor: 'pointer', accentColor: '#B13C36' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+
         {/* VOUCHER SELECTION DRAWER */}
         {showVoucherDrawer && (
-          <div className="voucher-drawer-overlay" onClick={() => setShowVoucherDrawer(false)} />
+          <div className="voucher-drawer-overlay" onClick={() => { setShowVoucherDrawer(false); setActiveSellerDrawer(null); }} />
         )}
         <div className={`voucher-drawer${showVoucherDrawer ? ' open' : ''}`}>
           {/* Drawer handle */}
@@ -1766,7 +2109,7 @@ const CheckoutPage = () => {
               </span>
             </div>
             <button
-              onClick={() => setShowVoucherDrawer(false)}
+              onClick={() => { setShowVoucherDrawer(false); setActiveSellerDrawer(null); }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -1827,170 +2170,6 @@ const CheckoutPage = () => {
               style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '8px' }}
               className="custom-scrollbar"
             >
-              {applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private').length >
-                0 && (
-                <div className="mb-4">
-                  <div className="d-flex align-items-center mb-3">
-                    <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
-                      Shop Vouchers
-                    </h6>
-                    <span
-                      className="ms-2 badge rounded-pill"
-                      style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}
-                    >
-                      {
-                        applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private')
-                          .length
-                      }
-                    </span>
-                  </div>
-                  {applicableVouchers
-                    .filter((v) => v.type === 'shop' || v.type === 'private')
-                    .map((v) => {
-                      const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
-                      return (
-                        <div
-                          key={v._id}
-                          className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
-                            !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
-                          }`}
-                          style={{
-                            border:
-                              selectedShopVoucherId === v._id
-                                ? '2px solid #B13C36'
-                                : '1px solid transparent',
-                            cursor: cartOk ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            position: 'relative',
-                            overflow: 'hidden',
-                          }}
-                          onClick={() => {
-                            if (!cartOk) {
-                              return;
-                            }
-                            if (!v.isSaved) {
-                              return; // Must save first
-                            }
-                            setSelectedShopVoucherId(
-                              selectedShopVoucherId === v._id ? null : v._id
-                            );
-                          }}
-                        >
-                          {/* Decorative edge */}
-                          <div
-                            style={{
-                              position: 'absolute',
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: '4px',
-                              backgroundColor: '#B13C36',
-                              opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
-                            }}
-                          ></div>
-
-                          <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
-                            <div
-                              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                              style={{
-                                width: '54px',
-                                height: '54px',
-                                backgroundColor: '#fff5f0',
-                                color: '#B13C36',
-                                border: '1px solid #ffeada',
-                              }}
-                            >
-                              <i className="bi bi-shop fs-4"></i>
-                            </div>
-                            <div className="flex-grow-1">
-                              <div
-                                className="fw-bold text-truncate"
-                                style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
-                              >
-                                {v.name}
-                              </div>
-                              <div className="text-muted small mt-1">
-                                {v.minBasketPrice > 0
-                                  ? `Min. Order ${formatCurrency(v.minBasketPrice)}`
-                                  : 'No minimum required'}
-                              </div>
-                              {cartOk && v.estimatedSaving > 0 && (
-                                <div
-                                  className="mt-1 d-inline-block px-2 py-1 rounded"
-                                  style={{
-                                    backgroundColor: '#ffe9e6',
-                                    color: '#B13C36',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  Save {formatCurrency(v.estimatedSaving)}
-                                </div>
-                              )}
-                              {!cartOk &&
-                                (() => {
-                                  const min = Number(v.minBasketPrice);
-                                  const line =
-                                    v.eligible &&
-                                    !Number.isNaN(min) &&
-                                    min > 0 &&
-                                    localSubtotal < min
-                                      ? `Requires min. order ${formatCurrency(min)} (current ${formatCurrency(localSubtotal)})`
-                                      : v.ineligibleReason;
-                                  return line ? (
-                                    <div
-                                      className="text-danger mt-1 fw-medium"
-                                      style={{ fontSize: '0.75rem' }}
-                                    >
-                                      {line}
-                                    </div>
-                                  ) : null;
-                                })()}
-                            </div>
-                          </div>
-
-                          <div className="ms-3 flex-shrink-0 text-end pe-2">
-                            {!v.isSaved ? (
-                              <Button
-                                size="sm"
-                                className="fw-semibold px-3"
-                                style={{
-                                  backgroundColor: '#B13C36',
-                                  borderColor: '#B13C36',
-                                  fontSize: '0.85rem',
-                                  borderRadius: '6px',
-                                }}
-                                onClick={(e) => handleSaveAndUseVoucher(e, v)}
-                                disabled={!cartOk}
-                              >
-                                Save
-                              </Button>
-                            ) : (
-                              <div className="form-check m-0">
-                                <input
-                                  className="form-check-input"
-                                  type="radio"
-                                  id={`shop-v-${v._id}`}
-                                  name="modalShopVoucher"
-                                  checked={selectedShopVoucherId === v._id}
-                                  disabled={!cartOk}
-                                  onChange={() => {}}
-                                  style={{
-                                    width: '1.4em',
-                                    height: '1.4em',
-                                    cursor: 'pointer',
-                                    accentColor: '#B13C36', // Modern browser styling
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-
               {applicableVouchers.filter((v) => v.type === 'product').length > 0 && (
                 <div className="mb-4">
                   <div className="d-flex align-items-center mb-3">
@@ -2151,10 +2330,8 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              {/* System Vouchers: system_shipping, system_order */}
-              {applicableVouchers.filter((v) =>
-                ['system_shipping', 'system_order'].includes(v.type)
-              ).length > 0 && (
+              {/* System Vouchers: shipping, order, VIP subscription daily */}
+              {applicableVouchers.filter((v) => isSystemVoucherType(v.type)).length > 0 && (
                 <div className="mb-4">
                   <div className="d-flex align-items-center mb-3">
                     <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
@@ -2164,17 +2341,17 @@ const CheckoutPage = () => {
                       className="ms-2 badge rounded-pill"
                       style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}
                     >
-                      {
-                        applicableVouchers.filter((v) =>
-                          ['system_shipping', 'system_order'].includes(v.type)
-                        ).length
-                      }
+                      {applicableVouchers.filter((v) => isSystemVoucherType(v.type)).length}
                     </span>
                   </div>
+                  <p className="text-muted small mb-3" style={{ fontSize: '0.8rem' }}>
+                    Chỉ chọn 1 mã hệ thống (freeship / giảm đơn / VIP) mỗi đơn.
+                  </p>
                   {applicableVouchers
-                    .filter((v) => ['system_shipping', 'system_order'].includes(v.type))
+                    .filter((v) => isSystemVoucherType(v.type))
                     .map((v) => {
                       const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
+                      const isSel = selectedSystemVoucherId === v._id;
                       return (
                         <div
                           key={v._id}
@@ -2182,10 +2359,7 @@ const CheckoutPage = () => {
                             !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
                           }`}
                           style={{
-                            border:
-                              selectedShopVoucherId === v._id
-                                ? '2px solid #B13C36'
-                                : '1px solid transparent',
+                            border: isSel ? '2px solid #B13C36' : '1px solid transparent',
                             cursor: cartOk ? 'pointer' : 'not-allowed',
                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                             position: 'relative',
@@ -2195,9 +2369,7 @@ const CheckoutPage = () => {
                             if (!cartOk) {
                               return;
                             }
-                            setSelectedShopVoucherId(
-                              selectedShopVoucherId === v._id ? null : v._id
-                            );
+                            setSelectedSystemVoucherId((prev) => (prev === v._id ? null : v._id));
                           }}
                         >
                           <div
@@ -2208,7 +2380,7 @@ const CheckoutPage = () => {
                               bottom: 0,
                               width: '4px',
                               backgroundColor: '#0891b2',
-                              opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
+                              opacity: isSel ? 1 : 0.2,
                             }}
                           />
                           <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
@@ -2226,7 +2398,9 @@ const CheckoutPage = () => {
                                 className={
                                   v.type === 'system_shipping'
                                     ? 'bi bi-truck fs-4'
-                                    : 'bi bi-box-seam fs-4'
+                                    : v.type === 'system_vip_daily'
+                                      ? 'bi bi-gem fs-4'
+                                      : 'bi bi-box-seam fs-4'
                                 }
                               ></i>
                             </div>
@@ -2270,9 +2444,11 @@ const CheckoutPage = () => {
                               <input
                                 type="radio"
                                 className="form-check-input"
-                                checked={selectedShopVoucherId === v._id}
+                                name="checkoutSystemVoucher"
+                                checked={isSel}
                                 disabled={!cartOk}
                                 onChange={() => {}}
+                                onClick={(e) => e.stopPropagation()}
                                 style={{ cursor: 'pointer', accentColor: '#0891b2' }}
                               />
                             </div>

@@ -147,6 +147,25 @@
   --shop-on-primary: #f8f9fa;
 }
 
+/* ─── VIP Membership Design Tokens (--vip-*) ──────────────────────── */
+:root {
+  --vip-accent:          var(--color-primary);
+  --vip-accent-dark:     var(--color-secondary);
+  --vip-accent-deep:     #5a1517;
+  --vip-accent-light:    #d4524c;
+  --vip-accent-pale:     #fce8e7;
+  --vip-accent-surface:  #fff5f5;
+  --vip-accent-bg:       #fff8f7;
+  --vip-accent-border:   #f5b8b6;
+  --vip-gradient:        linear-gradient(135deg, #3b0d0f 0%, var(--color-secondary) 35%, var(--color-primary) 70%, #d4524c 100%);
+  --vip-btn-gradient:    linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
+  --vip-shadow:          0 8px 32px rgba(177, 60, 54, 0.18);
+  --vip-shadow-btn:      0 4px 20px rgba(177, 60, 54, 0.4);
+  --vip-radius:          16px;
+  --vip-radius-sm:       10px;
+  --vip-radius-lg:       24px;
+}
+
 * {
   margin: 0;
   padding: 0;

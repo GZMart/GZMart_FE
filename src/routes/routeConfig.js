@@ -31,6 +31,7 @@ const ProfilePage = lazy(() => import('@pages/buyer/ProfilePage'));
 const BuyerDisputesPage = lazy(() => import('@pages/buyer/DisputesPage'));
 const NotificationPage = lazy(() => import('@pages/buyer/NotificationPage'));
 const MyWalletPage = lazy(() => import('@pages/buyer/MyWalletPage'));
+const VipSubscriptionPage = lazy(() => import('@pages/buyer/VipSubscriptionPage'));
 const BuyerReturnStatusPage = lazy(() => import('@/pages/buyer/order/BuyerReturnStatusPage'));
 const WishlistPage = lazy(() => import('@pages/buyer/WishlistPage'));
 const TrackOrderPage = lazy(() => import('@/pages/buyer/order/TrackOrderPage'));
@@ -369,6 +370,13 @@ export const routeConfig = [
   {
     path: '/buyer/wallet',
     element: MyWalletPage,
+    protected: true,
+    allowedRoles: [USER_ROLES.BUYER],
+    layout: 'main',
+  },
+  {
+    path: '/buyer/vip',
+    element: VipSubscriptionPage,
     protected: true,
     allowedRoles: [USER_ROLES.BUYER],
     layout: 'main',

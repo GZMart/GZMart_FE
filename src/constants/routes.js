@@ -51,6 +51,7 @@ export const BUYER_ROUTES = {
   WALLET: '/buyer/wallet',
   NOTIFICATIONS: '/buyer/notifications',
   SELLER_APPLICATION: '/buyer/seller-application',
+  VIP_SUBSCRIPTION: '/buyer/vip',
 };
 
 // Seller (ERP) Routes
