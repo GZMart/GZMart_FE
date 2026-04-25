@@ -1362,11 +1362,14 @@ const CheckoutPage = () => {
 
   // Render Voucher Section (Minimized in Checkout Sidebar)
   const renderVoucherSection = () => {
-    const selectedShopVoucher =
-      applicableVouchers.find(
-        (v) =>
-          v._id === selectedShopVoucherId && (v.type === 'shop' || v.type === 'private')
-      ) || null;
+    // Per-seller selected shop vouchers
+    const selectedShopVouchersBySellerResolved = sellerGroups.map((group) => {
+      const vid = selectedShopVoucherBySeller[group.sellerId];
+      const voucher = vid
+        ? applicableVouchers.find((v) => v._id === vid && (v.type === 'shop' || v.type === 'private'))
+        : null;
+      return { sellerId: group.sellerId, shopName: group.shopName, voucher };
+    });
     const selectedSystemVoucher =
       applicableVouchers.find(
         (v) => v._id === selectedSystemVoucherId && isSystemVoucherType(v.type)
@@ -1524,60 +1527,47 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {selectedShopVoucher && (
-              <div
-                className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
-                style={{
-                  backgroundColor: '#fffdfc',
-                  boxShadow: '0 2px 8px rgba(177, 60, 54, 0.08)',
-                  fontSize: '0.85rem',
-                }}
-              >
-                <div className="flex-grow-1">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="d-flex align-items-center gap-2">
-                      <Badge
-                        bg=""
-                        style={{
-                          backgroundColor: '#B13C36',
-                          fontSize: '0.7rem',
-                          padding: '0.35em 0.5em',
-                          fontWeight: 600,
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        {shopSlotBadge(selectedShopVoucher)}
-                      </Badge>
-                      <span
-                        className="fw-semibold text-truncate"
-                        style={{ color: '#333', maxWidth: '160px' }}
-                      >
-                        {selectedShopVoucher.name}
-                      </span>
+            {/* Per-seller shop voucher chips */}
+            {selectedShopVouchersBySellerResolved
+              .filter((s) => s.voucher)
+              .map(({ sellerId, shopName, voucher }) => (
+                <div
+                  key={sellerId}
+                  className="d-flex align-items-start gap-3 p-2 rounded-3 border-0"
+                  style={{
+                    backgroundColor: '#fffdfc',
+                    boxShadow: '0 2px 8px rgba(177, 60, 54, 0.08)',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  <div className="flex-grow-1">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div className="d-flex align-items-center gap-2">
+                        <Badge
+                          bg=""
+                          style={{ backgroundColor: '#B13C36', fontSize: '0.7rem', padding: '0.35em 0.5em', fontWeight: 600 }}
+                        >
+                          SHOP
+                        </Badge>
+                        <span className="fw-semibold text-truncate" style={{ color: '#333', maxWidth: '140px' }}>
+                          {isMultiSeller ? `${shopName}: ` : ''}{voucher.name}
+                        </span>
+                      </div>
+                      <i
+                        className="bi bi-x-circle-fill text-muted"
+                        style={{ cursor: 'pointer', fontSize: '1rem' }}
+                        onClick={() =>
+                          setSelectedShopVoucherBySeller((prev) => ({ ...prev, [sellerId]: null }))
+                        }
+                        title="Bỏ chọn"
+                      />
                     </div>
-                    {/* Clear Button */}
-                    <i
-                      className="bi bi-x-circle-fill text-muted"
-                      style={{ cursor: 'pointer', fontSize: '1rem', transition: 'color 0.2s' }}
-                      onMouseEnter={(e) => (e.target.style.color = '#B13C36')}
-                      onMouseLeave={(e) => (e.target.style.color = '#6c757d')}
-                      onClick={() => setSelectedShopVoucherId(null)}
-                      title="Deselect"
-                    ></i>
-                  </div>
-                  <div
-                    style={{
-                      color: '#B13C36',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      marginTop: '6px',
-                    }}
-                  >
-                    - {formatCurrency(selectedShopVoucher.estimatedSaving)}
+                    <div style={{ color: '#B13C36', fontSize: '0.8rem', fontWeight: 600, marginTop: 6 }}>
+                      - {formatCurrency(voucher.estimatedSaving || 0)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ))}
 
             {/* Show Selected Product Voucher */}
             {selectedProductVoucher && (
@@ -1701,7 +1691,7 @@ const CheckoutPage = () => {
                 );
               })()}
 
-            {!selectedShopVoucher &&
+            {selectedShopVouchersBySellerResolved.every((s) => !s.voucher) &&
               !selectedSystemVoucher &&
               !selectedProductVoucher &&
               !selectedBuyerVoucher && (
@@ -2017,139 +2007,89 @@ const CheckoutPage = () => {
               style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '8px' }}
               className="custom-scrollbar"
             >
-              {applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private').length >
-                0 && (
-                <div className="mb-4">
-                  <div className="d-flex align-items-center mb-3">
-                    <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
-                      Shop Vouchers
-                    </h6>
-                    <span
-                      className="ms-2 badge rounded-pill"
-                      style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}
-                    >
-                      {
-                        applicableVouchers.filter((v) => v.type === 'shop' || v.type === 'private')
-                          .length
-                      }
-                    </span>
-                  </div>
-                  {applicableVouchers
-                    .filter((v) => v.type === 'shop' || v.type === 'private')
-                    .map((v) => {
-                      const cartOk = voucherEligibleForCartSubtotal(v, localSubtotal);
+              {/* Shop Vouchers — grouped by seller */}
+              {sellerGroups.map((group) => {
+                const sellerVouchers = applicableVouchers.filter(
+                  (v) => (v.type === 'shop' || v.type === 'private') && v.shopId === group.sellerId,
+                );
+                if (sellerVouchers.length === 0) return null;
+                const sellerSub = sellerSubtotals[group.sellerId] || 0;
+                const currentVid = selectedShopVoucherBySeller[group.sellerId] || null;
+
+                return (
+                  <div key={group.sellerId} className="mb-4">
+                    <div className="d-flex align-items-center mb-2">
+                      <i className="bi bi-shop me-2" style={{ color: '#B13C36' }}></i>
+                      <h6 className="mb-0 fw-bold" style={{ color: '#444' }}>
+                        {isMultiSeller ? group.shopName : 'Shop Vouchers'}
+                      </h6>
+                      <span className="ms-2 badge rounded-pill" style={{ backgroundColor: '#ffe9e6', color: '#B13C36' }}>
+                        {sellerVouchers.length}
+                      </span>
+                    </div>
+                    {sellerVouchers.map((v) => {
+                      const cartOk = v.eligible && (!v.minBasketPrice || sellerSub >= v.minBasketPrice);
+                      const isSel = currentVid === v._id;
                       return (
                         <div
                           key={v._id}
-                          className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${
-                            !cartOk ? 'opacity-50' : 'bg-white shadow-sm'
-                          }`}
+                          className={`d-flex align-items-center justify-content-between p-3 rounded-4 mb-3 ${!cartOk ? 'opacity-50' : 'bg-white shadow-sm'}`}
                           style={{
-                            border:
-                              selectedShopVoucherId === v._id
-                                ? '2px solid #B13C36'
-                                : '1px solid transparent',
+                            border: isSel ? '2px solid #B13C36' : '1px solid transparent',
                             cursor: cartOk ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            position: 'relative',
-                            overflow: 'hidden',
+                            transition: 'all 0.2s ease',
+                            position: 'relative', overflow: 'hidden',
                           }}
                           onClick={() => {
-                            if (!cartOk) {
-                              return;
-                            }
-                            if (!v.isSaved) {
-                              return; // Must save first
-                            }
-                            setSelectedShopVoucherId(
-                              selectedShopVoucherId === v._id ? null : v._id
-                            );
+                            if (!cartOk) return;
+                            if (!v.isSaved) return;
+                            setSelectedShopVoucherBySeller((prev) => ({
+                              ...prev,
+                              [group.sellerId]: isSel ? null : v._id,
+                            }));
                           }}
                         >
-                          {/* Decorative edge */}
                           <div
                             style={{
-                              position: 'absolute',
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: '4px',
-                              backgroundColor: '#B13C36',
-                              opacity: selectedShopVoucherId === v._id ? 1 : 0.2,
+                              position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px',
+                              backgroundColor: '#B13C36', opacity: isSel ? 1 : 0.2,
                             }}
-                          ></div>
-
+                          />
                           <div className="d-flex align-items-center gap-3 flex-grow-1 ps-2">
                             <div
                               className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                              style={{
-                                width: '54px',
-                                height: '54px',
-                                backgroundColor: '#fff5f0',
-                                color: '#B13C36',
-                                border: '1px solid #ffeada',
-                              }}
+                              style={{ width: 54, height: 54, backgroundColor: '#fff5f0', color: '#B13C36', border: '1px solid #ffeada' }}
                             >
                               <i className="bi bi-shop fs-4"></i>
                             </div>
                             <div className="flex-grow-1">
-                              <div
-                                className="fw-bold text-truncate"
-                                style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: '200px' }}
-                              >
+                              <div className="fw-bold text-truncate" style={{ color: '#2b2b2b', fontSize: '1rem', maxWidth: 200 }}>
                                 {v.name}
                               </div>
                               <div className="text-muted small mt-1">
                                 {v.minBasketPrice > 0
-                                  ? `Min. Order ${formatCurrency(v.minBasketPrice)}`
-                                  : 'No minimum required'}
+                                  ? `Min. đơn ${formatCurrency(v.minBasketPrice)}`
+                                  : 'Không yêu cầu đơn tối thiểu'}
                               </div>
                               {cartOk && v.estimatedSaving > 0 && (
-                                <div
-                                  className="mt-1 d-inline-block px-2 py-1 rounded"
-                                  style={{
-                                    backgroundColor: '#ffe9e6',
-                                    color: '#B13C36',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  Save {formatCurrency(v.estimatedSaving)}
+                                <div className="mt-1 d-inline-block px-2 py-1 rounded"
+                                  style={{ backgroundColor: '#ffe9e6', color: '#B13C36', fontSize: '0.75rem', fontWeight: 700 }}>
+                                  Tiết kiệm {formatCurrency(v.estimatedSaving)}
                                 </div>
                               )}
-                              {!cartOk &&
-                                (() => {
-                                  const min = Number(v.minBasketPrice);
-                                  const line =
-                                    v.eligible &&
-                                    !Number.isNaN(min) &&
-                                    min > 0 &&
-                                    localSubtotal < min
-                                      ? `Requires min. order ${formatCurrency(min)} (current ${formatCurrency(localSubtotal)})`
-                                      : v.ineligibleReason;
-                                  return line ? (
-                                    <div
-                                      className="text-danger mt-1 fw-medium"
-                                      style={{ fontSize: '0.75rem' }}
-                                    >
-                                      {line}
-                                    </div>
-                                  ) : null;
-                                })()}
+                              {!cartOk && (
+                                <div className="text-danger mt-1" style={{ fontSize: '0.75rem' }}>
+                                  {v.ineligibleReason || (v.minBasketPrice > 0 ? `Cần tối thiểu ${formatCurrency(v.minBasketPrice)}` : '')}
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          <div className="ms-3 flex-shrink-0 text-end pe-2">
+                          <div className="ms-3 flex-shrink-0 pe-2">
                             {!v.isSaved ? (
                               <Button
                                 size="sm"
                                 className="fw-semibold px-3"
-                                style={{
-                                  backgroundColor: '#B13C36',
-                                  borderColor: '#B13C36',
-                                  fontSize: '0.85rem',
-                                  borderRadius: '6px',
-                                }}
+                                style={{ backgroundColor: '#B13C36', borderColor: '#B13C36', fontSize: '0.85rem', borderRadius: '6px' }}
                                 onClick={(e) => handleSaveAndUseVoucher(e, v)}
                                 disabled={!cartOk}
                               >
@@ -2161,16 +2101,11 @@ const CheckoutPage = () => {
                                   className="form-check-input"
                                   type="radio"
                                   id={`shop-v-${v._id}`}
-                                  name="modalShopVoucher"
-                                  checked={selectedShopVoucherId === v._id}
+                                  name={`shopVoucher_${group.sellerId}`}
+                                  checked={isSel}
                                   disabled={!cartOk}
                                   onChange={() => {}}
-                                  style={{
-                                    width: '1.4em',
-                                    height: '1.4em',
-                                    cursor: 'pointer',
-                                    accentColor: '#B13C36', // Modern browser styling
-                                  }}
+                                  style={{ width: '1.4em', height: '1.4em', cursor: 'pointer', accentColor: '#B13C36' }}
                                 />
                               </div>
                             )}
@@ -2178,8 +2113,9 @@ const CheckoutPage = () => {
                         </div>
                       );
                     })}
-                </div>
-              )}
+                  </div>
+                );
+              })}
 
               {applicableVouchers.filter((v) => v.type === 'product').length > 0 && (
                 <div className="mb-4">
