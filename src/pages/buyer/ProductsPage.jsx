@@ -150,7 +150,7 @@ const ProductsPage = () => {
           const activeModel = product.models?.find((m) => m.isActive) || product.models?.[0] || {};
 
           return {
-            id: product._id,
+            id: String(product._id ?? ''),
             name: product.name,
             image:
               activeModel.image ||
@@ -183,8 +183,15 @@ const ProductsPage = () => {
         if (productIds.length > 0) {
           try {
             const promoResponse = await promotionBuyerService.getProductPromotionsBatch(productIds);
-            const promoMap = promoResponse?.data || promoResponse;
-            if (promoMap && typeof promoMap === 'object') {
+            // axios interceptor returns response.data → promoResponse = { success, data: map }
+            const rawMap =
+              promoResponse?.success === true && promoResponse?.data
+                ? promoResponse.data
+                : promoResponse?.data ?? promoResponse;
+            const promoMap =
+              rawMap && typeof rawMap === 'object' && !Array.isArray(rawMap) ? rawMap : {};
+
+            if (Object.keys(promoMap).length > 0) {
               setProducts((prev) =>
                 prev.map((p) => {
                   const promo = promoMap[p.id];
@@ -194,8 +201,25 @@ const ProductsPage = () => {
 
                   const updated = { ...p };
 
-                  // Shop program price override
                   if (
+                    promo.flashSale &&
+                    promo.flashSale.salePrice != null &&
+                    Number(promo.flashSale.salePrice) > 0
+                  ) {
+                    updated.price = Number(promo.flashSale.salePrice);
+                    updated.originalPrice =
+                      Number(promo.flashSale.originalPrice) > 0
+                        ? Number(promo.flashSale.originalPrice)
+                        : p.originalPrice;
+                    updated.promotionType = 'flashSale';
+                    updated.dealEndDate = promo.flashSale.endAt ?? promo.flashSale.endDate;
+                    updated.dealStartDate = promo.flashSale.startAt ?? promo.flashSale.startDate;
+                    updated.dealType = promo.flashSale.dealType || 'flash_sale';
+                    updated.dealQuantityLimit = promo.flashSale.totalQuantity ?? 0;
+                    updated.dealSoldCount = promo.flashSale.soldQuantity ?? 0;
+                    updated.campaignTitle =
+                      promo.flashSale.campaignTitle || 'FLASH SALE';
+                  } else if (
                     promo.shopProgram &&
                     promo.shopProgram.salePrice < promo.shopProgram.originalPrice
                   ) {

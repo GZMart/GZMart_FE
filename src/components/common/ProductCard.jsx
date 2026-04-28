@@ -146,7 +146,9 @@ const ProductCard = React.forwardRef(({ product }, ref) => {
     return () => clearInterval(interval);
   }, [product.dealEndDate, product.dealStartDate]);
 
-  const isFlashSale = product.dealType === 'flash_sale';
+  const isFlashSale =
+    product.promotionType === 'flashSale' ||
+    !!(product.dealType && product.dealEndDate);
   const qtyLimit = product.dealQuantityLimit;
   const hasQtyLimit = qtyLimit != null && Number(qtyLimit) > 0;
   const soldPercentage = hasQtyLimit
