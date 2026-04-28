@@ -87,34 +87,31 @@ const ProductCard = ({ product }) => (
       whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.2 }}
     >
-      {product.badges.length > 0 && (
-        <div className="position-absolute top-0 start-0 m-2 z-1 d-flex flex-column gap-1">
+      {/* All badges in one container — prevents overlap on narrow cards */}
+      {(product.badges.length > 0 || product.recSource) && (
+        <div className="position-absolute top-0 start-0 m-2 z-1 d-flex flex-column gap-1" style={{ maxWidth: 'calc(100% - 1rem)' }}>
           {product.badges.map((badge, idx) => (
             <Badge
               key={idx}
               bg={badge.bg}
               text={badge.color}
-              className="rounded-1 px-2 py-1 fw-bold small shadow-sm"
+              className="rounded-1 px-2 py-1 fw-bold small shadow-sm align-self-start"
             >
               {badge.text}
             </Badge>
           ))}
-        </div>
-      )}
-      
-      {/* AI Recommendation Source Badge */}
-      {product.recSource && (
-        <div className="position-absolute top-0 end-0 m-2 z-1">
-          <Badge
-            bg={product.recSource === 'trending' ? 'secondary' : 'primary'}
-            className="rounded-pill px-2 py-1 small shadow-sm"
-            style={{ fontSize: '0.65rem', opacity: 0.85 }}
-          >
-            {product.recSource === 'trending' ? 'HOT TREND' : 
-             product.recSource === 'content' ? '✨ AI: SIMILAR' : 
-             product.recSource === 'collab' ? '🤝 AI: BOUGHT TOGETHER' : 
-             '🌟 AI: HYBRID'}
-          </Badge>
+          {product.recSource && (
+            <Badge
+              bg={product.recSource === 'trending' ? 'secondary' : 'primary'}
+              className="rounded-pill px-2 py-1 small shadow-sm align-self-start"
+              style={{ fontSize: '0.65rem', opacity: 0.85 }}
+            >
+              {product.recSource === 'trending' ? 'HOT TREND' :
+               product.recSource === 'content' ? '✨ AI: SIMILAR' :
+               product.recSource === 'collab' ? '🤝 AI: BOUGHT TOGETHER' :
+               '🌟 AI: HYBRID'}
+            </Badge>
+          )}
         </div>
       )}
 
