@@ -184,10 +184,10 @@ const ProductsPage = () => {
           try {
             const promoResponse = await promotionBuyerService.getProductPromotionsBatch(productIds);
             // axios interceptor returns response.data → promoResponse = { success, data: map }
-            const rawMap =
-              promoResponse?.success === true && promoResponse?.data
-                ? promoResponse.data
-                : promoResponse?.data ?? promoResponse;
+        const rawMap =
+          promoResponse?.success === true && promoResponse?.data
+            ? promoResponse.data
+            : promoResponse?.data ?? {};
             const promoMap =
               rawMap && typeof rawMap === 'object' && !Array.isArray(rawMap) ? rawMap : {};
 
