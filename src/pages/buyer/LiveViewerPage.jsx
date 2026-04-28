@@ -81,10 +81,38 @@ const LIVE_CHAT_EMOTES = [
 
 // ── Product price helpers ────────────────────────────────────────────────────
 const computePrice = (product) => {
-  const sale = product?.price != null && !Number.isNaN(Number(product.price)) ? Number(product.price) : null;
-  const original = product?.originalPrice != null && !Number.isNaN(Number(product.originalPrice)) ? Number(product.originalPrice) : null;
-  const current = sale != null && sale > 0 ? sale : (original ?? 0);
-  const discount = original != null && original > 0 && current < original ? Math.round((1 - current / original) * 100) : null;
+  const fs = product?.flashSale;
+  if (
+    fs &&
+    fs.salePrice != null &&
+    !Number.isNaN(Number(fs.salePrice)) &&
+    Number(fs.salePrice) > 0
+  ) {
+    const sale = Number(fs.salePrice);
+    const original =
+      product?.originalPrice != null && !Number.isNaN(Number(product.originalPrice))
+        ? Number(product.originalPrice)
+        : fs.originalPrice != null && !Number.isNaN(Number(fs.originalPrice))
+          ? Number(fs.originalPrice)
+          : null;
+    const current = sale;
+    const discount =
+      original != null && original > 0 && current < original
+        ? Math.round((1 - current / original) * 100)
+        : null;
+    return { sale, original, current, discount };
+  }
+  const sale =
+    product?.price != null && !Number.isNaN(Number(product.price)) ? Number(product.price) : null;
+  const original =
+    product?.originalPrice != null && !Number.isNaN(Number(product.originalPrice))
+      ? Number(product.originalPrice)
+      : null;
+  const current = sale != null && sale > 0 ? sale : original ?? 0;
+  const discount =
+    original != null && original > 0 && current < original
+      ? Math.round((1 - current / original) * 100)
+      : null;
   return { sale, original, current, discount };
 };
 
@@ -1383,7 +1411,12 @@ return null;
         toast.error(`No matching variant (${attempted}) for this product.`);
         return;
       }
-      price = Number(resolvedVariant.price) || price;
+      // Use flash sale price if active; otherwise fall back to variant's raw price.
+      const rawVariantPrice = Number(resolvedVariant.price) || price;
+      const variantFs = targetProduct?.flashSale;
+      price = (variantFs?.salePrice != null && Number(variantFs.salePrice) > 0)
+        ? Number(variantFs.salePrice)
+        : rawVariantPrice;
 
       // Derive color / size labels from tierIndex
       const { tiers } = targetProduct;
@@ -1416,7 +1449,12 @@ return;
         toast.error('This product has no valid variant.');
         return;
       }
-      price = Number(fallback.price) || price;
+      // Use flash sale price if active; otherwise use fallback model's raw price.
+      const rawFallbackPrice = Number(fallback.price) || price;
+      const fallbackFs = targetProduct?.flashSale;
+      price = (fallbackFs?.salePrice != null && Number(fallbackFs.salePrice) > 0)
+        ? Number(fallbackFs.salePrice)
+        : rawFallbackPrice;
     }
 
     try {

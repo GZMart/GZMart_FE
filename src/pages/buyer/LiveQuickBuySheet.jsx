@@ -319,6 +319,12 @@ return;
     ) {
       return resolvedUnitPrice;
     }
+    // While buyerVariantPricing is loading or unavailable, fall back to the flash sale
+    // price that the live feed already displays — avoids showing raw model price.
+    const liveFs = liveProduct?.flashSale;
+    if (liveFs?.salePrice != null && !Number.isNaN(Number(liveFs.salePrice)) && Number(liveFs.salePrice) > 0) {
+      return Number(liveFs.salePrice);
+    }
     if (activeModel && Number(activeModel.price) > 0) {
       return Number(activeModel.price);
     }
