@@ -129,6 +129,9 @@ const LiveQuickBuySheet = ({
   const [detailError, setDetailError] = useState(null);
   const [selectedTierIndex, setSelectedTierIndex] = useState([]);
   const [activeModel, setActiveModel] = useState(null);
+  const [resolvedUnitPrice, setResolvedUnitPrice] = useState(null);
+  const [pricingBaselinePrice, setPricingBaselinePrice] = useState(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
 
   // Fetch full product (tiers, models, prices) when sheet opens
   useEffect(() => {
@@ -189,6 +192,54 @@ setDetailLoading(false);
   }, [show, liveProduct?._id]);
 
   useEffect(() => {
+    if (!detailProduct?._id || !activeModel) {
+      setResolvedUnitPrice(null);
+      setPricingBaselinePrice(null);
+      return undefined;
+    }
+    const idx = detailProduct.models?.findIndex(
+      (m) =>
+        m._id &&
+        activeModel._id &&
+        String(m._id) === String(activeModel._id),
+    );
+    if (idx < 0) {
+      setResolvedUnitPrice(null);
+      setPricingBaselinePrice(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setPricingLoading(true);
+    productService
+      .buyerVariantPricing(detailProduct._id, idx)
+      .then((res) => {
+        const payload = res?.data?.data ?? res?.data;
+        if (!cancelled && payload?.unitPrice != null) {
+          setResolvedUnitPrice(Number(payload.unitPrice));
+          if (payload?.baselineModelPrice != null) {
+            setPricingBaselinePrice(Number(payload.baselineModelPrice));
+          } else {
+            setPricingBaselinePrice(null);
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResolvedUnitPrice(null);
+          setPricingBaselinePrice(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPricingLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detailProduct, activeModel]);
+
+  useEffect(() => {
     if (!show) {
       setQuantity(1);
       setSelectedLiveVoucher(null);
@@ -196,6 +247,9 @@ setDetailLoading(false);
       setDetailError(null);
       setSelectedTierIndex([]);
       setActiveModel(null);
+      setResolvedUnitPrice(null);
+      setPricingBaselinePrice(null);
+      setPricingLoading(false);
     }
   }, [show]);
 
@@ -258,19 +312,39 @@ return;
   );
 
   const unitPrice = useMemo(() => {
+    if (
+      resolvedUnitPrice != null &&
+      !Number.isNaN(resolvedUnitPrice) &&
+      resolvedUnitPrice > 0
+    ) {
+      return resolvedUnitPrice;
+    }
+    // While buyerVariantPricing is loading or unavailable, fall back to the flash sale
+    // price that the live feed already displays — avoids showing raw model price.
+    const liveFs = liveProduct?.flashSale;
+    if (liveFs?.salePrice != null && !Number.isNaN(Number(liveFs.salePrice)) && Number(liveFs.salePrice) > 0) {
+      return Number(liveFs.salePrice);
+    }
     if (activeModel && Number(activeModel.price) > 0) {
       return Number(activeModel.price);
     }
     if (detailProduct) {
       const { min } = getPriceRange(detailProduct);
       if (min > 0) {
-return min;
-}
+        return min;
+      }
     }
     return resolveLiveUnitPrice(liveProduct);
-  }, [activeModel, detailProduct, liveProduct]);
+  }, [resolvedUnitPrice, activeModel, detailProduct, liveProduct]);
 
   const originalListPrice = useMemo(() => {
+    if (
+      pricingBaselinePrice != null &&
+      !Number.isNaN(pricingBaselinePrice) &&
+      pricingBaselinePrice > 0
+    ) {
+      return pricingBaselinePrice;
+    }
     const fromLive =
       liveProduct?.originalPrice != null && !Number.isNaN(Number(liveProduct.originalPrice))
         ? Number(liveProduct.originalPrice)
@@ -281,7 +355,7 @@ return min;
         : null;
     const o = fromDetail ?? fromLive;
     return o != null && o > 0 ? o : null;
-  }, [liveProduct, detailProduct]);
+  }, [liveProduct, detailProduct, pricingBaselinePrice]);
 
   const displayImage = useMemo(() => {
     const liveImg =
@@ -368,6 +442,7 @@ setQuantity(maxStock);
 
   const canCheckout =
     !detailLoading &&
+    !(activeModel && pricingLoading) &&
     unitPrice > 0 &&
     !needsVariantSelection &&
     (preOrderDaysNum > 0 || maxStock > 0);
@@ -416,7 +491,7 @@ return;
       const size = selectedSize;
 
       if (onAddToLiveCart) {
-        const computedPrice = activeModel ? Number(activeModel.price) : unitPrice;
+        const computedPrice = unitPrice;
         onAddToLiveCart({
           productId: liveProduct._id,
           name: detailProduct?.name || liveProduct.name,
@@ -437,6 +512,7 @@ return;
             size,
             image: displayImage,
             name: detailProduct?.name || liveProduct.name,
+            sessionId,
           }),
         ).unwrap();
 
@@ -519,7 +595,7 @@ return null;
               />
               <div className={styles['lqbs-product-info']}>
                 <div className={styles['lqbs-product-name']}>{displayName}</div>
-                {detailLoading ? (
+                {detailLoading || (activeModel && pricingLoading) ? (
                   <div className={styles['lqbs-product-price']}>Loading price…</div>
                 ) : (
                   <div className={styles['lqbs-product-price']}>
