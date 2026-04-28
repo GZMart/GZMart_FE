@@ -76,7 +76,7 @@ export const removeFromCart = createAsyncThunk(
 export const addToCartFromLive = createAsyncThunk(
   'cart/addFromLive',
   async (
-    { productId, quantity, price, color, size, image, name, sessionId },
+    { productId, quantity, price, color, size, image, name, sessionId = null },
     { dispatch, rejectWithValue }
   ) => {
     try {
@@ -85,7 +85,7 @@ export const addToCartFromLive = createAsyncThunk(
         quantity,
         color,
         size,
-        liveSessionId: sessionId || null,
+        liveSessionId: sessionId,
       });
       dispatch(fetchCart());
       return;
