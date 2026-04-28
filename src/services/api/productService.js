@@ -38,6 +38,14 @@ export const productService = {
   getProductById: async (id) => await axiosClient.get(`${BASE_URL}/${id}`),
 
   /**
+   * Flash sale / shop program resolved price for a variant (storefront)
+   */
+  buyerVariantPricing: async (productId, modelIndex = 0) =>
+    axiosClient.get(`${BASE_URL}/${productId}/buyer-variant-pricing`, {
+      params: { modelIndex },
+    }),
+
+  /**
    * Get products by category
    * @param {string} categoryId - Category ID
    * @param {object} params - Query parameters
