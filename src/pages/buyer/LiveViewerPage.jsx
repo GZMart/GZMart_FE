@@ -1170,9 +1170,18 @@ return;
                 byId.set(m.id, m);
               }
               for (const m of prev) {
-                if (!byId.has(m.id)) {
-                  byId.set(m.id, m);
+                if (byId.has(m.id)) continue;
+                // Local-only messages (id starts with 'local_') are optimistic placeholders
+                // added when the user sent a message. Once server history arrives, they
+                // must be dropped if a server message with the same content+sender exists —
+                // otherwise the same chat line appears twice after leaving and re-entering.
+                if (String(m.id).startsWith('local_')) {
+                  const serverMatch = fromServer.find(
+                    (s) => s.content === m.content && String(s.userId) === String(m.userId),
+                  );
+                  if (serverMatch) continue;
                 }
+                byId.set(m.id, m);
               }
               const merged = Array.from(byId.values()).sort(
                 (a, b) =>
