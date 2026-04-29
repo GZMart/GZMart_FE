@@ -11,6 +11,7 @@ import LiveProductSelector from '@components/seller/LiveProductSelector';
 import LiveVoucherSelector from '@components/seller/LiveVoucherSelector';
 import LiveSessionEndSummaryModal from '@components/seller/LiveSessionEndSummaryModal';
 import LiveSessionAnalyticsPanel from '@components/seller/LiveSessionAnalyticsPanel';
+import EndLiveConfirmModal from '@components/seller/EndLiveConfirmModal';
 import socketService from '@services/socket/socketService';
 import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
@@ -20,8 +21,6 @@ const DEFAULT_FORM = {
   platforms: ['tiktok'],
 };
 
-const END_LIVE_CONFIRM_MSG =
-  'Bạn có chắc muốn kết thúc phiên live? Người xem sẽ không còn xem được phát sóng này.';
 
 function getFullscreenElement() {
   const d = document;
@@ -72,6 +71,7 @@ export default function LiveStreamPage() {
   const [endSummaryLoading, setEndSummaryLoading] = useState(false);
   const [endSummaryError, setEndSummaryError] = useState(null);
   const [endSummaryStats, setEndSummaryStats] = useState(null);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
@@ -248,22 +248,17 @@ export default function LiveStreamPage() {
   }, [session]);
 
   const confirmEndLive = useCallback(() => {
-    if (typeof window !== 'undefined' && !window.confirm(END_LIVE_CONFIRM_MSG)) {
-      return;
-    }
-    void handleEndLive();
-  }, [handleEndLive]);
+    setShowEndConfirm(true);
+  }, []);
 
   const handleDiscard = useCallback(() => {
     if (isLive) {
-      if (typeof window !== 'undefined' && !window.confirm(END_LIVE_CONFIRM_MSG)) {
-        return;
-      }
-      void handleEndLive();
+      setShowEndConfirm(true);
+      return;
     }
     setForm(DEFAULT_FORM);
     setError(null);
-  }, [isLive, handleEndLive]);
+  }, [isLive]);
 
   const toggleMic = () => {
     setIsMicOn((v) => !v);
@@ -541,6 +536,19 @@ return;
           setEndSummaryOpen(false);
           setEndSummaryStats(null);
           setEndSummaryError(null);
+        }}
+      />
+
+      <EndLiveConfirmModal
+        isOpen={showEndConfirm}
+        onCancel={() => setShowEndConfirm(false)}
+        onConfirm={() => {
+          setShowEndConfirm(false);
+          void handleEndLive();
+          if (!isLive) {
+            setForm(DEFAULT_FORM);
+            setError(null);
+          }
         }}
       />
 

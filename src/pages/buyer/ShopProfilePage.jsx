@@ -1017,8 +1017,25 @@ const ShopProfilePage = () => {
 
                 const updated = { ...p };
 
-                // Shop program price override
                 if (
+                  promo.flashSale &&
+                  promo.flashSale.salePrice != null &&
+                  Number(promo.flashSale.salePrice) > 0
+                ) {
+                  updated.price = Number(promo.flashSale.salePrice);
+                  updated.originalPrice =
+                    Number(promo.flashSale.originalPrice) > 0
+                      ? Number(promo.flashSale.originalPrice)
+                      : p.originalPrice;
+                  updated.promotionType = 'flashSale';
+                  updated.dealEndDate = promo.flashSale.endAt ?? promo.flashSale.endDate;
+                  updated.dealStartDate = promo.flashSale.startAt ?? promo.flashSale.startDate;
+                  updated.dealType = 'flash_sale';
+                  updated.dealQuantityLimit = promo.flashSale.totalQuantity ?? 0;
+                  updated.dealSoldCount = promo.flashSale.soldQuantity ?? 0;
+                  updated.campaignTitle =
+                    promo.flashSale.campaignTitle || 'FLASH SALE';
+                } else if (
                   promo.shopProgram &&
                   promo.shopProgram.salePrice < promo.shopProgram.originalPrice
                 ) {
