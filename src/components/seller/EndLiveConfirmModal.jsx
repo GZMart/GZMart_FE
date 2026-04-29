@@ -34,29 +34,37 @@ export default function EndLiveConfirmModal({ isOpen, onConfirm, onCancel }) {
             }}
           />
 
-          {/* Dialog */}
-          <motion.div
-            key="dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="end-live-title"
-            initial={{ opacity: 0, scale: 0.92, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 24 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 9999,
-              width: 'min(440px, calc(100vw - 32px))',
-              background: '#fff',
-              borderRadius: 20,
-              overflow: 'hidden',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
-            }}
-          >
+          {/* Dialog Wrapper for centering without transform conflicts */}
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            padding: '16px',
+          }}>
+            {/* Dialog */}
+            <motion.div
+              key="dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="end-live-title"
+              initial={{ opacity: 0, scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+              style={{
+                width: '100%',
+                maxWidth: 440,
+                background: '#fff',
+                borderRadius: 20,
+                overflow: 'hidden',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
+                pointerEvents: 'auto',
+              }}
+            >
             {/* Red header strip */}
             <div style={{
               background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
@@ -168,7 +176,8 @@ export default function EndLiveConfirmModal({ isOpen, onConfirm, onCancel }) {
                 </motion.button>
               </div>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
