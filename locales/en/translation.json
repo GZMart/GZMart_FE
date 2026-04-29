@@ -1371,6 +1371,7 @@
     "groupErp": "ERP",
     "groupSettings": "SETTINGS",
     "nav": {
+      "home": "Home",
       "dashboard": "Dashboard",
       "orders": "Orders",
       "disputes": "Disputes",

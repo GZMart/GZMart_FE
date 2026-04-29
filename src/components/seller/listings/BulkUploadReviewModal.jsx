@@ -280,7 +280,14 @@ const BulkUploadReviewModal = ({ items, onBack, onConfirm, confirming }) => {
             return;
           }
           const idx = editingIndex;
-          setLocalProducts((prev) => ({ ...prev, [idx]: nextProduct }));
+          const catId = selection[idx];
+          setLocalProducts((prev) => ({
+            ...prev,
+            [idx]: {
+              ...nextProduct,
+              ...(catId ? { categoryId: catId } : {}),
+            },
+          }));
           setEditedRows((prev) => new Set(prev).add(idx));
           setEditingIndex(null);
         }}

@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Pencil,
   Check,
   X,
   Package,
@@ -26,7 +25,6 @@ import {
   FilterX,
 } from 'lucide-react';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
-import EditPODrawer from '@components/seller/erp/EditPODrawer';
 import ReceivePOModal from '@components/seller/erp/ReceivePOModal';
 import styles from '@assets/styles/seller/erp/PurchaseOrdersPage.module.css';
 
@@ -114,7 +112,6 @@ const PurchaseOrdersPage = () => {
 
   const [cancelModal, setCancelModal] = useState({ show: false, id: null });
   const [cancelReason, setCancelReason] = useState('');
-  const [editingPoId, setEditingPoId] = useState(null);
   const [receiveModalPoId, setReceiveModalPoId] = useState(null);
 
   const COL_TO_SORT = {
@@ -271,18 +268,6 @@ const PurchaseOrdersPage = () => {
         >
           <Eye size={14} /> View
         </Link>
-
-        {/* ── Draft: Full edit | ORDERED/ARRIVED_VN: Limited edit (Notes, Expected Date only) ── */}
-        {['Draft', 'ORDERED', 'ARRIVED_VN'].includes(po.status) && (
-          <button
-            className={`${styles.actionBtn} ${styles.btnIconOnly}`}
-            onClick={() => setEditingPoId(po._id)}
-            title="Edit order"
-            aria-label="Edit"
-          >
-            <Pencil size={14} />
-          </button>
-        )}
 
         {/* ── Receivable: Receive goods (opens cost input modal) + kebab(Cancel) ── */}
         {canReceive && (
@@ -606,17 +591,6 @@ const PurchaseOrdersPage = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Edit PO Drawer */}
-      {editingPoId && (
-        <EditPODrawer
-          poId={editingPoId}
-          onClose={() => setEditingPoId(null)}
-          onSaved={() => dispatch(fetchPurchaseOrders(apiFilters))}
-          onSubmitted={() => dispatch(fetchPurchaseOrders(apiFilters))}
-          onCancelled={() => dispatch(fetchPurchaseOrders(apiFilters))}
-        />
       )}
 
       {/* Receive PO Modal (Stage 2 — enter costs when goods arrive) */}

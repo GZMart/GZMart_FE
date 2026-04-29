@@ -19,6 +19,7 @@ import {
   CUSTOM_OPTION,
   listingTierToFormState,
   buildTierSelectOptions,
+  getVariantImageGroupTierIndex,
 } from '../../../constants/tierTypes';
 
 import {
@@ -369,18 +370,27 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
   const buildVariantLabel = (product, model) =>
     variantLabelFromRawTiers(product.tiers, model?.tierIndex || []);
 
-  /** Group models by tier-0 index — mirrors VariantsTable approach */
+  /** Group by image tier (Color ưu tiên) — cùng logic VariantsTable */
   const tier0Groups = useMemo(() => {
     if (!selected || !Array.isArray(selected.models)) {
-return [];
-}
+      return [];
+    }
+    const st = selected.tiers || [];
+    const primaryIdx = getVariantImageGroupTierIndex(
+      st.map((t) => ({ type: t.type, name: t.name, options: t.options || [] }))
+    );
     const groupMap = new Map();
     selected.models.forEach((model) => {
-      const t0Idx = model.tierIndex?.[0] ?? 0;
+      const t0Idx = model.tierIndex?.[primaryIdx] ?? 0;
       if (!groupMap.has(t0Idx)) {
+        const optRaw = st[primaryIdx]?.options?.[t0Idx];
+        const optLabel =
+          typeof optRaw === 'string'
+            ? optRaw
+            : (optRaw?.value ?? optRaw?.name ?? `Option ${t0Idx + 1}`);
         groupMap.set(t0Idx, {
           tier0Index: t0Idx,
-          tier0Label: selected.tiers?.[0]?.options?.[t0Idx] || `Option ${t0Idx + 1}`,
+          tier0Label: optLabel,
           tier0Image: model.image || null,
           models: [],
         });
@@ -390,15 +400,27 @@ return [];
     return Array.from(groupMap.values()).sort((a, b) => a.tier0Index - b.tier0Index);
   }, [selected]);
 
-  /** Secondary label for multi-tier models (tier-1 onwards) */
+  /** Các tier còn lại (không gồm cột nhóm ảnh) */
   const getSecondaryLabel = (model, hasMultiTier) => {
-    if (!hasMultiTier || !model.tierIndex || model.tierIndex.length < 2) {
-return null;
-}
-    return model.tierIndex
-      .slice(1)
-      .map((idx, i) => selected.tiers?.[i + 1]?.options?.[idx] || '?')
-      .join(' / ');
+    if (!hasMultiTier || !model.tierIndex || !selected?.tiers) {
+      return null;
+    }
+    const st = selected.tiers;
+    const primaryIdx = getVariantImageGroupTierIndex(
+      st.map((t) => ({ type: t.type, name: t.name, options: t.options || [] }))
+    );
+    const parts = [];
+    for (let i = 0; i < st.length; i += 1) {
+      if (i === primaryIdx) continue;
+      const idx = model.tierIndex[i];
+      const optRaw = st[i]?.options?.[idx];
+      const val =
+        typeof optRaw === 'string'
+          ? optRaw
+          : (optRaw?.value ?? optRaw?.name ?? '?');
+      parts.push(val);
+    }
+    return parts.join(' / ');
   };
 
   const hasMultiTier = selected && selected.tiers && selected.tiers.length >= 2;

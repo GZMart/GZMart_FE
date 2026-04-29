@@ -1371,6 +1371,7 @@
     "groupErp": "ERP",
     "groupSettings": "CÀI ĐẶT",
     "nav": {
+      "home": "Trang chủ",
       "dashboard": "Dashboard",
       "orders": "Đơn hàng",
       "disputes": "Tranh chấp",
