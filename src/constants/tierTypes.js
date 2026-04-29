@@ -155,6 +155,27 @@ return 'GENDER';
 }
 
 /**
+ * Chỉ số tier dùng để 1 ảnh / nhóm trên bảng Variants.
+ * Khi vừa có nhiều tầng biến thể, ưu tiên Color (cùng màu, nhiều size dùng chung ảnh).
+ */
+export function getVariantImageGroupTierIndex(tiers) {
+  if (!Array.isArray(tiers) || tiers.length < 2) {
+    return 0;
+  }
+  for (let i = 0; i < tiers.length; i += 1) {
+    if (tiers[i]?.type === 'COLOR') {
+      return i;
+    }
+  }
+  for (let i = 0; i < tiers.length; i += 1) {
+    if (resolveTierTypeKey(tiers[i]?.name) === 'COLOR') {
+      return i;
+    }
+  }
+  return 0;
+}
+
+/**
  * Preset options from TIER_TYPES + values already on this tier (listing import, subset prefill).
  * Keeps <select> usable for values like "Xanh bạc hà" / "S-M" that are not in the global preset list.
  */

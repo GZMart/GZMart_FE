@@ -89,13 +89,15 @@ return null;
         {formatAgeGroup(label)}
       </p>
       {payload.map((entry, idx) => (
-        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.9 }}>
-          <span style={{ color: entry.color || entry.fill, fontWeight: 600 }}>{entry.name}: </span>
-          {entry.name === 'Doanh thu'
-            ? formatCurrency(entry.value)
-            : entry.name === 'Tỷ lệ'
-            ? `${Number(entry.value).toFixed(1)}%`
-            : Number(entry.value).toLocaleString()}
+        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#e2e8f0', lineHeight: 1.9 }}>
+          <span style={{ color: entry.color || entry.fill || '#94a3b8', fontWeight: 600 }}>{entry.name}: </span>
+          <span style={{ color: '#f1f5f9' }}>
+            {entry.name === 'Doanh thu'
+              ? formatCurrency(entry.value)
+              : entry.name === 'Tỷ lệ'
+              ? `${Number(entry.value).toFixed(1)}%`
+              : Number(entry.value).toLocaleString()}
+          </span>
         </p>
       ))}
     </div>
@@ -543,8 +545,15 @@ return renderLoading();
               </span>
               <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'rgba(148,163,184,0.5)', fontVariationSettings: "'wght' 300" }}>payments</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: 26, fontWeight: 800, color: '#171c1f', lineHeight: 1, letterSpacing: '-0.02em' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+              <span style={{
+                fontSize: 'clamp(15px, 2.8vw, 26px)',
+                fontWeight: 800,
+                color: '#171c1f',
+                lineHeight: 1.15,
+                letterSpacing: '-0.02em',
+                wordBreak: 'break-word',
+              }}>
                 {formatCurrency(shopData.totalRevenue || 0)}
               </span>
               <span style={{ fontSize: 10, color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -643,8 +652,8 @@ return renderLoading();
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={58}
-                    outerRadius={82}
+                    innerRadius={64}
+                    outerRadius={86}
                     paddingAngle={2}
                     strokeWidth={0}
                   >
@@ -655,14 +664,24 @@ return renderLoading();
                   <RechartsTooltip content={<AgeTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Center label */}
+              {/* Center label — shrink long amounts so they stay inside the donut hole */}
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 pointerEvents: 'none',
+                padding: '0 10px',
+                boxSizing: 'border-box',
               }}>
                 <Text style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>Tổng DT</Text>
-                <Text style={{ fontSize: 18, fontWeight: 800, color: '#171c1f', lineHeight: 1.1 }}>
+                <Text style={{
+                  fontSize: 'clamp(11px, 2.6vw, 18px)',
+                  fontWeight: 800,
+                  color: '#171c1f',
+                  lineHeight: 1.15,
+                  textAlign: 'center',
+                  maxWidth: '82%',
+                  wordBreak: 'break-word',
+                }}>
                   {formatCurrency(shopData.totalRevenue || 0)}
                 </Text>
               </div>

@@ -900,10 +900,12 @@
 }
 
 .expenseKpiValue {
-  font-size: 1.25rem;
+  font-size: clamp(0.8125rem, 1vw + 0.65rem, 1.25rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.02em;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .expenseKpiMeta {
@@ -911,6 +913,9 @@
   color: #94a3b8;
   margin-top: 4px;
   font-weight: 500;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 /* Expense Donut Chart */
@@ -926,6 +931,7 @@
   position: relative;
   width: 100%;
   height: 240px;
+  container-type: inline-size;
 }
 
 .expenseDonutLabel {
@@ -935,6 +941,9 @@
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
+  max-width: min(124px, 46%);
+  padding: 0 6px;
+  box-sizing: border-box;
 }
 
 .expenseDonutLabelSub {
@@ -946,11 +955,13 @@
 }
 
 .expenseDonutLabelTotal {
-  font-size: 1.125rem;
+  font-size: clamp(0.5625rem, 5.5cqi, 1.125rem);
   font-weight: 800;
   color: #1e293b;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+  hyphens: none;
 }
 
 /* Category KPI Strip */
@@ -1199,10 +1210,12 @@
 }
 
 .ageKpiValue {
-  font-size: 1.25rem;
+  font-size: clamp(0.8125rem, 1vw + 0.65rem, 1.25rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.02em;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .ageKpiMeta {
@@ -1210,6 +1223,9 @@
   color: #94a3b8;
   margin-top: 4px;
   font-weight: 500;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 /* Age Chart Section */
@@ -1228,6 +1244,7 @@
   position: relative;
   width: 220px;
   height: 220px;
+  container-type: inline-size;
 }
 
 .ageDonutLabel {
@@ -1237,6 +1254,9 @@
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
+  max-width: min(116px, 52%);
+  padding: 0 4px;
+  box-sizing: border-box;
 }
 
 .ageDonutLabelSub {
@@ -1248,10 +1268,11 @@
 }
 
 .ageDonutLabelAge {
-  font-size: 1.25rem;
+  font-size: clamp(0.875rem, 2.8cqi, 1.25rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 .ageLegendSection {

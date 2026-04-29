@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { addToCart } from '@store/slices/cartSlice';
 import { productService } from '@services/api/productService';
+import { resolveTierTypeKey } from '../../../constants/tierTypes';
 import PropTypes from 'prop-types';
 
 /**
@@ -97,9 +98,42 @@ const RecommendSection = ({ limit = 4 }) => {
     let sizeValue = 'Default';
 
     if (tiers.length > 0 && activeModel.tierIndex && activeModel.tierIndex.length > 0) {
-      colorValue = tiers[0]?.options?.[activeModel.tierIndex[0]] || 'Default';
-      if (activeModel.tierIndex.length > 1) {
-        sizeValue = tiers[1]?.options?.[activeModel.tierIndex[1]] || 'Default';
+      const colorTierIdx = tiers.findIndex(
+        (t) => t.type === 'COLOR' || resolveTierTypeKey(t.name) === 'COLOR'
+      );
+      const sizeTierIdx = tiers.findIndex(
+        (t) => t.type === 'SIZE' || resolveTierTypeKey(t.name) === 'SIZE'
+      );
+      const optAt = (tierIdx) => {
+        if (tierIdx < 0) return null;
+        const o = tiers[tierIdx]?.options;
+        const i = activeModel.tierIndex[tierIdx];
+        if (Array.isArray(o) && o[i] != null) {
+          return typeof o[i] === 'string' ? o[i] : o[i]?.value || o[i];
+        }
+        return o?.[i] ?? null;
+      };
+      if (colorTierIdx >= 0) {
+        const v = optAt(colorTierIdx);
+        if (v) {
+          colorValue = v;
+        }
+      } else {
+        colorValue = tiers[0]?.options?.[activeModel.tierIndex[0]] || 'Default';
+      }
+      if (sizeTierIdx >= 0) {
+        const v = optAt(sizeTierIdx);
+        if (v) {
+          sizeValue = v;
+        }
+      } else if (activeModel.tierIndex.length > 1) {
+        const fallbackIdx = colorTierIdx === 0 ? 1 : 0;
+        const v = optAt(fallbackIdx);
+        if (v) {
+          sizeValue = v;
+        } else {
+          sizeValue = tiers[1]?.options?.[activeModel.tierIndex[1]] || 'Default';
+        }
       }
     }
 

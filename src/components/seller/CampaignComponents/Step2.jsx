@@ -4,6 +4,7 @@ import { Input, Button, InputNumber } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import styles from '@assets/styles/seller/Campaigns.module.css';
 import vtStyles from '@assets/styles/seller/VariantsTable.module.css';
+import { getVariantImageGroupTierIndex } from '@constants/tierTypes';
 
 /** Models from API use `tierIndex` (Mongoose); some payloads use `tier_index`. */
 const getModelTierIndex = (model) => {
@@ -49,26 +50,29 @@ return raw.value ?? raw.name ?? raw.label ?? '—';
   return String(raw);
 };
 
-const secondaryTierLabel = (tiers, tierIndexArr) => {
+const secondaryTierLabel = (tiers, tierIndexArr, primaryGroupTierIndex) => {
   if (!tierIndexArr?.length || !tiers || tiers.length < 2) {
-return '';
-}
+    return '';
+  }
   const parts = [];
-  for (let t = 1; t < tierIndexArr.length; t += 1) {
+  for (let t = 0; t < tierIndexArr.length; t += 1) {
+    if (t === primaryGroupTierIndex) continue;
     parts.push(tierOptionLabel(tiers, t, tierIndexArr[t]));
   }
   return parts.join(' / ');
 };
 
-const sortRowsInGroup = (a, b) => {
+const makeSortRowsInGroup = (primaryIdx) => (a, b) => {
   const ai = getModelTierIndex(a.model);
   const bi = getModelTierIndex(b.model);
-  for (let i = 1; i < Math.max(ai.length, bi.length); i += 1) {
+  const n = Math.max(ai.length, bi.length, primaryIdx + 1);
+  for (let i = 0; i < n; i += 1) {
+    if (i === primaryIdx) continue;
     const da = ai[i] ?? 0;
     const db = bi[i] ?? 0;
     if (da !== db) {
-return da - db;
-}
+      return da - db;
+    }
   }
   return String(a.model.sku || '').localeCompare(String(b.model.sku || ''), 'vi');
 };
@@ -120,31 +124,31 @@ const Step2 = ({
 
         const tiers = getProductTiers(product);
         const hasMultipleTiers = tiers.length >= 2;
-        const tier0Name = tiers[0]?.name || 'Variant';
+        const primaryGroupTierIndex = getVariantImageGroupTierIndex(tiers);
+        const tier0Name = tiers[primaryGroupTierIndex]?.name || 'Variant';
         const tierRestHeader =
-          tiers.length > 2
-            ? tiers
-                .slice(1)
-                .map((t) => t.name || '—')
-                .join(' / ')
-            : tiers[1]?.name || '';
+          tiers
+            .map((t, i) => (i !== primaryGroupTierIndex ? t.name : null))
+            .filter(Boolean)
+            .join(' / ') || '';
 
         const groupMap = new Map();
         rows.forEach((record) => {
           const idx = getModelTierIndex(record.model);
-          const t0 = idx[0] ?? 0;
+          const t0 = idx[primaryGroupTierIndex] ?? 0;
           if (!groupMap.has(t0)) {
-groupMap.set(t0, []);
-}
+            groupMap.set(t0, []);
+          }
           groupMap.get(t0).push(record);
         });
 
+        const sortRows = makeSortRowsInGroup(primaryGroupTierIndex);
         const sortedT0 = Array.from(groupMap.keys()).sort((a, b) => Number(a) - Number(b));
         const groups = sortedT0.map((t0) => {
-          const groupRows = [...groupMap.get(t0)].sort(sortRowsInGroup);
+          const groupRows = [...groupMap.get(t0)].sort(sortRows);
           return {
             tier0Index: t0,
-            tier0Label: tierOptionLabel(tiers, 0, t0),
+            tier0Label: tierOptionLabel(tiers, primaryGroupTierIndex, t0),
             rowSpan: groupRows.length,
             rows: groupRows,
           };
@@ -154,6 +158,7 @@ groupMap.set(t0, []);
           product,
           tiers,
           hasMultipleTiers,
+          primaryGroupTierIndex,
           tier0Name,
           tierRestHeader,
           groups,
@@ -505,7 +510,8 @@ return null;
                                   const isFirstInGroup = rowIdxInGroup === 0;
                                   const secLabel = secondaryTierLabel(
                                     section.tiers,
-                                    getModelTierIndex(model)
+                                    getModelTierIndex(model),
+                                    section.primaryGroupTierIndex
                                   );
                                   const tierImg = getTier0Image(group.rows);
                                   const rowSelected = selectedVariantKeys.includes(key);

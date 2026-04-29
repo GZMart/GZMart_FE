@@ -121,9 +121,10 @@ const BulkUploadModal = ({ isOpen, onClose, onCompleted }) => {
                   Bulk upload
                 </h2>
                 <p className={styles.bulkModalSubtitle}>
-                  Supports CSV and Excel (.csv, .xlsx, .xls — max 5MB). There is <strong>no category column</strong> in
-                  the file — after analysis, AI suggests categories from the name and description; you review and
-                  confirm, then the system creates the products.
+                  Supports CSV and Excel (.csv, .xlsx, .xls — max 5MB). There is <strong>no category column</strong> and{' '}
+                  <strong>no status column</strong> in the file — new products are always created as <strong>draft</strong>
+                  . After analysis, AI suggests categories from the name and description; you review and confirm, then the
+                  system creates the products.
                 </p>
               </div>
               <button type="button" className={styles.bulkModalClose} onClick={handleClose} aria-label="Close">
@@ -166,13 +167,6 @@ const BulkUploadModal = ({ isOpen, onClose, onCompleted }) => {
                 onClick={() => downloadTemplate('variant')}
               >
                 Variant
-              </button>
-              <button
-                type="button"
-                className={styles.bulkTemplateBtn}
-                onClick={() => downloadTemplate('mixed')}
-              >
-                Mixed
               </button>
             </div>
 
