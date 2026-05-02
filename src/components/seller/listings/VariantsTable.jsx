@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { useState, useMemo } from 'react';
+import { getVariantImageGroupTierIndex } from '../../../constants/tierTypes';
 import styles from '../../../assets/styles/seller/VariantsTable.module.css';
 
 const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, showShippingColumns = false }) => {
@@ -12,6 +13,12 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, 
 
   const getTierName = (tierIdx) => tiers[tierIdx]?.name || `Tier ${tierIdx + 1}`;
 
+  /** Cột nhóm + ảnh: ưu tiên Color khi có cả nhiều tầng (cùng màu, nhiều size = chung ảnh). */
+  const primaryGroupTierIndex = useMemo(
+    () => getVariantImageGroupTierIndex(tiers),
+    [tiers]
+  );
+
   const hasTier1 = tiers.length >= 1;
   const hasMultipleTiers = tiers.length >= 2;
 
@@ -21,24 +28,24 @@ const VariantsTable = ({ tiers, models, onChange, disabled, isEditMode = false, 
    */
   const tier0Groups = useMemo(() => {
     if (!hasTier1 || models.length === 0) {
-return [];
-}
+      return [];
+    }
 
     const groupMap = new Map();
     models.forEach((model, originalIndex) => {
-      const t0Idx = model.tierIndex[0] ?? 0;
-      if (!groupMap.has(t0Idx)) {
-        groupMap.set(t0Idx, {
-          tier0Index: t0Idx,
-          tier0Label: tiers[0]?.options[t0Idx]?.value || `Option ${t0Idx + 1}`,
+      const gIdx = model.tierIndex[primaryGroupTierIndex] ?? 0;
+      if (!groupMap.has(gIdx)) {
+        groupMap.set(gIdx, {
+          tier0Index: gIdx,
+          tier0Label: tiers[primaryGroupTierIndex]?.options[gIdx]?.value || `Option ${gIdx + 1}`,
           models: [],
         });
       }
-      groupMap.get(t0Idx).models.push({ model, originalIndex });
+      groupMap.get(gIdx).models.push({ model, originalIndex });
     });
 
     return Array.from(groupMap.values()).sort((a, b) => a.tier0Index - b.tier0Index);
-  }, [tiers, models, hasTier1]);
+  }, [tiers, models, hasTier1, primaryGroupTierIndex]);
 
   /**
    * Get the display image for a tier-0 group.
@@ -77,21 +84,21 @@ return styles.stockLow;
    * Upload image for an entire tier-0 group.
    * Propagate imageFile + imagePreview to ALL models sharing tier0Index.
    */
-  const handleGroupImageUpload = (tier0Index, e) => {
+  const handleGroupImageUpload = (groupOptionIndex, e) => {
     const file = e.target.files[0];
     if (!file) {
-return;
-}
+      return;
+    }
     if (!file.type.startsWith('image/')) {
-return alert('Please select an image file.');
-}
+      return alert('Please select an image file.');
+    }
     if (file.size > 5 * 1024 * 1024) {
-return alert('Image must be under 5 MB.');
-}
+      return alert('Image must be under 5 MB.');
+    }
 
     const preview = URL.createObjectURL(file);
     const updated = models.map((model) => {
-      if (model.tierIndex[0] === tier0Index) {
+      if (model.tierIndex[primaryGroupTierIndex] === groupOptionIndex) {
         return { ...model, imageFile: file, imagePreview: preview };
       }
       return model;
@@ -102,17 +109,17 @@ return alert('Image must be under 5 MB.');
   /**
    * Remove image for an entire tier-0 group.
    */
-  const handleGroupRemoveImage = (tier0Index) => {
+  const handleGroupRemoveImage = (groupOptionIndex) => {
     // Revoke the preview URL once
     const firstWithPreview = models.find(
-      (m) => m.tierIndex[0] === tier0Index && m.imagePreview
+      (m) => m.tierIndex[primaryGroupTierIndex] === groupOptionIndex && m.imagePreview
     );
     if (firstWithPreview?.imagePreview) {
       URL.revokeObjectURL(firstWithPreview.imagePreview);
     }
 
     const updated = models.map((model) => {
-      if (model.tierIndex[0] === tier0Index) {
+      if (model.tierIndex[primaryGroupTierIndex] === groupOptionIndex) {
         return { ...model, imageFile: null, imagePreview: null, image: null };
       }
       return model;
@@ -262,12 +269,16 @@ return model;
   /* ── Render helper: second-tier label for multi-tier ────── */
   const getSecondaryLabel = (model) => {
     if (!hasMultipleTiers) {
-return null;
-}
-    return model.tierIndex
-      .slice(1)
-      .map((idx, i) => tiers[i + 1]?.options[idx]?.value || '?')
-      .join(' / ');
+      return null;
+    }
+    const parts = [];
+    for (let i = 0; i < tiers.length; i += 1) {
+      if (i === primaryGroupTierIndex) continue;
+      const idx = model.tierIndex[i];
+      const val = tiers[i]?.options[idx]?.value;
+      if (val != null && val !== '') parts.push(val);
+    }
+    return parts.join(' / ');
   };
 
   /* ── Render ───────────────────────────────────────────────── */
@@ -353,7 +364,7 @@ return null;
                   {hasTier1 ? (
                     <>
                       <span style={{ color: '#ef4444' }}>● </span>
-                      {getTierName(0)}
+                      {getTierName(primaryGroupTierIndex)}
                     </>
                   ) : (
                     'Image'
@@ -362,7 +373,10 @@ return null;
                 {/* Show secondary tier column(s) only when multiple tiers */}
                 {hasMultipleTiers && (
                   <th className={styles.colVar}>
-                    {tiers.slice(1).map((t) => t.name).join(' / ')}
+                    {tiers
+                      .map((t, i) => (i !== primaryGroupTierIndex ? t.name : null))
+                      .filter(Boolean)
+                      .join(' / ')}
                   </th>
                 )}
                 <th className={styles.colPrice}>
@@ -589,8 +603,8 @@ return null;
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <span>
-          Upload one image per <strong>{hasTier1 ? getTierName(0).toLowerCase() : 'variant'}</strong> — it
-          will apply to all sizes/options within that group. Select rows and use the
+          Upload one image per <strong>{hasTier1 ? getTierName(primaryGroupTierIndex).toLowerCase() : 'variant'}</strong> — it
+          will apply to all other options within that group. Select rows and use the
           <strong> bulk edit bar</strong> to set price/cost for multiple variants at once.
           {isEditMode && (
             <>

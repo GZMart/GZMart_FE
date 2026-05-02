@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@hooks/useMediaQuery';
-import { SELLER_ROUTES } from '@constants/routes';
+import { PUBLIC_ROUTES, SELLER_ROUTES } from '@constants/routes';
 import { logoutUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/common/Layouts/ERPLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
@@ -294,6 +294,13 @@ const ERPLayout = ({ children }) => {
               </button>
               {profileOpen && (
                 <div className={`${styles.dropdown} ${styles.dropdownRight}`}>
+                  <Link
+                    to={PUBLIC_ROUTES.HOME}
+                    className={styles.dropdownItem}
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <i className="bi bi-house-door me-2" /> {t('erpLayout.nav.home')}
+                  </Link>
                   <Link
                     to={SELLER_ROUTES.PROFILE}
                     className={styles.dropdownItem}

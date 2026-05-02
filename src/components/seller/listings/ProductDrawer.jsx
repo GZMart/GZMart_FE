@@ -16,30 +16,103 @@ import {
   compareCategoryPeers,
   flattenCategoriesFromTree,
 } from '../../../utils/sellerCategoryTree';
+import { getVariantImageGroupTierIndex } from '../../../constants/tierTypes';
 import styles from '../../../assets/styles/seller/ProductDrawer.module.css';
 
-/** Variant listing images are one per tier-0 option (e.g. color); any SKU in that group may carry the image. */
+/** Ảnh biến thể: 1 ảnh / nhóm theo tier ưu tiên (thường là Color, xem getVariantImageGroupTierIndex). */
 const modelHasVariantImage = (m) =>
   !!(m && (m.imageFile || m.image || m.imagePreview));
 
-const tier0GroupHasImage = (allModels, t0Idx) =>
-  t0Idx != null &&
-  allModels.some((m) => m.tierIndex?.[0] === t0Idx && modelHasVariantImage(m));
+const tier0GroupHasImage = (allModels, optionIdx, imageGroupTierIndex) =>
+  optionIdx != null &&
+  allModels.some(
+    (m) => m.tierIndex?.[imageGroupTierIndex] === optionIdx && modelHasVariantImage(m)
+  );
 
-/** Prefer an existing server URL from any model in the same tier-0 group (for API payload). */
-const getTier0ImageUrlFromModels = (allModels, t0Idx) => {
-  if (t0Idx == null) {
+/** Prefer an existing server URL from any model in the same image group (for API payload). */
+const getTier0ImageUrlFromModels = (allModels, optionIdx, imageGroupTierIndex) => {
+  if (optionIdx == null) {
     return null;
   }
   const withUrl = allModels.find(
     (m) =>
-      m.tierIndex?.[0] === t0Idx &&
+      m.tierIndex?.[imageGroupTierIndex] === optionIdx &&
       typeof m.image === 'string' &&
       m.image.trim() &&
       !m.imageFile
   );
   return withUrl?.image || null;
 };
+
+/**
+ * Cartesian merge: every combination of tier option indices + preserve existing rows by tierIndex key.
+ * Used when tiers change and when loading a product for edit (API may have fewer models than tier matrix).
+ */
+function buildVariantModelsFromTiers(
+  rawTiers,
+  existingModels,
+  { defaultPrice, defaultCost }
+) {
+  const validTiers = rawTiers
+    .map((tier) => ({
+      ...tier,
+      options: tier.options.filter((opt) => opt.value && opt.value.trim()),
+    }))
+    .filter((tier) => (tier.name || '').trim() && tier.options.length > 0);
+
+  if (validTiers.length === 0) {
+    return [];
+  }
+
+  const existingModelsMap = new Map();
+  (existingModels || []).forEach((model) => {
+    if (model.tierIndex && Array.isArray(model.tierIndex)) {
+      const key = model.tierIndex.join('-');
+      existingModelsMap.set(key, model);
+    }
+  });
+
+  const cartesian = (...arrays) =>
+    arrays.reduce((acc, array) => acc.flatMap((x) => array.map((y) => [...x, y])), [[]]);
+  const tierIndices = validTiers.map((tier) => tier.options.map((_, index) => index));
+  const combinations = cartesian(...tierIndices);
+
+  return combinations.map((tierIndex) => {
+    const key = tierIndex.join('-');
+    const existingModel = existingModelsMap.get(key);
+
+    if (existingModel) {
+      return {
+        ...existingModel,
+        tierIndex,
+        clientId: existingModel.clientId || `m-${key}`,
+      };
+    }
+
+    const imageTierIdx = getVariantImageGroupTierIndex(rawTiers);
+    const groupOptIdx = tierIndex[imageTierIdx];
+    const imageSource =
+      groupOptIdx != null
+        ? (existingModels || []).find(
+            (m) => m.tierIndex?.[imageTierIdx] === groupOptIdx && modelHasVariantImage(m)
+          )
+        : null;
+
+    return {
+      tierIndex,
+      price: defaultPrice,
+      costPrice: defaultCost,
+      stock: 0,
+      sku: '',
+      clientId: `m-${key}`,
+      ...(imageSource && {
+        image: imageSource.image,
+        imageFile: imageSource.imageFile,
+        imagePreview: imageSource.imagePreview,
+      }),
+    };
+  });
+}
 
 const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   const [loading, setLoading] = useState(false);
@@ -166,9 +239,18 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
           };
         });
 
+        const defaultPrice =
+          parseFloat(editingProduct._suggestedPrice || editingProduct.originalPrice) || 0;
+        const defaultCost = parseFloat(editingProduct.models?.[0]?.costPrice) || 0;
+        const mergedModels = buildVariantModelsFromTiers(
+          transformedTiers,
+          editingProduct.models || [],
+          { defaultPrice, defaultCost }
+        );
+
         skipGenerateModelsRef.current = true; // Don't regenerate models from backend data
         setTiers(transformedTiers);
-        setModels(editingProduct.models || []);
+        setModels(mergedModels);
       } else {
         setProductType('simple');
         setTiers([]);
@@ -284,75 +366,10 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
   }, [tiers, productType]);
 
   const generateModels = () => {
-    // Validate tiers - filter out empty options, keep tiers with at least one valid option
-    const validTiers = tiers
-      .map((tier) => ({
-        ...tier,
-        options: tier.options.filter((opt) => opt.value && opt.value.trim()),
-      }))
-      .filter((tier) => tier.name.trim() && tier.options.length > 0);
-
-    if (validTiers.length === 0) {
-      setModels([]);
-      return;
-    }
-
-    // Create a map of existing models by tierIndex for preservation
-    const existingModelsMap = new Map();
-    models.forEach((model) => {
-      if (model.tierIndex && Array.isArray(model.tierIndex)) {
-        const key = model.tierIndex.join('-');
-        existingModelsMap.set(key, model);
-      }
+    const newModels = buildVariantModelsFromTiers(tiers, models, {
+      defaultPrice: parseFloat(formData.originalPrice) || 0,
+      defaultCost: parseFloat(formData.costPrice) || 0,
     });
-
-    // Generate cartesian product
-    const cartesian = (...arrays) =>
-      arrays.reduce((acc, array) => acc.flatMap((x) => array.map((y) => [...x, y])), [[]]);
-
-    const tierIndices = validTiers.map((tier) => tier.options.map((_, index) => index));
-    const combinations = cartesian(...tierIndices);
-
-    const newModels = combinations.map((tierIndex) => {
-      const key = tierIndex.join('-');
-      const existingModel = existingModelsMap.get(key);
-
-      // If model exists, preserve its values (stock, price, sku, etc.)
-      if (existingModel) {
-        return {
-          ...existingModel,
-          tierIndex, // Ensure tierIndex is correct
-          // Ensure a stable clientId exists so AI batch calls are deterministic
-          clientId: existingModel.clientId || `m-${key}`,
-        };
-      }
-
-      // New combination: inherit tier-0 image from any existing SKU with the same first-tier option
-      // (e.g. new size for an existing color — same photo as other sizes).
-      const t0Idx = tierIndex[0];
-      const imageSource =
-        t0Idx != null
-          ? models.find(
-              (m) =>
-                m.tierIndex?.[0] === t0Idx && modelHasVariantImage(m)
-            )
-          : null;
-
-      return {
-        tierIndex,
-        price: parseFloat(formData.originalPrice) || 0,
-        costPrice: parseFloat(formData.costPrice) || 0,
-        stock: 0,
-        sku: '',
-        clientId: `m-${key}`,
-        ...(imageSource && {
-          image: imageSource.image,
-          imageFile: imageSource.imageFile,
-          imagePreview: imageSource.imagePreview,
-        }),
-      };
-    });
-
     setModels(newModels);
   };
 
@@ -722,15 +739,16 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
         newErrors.models = `${invalidModels.length} variant(s) have invalid price${!isEditMode ? ' or stock' : ''}`;
       }
 
-      // Every Tier 1 option must have an image (unless saving as draft)
+      // Every option on the image-group tier (ưu tiên Color) must have an image (unless saving as draft)
       if (forcedStatus !== 'draft' && tiers.length > 0) {
-        const tier0Options = tiers[0]?.options || [];
-        const missingTier0Images = tier0Options.filter(
-          (_, t0Idx) => !tier0GroupHasImage(models, t0Idx)
+        const imageGroupTierIndex = getVariantImageGroupTierIndex(tiers);
+        const groupTierOptions = tiers[imageGroupTierIndex]?.options || [];
+        const missingGroupImages = groupTierOptions.filter(
+          (_, optIdx) => !tier0GroupHasImage(models, optIdx, imageGroupTierIndex)
         );
-        if (missingTier0Images.length > 0) {
-          const missingNames = missingTier0Images.map((opt) => opt.value || '?').join(', ');
-          newErrors.modelImages = `Missing image for: ${missingNames}. Add an image to every ${tiers[0]?.name || 'variant group'} before publishing.`;
+        if (missingGroupImages.length > 0) {
+          const missingNames = missingGroupImages.map((opt) => opt.value || '?').join(', ');
+          newErrors.modelImages = `Missing image for: ${missingNames}. Add an image to every ${tiers[imageGroupTierIndex]?.name || 'variant group'} before publishing.`;
         }
       }
     }
@@ -798,10 +816,15 @@ e.preventDefault();
           },
         ];
       } else {
+        const imageGroupTierIndex = getVariantImageGroupTierIndex(tiers);
         productModels = models.map((model) => {
           const fallbackUrl =
             !model.imageFile && !model.image
-              ? getTier0ImageUrlFromModels(models, model.tierIndex?.[0])
+              ? getTier0ImageUrlFromModels(
+                  models,
+                  model.tierIndex?.[imageGroupTierIndex],
+                  imageGroupTierIndex
+                )
               : null;
           const imagePayload =
             !model.imageFile && (model.image || fallbackUrl)
@@ -892,15 +915,16 @@ e.preventDefault();
 
         // Append variant images — one per tier-0 option (not per SKU)
         if (hasVariantImages) {
-          const uploadedTier0 = new Set();
+          const imageGroupTierIndex = getVariantImageGroupTierIndex(tiers);
+          const uploadedGroup = new Set();
           models.forEach((model) => {
-            const t0Idx = model.tierIndex[0];
-            if (model.imageFile && !uploadedTier0.has(t0Idx)) {
-              uploadedTier0.add(t0Idx);
+            const gIdx = model.tierIndex[imageGroupTierIndex];
+            if (model.imageFile && gIdx != null && !uploadedGroup.has(gIdx)) {
+              uploadedGroup.add(gIdx);
               formDataToSend.append(
-                `variantImages[${t0Idx}]`,
+                `variantImages[${gIdx}]`,
                 model.imageFile,
-                `variant-${t0Idx}.${model.imageFile.name.split('.').pop()}`
+                `variant-${gIdx}.${model.imageFile.name.split('.').pop()}`
               );
             }
           });
@@ -1209,11 +1233,12 @@ e.preventDefault();
     }
   };
 
-  // ── Save-guard: every tier-0 option (e.g. color) needs at least one image in its SKU group ─────
+  // Save-guard: mỗi lựa chọn trên tier ảnh (ưu tiên Color) cần ít nhất một ảnh trong nhóm SKU
+  const imageGroupTierIndex = getVariantImageGroupTierIndex(tiers);
   const missingVariantImages =
     productType === 'variant' && tiers.length > 0
-      ? (tiers[0]?.options || []).filter(
-          (_, t0Idx) => !tier0GroupHasImage(models, t0Idx)
+      ? (tiers[imageGroupTierIndex]?.options || []).filter(
+          (_, optIdx) => !tier0GroupHasImage(models, optIdx, imageGroupTierIndex)
         ).length
       : 0;
   const missingProductImage = productType === 'simple' && imagePreviews.length === 0;
@@ -1920,7 +1945,7 @@ e.preventDefault();
                           </svg>
                           <strong>
                             {missingVariantImages} option{missingVariantImages !== 1 ? 's' : ''} still
-                            need an image ({tiers[0]?.name || 'first tier'}).
+                            need an image ({tiers[imageGroupTierIndex]?.name || 'variation group'}).
                           </strong>
                           &nbsp;Add one image per variation option (e.g. each color) — Save unlocks
                           when every option has at least one photo.

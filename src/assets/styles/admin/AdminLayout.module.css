@@ -391,6 +391,59 @@
   align-items: center;
   gap: 8px;
 }
+
+.topbarUserWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Profile dropdown (topbar) */
+.userDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  box-shadow: var(--admin-shadow-card), 0 8px 24px rgba(0, 0, 0, 0.08);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.userDropdownItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.8125rem;
+  color: var(--admin-text-2);
+  text-decoration: none !important;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+}
+
+.userDropdownItem:hover {
+  background: #f3f4f6;
+  color: var(--admin-text-1);
+}
+
+.userDropdownItemDanger {
+  color: #dc2626;
+}
+
+.userDropdownItemDanger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.userDropdownDivider {
+  border-top: 1px solid var(--admin-border);
+  margin: 4px 0;
+}
 .topbarIconBtn {
   position: relative;
   display: flex;

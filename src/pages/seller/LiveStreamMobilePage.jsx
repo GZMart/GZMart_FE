@@ -4,6 +4,7 @@ import { useMediaDevices } from '@hooks/useMediaDevices';
 import livestreamService from '@services/api/livestreamService';
 import VideoPreview from '@components/seller/VideoPreview';
 import { SELLER_ROUTES } from '@constants/routes';
+import EndLiveConfirmModal from '@components/seller/EndLiveConfirmModal';
 import styles from '@assets/styles/buyer/LiveStreamPage.module.css';
 
 /**
@@ -22,6 +23,7 @@ export default function LiveStreamMobilePage() {
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
@@ -125,16 +127,8 @@ export default function LiveStreamMobilePage() {
   }, [sessionIdParam]);
 
   const confirmEndLive = useCallback(() => {
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm(
-        'Bạn có chắc muốn kết thúc phiên live? Người xem sẽ không còn xem được phát sóng này.',
-      )
-    ) {
-      return;
-    }
-    void handleEndLive();
-  }, [handleEndLive]);
+    setShowEndConfirm(true);
+  }, []);
 
   // Remove h from URL after successful exchange so refresh doesn't reuse token
   useEffect(() => {
@@ -242,6 +236,12 @@ export default function LiveStreamMobilePage() {
       )}
 
       {error && <p className={styles.mobileHandoffError}>{error}</p>}
+
+      <EndLiveConfirmModal
+        isOpen={showEndConfirm}
+        onCancel={() => setShowEndConfirm(false)}
+        onConfirm={() => { setShowEndConfirm(false); void handleEndLive(); }}
+      />
     </div>
   );
 }

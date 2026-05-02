@@ -186,6 +186,19 @@ const getCategoryPeriodLabels = (t) => ({
 });
 
 // ─── Enhanced Expense Tooltip ─────────────────────────────────────────────────
+/** Recharts default Tooltip needs explicit item/label styles or text stays dark on dark backgrounds */
+const DARK_CHART_TOOLTIP_PROPS = {
+  contentStyle: {
+    background: '#1e293b',
+    border: '1px solid #334155',
+    borderRadius: 8,
+    fontSize: 12,
+    color: '#f8fafc',
+  },
+  itemStyle: { color: '#e2e8f0' },
+  labelStyle: { color: '#f8fafc', fontWeight: 600 },
+};
+
 const ExpenseTooltip = ({ active, payload }) => {
   if (!active || !payload || !payload.length) {
 return null;
@@ -199,9 +212,9 @@ return null;
         {payload[0].name}
       </p>
       {payload.map((entry, idx) => (
-        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.9 }}>
-          <span style={{ color: entry.payload.color, fontWeight: 600 }}>{entry.name}: </span>
-          {formatCurrency(entry.value)}
+        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#e2e8f0', lineHeight: 1.9 }}>
+          <span style={{ color: entry.payload?.color ?? entry.color, fontWeight: 600 }}>{entry.name}: </span>
+          <span style={{ color: '#f1f5f9' }}>{formatCurrency(entry.value)}</span>
         </p>
       ))}
     </div>
@@ -1415,7 +1428,10 @@ return null;
                                 <Cell key={entry.rowKey} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => formatCurrency(value)} />
+                            <Tooltip
+                              {...DARK_CHART_TOOLTIP_PROPS}
+                              formatter={(value) => formatCurrency(value)}
+                            />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className={styles.categoryDonutLabel}>
@@ -1640,10 +1656,7 @@ return null;
                                 ))}
                               </Pie>
                               <Tooltip
-                                contentStyle={{
-                                  background: '#1e293b', border: '1px solid #334155',
-                                  borderRadius: 8, fontSize: 12, color: '#f8fafc',
-                                }}
+                                {...DARK_CHART_TOOLTIP_PROPS}
                                 formatter={(value, name) => [formatCurrency(value), name]}
                               />
                             </PieChart>
@@ -1720,10 +1733,7 @@ return null;
                             tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
                           />
                           <Tooltip
-                            contentStyle={{
-                              background: '#1e293b', border: '1px solid #334155',
-                              borderRadius: 8, fontSize: 12, color: '#f8fafc',
-                            }}
+                            {...DARK_CHART_TOOLTIP_PROPS}
                             formatter={(value, name) => {
                               if (name === 'Doanh thu') {
 return [formatCurrency(value), name];

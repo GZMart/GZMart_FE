@@ -1,9 +1,9 @@
-import { Suspense, useState, useCallback } from 'react';
+import { Suspense, useState, useCallback, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
-import { ADMIN_ROUTES } from '@constants/routes';
-import { logoutUser } from '@store/slices/authSlice';
+import { ADMIN_ROUTES, PUBLIC_ROUTES } from '@constants/routes';
+import { logoutUser, selectUser } from '@store/slices/authSlice';
 import styles from '@assets/styles/admin/AdminLayout.module.css';
 import NotificationBell from '@components/common/NotificationBell';
 import LoadingSpinner from '@components/common/LoadingSpinner';
@@ -99,7 +99,28 @@ const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
   const [collapsed, setCollapsed] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+
+  const displayName = user?.name || user?.email || 'Admin';
+  const avatarLetter = (displayName[0] || 'A').toUpperCase();
+
+  useEffect(() => {
+    if (!profileMenuOpen) return undefined;
+    const onDoc = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [profileMenuOpen]);
+
+  useEffect(() => {
+    setProfileMenuOpen(false);
+  }, [location.pathname]);
 
   const isActive = useCallback(
     (item) => {
@@ -120,6 +141,7 @@ const AdminLayout = ({ children }) => {
     )?.[1] ?? 'Admin';
 
   const handleLogout = () => {
+    setProfileMenuOpen(false);
     dispatch(logoutUser());
     navigate('/login');
   };
@@ -209,11 +231,57 @@ const AdminLayout = ({ children }) => {
           <div className={styles.topbarDivider} />
 
           {/* User menu */}
-          <button className={styles.topbarUserBtn}>
-            <div className={styles.topbarAvatar}>A</div>
-            <span className={styles.topbarUserName}>Admin</span>
-            <i className={`bi bi-chevron-down ${styles.topbarChevron}`} />
-          </button>
+          <div className={styles.topbarUserWrap} ref={profileMenuRef}>
+            <button
+              type="button"
+              className={styles.topbarUserBtn}
+              onClick={() => setProfileMenuOpen((o) => !o)}
+              aria-expanded={profileMenuOpen}
+              aria-haspopup="menu"
+            >
+              <div className={styles.topbarAvatar}>{avatarLetter}</div>
+              <span className={styles.topbarUserName}>{displayName}</span>
+              <i
+                className={`bi bi-chevron-down ${styles.topbarChevron}`}
+                style={{
+                  transform: profileMenuOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </button>
+            {profileMenuOpen && (
+              <div className={styles.userDropdown} role="menu">
+                <Link
+                  to={ADMIN_ROUTES.DASHBOARD}
+                  className={styles.userDropdownItem}
+                  role="menuitem"
+                  onClick={() => setProfileMenuOpen(false)}
+                >
+                  <i className="bi bi-speedometer2 me-2" />
+                  Dashboard
+                </Link>
+                <Link
+                  to={PUBLIC_ROUTES.HOME}
+                  className={styles.userDropdownItem}
+                  role="menuitem"
+                  onClick={() => setProfileMenuOpen(false)}
+                >
+                  <i className="bi bi-house-door me-2" />
+                  Trang chủ
+                </Link>
+                <div className={styles.userDropdownDivider} />
+                <button
+                  type="button"
+                  className={`${styles.userDropdownItem} ${styles.userDropdownItemDanger}`}
+                  role="menuitem"
+                  onClick={handleLogout}
+                >
+                  <i className="bi bi-box-arrow-right me-2" />
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
