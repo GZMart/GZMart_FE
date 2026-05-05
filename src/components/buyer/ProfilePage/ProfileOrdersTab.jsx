@@ -29,16 +29,15 @@ function formatPreorderShipDate(iso, language) {
 const getStatusBadge = (status) => {
   const statusConfig = {
     pending: { class: styles.badgeWarning, text: 'Pending' },
-    processing: { class: styles.badgeInfo, text: 'Processing' },
     confirmed: { class: styles.badgeInfo, text: 'Confirmed' },
-    packing: { class: styles.badgeInfo, text: 'Packing' },
-    shipping: { class: styles.badgeInfo, text: 'Shipping' },
+    packed: { class: styles.badgeInfo, text: 'Packed' },
     shipped: { class: styles.badgeInfo, text: 'Shipping' },
     delivered: { class: styles.badgeSuccess, text: 'Delivered' },
-    delivered_pending_confirmation: { class: styles.badgeSuccess, text: 'Delivered' },
     completed: { class: styles.badgeSuccess, text: 'Completed' },
     cancelled: { class: styles.badgeDanger, text: 'Cancelled' },
     refunded: { class: styles.badgeWarning, text: 'Refunded' },
+    refund_pending: { class: styles.badgeWarning, text: 'Refund Pending' },
+    under_investigation: { class: styles.badgeWarning, text: 'Under Investigation' },
   };
 
   const config = statusConfig[status] || { class: styles.badgeInfo, text: status };
@@ -77,27 +76,18 @@ const ProfileOrdersTab = ({
 }) => {
   const { i18n } = useTranslation();
 
+  // Status filter is handled server-side — backend only returns orders for the active tab.
+  // Client-side: only apply search query filter on loaded data.
   const filteredOrders = orders.filter((order) => {
-    const statusMatch =
-      orderStatusFilter === 'all' ||
-      (orderStatusFilter === 'pending' && order.status === 'pending') ||
-      (orderStatusFilter === 'processing' &&
-        ['confirmed', 'processing', 'packing'].includes(order.status)) ||
-      (orderStatusFilter === 'shipping' && ['shipping', 'shipped'].includes(order.status)) ||
-      (orderStatusFilter === 'delivered' &&
-        ['delivered', 'delivered_pending_confirmation'].includes(order.status)) ||
-      (orderStatusFilter === 'completed' && order.status === 'completed') ||
-      (orderStatusFilter === 'cancelled' && order.status === 'cancelled') ||
-      (orderStatusFilter === 'return' &&
-        ['return_requested', 'return_approved', 'refunded'].includes(order.status));
-
-    const searchMatch =
-      !orderSearchQuery ||
-      order.items?.some((item) =>
-        item.productId?.name?.toLowerCase().includes(orderSearchQuery.toLowerCase())
-      );
-
-    return statusMatch && searchMatch;
+    if (!orderSearchQuery) return true;
+    return (
+      order.orderNumber?.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+      order.items?.some(
+        (item) =>
+          item.productId?.name?.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+          item.productId?.sellerId?.fullName?.toLowerCase().includes(orderSearchQuery.toLowerCase())
+      )
+    );
   });
 
   const orderStatusTabs = [
@@ -105,7 +95,7 @@ const ProfileOrdersTab = ({
     { key: 'pending', label: 'Pending Payment' },
     { key: 'processing', label: 'Processing' },
     { key: 'shipping', label: 'Shipping' },
-    { key: 'delivered', label: 'Completed' },
+    { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
     { key: 'return', label: 'Return/Refund' },
   ];

@@ -4,9 +4,9 @@ export const orderService = {
   // Create a new order
   createOrder: async (orderData) => await api.post('/api/orders', orderData),
 
-  // Get current user's orders with pagination
-  getMyOrders: async (page = 1, limit = 10) =>
-    await api.get('/api/orders', { params: { page, limit } }),
+  // Get current user's orders with pagination and optional status filter
+  getMyOrders: async (page = 1, limit = 10, status = 'all') =>
+    await api.get('/api/orders', { params: { page, limit, ...(status !== 'all' && { status }) } }),
 
   // Get specific order details
   getOrderById: async (id) => await api.get(`/api/orders/${id}`),
