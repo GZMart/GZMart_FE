@@ -21,7 +21,6 @@ const DEFAULT_FORM = {
   platforms: ['tiktok'],
 };
 
-
 function getFullscreenElement() {
   const d = document;
   return d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement;

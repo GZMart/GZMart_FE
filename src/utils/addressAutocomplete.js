@@ -159,23 +159,47 @@ const findMatchingOption = (options = [], name = '') =>
   options.find((option) => normalizeName(option?.name) === normalizeName(name));
 
 const parseProvinceNameFromComponents = (components = []) => {
+  console.log(
+    '📍 [addressAutocomplete] parseProvinceNameFromComponents - Input:',
+    JSON.stringify(components, null, 2)
+  );
+
   const names = components
     .map((component) => String(component?.long_name || component?.short_name || '').trim())
     .filter(Boolean);
 
-  return names[names.length - 1] || '';
+  const result = names[names.length - 1] || '';
+  console.log(
+    '📍 [addressAutocomplete] parseProvinceNameFromComponents - Result:',
+    result,
+    JSON.stringify({ extractedNames: names }, null, 2)
+  );
+  return result;
 };
 
 const parseWardNameFromComponents = (components = []) => {
+  console.log(
+    '📍 [addressAutocomplete] parseWardNameFromComponents - Input:',
+    JSON.stringify(components, null, 2)
+  );
+
   const names = components
     .map((component) => String(component?.long_name || component?.short_name || '').trim())
     .filter(Boolean);
 
+  let result;
   if (names.length >= 4) {
-    return names[names.length - 3] || '';
+    result = names[names.length - 3] || '';
+  } else {
+    result = names[1] || names[0] || '';
   }
 
-  return names[1] || names[0] || '';
+  console.log(
+    '📍 [addressAutocomplete] parseWardNameFromComponents - Result:',
+    result,
+    JSON.stringify({ extractedNames: names, namesLength: names.length }, null, 2)
+  );
+  return result;
 };
 
 export const applySavedAddressSuggestion = (address = {}) => ({
@@ -196,12 +220,56 @@ export const applyGoongSuggestion = ({
   wards = [],
   currentFormValues = {},
 } = {}) => {
+  console.log(
+    '📍 [addressAutocomplete] applyGoongSuggestion - Input suggestion:',
+    JSON.stringify(
+      {
+        name: suggestion.name,
+        formattedAddress: suggestion.formattedAddress,
+        addressComponentsCount: suggestion.addressComponents?.length || 0,
+        addressComponents: suggestion.addressComponents,
+      },
+      null,
+      2
+    )
+  );
+
   const provinceName = parseProvinceNameFromComponents(suggestion.addressComponents);
   const wardName = parseWardNameFromComponents(suggestion.addressComponents);
+
+  console.log(
+    '📍 [addressAutocomplete] Parsed names:',
+    JSON.stringify(
+      {
+        provinceName,
+        wardName,
+        addressComponentsLength: suggestion.addressComponents?.length,
+      },
+      null,
+      2
+    )
+  );
+
   const provinceMatch = findMatchingOption(provinces, provinceName);
   const wardMatch = findMatchingOption(wards, wardName);
 
-  return {
+  console.log(
+    '📍 [addressAutocomplete] Matched options:',
+    JSON.stringify(
+      {
+        provinceName,
+        provinceMatch: provinceMatch
+          ? { code: provinceMatch.code, name: provinceMatch.name }
+          : null,
+        wardName,
+        wardMatch: wardMatch ? { code: wardMatch.code, name: wardMatch.name } : null,
+      },
+      null,
+      2
+    )
+  );
+
+  const result = {
     ...currentFormValues,
     [activeField]:
       suggestion.formattedAddress || suggestion.title || currentFormValues?.[activeField] || '',
@@ -214,4 +282,7 @@ export const applyGoongSuggestion = ({
     formattedAddress:
       suggestion.formattedAddress || currentFormValues.formattedAddress || currentFormValues.street,
   };
+
+  console.log('📍 [addressAutocomplete] Final result:', JSON.stringify(result, null, 2));
+  return result;
 };

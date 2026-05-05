@@ -6,7 +6,7 @@ const containerStyle = {
   top: '100%',
   left: 0,
   right: 0,
-  zIndex: 30,
+  zIndex: 9999,
   marginTop: '0.5rem',
   background: '#fff',
   border: '1px solid #e5e7eb',

@@ -73,7 +73,9 @@ const secondaryTierLabel = (tiers, tierIndexArr, primaryGroupTierIndex) => {
   }
   const parts = [];
   for (let t = 0; t < tierIndexArr.length; t += 1) {
-    if (t === primaryGroupTierIndex) continue;
+    if (t === primaryGroupTierIndex) {
+continue;
+}
     parts.push(tierOptionLabel(tiers, t, tierIndexArr[t]));
   }
   return parts.join(' / ');
@@ -84,7 +86,9 @@ const makeSortRowsInGroup = (primaryIdx) => (a, b) => {
   const bi = getModelTierIndex(b.model);
   const n = Math.max(ai.length, bi.length, primaryIdx + 1);
   for (let i = 0; i < n; i += 1) {
-    if (i === primaryIdx) continue;
+    if (i === primaryIdx) {
+continue;
+}
     const da = ai[i] ?? 0;
     const db = bi[i] ?? 0;
     if (da !== db) {

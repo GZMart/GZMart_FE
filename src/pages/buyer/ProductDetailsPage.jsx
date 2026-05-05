@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { Image } from 'antd';
@@ -239,6 +239,7 @@ const resolveGallerySelectionIndex = (product, tierSelection, matchingModel) => 
 const ProductDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { t } = useTranslation();
 
@@ -266,6 +267,7 @@ const ProductDetailsPage = () => {
   const [activeLive, setActiveLive] = useState(null);
 
   const user = useSelector((state) => state.auth.user);
+  const loginRedirectPath = `${location.pathname}${location.search}`;
 
   // TikTok-style LIVE ring on shop card when this seller is streaming
   useEffect(() => {
@@ -399,7 +401,7 @@ const ProductDetailsPage = () => {
         // Transform related & freq bought ... (Use existing logic or simplify)
         const processRelated = (res) => {
           const list = Array.isArray(res) ? res : res.data || [];
-            return list.map((p) => {
+          return list.map((p) => {
             const minModelPrice =
               p.models?.length > 0 ? Math.min(...p.models.map((m) => m.price)) : p.originalPrice;
             return {
@@ -603,8 +605,8 @@ const ProductDetailsPage = () => {
   /** Giới hạn số lượng trên UI: pre-order cho phép đặt cao hơn tồn hiện tại */
   const maxOrderQty = useMemo(() => {
     if (preOrderDaysNum > 0) {
-return 99;
-}
+      return 99;
+    }
     return Math.max(0, currentStock);
   }, [preOrderDaysNum, currentStock]);
 
@@ -1500,7 +1502,11 @@ return 99;
       </div>
 
       {/* Login Required Modal */}
-      <RequireLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <RequireLoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        redirectTo={loginRedirectPath}
+      />
 
       {/* Add to Cart Success Modal */}
       <CartSuccessModal

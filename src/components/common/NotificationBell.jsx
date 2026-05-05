@@ -24,8 +24,12 @@ const NotificationBell = ({ triggerClassName = '', dropdownWidth = '400px' }) =>
   const hasValidSession = isAuthenticated && !!getAuthToken();
 
   const getNotificationsPath = () => {
-    if (userRole === USER_ROLES.SELLER) return '/seller/my-notifications';
-    if (userRole === USER_ROLES.ADMIN) return '/admin/notifications';
+    if (userRole === USER_ROLES.SELLER) {
+return '/seller/my-notifications';
+}
+    if (userRole === USER_ROLES.ADMIN) {
+return '/admin/notifications';
+}
     return '/buyer/notifications';
   };
 

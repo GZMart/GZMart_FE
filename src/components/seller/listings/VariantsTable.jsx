@@ -273,10 +273,14 @@ return model;
     }
     const parts = [];
     for (let i = 0; i < tiers.length; i += 1) {
-      if (i === primaryGroupTierIndex) continue;
+      if (i === primaryGroupTierIndex) {
+continue;
+}
       const idx = model.tierIndex[i];
       const val = tiers[i]?.options[idx]?.value;
-      if (val != null && val !== '') parts.push(val);
+      if (val != null && val !== '') {
+parts.push(val);
+}
     }
     return parts.join(' / ');
   };

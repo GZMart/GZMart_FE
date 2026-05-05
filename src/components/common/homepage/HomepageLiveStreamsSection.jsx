@@ -8,8 +8,12 @@ import { mapPublicLiveSessionToItem } from '../livestream/mapPublicLiveSessionTo
 
 /* ─── Helpers ─────────────────────────────────── */
 function shopIdStr(s) {
-  if (!s) return '';
-  if (typeof s === 'object' && s._id) return String(s._id);
+  if (!s) {
+return '';
+}
+  if (typeof s === 'object' && s._id) {
+return String(s._id);
+}
   return String(s);
 }
 function buildHref(item) {
@@ -17,8 +21,12 @@ function buildHref(item) {
   return sid ? `/shop/${sid}/live/${item.id}` : PUBLIC_ROUTES.LIVE_STREAMS;
 }
 function fmtViewers(n) {
-  if (typeof n !== 'number') return '0';
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  if (typeof n !== 'number') {
+return '0';
+}
+  if (n >= 1000) {
+return `${(n / 1000).toFixed(1)}k`;
+}
   return String(n);
 }
 
@@ -357,7 +365,11 @@ export default function HomepageLiveStreamsSection() {
   }, []);
 
   const cycleHero = useCallback(() => {
-    setSessions((prev) => { if (prev.length > 1) setHeroIdx((i) => (i + 1) % prev.length); return prev; });
+    setSessions((prev) => {
+ if (prev.length > 1) {
+setHeroIdx((i) => (i + 1) % prev.length);
+} return prev; 
+});
   }, []);
 
   useEffect(() => {
@@ -515,7 +527,9 @@ export default function HomepageLiveStreamsSection() {
                     >
                       <SideCard item={item} onClick={() => {
                         const ri = sessions.findIndex(s => s.id === item.id);
-                        if (ri !== -1) { setHeroIdx(ri); clearInterval(timerRef.current); }
+                        if (ri !== -1) {
+ setHeroIdx(ri); clearInterval(timerRef.current); 
+}
                       }} />
                     </motion.div>
                   ))}
@@ -525,7 +539,9 @@ export default function HomepageLiveStreamsSection() {
                     {sessions.map((_, idx) => (
                       <motion.button
                         key={idx} type="button"
-                        onClick={() => { setHeroIdx(idx); clearInterval(timerRef.current); }}
+                        onClick={() => {
+ setHeroIdx(idx); clearInterval(timerRef.current); 
+}}
                         whileHover={{ scale: 1.3 }}
                         style={{
                           width: heroIdx === idx ? 20 : 6, height: 6,

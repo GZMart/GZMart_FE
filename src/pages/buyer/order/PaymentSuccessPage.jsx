@@ -15,8 +15,6 @@ const PaymentSuccessPage = () => {
   const [message, setMessage] = useState('Verifying your payment...');
 
   const orderCode = searchParams.get('orderCode');
-  const redirectTo = searchParams.get('redirect') || searchParams.get('next');
-  const afterSuccessPath = redirectTo || BUYER_ROUTES.ORDERS;
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -39,14 +37,17 @@ const PaymentSuccessPage = () => {
 
           if (response.success && response.data?.localPaymentStatus === 'paid') {
             setStatus('success');
-            setMessage(
-              redirectTo
-                ? 'Payment successful! Redirecting...'
-                : 'Payment successful! Redirecting to order details...'
-            );
+            setMessage('Payment successful! Redirecting to order details...');
 
+            const orderId = response.data?.orderId || response.data?.orders?.[0]?.id;
+
+            // Redirect to orders page after 2 seconds
             setTimeout(() => {
-              navigate(afterSuccessPath);
+              if (orderId) {
+                navigate(BUYER_ROUTES.ORDER_CONFIRMATION.replace(':orderId', orderId));
+              } else {
+                navigate(BUYER_ROUTES.ORDERS);
+              }
             }, 2000);
             return true; // Stop polling
           }
@@ -88,7 +89,7 @@ const PaymentSuccessPage = () => {
     };
 
     verifyPayment();
-  }, [orderCode, navigate, afterSuccessPath, redirectTo]);
+  }, [orderCode, navigate]);
 
   return (
     <Container
@@ -130,9 +131,9 @@ const PaymentSuccessPage = () => {
               <div className="d-flex gap-2 justify-content-center">
                 <button
                   className="btn btn-outline-primary"
-                  onClick={() => navigate(afterSuccessPath)}
+                  onClick={() => navigate(BUYER_ROUTES.ORDERS)}
                 >
-                  {redirectTo ? 'Continue' : 'View My Orders'}
+                  View My Orders
                 </button>
               </div>
             </>

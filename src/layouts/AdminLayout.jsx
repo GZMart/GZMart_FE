@@ -108,7 +108,9 @@ const AdminLayout = ({ children }) => {
   const avatarLetter = (displayName[0] || 'A').toUpperCase();
 
   useEffect(() => {
-    if (!profileMenuOpen) return undefined;
+    if (!profileMenuOpen) {
+return undefined;
+}
     const onDoc = (e) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setProfileMenuOpen(false);

@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { PUBLIC_ROUTES } from '@constants/routes';
 import styles from '../../assets/styles/buyer/RequireLoginModal.module.css';
 
-const RequireLoginModal = ({ isOpen, onClose }) => {
+const RequireLoginModal = ({ isOpen, onClose, redirectTo }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -29,7 +30,8 @@ const RequireLoginModal = ({ isOpen, onClose }) => {
             className={styles.modalBtnPrimary}
             onClick={() => {
               onClose();
-              navigate('/login');
+              const redirect = redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
+              navigate(`${PUBLIC_ROUTES.LOGIN}${redirect}`);
             }}
           >
             {t('require_login.go_to_login')}

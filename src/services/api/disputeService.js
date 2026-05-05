@@ -10,6 +10,7 @@ const disputeService = {
   appealReport: async (id, data = {}) => axiosClient.post(`${BASE_URL}/reports/${id}/appeal`, data),
 
   // Seller
+  createSellerReport: async (data) => axiosClient.post(`${BASE_URL}/seller/reports`, data),
   getSellerReports: async (params = {}) =>
     axiosClient.get(`${BASE_URL}/seller/reports`, { params }),
   getSellerReportById: async (id) => axiosClient.get(`${BASE_URL}/seller/reports/${id}`),

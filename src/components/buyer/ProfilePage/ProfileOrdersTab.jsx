@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   AlertCircle,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  FileText,
   MessageCircle,
   Package,
   Search,
@@ -12,6 +14,7 @@ import {
 import { Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
+import InvoiceModal from '@components/buyer/ProfilePage/InvoiceModal';
 import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
 
 function formatPreorderShipDate(iso, language) {
@@ -75,26 +78,14 @@ const ProfileOrdersTab = ({
   onViewReturnStatus,
 }) => {
   const { i18n } = useTranslation();
-
-  // Status filter is handled server-side — backend only returns orders for the active tab.
-  // Client-side: only apply search query filter on loaded data.
-  const filteredOrders = orders.filter((order) => {
-    if (!orderSearchQuery) return true;
-    return (
-      order.orderNumber?.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-      order.items?.some(
-        (item) =>
-          item.productId?.name?.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-          item.productId?.sellerId?.fullName?.toLowerCase().includes(orderSearchQuery.toLowerCase())
-      )
-    );
-  });
+  const [showInvoice, setShowInvoice] = useState(false);
 
   const orderStatusTabs = [
     { key: 'all', label: 'All' },
     { key: 'pending', label: 'Pending Payment' },
     { key: 'processing', label: 'Processing' },
     { key: 'shipping', label: 'Shipping' },
+    { key: 'delivered', label: 'Delivered' },
     { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
     { key: 'return', label: 'Return/Refund' },
@@ -167,7 +158,7 @@ const ProfileOrdersTab = ({
                 <Spinner animation="border" variant="primary" />
                 <p className="mt-3 font-weight-bold">{t('profile_page.orders.loading')}</p>
               </div>
-            ) : filteredOrders.length === 0 ? (
+            ) : orders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
                 <Package size={64} color="#D1D5DB" strokeWidth={1.5} />
                 <h4 style={{ marginTop: '1rem' }}>
@@ -182,7 +173,7 @@ const ProfileOrdersTab = ({
                 </p>
               </div>
             ) : (
-              filteredOrders.map((order) => (
+              orders.map((order) => (
                 <div key={order._id} className={styles.orderCard}>
                   <div className={styles.orderCardHeader}>
                     <div className={styles.orderCardHeaderLeft}>
@@ -556,6 +547,12 @@ const ProfileOrdersTab = ({
                 >
                   {reorderLoadingId === selectedOrderDetails._id ? 'Reordering...' : 'Reorder'}
                 </button>
+                <button
+                  className={styles.orderDetailsActionSecondary}
+                  onClick={() => setShowInvoice(true)}
+                >
+                  Export Invoice
+                </button>
                 {selectedOrderDetails.status === 'completed' && (
                   <button
                     className={styles.orderDetailsActionSecondary}
@@ -597,6 +594,15 @@ const ProfileOrdersTab = ({
                   </button>
                 )}
               </div>
+
+              {showInvoice && (
+                <InvoiceModal
+                  order={selectedOrderDetails}
+                  user={user}
+                  formatCurrency={formatCurrency}
+                  onClose={() => setShowInvoice(false)}
+                />
+              )}
             </>
           )}
         </div>
