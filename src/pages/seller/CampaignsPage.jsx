@@ -386,7 +386,7 @@ const CampaignsPage = ({ mode = 'seller' }) => {
               ((variantModel.price - record.salePrice) / variantModel.price) * 100
             ),
             quantity: record.totalQuantity,
-            stock: variantModel.stock,
+            stock: Number(variantModel.stock ?? variantModel.quantity) || 0,
             purchaseLimit: record.purchaseLimit || 1,
             enabled: true,
             _campaignId: record._id,
@@ -457,7 +457,7 @@ const CampaignsPage = ({ mode = 'seller' }) => {
               ((variantModel.price - record.salePrice) / variantModel.price) * 100
             ),
             quantity: record.totalQuantity,
-            stock: variantModel.stock,
+            stock: Number(variantModel.stock ?? variantModel.quantity) || 0,
             purchaseLimit: record.purchaseLimit || 1,
             enabled: true,
             _campaignId: record._id,
@@ -670,6 +670,7 @@ const CampaignsPage = ({ mode = 'seller' }) => {
           return;
         }
         const key = `${productId}_${model.sku}`;
+        const variantStock = Number(model.stock ?? model.quantity) || 0;
         configs[key] = {
           productId,
           variantSku: model.sku,
@@ -677,8 +678,8 @@ const CampaignsPage = ({ mode = 'seller' }) => {
           originalPrice: model.price,
           salePrice: Math.round(model.price * 0.8),
           discountPercent: 20,
-          quantity: model.stock,
-          stock: model.stock,
+          quantity: variantStock,
+          stock: variantStock,
           purchaseLimit: 5,
           enabled: true,
         };

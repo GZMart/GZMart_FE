@@ -4,8 +4,8 @@ import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
 import { formatCurrency } from '../../../utils/formatters';
+import { strategyCacheEntryIsComplete } from '../../../utils/aiPricingStrategyCache.js';
 import AiPriceDetailModal from './AiPriceDetailModal';
-import PoCostBreakdown from './PoCostBreakdown';
 import styles from '@assets/styles/seller/AiPriceSuggest.module.css';
 
 const PANEL_WIDTH = 300;
@@ -100,10 +100,12 @@ ro.observe(panelRef.current);
     };
   }, [open, status, data, errorMsg]);
 
-  const fetchSuggestion = async () => {
+  /** @param {string} [strategyOverride] — dùng khi mở lại panel / đổi chiến lược để tránh đọc `strategy` state cũ (setState bất đồng bộ). */
+  const fetchSuggestion = async (strategyOverride) => {
     setStatus('loading');
     setData(null);
     setErrorMsg('');
+    const strat = strategyOverride !== undefined ? strategyOverride : strategy;
     try {
       const sellerId = user?._id || user?.id;
       // [Phase 2 - 4.1] Pass modelId for variant-aware price suggestion
@@ -113,7 +115,7 @@ ro.observe(panelRef.current);
         productName: product.name,
         sellerId,
         modelId: modelId || product.modelId || null,
-        strategy,
+        strategy: strat,
       });
 
       // axiosClient wraps response in res.data
@@ -132,14 +134,14 @@ ro.observe(panelRef.current);
         // [Multi-strategy Redis cache] Store all strategies for instant switching
         if (payload.allStrategies) {
           setAllStrategies(payload.allStrategies);
-          const cachedList = Object.keys(payload.allStrategies).filter(
-            (s) => payload.allStrategies[s]?.suggestedPrice != null
+          const cachedList = Object.keys(payload.allStrategies).filter((s) =>
+            strategyCacheEntryIsComplete(payload.allStrategies[s]),
           );
           setPreCachedStrats(cachedList);
         } else {
           // Single strategy only (cache miss or old backend) — wrap it
-          setAllStrategies({ [strategy]: payload });
-          setPreCachedStrats([strategy]);
+          setAllStrategies({ [strat]: payload });
+          setPreCachedStrats([strat]);
         }
         setStatus('success');
       } else {
@@ -154,10 +156,14 @@ ro.observe(panelRef.current);
 
   const handleToggle = () => {
     if (!open) {
+      setStrategy('balanced');
+      setAllStrategies(null);
+      setPreCachedStrats([]);
+      setData(null);
+      setErrorMsg('');
+      setStatus('loading');
       setOpen(true);
-      if (status === 'idle' || status === 'error') {
-        fetchSuggestion();
-      }
+      fetchSuggestion('balanced');
     } else {
       setOpen(false);
     }
@@ -191,12 +197,13 @@ ro.observe(panelRef.current);
     setShowDetail(false);
   };
 
-  // [Multi-strategy Redis cache] Switch strategy INSTANTLY using pre-cached data (no API call)
+  // [Multi-strategy Redis cache] Switch strategy — cache hit tức thì; thiếu key thì gọi API với strategy đích
   const handleStrategyChange = (newStrategy) => {
     setStrategy(newStrategy);
-    if (allStrategies && allStrategies[newStrategy]) {
+    if (strategyCacheEntryIsComplete(allStrategies?.[newStrategy])) {
       setData(allStrategies[newStrategy]);
-      // Already have this strategy — no loading needed
+    } else {
+      fetchSuggestion(newStrategy);
     }
   };
 
@@ -207,45 +214,6 @@ ro.observe(panelRef.current);
   const diffPct = priceDiff && product.price
     ? ((priceDiff / product.price) * 100).toFixed(1)
     : null;
-
-  const renderSuggestionExplanation = () => {
-    const costData = data?.costData;
-    const reasoning = data?.reasoning;
-    const cur = product?.price != null ? Number(product.price) : null;
-
-    if (costData?.hasCostData) {
-      return (
-        <div className={styles.poCostBreakdownWrap}>
-          <PoCostBreakdown
-            variant="panel"
-            costData={costData}
-            suggestedPrice={data?.suggestedPrice}
-            currentPrice={cur}
-            marketAvg={data?.marketData?.avg}
-          />
-        </div>
-      );
-    }
-
-    if (!reasoning) {
-      return (
-        <div className={styles.reasoning}>
-          <div className={styles.reasoningNoPo}>
-            ⚠️ Chưa có thông tin phiếu nhập (Purchase Order) cho sản phẩm này. Không thể tính chính xác giá vốn landed.
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className={styles.reasoning}>
-        {reasoning}
-        <div className={styles.reasoningNoPo}>
-          ⚠️ Chưa có thông tin phiếu nhập (Purchase Order) cho sản phẩm này. Không thể tính chính xác giá vốn landed.
-        </div>
-      </div>
-    );
-  };
 
   const panelEl = open && (
     <div
@@ -394,9 +362,6 @@ ro.observe(panelRef.current);
               )}
             </div>
 
-            {/* Lý giải: list phí PO + giải thích giá đề xuất (từ costData) */}
-            {renderSuggestionExplanation()}
-
             {/* ─ [Phase 1] Risk / Warning banners ─ */}
             {data.riskLevel === 'high' && data.warningMessage && (
               <div className={styles.warningHigh}>
@@ -419,7 +384,10 @@ ro.observe(panelRef.current);
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
-                <span>{data.reasoning}</span>
+                <span>
+                  {data.warningMessage
+                    || 'Giá đề xuất đặt ở mức sàn (giá vốn / giá hiện tại) để không bán dưới vốn.'}
+                </span>
               </div>
             )}
 

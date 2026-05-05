@@ -526,7 +526,7 @@ const ProfilePage = () => {
 
         if (response.success) {
           setOrders(response.data);
-          setPagination(response.pagination);
+          setPagination((prev) => ({ ...prev, ...response.pagination }));
         }
       } catch (error) {
         console.error('Failed to fetch orders:', error);
@@ -534,7 +534,17 @@ const ProfilePage = () => {
         setOrderLoading(false);
       }
     },
-    [pagination.limit]
+    [pagination.limit, orderStatusFilter]
+  );
+
+  // Re-fetch when status filter changes — reset to page 1
+  const handleOrderStatusFilterChange = useCallback(
+    (newStatus) => {
+      setOrderStatusFilter(newStatus);
+      setPagination((prev) => ({ ...prev, page: 1 }));
+      fetchOrders(1, newStatus);
+    },
+    [fetchOrders]
   );
 
   useEffect(() => {
@@ -1068,7 +1078,7 @@ return;
             orders={orders}
             orderLoading={orderLoading}
             orderStatusFilter={orderStatusFilter}
-            setOrderStatusFilter={setOrderStatusFilter}
+            setOrderStatusFilter={handleOrderStatusFilterChange}
             orderSearchQuery={orderSearchQuery}
             setOrderSearchQuery={setOrderSearchQuery}
             selectedOrder={selectedOrder}

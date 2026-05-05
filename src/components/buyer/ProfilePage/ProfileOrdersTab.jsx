@@ -32,16 +32,15 @@ function formatPreorderShipDate(iso, language) {
 const getStatusBadge = (status) => {
   const statusConfig = {
     pending: { class: styles.badgeWarning, text: 'Pending' },
-    processing: { class: styles.badgeInfo, text: 'Processing' },
     confirmed: { class: styles.badgeInfo, text: 'Confirmed' },
-    packing: { class: styles.badgeInfo, text: 'Packing' },
-    shipping: { class: styles.badgeInfo, text: 'Shipping' },
+    packed: { class: styles.badgeInfo, text: 'Packed' },
     shipped: { class: styles.badgeInfo, text: 'Shipping' },
     delivered: { class: styles.badgeSuccess, text: 'Delivered' },
-    delivered_pending_confirmation: { class: styles.badgeSuccess, text: 'Delivered' },
     completed: { class: styles.badgeSuccess, text: 'Completed' },
     cancelled: { class: styles.badgeDanger, text: 'Cancelled' },
     refunded: { class: styles.badgeWarning, text: 'Refunded' },
+    refund_pending: { class: styles.badgeWarning, text: 'Refund Pending' },
+    under_investigation: { class: styles.badgeWarning, text: 'Under Investigation' },
   };
 
   const config = statusConfig[status] || { class: styles.badgeInfo, text: status };
