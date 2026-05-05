@@ -20,6 +20,7 @@ import {
   message,
 } from 'antd';
 import { FileText, Filter, Plus, RefreshCcw, Scale, Send, ShieldCheck } from 'lucide-react';
+import QuickReportButton from '@components/seller/dashboard/QuickReportButton';
 import disputeService from '@services/api/disputeService';
 import { orderService } from '@services/api/orderService';
 import { productService } from '@services/api';
@@ -480,6 +481,11 @@ const DisputeCenter = ({ mode }) => {
     }
   };
 
+  const appendLocalReport = (report) => {
+    setReports((prev) => [report, ...prev]);
+    setPagination((p) => ({ ...p, total: (p.total || 0) + 1 }));
+  };
+
   const openDetail = async (report) => {
     setDetailOpen(true);
     setDetailLoading(true);
@@ -598,19 +604,19 @@ const DisputeCenter = ({ mode }) => {
     setActionLoading(true);
     try {
       const values = await actionForm.validateFields();
-      await endpoint.updateStatus(actionTarget._id, {
+      const response = await endpoint.updateStatus(actionTarget._id, {
         status: values.status,
         note: values.note,
         resolutionNote: values.resolutionNote,
         appealNote: values.appealNote,
       });
 
+      // Use server response to update the single report in-place so the table reflects the change
+      const updated = response?.data?.data || response?.data || response;
+      setReports((prev) => prev.map((r) => (r._id === updated._id ? updated : r)));
+
       message.success('Report status updated');
       closeActionDrawer();
-      await loadReports(page, pageSize);
-      if (detailOpen && detailReport?._id === actionTarget._id) {
-        await openDetail(actionTarget);
-      }
     } catch (error) {
       if (error?.errorFields) {
         return;
@@ -863,6 +869,7 @@ const DisputeCenter = ({ mode }) => {
             >
               Refresh
             </Button>
+            {mode === 'seller' ? <QuickReportButton onReportCreated={appendLocalReport} /> : null}
             {mode === 'buyer' ? (
               <Button
                 className={styles.reportsToolbarButton}

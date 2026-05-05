@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Drawer, Button, Form, Alert, Image, Spin, message, Input, Steps, Tooltip } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, SwapOutlined, DollarOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  SwapOutlined,
+  DollarOutlined,
+} from '@ant-design/icons';
 import { Truck, Hand, Undo2, PackageCheck, PackagePlus, Handshake, RefreshCcw } from 'lucide-react';
 import rmaService from '@services/api/rmaService';
 import DeliveryTrackingMap from '@components/buyer/DeliveryTrackingMap';
@@ -283,8 +288,9 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
       if (err.errorFields) {
         return;
       }
-      setError(err.response?.data?.message || 'Failed to confirm receipt');
-      message.error('Failed to confirm receipt');
+      const errorMessage = err.response?.data?.message || 'Failed to confirm receipt';
+      setError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -985,26 +991,8 @@ const ReturnDetailsModal = ({ visible, returnRequest, onClose, onSuccess }) => {
                     </span>
                   </Tooltip>
                 </div>
-
-                {receiptConfirmed && (
-                  <Alert
-                    type="success"
-                    message="Receipt confirmed"
-                    description="System is processing your chosen resolution."
-                    style={{ marginTop: 12 }}
-                  />
-                )}
               </div>
             )}
-
-          {/* Manual processing for processing state */}
-          {isProcessing && returnRequest._original?.type === 'refund' && (
-            <div style={{ marginTop: 16 }}>
-              <Button type="primary" onClick={handleProcessRefund} loading={loading} block>
-                Process Refund ({returnRequest.price.toLocaleString('vi-VN')}₫)
-              </Button>
-            </div>
-          )}
 
           {/* Close Button */}
           {!isPending && !isApproved && !isItemsReturned && !isProcessing && (

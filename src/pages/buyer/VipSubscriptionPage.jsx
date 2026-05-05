@@ -88,7 +88,9 @@ const VipSubscriptionPage = () => {
     try {
       setLoading(true);
       const res = await subscriptionService.getMine();
-      if (res?.success) setSub(res.data ?? null);
+      if (res?.success) {
+setSub(res.data ?? null);
+}
     } catch (e) {
       console.error(e);
       toast.error('Failed to load VIP information');

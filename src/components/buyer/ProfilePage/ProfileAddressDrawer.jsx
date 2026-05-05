@@ -156,16 +156,18 @@ const ProfileAddressDrawer = ({
                 value={addressForm.street || ''}
                 onChange={onAddressFormChange}
                 onFocus={() => setAddressSuggestionField('street')}
-                onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
+                onBlur={() => setTimeout(() => setAddressSuggestionField(null), 200)}
                 autoComplete="address-line1"
                 placeholder={t('profile_page.address.modal.street_placeholder')}
                 className={styles.modalInput}
               />
-              <AddressAutocompleteDropdown
-                show={showAddressSuggestions && addressSuggestionField === 'street'}
-                suggestions={addressSuggestions}
-                onSelect={handleAddressSuggestionSelect}
-              />
+              <div onMouseDown={(e) => e.preventDefault()}>
+                <AddressAutocompleteDropdown
+                  show={showAddressSuggestions && addressSuggestionField === 'street'}
+                  suggestions={addressSuggestions}
+                  onSelect={handleAddressSuggestionSelect}
+                />
+              </div>
             </div>
           </div>
           <div className={styles.modalFormGroup}>
@@ -179,16 +181,18 @@ const ProfileAddressDrawer = ({
                 value={addressForm.details || ''}
                 onChange={onAddressFormChange}
                 onFocus={() => setAddressSuggestionField('details')}
-                onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
+                onBlur={() => setTimeout(() => setAddressSuggestionField(null), 200)}
                 autoComplete="address-line2"
                 placeholder={t('profile_page.address.modal.specific_address_placeholder')}
                 className={styles.modalTextarea || styles.modalInput}
               />
-              <AddressAutocompleteDropdown
-                show={showAddressSuggestions && addressSuggestionField === 'details'}
-                suggestions={addressSuggestions}
-                onSelect={handleAddressSuggestionSelect}
-              />
+              <div onMouseDown={(e) => e.preventDefault()}>
+                <AddressAutocompleteDropdown
+                  show={showAddressSuggestions && addressSuggestionField === 'details'}
+                  suggestions={addressSuggestions}
+                  onSelect={handleAddressSuggestionSelect}
+                />
+              </div>
             </div>
           </div>
 

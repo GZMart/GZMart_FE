@@ -36,6 +36,23 @@ return [];
   }));
 };
 
+/** Product schema has no root-level stock; sum variants for listings / campaign picker. */
+const getProductDisplayStock = (product) => {
+  const ts = product?.totalStock;
+  if (ts != null && Number.isFinite(Number(ts))) {
+    return Number(ts);
+  }
+  const root = product?.stock;
+  if (root != null && Number.isFinite(Number(root))) {
+    return Number(root);
+  }
+  const models = product?.models;
+  if (!Array.isArray(models)) {
+    return 0;
+  }
+  return models.reduce((sum, m) => sum + (Number(m?.stock ?? m?.quantity) || 0), 0);
+};
+
 const tierOptionLabel = (tiers, tierLevel, optionIndex) => {
   const raw = tiers?.[tierLevel]?.options?.[optionIndex];
   if (raw == null || raw === '') {
@@ -56,7 +73,9 @@ const secondaryTierLabel = (tiers, tierIndexArr, primaryGroupTierIndex) => {
   }
   const parts = [];
   for (let t = 0; t < tierIndexArr.length; t += 1) {
-    if (t === primaryGroupTierIndex) continue;
+    if (t === primaryGroupTierIndex) {
+continue;
+}
     parts.push(tierOptionLabel(tiers, t, tierIndexArr[t]));
   }
   return parts.join(' / ');
@@ -67,7 +86,9 @@ const makeSortRowsInGroup = (primaryIdx) => (a, b) => {
   const bi = getModelTierIndex(b.model);
   const n = Math.max(ai.length, bi.length, primaryIdx + 1);
   for (let i = 0; i < n; i += 1) {
-    if (i === primaryIdx) continue;
+    if (i === primaryIdx) {
+continue;
+}
     const da = ai[i] ?? 0;
     const db = bi[i] ?? 0;
     if (da !== db) {
@@ -312,7 +333,7 @@ onAddProduct(product._id);
                     <div className={styles.productMeta}>
                       <div className={styles.productName}>{product.name}</div>
                       <div className={styles.productSku}>
-                        Stock: {product.totalStock ?? product.stock ?? 0}
+                        Stock: {getProductDisplayStock(product)}
                       </div>
                     </div>
                     {isSelected ? (
@@ -660,7 +681,9 @@ return;
                                         style={{ textAlign: 'center' }}
                                       >
                                         <span className={styles.fsFlashReadonlyMuted}>
-                                          {model.stock != null ? model.stock : '—'}
+                                          {model.stock != null || model.quantity != null
+                                            ? Number(model.stock ?? model.quantity)
+                                            : '—'}
                                         </span>
                                       </td>
                                       <td className={styles.fsFlashColLimit}>

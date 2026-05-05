@@ -4,7 +4,6 @@ import { Container, Row, Col, Button, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { productService } from '../../../services/api';
-import promotionBuyerService from '../../../services/api/promotionBuyerService';
 import { PUBLIC_ROUTES } from '../../../constants/routes';
 
 // Helper to format price
@@ -26,16 +25,16 @@ const calculateDiscount = (originalPrice, salePrice) => {
 // Helper to get product image
 const getProductImage = (product) => {
   // Prefer active model's image (variant-specific)
-  const activeModel = product?.models?.find(m => m.isActive) || product?.models?.[0];
+  const activeModel = product?.models?.find((m) => m.isActive) || product?.models?.[0];
   if (activeModel?.image) {
-return activeModel.image;
-}
+    return activeModel.image;
+  }
   if (product?.images?.length > 0) {
-return product.images[0];
-}
+    return product.images[0];
+  }
   if (product?.image) {
-return product.image;
-}
+    return product.image;
+  }
   return 'https://via.placeholder.com/400x400?text=No+Image';
 };
 
@@ -87,31 +86,37 @@ const ProductCard = ({ product }) => (
       whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.2 }}
     >
-      {/* All badges in one container — prevents overlap on narrow cards */}
-      {(product.badges.length > 0 || product.recSource) && (
-        <div className="position-absolute top-0 start-0 m-2 z-1 d-flex flex-column gap-1" style={{ maxWidth: 'calc(100% - 1rem)' }}>
+      {product.badges.length > 0 && (
+        <div className="position-absolute top-0 start-0 m-2 z-1 d-flex flex-column gap-1">
           {product.badges.map((badge, idx) => (
             <Badge
               key={idx}
               bg={badge.bg}
               text={badge.color}
-              className="rounded-1 px-2 py-1 fw-bold small shadow-sm align-self-start"
+              className="rounded-1 px-2 py-1 fw-bold small shadow-sm"
             >
               {badge.text}
             </Badge>
           ))}
-          {product.recSource && (
-            <Badge
-              bg={product.recSource === 'trending' ? 'secondary' : 'primary'}
-              className="rounded-pill px-2 py-1 small shadow-sm align-self-start"
-              style={{ fontSize: '0.65rem', opacity: 0.85 }}
-            >
-              {product.recSource === 'trending' ? 'HOT TREND' :
-               product.recSource === 'content' ? '✨ AI: SIMILAR' :
-               product.recSource === 'collab' ? '🤝 AI: BOUGHT TOGETHER' :
-               '🌟 AI: HYBRID'}
-            </Badge>
-          )}
+        </div>
+      )}
+
+      {/* AI Recommendation Source Badge */}
+      {product.recSource && (
+        <div className="position-absolute top-0 end-0 m-2 z-1">
+          <Badge
+            bg={product.recSource === 'trending' ? 'secondary' : 'primary'}
+            className="rounded-pill px-2 py-1 small shadow-sm"
+            style={{ fontSize: '0.65rem', opacity: 0.85 }}
+          >
+            {product.recSource === 'trending'
+              ? 'HOT TREND'
+              : product.recSource === 'content'
+                ? '✨ AI: SIMILAR'
+                : product.recSource === 'collab'
+                  ? '🤝 AI: BOUGHT TOGETHER'
+                  : '🌟 AI: HYBRID'}
+          </Badge>
         </div>
       )}
 
@@ -145,19 +150,14 @@ const ProductCard = ({ product }) => (
 
         <div className="mt-auto d-flex justify-content-between align-items-end">
           <div>
-            {product.originalPrice && product.originalPrice > product.price && (
+            {product.originalPrice && (
               <div className="mb-1">
                 <span className="text-decoration-line-through text-secondary me-2 small">
                   {formatPrice(product.originalPrice)}₫
                 </span>
               </div>
             )}
-            <span
-              className="fw-bold fs-5"
-              style={{ color: product.isFlashSale ? '#e53935' : 'var(--color-primary)' }}
-            >
-              {formatPrice(product.price)}₫
-            </span>
+            <span className="fw-bold text-primary fs-5">{formatPrice(product.price)}₫</span>
           </div>
 
           {/* Số lượng đã bán căn phải */}
@@ -178,7 +178,6 @@ ProductCard.propTypes = {
 
 const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
   const [products, setProducts] = useState([]);
-  const [promoMap, setPromoMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   const renderDualToneTitle = () => {
@@ -205,31 +204,18 @@ const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
         setLoading(true);
         let response;
         try {
-          // Fetch 40 products (8 rows of 5)
+          // Fetch 40 products (8 rows of 5) - AI Personalized recommendations
           response = await productService.getPersonalizedRecommendations(40);
-        } catch (todayError) {
-          // Backward-compatible fallback
+        } catch (personalizationError) {
+          // Backward-compatible fallback to trending if personalized fails
+          console.warn(
+            'Personalized recommendations failed, falling back to trending:',
+            personalizationError
+          );
           response = await productService.getTrendingProducts(40);
         }
         const apiData = Array.isArray(response) ? response : response.data || [];
         setProducts(apiData);
-
-        // Fetch flash sale promotions for all products
-        const ids = apiData.map((p) => String(p._id)).filter(Boolean);
-        if (ids.length > 0) {
-          try {
-            const promoResponse = await promotionBuyerService.getProductPromotionsBatch(ids);
-            const rawMap =
-              promoResponse?.success === true && promoResponse?.data
-                ? promoResponse.data
-                : promoResponse?.data ?? {};
-            const map =
-              rawMap && typeof rawMap === 'object' && !Array.isArray(rawMap) ? rawMap : {};
-            setPromoMap(map);
-          } catch {
-            // promotion fetch failure is non-blocking
-          }
-        }
       } catch (err) {
         console.error('Error fetching products:', err);
         setProducts([]);
@@ -268,50 +254,27 @@ const TodayRecommendations = ({ title = 'RECOMMENDED FOR YOU' }) => {
 
   // Transform all API data to uniform component format
   const transformedProducts = products.map((product) => {
-    const productId = String(product._id ?? '');
     const priceInfo = getProductPrice(product);
-    const promo = promoMap[productId];
+    const discount = calculateDiscount(priceInfo.originalPrice, priceInfo.price);
     const preOrderDays = Number(product.preOrderDays) || 0;
     const treatAsSoldOut = priceInfo.stock === 0 && preOrderDays <= 0;
 
-    // Overlay flash sale price if available
-    let displayPrice = priceInfo.price;
-    let displayOriginalPrice = priceInfo.originalPrice;
-    let isFlashSale = false;
-
-    if (
-      promo?.flashSale?.salePrice != null &&
-      Number(promo.flashSale.salePrice) > 0 &&
-      Number(promo.flashSale.salePrice) < (priceInfo.price || Infinity)
-    ) {
-      displayPrice = Number(promo.flashSale.salePrice);
-      displayOriginalPrice =
-        Number(promo.flashSale.originalPrice) > 0
-          ? Number(promo.flashSale.originalPrice)
-          : priceInfo.price;
-      isFlashSale = true;
-    }
-
-    const discount = calculateDiscount(displayOriginalPrice, displayPrice);
-
     return {
-      id: productId,
+      id: product._id,
       title: product.name,
       image: getProductImage(product),
-      price: displayPrice,
-      originalPrice: displayOriginalPrice,
+      price: priceInfo.price,
+      originalPrice: priceInfo.originalPrice,
       stock: priceInfo.stock,
-      sold: product.sold || 0,
-      isFlashSale,
+      sold: product.sold || 0, // <--- THÊM DÒNG NÀY ĐỂ LẤY SỐ LƯỢNG BÁN
       badges: [
         treatAsSoldOut && { text: 'SOLD OUT', bg: 'secondary', color: 'white' },
-        isFlashSale && { text: 'FLASH SALE', bg: 'danger', color: 'white' },
-        !isFlashSale && discount > 0 && { text: `${discount}% OFF`, bg: 'warning', color: 'dark' },
+        discount > 0 && { text: `${discount}% OFF`, bg: 'warning', color: 'dark' },
         product.isHot && { text: 'HOT', bg: 'danger', color: 'white' },
         product.isNew && { text: 'NEW', bg: 'success', color: 'white' },
       ].filter(Boolean),
       isSoldOut: treatAsSoldOut,
-      recSource: product.recSource,
+      recSource: product.recSource, // <-- TRUYỀN recSource VÀO ĐÂY
     };
   });
 

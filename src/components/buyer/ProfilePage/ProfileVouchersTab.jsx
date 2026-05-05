@@ -41,8 +41,12 @@ const FILTERS = [
 
 const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const fmtDiscount = (v) => {
-  if (v.discountType === 'percent') return `${v.discountValue}% OFF`;
-  if (v.discountType === 'coin') return `+${Number(v.discountValue).toLocaleString()} Coin`;
+  if (v.discountType === 'percent') {
+return `${v.discountValue}% OFF`;
+}
+  if (v.discountType === 'coin') {
+return `+${Number(v.discountValue).toLocaleString()} Coin`;
+}
   return `−${Number(v.discountValue).toLocaleString()} ₫`;
 };
 const fmtMoney = (n) => Number(n).toLocaleString('en-US');
@@ -53,15 +57,26 @@ const daysLeft = (endTime) => {
 };
 
 const filterVouchers = (vouchers, filter) => {
-  if (filter === 'all') return vouchers;
-  if (filter === 'vip') return vouchers.filter((v) => v.type === 'system_vip_daily');
-  if (filter === 'system') return vouchers.filter((v) => v.type?.startsWith('system_') && v.type !== 'system_vip_daily');
-  if (filter === 'shop') return vouchers.filter((v) => v.type === 'shop' || v.type === 'private');
-  if (filter === 'product') return vouchers.filter((v) => v.type === 'product');
-  if (filter === 'special')
-    return vouchers.filter((v) =>
+  if (filter === 'all') {
+return vouchers;
+}
+  if (filter === 'vip') {
+return vouchers.filter((v) => v.type === 'system_vip_daily');
+}
+  if (filter === 'system') {
+return vouchers.filter((v) => v.type?.startsWith('system_') && v.type !== 'system_vip_daily');
+}
+  if (filter === 'shop') {
+return vouchers.filter((v) => v.type === 'shop' || v.type === 'private');
+}
+  if (filter === 'product') {
+return vouchers.filter((v) => v.type === 'product');
+}
+  if (filter === 'special') {
+return vouchers.filter((v) =>
       ['live', 'new_buyer', 'repeat_buyer', 'follower'].includes(v.type),
     );
+}
   return vouchers;
 };
 

@@ -607,7 +607,9 @@ const ListingsPage = () => {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={(p) => {
-                  if (p >= 1 && p <= totalPages) setCurrentPage(p);
+                  if (p >= 1 && p <= totalPages) {
+setCurrentPage(p);
+}
                 }}
               />
             </div>
@@ -635,7 +637,9 @@ const ListingsPage = () => {
         show={!!aiModalProduct}
         product={aiModalProduct}
         onApply={(changes) => {
-          if (aiModalProduct && changes.length > 0) handleAiBatchApply(aiModalProduct, changes);
+          if (aiModalProduct && changes.length > 0) {
+handleAiBatchApply(aiModalProduct, changes);
+}
         }}
         onClose={() => setAiModalProduct(null)}
         onViewDetail={({ detailResult, batchData }) => {

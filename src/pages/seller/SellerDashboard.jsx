@@ -14,23 +14,27 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import {
-  Button,
-  Card,
-  DatePicker,
-  Progress,
-  Segmented,
-  Spin,
-  Table,
-} from 'antd';
+import { Button, Card, DatePicker, Progress, Segmented, Spin, Table } from 'antd';
 import dayjs from 'dayjs';
 const { RangePicker } = DatePicker;
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { formatCurrency } from '../../utils/formatters';
+import { SELLER_ROUTES } from '../../constants/routes';
 import dashboardService from '../../services/api/dashboardService';
 import { chatService } from '../../services/api/chatService';
 import { OverallSalesCard } from '../../components/seller/dashboard/OverallSalesCard';
@@ -58,13 +62,13 @@ const EXPENSE_TYPE_TO_I18N = {
 
 const AGE_GROUP_COLORS = {
   'Under 18': '#8b5cf6',
-  '18-24':    '#3b82f6',
-  '25-34':    '#10b981',
-  '35-44':    '#f59e0b',
-  '45-54':    '#ef4444',
-  '55-64':    '#ec4899',
-  '65+':      '#6b7280',
-  Unknown:  '#d1d5db',
+  '18-24': '#3b82f6',
+  '25-34': '#10b981',
+  '35-44': '#f59e0b',
+  '45-54': '#ef4444',
+  '55-64': '#ec4899',
+  '65+': '#6b7280',
+  Unknown: '#d1d5db',
 };
 
 const getAgeColor = (label) => AGE_GROUP_COLORS[label] || '#94a3b8';
@@ -93,26 +97,26 @@ const translateExpenseType = (type, t) => {
 
 // ── Period helpers for ERP section filters ──
 const getErpPeriodOptions = (t) => [
-  { label: t('sellerDashboard.periodShort.7days', '7 Ngày'),     value: '7days' },
-  { label: t('sellerDashboard.periodShort.30days', '30 Ngày'),   value: '30days' },
-  { label: t('sellerDashboard.periodShort.90days', '90 Ngày'),    value: '90days' },
+  { label: t('sellerDashboard.periodShort.7days', '7 Ngày'), value: '7days' },
+  { label: t('sellerDashboard.periodShort.30days', '30 Ngày'), value: '30days' },
+  { label: t('sellerDashboard.periodShort.90days', '90 Ngày'), value: '90days' },
   { label: t('sellerDashboard.periodShort.12months', '12 Tháng'), value: '12months' },
-  { label: t('sellerDashboard.periodShort.yearly', 'Năm trước'),  value: 'yearly' },
-  { label: t('sellerDashboard.period.custom', 'Tùy chỉnh'),       value: 'custom' },
+  { label: t('sellerDashboard.periodShort.yearly', 'Năm trước'), value: 'yearly' },
+  { label: t('sellerDashboard.period.custom', 'Tùy chỉnh'), value: 'custom' },
 ];
 
 const handleErpPeriodChange = (val, setter, customSetter, setPickerOpen) => {
   if (val === 'custom') {
     setter('custom');
     if (setPickerOpen) {
-setPickerOpen(true);
-}
+      setPickerOpen(true);
+    }
   } else {
     setter(val);
     customSetter(null);
     if (setPickerOpen) {
-setPickerOpen(false);
-}
+      setPickerOpen(false);
+    }
   }
 };
 
@@ -160,61 +164,60 @@ const ACTION_ITEMS = (t) => [
 ];
 
 const EXPENSE_COLORS = {
-  'Goods Value (PO)':             '#1677ff',
-  'Buying Service Fee':           '#52c41a',
-  'Intl Freight (CN→VN)':        '#fa8c16',
-  'Import Tax':                   '#f5222d',
-  'CN Domestic Shipping':         '#722ed1',
-  'Packaging / Insurance':        '#13c2c2',
+  'Goods Value (PO)': '#1677ff',
+  'Buying Service Fee': '#52c41a',
+  'Intl Freight (CN→VN)': '#fa8c16',
+  'Import Tax': '#f5222d',
+  'CN Domestic Shipping': '#722ed1',
+  'Packaging / Insurance': '#13c2c2',
   'VN Last-Mile (PO→Warehouse)': '#faad14',
-  'Other Costs':                  '#8c8c8c',
-  'Last-Mile Delivery (Order)':   '#eb2f96',
+  'Other Costs': '#8c8c8c',
+  'Last-Mile Delivery (Order)': '#eb2f96',
 };
 
 const CATEGORY_CHART_COLORS = [
-  '#1677ff', '#52c41a', '#fa8c16', '#f5222d',
-  '#722ed1', '#13c2c2', '#faad14', '#eb2f96',
+  '#1677ff',
+  '#52c41a',
+  '#fa8c16',
+  '#f5222d',
+  '#722ed1',
+  '#13c2c2',
+  '#faad14',
+  '#eb2f96',
 ];
 
 const getCategoryPeriodLabels = (t) => ({
-  '7days':    t('sellerDashboard.period.7days', '7 ngày gần nhất'),
-  '30days':   t('sellerDashboard.period.30days', '30 ngày gần nhất'),
-  '90days':   t('sellerDashboard.period.90days', '90 ngày gần nhất'),
+  '7days': t('sellerDashboard.period.7days', '7 ngày gần nhất'),
+  '30days': t('sellerDashboard.period.30days', '30 ngày gần nhất'),
+  '90days': t('sellerDashboard.period.90days', '90 ngày gần nhất'),
   '12months': t('sellerDashboard.period.12months', '12 tháng qua'),
-  yearly:   t('sellerDashboard.period.yearly', 'Năm trước'),
-  custom:   t('sellerDashboard.period.custom', 'Tùy chỉnh'),
+  yearly: t('sellerDashboard.period.yearly', 'Năm trước'),
+  custom: t('sellerDashboard.period.custom', 'Tùy chỉnh'),
 });
 
 // ─── Enhanced Expense Tooltip ─────────────────────────────────────────────────
-/** Recharts default Tooltip needs explicit item/label styles or text stays dark on dark backgrounds */
-const DARK_CHART_TOOLTIP_PROPS = {
-  contentStyle: {
-    background: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: 8,
-    fontSize: 12,
-    color: '#f8fafc',
-  },
-  itemStyle: { color: '#e2e8f0' },
-  labelStyle: { color: '#f8fafc', fontWeight: 600 },
-};
-
 const ExpenseTooltip = ({ active, payload }) => {
   if (!active || !payload || !payload.length) {
-return null;
-}
+    return null;
+  }
   return (
-    <div style={{
-      background: '#1e293b', border: '1px solid #334155', borderRadius: 8,
-      padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 180,
-    }}>
+    <div
+      style={{
+        background: '#1e293b',
+        border: '1px solid #334155',
+        borderRadius: 8,
+        padding: '10px 14px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        minWidth: 180,
+      }}
+    >
       <p style={{ margin: 0, fontWeight: 700, color: '#f8fafc', fontSize: 13, marginBottom: 6 }}>
         {payload[0].name}
       </p>
       {payload.map((entry, idx) => (
-        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#e2e8f0', lineHeight: 1.9 }}>
-          <span style={{ color: entry.payload?.color ?? entry.color, fontWeight: 600 }}>{entry.name}: </span>
-          <span style={{ color: '#f1f5f9' }}>{formatCurrency(entry.value)}</span>
+        <p key={idx} style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.9 }}>
+          <span style={{ color: entry.payload.color, fontWeight: 600 }}>{entry.name}: </span>
+          {formatCurrency(entry.value)}
         </p>
       ))}
     </div>
@@ -226,8 +229,14 @@ const SkeletonActionCard = () => (
   <div className={styles.skeletonActionCard}>
     <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
     <div className={styles.skeletonTextBlock}>
-      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '75%', height: 14 }} />
-      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '55%', height: 11 }} />
+      <div
+        className={`${styles.skeleton} ${styles.skeletonLine}`}
+        style={{ width: '75%', height: 14 }}
+      />
+      <div
+        className={`${styles.skeleton} ${styles.skeletonLine}`}
+        style={{ width: '55%', height: 11 }}
+      />
     </div>
   </div>
 );
@@ -236,9 +245,15 @@ const SkeletonActionCard = () => (
 const SkeletonStatCard = () => (
   <div className={styles.skeletonCard}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <div className={`${styles.skeleton} ${styles.skeletonIcon}`} style={{ width: 40, height: 40 }} />
+      <div
+        className={`${styles.skeleton} ${styles.skeletonIcon}`}
+        style={{ width: 40, height: 40 }}
+      />
     </div>
-    <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '45%', height: 10, marginTop: 4 }} />
+    <div
+      className={`${styles.skeleton} ${styles.skeletonLine}`}
+      style={{ width: '45%', height: 10, marginTop: 4 }}
+    />
     <div className={`${styles.skeleton} ${styles.skeletonStatValue}`} />
     <div className={`${styles.skeleton} ${styles.skeletonStatTrend}`} />
   </div>
@@ -287,7 +302,16 @@ ActionCard.propTypes = {
 };
 
 // ─── Stat Card ──────────────────────────────────────────────────────────────
-const StatCard = ({ icon: IconComponent, label, value, trend, trendUp, fromLabel, cardColor, onClick }) => {
+const StatCard = ({
+  icon: IconComponent,
+  label,
+  value,
+  trend,
+  trendUp,
+  fromLabel,
+  cardColor,
+  onClick,
+}) => {
   const accentColor = cardColor || '#0d6efd';
   const bgColor = `${accentColor}14`;
 
@@ -306,7 +330,9 @@ const StatCard = ({ icon: IconComponent, label, value, trend, trendUp, fromLabel
       <p className={styles.statValue}>{value}</p>
       {trend && (
         <div className={styles.statTrend}>
-          <span className={`${styles.statTrendPill} ${trendUp ? styles.statTrendPillUp : styles.statTrendPillDown}`}>
+          <span
+            className={`${styles.statTrendPill} ${trendUp ? styles.statTrendPillUp : styles.statTrendPillDown}`}
+          >
             {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
             {trend}
           </span>
@@ -344,9 +370,10 @@ const getFormattedDate = () => {
   const lang = i18n.language;
   const localeMap = { vi: 'vi-VN', en: 'en-US' };
   const locale = localeMap[lang] || 'vi-VN';
-  const options = lang === 'vi'
-    ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
-    : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  const options =
+    lang === 'vi'
+      ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+      : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
   return new Date().toLocaleDateString(locale, options);
 };
 
@@ -470,7 +497,8 @@ const SellerDashboard = () => {
 
         const counts = orderCountsRes?.data ?? {};
         const rmaCount = typeof counts.rmaCount === 'number' ? counts.rmaCount : 0;
-        const cancellationCount = typeof counts.cancellationCount === 'number' ? counts.cancellationCount : 0;
+        const cancellationCount =
+          typeof counts.cancellationCount === 'number' ? counts.cancellationCount : 0;
 
         const unread =
           typeof unreadNotifRes?.count === 'number'
@@ -511,7 +539,7 @@ const SellerDashboard = () => {
             netSales: p?.totalRevenue ?? p?.revenue ?? 0,
             profit: p?.profit ?? 0,
             margin: typeof p?.profitMargin === 'number' ? `${p.profitMargin.toFixed(1)}%` : '—',
-          })),
+          }))
         );
       } finally {
         if (mounted) {
@@ -567,8 +595,19 @@ const SellerDashboard = () => {
     let cancelled = false;
     setExpenseLoading(true);
     const params = expenseCustomRange
-      ? { period: 'custom', startDate: expenseCustomRange.startDate, endDate: expenseCustomRange.endDate }
-      : { period: expensePeriod === 'months12' ? '12months' : expensePeriod === 'days90' ? '90days' : expensePeriod };
+      ? {
+          period: 'custom',
+          startDate: expenseCustomRange.startDate,
+          endDate: expenseCustomRange.endDate,
+        }
+      : {
+          period:
+            expensePeriod === 'months12'
+              ? '12months'
+              : expensePeriod === 'days90'
+                ? '90days'
+                : expensePeriod,
+        };
     dashboardService
       .getExpenseAnalysis(params)
       .then((res) => {
@@ -577,9 +616,7 @@ const SellerDashboard = () => {
         }
         const payload = res?.data;
         setExpense(
-          payload && typeof payload === 'object' && !Array.isArray(payload)
-            ? payload
-            : null,
+          payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : null
         );
       })
       .finally(() => {
@@ -597,8 +634,19 @@ const SellerDashboard = () => {
     let cancelled = false;
     setCategoryLoading(true);
     const params = categoryCustomRange
-      ? { period: 'custom', startDate: categoryCustomRange.startDate, endDate: categoryCustomRange.endDate }
-      : { period: categoryPeriod === 'months12' ? '12months' : categoryPeriod === 'days90' ? '90days' : categoryPeriod };
+      ? {
+          period: 'custom',
+          startDate: categoryCustomRange.startDate,
+          endDate: categoryCustomRange.endDate,
+        }
+      : {
+          period:
+            categoryPeriod === 'months12'
+              ? '12months'
+              : categoryPeriod === 'days90'
+                ? '90days'
+                : categoryPeriod,
+        };
     dashboardService
       .getProductAnalyticsByCategory(params)
       .then((res) => {
@@ -607,9 +655,7 @@ const SellerDashboard = () => {
         }
         const payload = res?.data;
         setCategoryAnalytics(
-          payload && typeof payload === 'object' && !Array.isArray(payload)
-            ? payload
-            : null,
+          payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : null
         );
       })
       .finally(() => {
@@ -628,24 +674,27 @@ const SellerDashboard = () => {
     setAgeAnalyticsLoading(true);
     const params = ageCustomRange
       ? { period: 'custom', startDate: ageCustomRange.startDate, endDate: ageCustomRange.endDate }
-      : { period: agePeriod === 'months12' ? '12months' : agePeriod === 'days90' ? '90days' : agePeriod };
+      : {
+          period:
+            agePeriod === 'months12' ? '12months' : agePeriod === 'days90' ? '90days' : agePeriod,
+        };
     dashboardService
       .getCustomerAgeAnalytics(params)
       .then((res) => {
         if (cancelled) {
           return;
-}
+        }
         setAgeAnalytics(res?.data || null);
       })
       .catch(() => {
         if (!cancelled) {
-setAgeAnalytics(null);
-}
+          setAgeAnalytics(null);
+        }
       })
       .finally(() => {
         if (!cancelled) {
-setAgeAnalyticsLoading(false);
-}
+          setAgeAnalyticsLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -670,14 +719,17 @@ setAgeAnalyticsLoading(false);
       const fmt = i18n.language?.startsWith('en') ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
       const sd = dayjs(customDateRange.startDate).format(fmt);
       const ed = dayjs(customDateRange.endDate).format(fmt);
-      return t('sellerDashboard.periodCompare.custom', '{{start}} → {{end}}', { start: sd, end: ed });
+      return t('sellerDashboard.periodCompare.custom', '{{start}} → {{end}}', {
+        start: sd,
+        end: ed,
+      });
     }
     const map = {
-      '7days':    t('sellerDashboard.periodCompare.7days', 'so với 7 ngày trước'),
-      '30days':   t('sellerDashboard.periodCompare.30days', 'so với 30 ngày trước'),
-      '90days':   t('sellerDashboard.periodCompare.90days', 'so với 90 ngày trước'),
+      '7days': t('sellerDashboard.periodCompare.7days', 'so với 7 ngày trước'),
+      '30days': t('sellerDashboard.periodCompare.30days', 'so với 30 ngày trước'),
+      '90days': t('sellerDashboard.periodCompare.90days', 'so với 90 ngày trước'),
       '12months': t('sellerDashboard.periodCompare.12months', 'so với 12 tháng trước'),
-      yearly:   t('sellerDashboard.periodCompare.yearly', 'so với năm trước'),
+      yearly: t('sellerDashboard.periodCompare.yearly', 'so với năm trước'),
     };
     return map[trendPeriod] ?? t('sellerDashboard.stats.vsPeriod', 'so với kỳ trước');
   }, [trendPeriod, customDateRange, t]);
@@ -706,12 +758,9 @@ setAgeAnalyticsLoading(false);
     const growth = comparison.growth ?? {};
 
     const ordersGrowth =
-      typeof growth.orders === 'number' && !Number.isNaN(growth.orders)
-        ? growth.orders
-        : 0;
-    const avgOrderValue = current.orders > 0
-      ? Math.round((current.revenue || 0) / current.orders)
-      : null;
+      typeof growth.orders === 'number' && !Number.isNaN(growth.orders) ? growth.orders : 0;
+    const avgOrderValue =
+      current.orders > 0 ? Math.round((current.revenue || 0) / current.orders) : null;
 
     const currAov = current.orders > 0 ? (current.revenue || 0) / current.orders : null;
     const prevAov = prev.orders > 0 ? (prev.revenue || 0) / prev.orders : null;
@@ -719,18 +768,16 @@ setAgeAnalyticsLoading(false);
     if (prevAov != null && prevAov > 0 && currAov != null) {
       aovGrowth = Math.round(((currAov - prevAov) / prevAov) * 100);
     } else if (
-      (prev.orders ?? 0) <= 0
-      && (current.orders ?? 0) > 0
-      && currAov != null
-      && currAov > 0
+      (prev.orders ?? 0) <= 0 &&
+      (current.orders ?? 0) > 0 &&
+      currAov != null &&
+      currAov > 0
     ) {
       aovGrowth = 100;
     }
 
     const profitGrowth =
-      typeof growth.profit === 'number' && !Number.isNaN(growth.profit)
-        ? growth.profit
-        : 0;
+      typeof growth.profit === 'number' && !Number.isNaN(growth.profit) ? growth.profit : 0;
 
     return { ordersGrowth, avgOrderValue, aovGrowth, profitGrowth };
   }, [comparison]);
@@ -749,9 +796,10 @@ setAgeAnalyticsLoading(false);
   }, [comparison, trendRevenue, financial.netSales]);
 
   // ── Active tasks count ──
-  const activeTasksCount = useMemo(() =>
-    Object.values(todoCounts).filter((v) => typeof v === 'number' && v > 0).length,
-  [todoCounts]);
+  const activeTasksCount = useMemo(
+    () => Object.values(todoCounts).filter((v) => typeof v === 'number' && v > 0).length,
+    [todoCounts]
+  );
 
   // ── Action items with i18n ──
   const actionItems = useMemo(() => ACTION_ITEMS(t), [t]);
@@ -762,49 +810,54 @@ setAgeAnalyticsLoading(false);
   const numberLocale = i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN';
 
   // ─── Top profit products columns ──
-  const topProfitColumns = useMemo(() => [
-    {
-      title: t('sellerDashboard.topProducts.product', 'Sản phẩm'),
-      dataIndex: 'productName',
-      key: 'productName',
-      render: (text) => <span className={styles.productNameCell}>{text}</span>,
-    },
-    {
-      title: t('sellerDashboard.topProducts.sold', 'Đã bán'),
-      dataIndex: 'soldQty',
-      key: 'soldQty',
-      width: 90,
-      render: (v) => Number(v).toLocaleString(numberLocale),
-    },
-    {
-      title: t('sellerDashboard.topProducts.revenue', 'Doanh thu'),
-      dataIndex: 'netSales',
-      key: 'netSales',
-      render: (value) => formatCurrency(value),
-      width: 140,
-    },
-    {
-      title: t('sellerDashboard.topProducts.profit', 'Lợi nhuận'),
-      dataIndex: 'profit',
-      key: 'profit',
-      render: (value) => {
-        const num = Number(value) || 0;
-        return (
-          <span className={`${styles.profitCell} ${num >= 0 ? styles.profitPositive : styles.profitNegative}`}>
-            {formatCurrency(value)}
-          </span>
-        );
+  const topProfitColumns = useMemo(
+    () => [
+      {
+        title: t('sellerDashboard.topProducts.product', 'Sản phẩm'),
+        dataIndex: 'productName',
+        key: 'productName',
+        render: (text) => <span className={styles.productNameCell}>{text}</span>,
       },
-      width: 140,
-    },
-    {
-      title: t('sellerDashboard.topProducts.margin', 'Margin'),
-      dataIndex: 'margin',
-      key: 'margin',
-      width: 80,
-      render: (v) => <span className={styles.marginCell}>{v}</span>,
-    },
-  ], [t, numberLocale]);
+      {
+        title: t('sellerDashboard.topProducts.sold', 'Đã bán'),
+        dataIndex: 'soldQty',
+        key: 'soldQty',
+        width: 90,
+        render: (v) => Number(v).toLocaleString(numberLocale),
+      },
+      {
+        title: t('sellerDashboard.topProducts.revenue', 'Doanh thu'),
+        dataIndex: 'netSales',
+        key: 'netSales',
+        render: (value) => formatCurrency(value),
+        width: 140,
+      },
+      {
+        title: t('sellerDashboard.topProducts.profit', 'Lợi nhuận'),
+        dataIndex: 'profit',
+        key: 'profit',
+        render: (value) => {
+          const num = Number(value) || 0;
+          return (
+            <span
+              className={`${styles.profitCell} ${num >= 0 ? styles.profitPositive : styles.profitNegative}`}
+            >
+              {formatCurrency(value)}
+            </span>
+          );
+        },
+        width: 140,
+      },
+      {
+        title: t('sellerDashboard.topProducts.margin', 'Margin'),
+        dataIndex: 'margin',
+        key: 'margin',
+        width: 80,
+        render: (v) => <span className={styles.marginCell}>{v}</span>,
+      },
+    ],
+    [t, numberLocale]
+  );
 
   // ─── Expense legend items ──
   const renderExpenseLegend = () => (
@@ -826,7 +879,8 @@ setAgeAnalyticsLoading(false);
     }
     return categoryAnalytics.categories.map((cat, idx) => ({
       rowKey: cat._id != null ? String(cat._id) : `cat-${idx}`,
-      categoryName: cat.categoryName || t('sellerDashboard.lowStock.uncategorized', 'Không phân loại'),
+      categoryName:
+        cat.categoryName || t('sellerDashboard.lowStock.uncategorized', 'Không phân loại'),
       totalRevenue: Number(cat.totalRevenue) || 0,
       revenuePercent: typeof cat.revenuePercent === 'number' ? cat.revenuePercent : 0,
       color: CATEGORY_CHART_COLORS[idx % CATEGORY_CHART_COLORS.length],
@@ -840,14 +894,21 @@ setAgeAnalyticsLoading(false);
           key={s.rowKey}
           className={styles.categoryLegendItem}
           style={{ borderColor: `${s.color}30` }}
-          title={t('sellerDashboard.category.legendTooltip', '{{name}} — {{percent}}% period revenue', { name: s.categoryName, percent: s.revenuePercent })}
+          title={t(
+            'sellerDashboard.category.legendTooltip',
+            '{{name}} — {{percent}}% period revenue',
+            { name: s.categoryName, percent: s.revenuePercent }
+          )}
         >
           <span className={styles.categoryLegendDot} style={{ background: s.color }} />
           <div className={styles.categoryLegendContent}>
             <span className={styles.categoryLegendName}>{s.categoryName}</span>
             <span className={styles.categoryLegendRevenue}>{formatCurrency(s.totalRevenue)}</span>
           </div>
-          <span className={styles.categoryLegendPercent} style={{ background: `${s.color}18`, color: s.color }}>
+          <span
+            className={styles.categoryLegendPercent}
+            style={{ background: `${s.color}18`, color: s.color }}
+          >
             {s.revenuePercent}%
           </span>
         </div>
@@ -858,12 +919,8 @@ setAgeAnalyticsLoading(false);
   return (
     <div className={styles.container}>
       <div className={styles.pageContent}>
-
         {/* ── Header ── */}
-        <Card
-          className={styles.headerCard}
-          styles={{ body: { padding: '14px 20px' } }}
-        >
+        <Card className={styles.headerCard} styles={{ body: { padding: '14px 20px' } }}>
           <div className={styles.headerInner}>
             <div className={styles.headerLeft}>
               <span className={styles.headerGreeting}>{getGreeting(t)}</span>
@@ -876,15 +933,21 @@ setAgeAnalyticsLoading(false);
                     <ArrowRightLeft size={16} color="#d97706" />
                   </div>
                   <div className={styles.xrBannerInfo}>
-                    <span className={styles.xrBannerLabel}>{t('sellerDashboard.exchangeRate.label', 'Tỷ giá CNY / VND')}</span>
+                    <span className={styles.xrBannerLabel}>
+                      {t('sellerDashboard.exchangeRate.label', 'Tỷ giá CNY / VND')}
+                    </span>
                     <span className={styles.xrBannerRate}>
-                      <strong>1 CNY = {Math.round(exchangeRate.cnyToVnd).toLocaleString(numberLocale)}</strong>
-                      {' '}
+                      <strong>
+                        1 CNY = {Math.round(exchangeRate.cnyToVnd).toLocaleString(numberLocale)}
+                      </strong>{' '}
                       {t('sellerDashboard.exchangeRate.vndUnit', 'VND')}
                     </span>
                     <span className={styles.xrBannerUpdated}>
                       {t('sellerDashboard.exchangeRate.updated', 'Cập nhật: {{time}}', {
-                        time: (exchangeRate.updatedAt instanceof Date ? exchangeRate.updatedAt : new Date()).toLocaleTimeString(numberLocale, { hour: '2-digit', minute: '2-digit' }),
+                        time: (exchangeRate.updatedAt instanceof Date
+                          ? exchangeRate.updatedAt
+                          : new Date()
+                        ).toLocaleTimeString(numberLocale, { hour: '2-digit', minute: '2-digit' }),
                       })}
                     </span>
                   </div>
@@ -895,14 +958,13 @@ setAgeAnalyticsLoading(false);
         </Card>
 
         {/* ── 1) Action Center ── */}
-        <Card
-          className={styles.sectionCard}
-          styles={{ body: { padding: 0 } }}
-        >
+        <Card className={styles.sectionCard} styles={{ body: { padding: 0 } }}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleRow}>
               <AlertTriangle size={16} color="#fa8c16" />
-              <span className={styles.sectionTitle}>{t('sellerDashboard.actionCenter.title', 'Việc cần làm hôm nay')}</span>
+              <span className={styles.sectionTitle}>
+                {t('sellerDashboard.actionCenter.title', 'Việc cần làm hôm nay')}
+              </span>
               {activeTasksCount > 0 && (
                 <span className={styles.sectionBadge}>{activeTasksCount}</span>
               )}
@@ -912,7 +974,9 @@ setAgeAnalyticsLoading(false);
           <div className={styles.sectionBody}>
             {loading ? (
               <div className={styles.actionCardsGrid}>
-                {[0, 1, 2, 3].map((i) => <SkeletonActionCard key={i} />)}
+                {[0, 1, 2, 3].map((i) => (
+                  <SkeletonActionCard key={i} />
+                ))}
               </div>
             ) : (
               <div className={styles.actionCardsGrid}>
@@ -964,7 +1028,9 @@ setAgeAnalyticsLoading(false);
           {/* Right: 4 Stat Cards */}
           {loading ? (
             <div className={styles.statCardsGrid}>
-              {[0, 1, 2, 3].map((i) => <SkeletonStatCard key={i} />)}
+              {[0, 1, 2, 3].map((i) => (
+                <SkeletonStatCard key={i} />
+              ))}
             </div>
           ) : (
             <div className={styles.statCardsGrid}>
@@ -981,9 +1047,11 @@ setAgeAnalyticsLoading(false);
               <StatCard
                 icon={ShoppingCart}
                 label={t('sellerDashboard.stats.orders', 'Đơn hàng kỳ này')}
-                value={comparison?.currentPeriod?.orders != null
-                  ? Number(comparison.currentPeriod.orders).toLocaleString(numberLocale)
-                  : '—'}
+                value={
+                  comparison?.currentPeriod?.orders != null
+                    ? Number(comparison.currentPeriod.orders).toLocaleString(numberLocale)
+                    : '—'
+                }
                 trend={`${comparisonKpis.ordersGrowth >= 0 ? '+' : ''}${comparisonKpis.ordersGrowth}%`}
                 trendUp={comparisonKpis.ordersGrowth >= 0}
                 fromLabel={periodFromLabel}
@@ -993,9 +1061,11 @@ setAgeAnalyticsLoading(false);
               <StatCard
                 icon={DollarSign}
                 label={t('sellerDashboard.stats.aov', 'Giá trị TB / đơn')}
-                value={comparisonKpis.avgOrderValue != null
-                  ? formatCurrency(comparisonKpis.avgOrderValue)
-                  : '—'}
+                value={
+                  comparisonKpis.avgOrderValue != null
+                    ? formatCurrency(comparisonKpis.avgOrderValue)
+                    : '—'
+                }
                 trend={`${comparisonKpis.aovGrowth >= 0 ? '+' : ''}${comparisonKpis.aovGrowth}%`}
                 trendUp={comparisonKpis.aovGrowth >= 0}
                 fromLabel={periodFromLabel}
@@ -1023,14 +1093,13 @@ setAgeAnalyticsLoading(false);
         </div>
 
         {/* ── 3) Low Stock Alerts ── */}
-        <Card
-          className={styles.sectionCard}
-          styles={{ body: { padding: 0 } }}
-        >
+        <Card className={styles.sectionCard} styles={{ body: { padding: 0 } }}>
           <div className={`${styles.sectionHeader} ${styles.lowStockSectionHeader}`}>
             <div className={styles.sectionTitleRow}>
               <AlertTriangle size={16} color="#fa8c16" />
-              <span className={styles.sectionTitle}>{t('sellerDashboard.lowStock.title', 'Cảnh báo sắp hết hàng')}</span>
+              <span className={styles.sectionTitle}>
+                {t('sellerDashboard.lowStock.title', 'Cảnh báo sắp hết hàng')}
+              </span>
               {lowStock.length > 0 && (
                 <span className={styles.sectionBadge}>{lowStock.length}</span>
               )}
@@ -1040,7 +1109,9 @@ setAgeAnalyticsLoading(false);
               className={styles.poCreateHeaderBtn}
               onClick={() => {
                 if (lowStock.length > 0) {
-                  navigate(`/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(lowStock))}`);
+                  navigate(
+                    `/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(lowStock))}`
+                  );
                 } else {
                   navigate('/seller/erp/purchase-orders/create');
                 }
@@ -1054,11 +1125,23 @@ setAgeAnalyticsLoading(false);
               <div className={styles.lowStockGrid}>
                 {[0, 1, 2].map((i) => (
                   <div key={i} className={`${styles.skeletonCard} ${styles.lowStockCard}`}>
-                    <div className={`${styles.skeleton}`} style={{ width: 20, height: 20, borderRadius: '50%' }} />
+                    <div
+                      className={`${styles.skeleton}`}
+                      style={{ width: 20, height: 20, borderRadius: '50%' }}
+                    />
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '60%', height: 13 }} />
-                      <div className={`${styles.skeleton} ${styles.skeletonLine}`} style={{ width: '40%', height: 10 }} />
-                      <div className={`${styles.skeleton}`} style={{ height: 6, borderRadius: 3, marginTop: 4 }} />
+                      <div
+                        className={`${styles.skeleton} ${styles.skeletonLine}`}
+                        style={{ width: '60%', height: 13 }}
+                      />
+                      <div
+                        className={`${styles.skeleton} ${styles.skeletonLine}`}
+                        style={{ width: '40%', height: 10 }}
+                      />
+                      <div
+                        className={`${styles.skeleton}`}
+                        style={{ height: 6, borderRadius: 3, marginTop: 4 }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -1068,7 +1151,10 @@ setAgeAnalyticsLoading(false);
                 {lowStock.map((p) => {
                   const safetyStock = 20;
                   const currentStock = p?.stock ?? 0;
-                  const stockPercent = Math.min(100, Math.round((currentStock / safetyStock) * 100));
+                  const stockPercent = Math.min(
+                    100,
+                    Math.round((currentStock / safetyStock) * 100)
+                  );
                   const sku = p?.lowestStockModel?.sku ?? p?._id;
                   const isCritical = currentStock <= 5;
 
@@ -1080,16 +1166,15 @@ setAgeAnalyticsLoading(false);
                       style={{ cursor: 'pointer' }}
                     >
                       <div className={styles.lowStockIcon}>
-                        <AlertTriangle
-                          size={16}
-                          color={isCritical ? '#cf1322' : '#d46b08'}
-                        />
+                        <AlertTriangle size={16} color={isCritical ? '#cf1322' : '#d46b08'} />
                       </div>
                       <div className={styles.lowStockContent}>
                         <div className={styles.lowStockNameRow}>
                           <span className={styles.lowStockName}>{p?.name ?? '—'}</span>
                           {isCritical && (
-                            <span className={styles.lowStockCriticalTag}>{t('sellerDashboard.lowStock.danger', 'Nguy hiểm')}</span>
+                            <span className={styles.lowStockCriticalTag}>
+                              {t('sellerDashboard.lowStock.danger', 'Nguy hiểm')}
+                            </span>
                           )}
                         </div>
                         <div className={styles.lowStockSku}>SKU: {sku ?? '—'}</div>
@@ -1102,7 +1187,11 @@ setAgeAnalyticsLoading(false);
                         />
                         <div className={styles.lowStockFooter}>
                           <span className={styles.lowStockStock}>
-                            {t('sellerDashboard.lowStock.stockLeft', '{{current}} / {{safety}} sản phẩm', { current: currentStock, safety: safetyStock })}
+                            {t(
+                              'sellerDashboard.lowStock.stockLeft',
+                              '{{current}} / {{safety}} sản phẩm',
+                              { current: currentStock, safety: safetyStock }
+                            )}
                           </span>
                           <Button
                             type="primary"
@@ -1110,7 +1199,9 @@ setAgeAnalyticsLoading(false);
                             className={styles.lowStockBtn}
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(p))}`);
+                              navigate(
+                                `/seller/erp/purchase-orders/create?products=${encodeURIComponent(JSON.stringify(p))}`
+                              );
                             }}
                           >
                             {t('sellerDashboard.lowStock.createPOBtn', 'Lên PO')}
@@ -1123,10 +1214,26 @@ setAgeAnalyticsLoading(false);
               </div>
             ) : (
               <div className={styles.emptyState}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#94a3b8"
+                  strokeWidth="1.5"
+                >
+                  <path
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
-                <p>{t('sellerDashboard.lowStock.allStockOk', 'Tất cả sản phẩm đều có đủ hàng trong kho')}</p>
+                <p>
+                  {t(
+                    'sellerDashboard.lowStock.allStockOk',
+                    'Tất cả sản phẩm đều có đủ hàng trong kho'
+                  )}
+                </p>
               </div>
             )}
           </div>
@@ -1135,17 +1242,31 @@ setAgeAnalyticsLoading(false);
         {/* ── 4) ERP Report ── */}
         <div className={styles.erpReportGrid}>
           {/* Left: Cost Breakdown Pie */}
-          <Card
-            className={styles.erpSectionCard}
-            styles={{ body: { padding: 0 } }}
-          >
+          <Card className={styles.erpSectionCard} styles={{ body: { padding: 0 } }}>
             <div className={styles.erpSectionHeader}>
               <div className={styles.erpSectionTitleRow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" strokeWidth="2">
-                  <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#fa8c16"
+                  strokeWidth="2"
+                >
+                  <path
+                    d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
-                <span className={styles.erpSectionTitle}>{t('sellerDashboard.expense.title', 'Phân tích chi phí')}</span>
+                <span className={styles.erpSectionTitle}>
+                  {t('sellerDashboard.expense.title', 'Phân tích chi phí')}
+                </span>
                 {expense?.period && (
                   <span className={styles.erpSectionSub}>— {expense.period}</span>
                 )}
@@ -1154,7 +1275,14 @@ setAgeAnalyticsLoading(false);
                 <Segmented
                   size="small"
                   value={expensePeriod}
-                  onChange={(val) => handleErpPeriodChange(val, setExpensePeriod, setExpenseCustomRange, setExpensePickerOpen)}
+                  onChange={(val) =>
+                    handleErpPeriodChange(
+                      val,
+                      setExpensePeriod,
+                      setExpenseCustomRange,
+                      setExpensePickerOpen
+                    )
+                  }
                   options={getErpPeriodOptions(t)}
                 />
                 {expensePeriod === 'custom' && (
@@ -1177,12 +1305,23 @@ setAgeAnalyticsLoading(false);
                       onOpenChange={setExpensePickerOpen}
                       disabledDate={(current) => current && current > dayjs().endOf('day')}
                       size="small"
-                      style={{ width: 0, padding: 0, opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+                      style={{
+                        width: 0,
+                        padding: 0,
+                        opacity: 0,
+                        position: 'absolute',
+                        pointerEvents: 'none',
+                      }}
                     />
                     <button
                       onClick={() => setExpensePickerOpen(true)}
                       className={styles.periodBtn}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        whiteSpace: 'nowrap',
+                      }}
                     >
                       <Calendar size={13} />
                       {expenseCustomRange
@@ -1197,34 +1336,61 @@ setAgeAnalyticsLoading(false);
               {/* KPI Strip */}
               {expensePieSlices.length > 0 && (
                 <div className={styles.expenseKpiStrip}>
-                  <div className={styles.expenseKpiCard} style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                    <div className={styles.expenseKpiLabel}>{t('sellerDashboard.expense.kpi.total', 'Tổng chi phí')}</div>
+                  <div
+                    className={styles.expenseKpiCard}
+                    style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}
+                  >
+                    <div className={styles.expenseKpiLabel}>
+                      {t('sellerDashboard.expense.kpi.total', 'Tổng chi phí')}
+                    </div>
                     <div className={styles.expenseKpiValue} style={{ color: '#1d4ed8' }}>
                       {(() => {
                         const total = expensePieSlices.reduce((s, x) => s + x.value, 0);
                         return formatCurrency(total);
                       })()}
                     </div>
-                    <div className={styles.expenseKpiMeta}>{expense?.poDetail?.poCount ?? 0} {t('sellerDashboard.expense.kpi.poCount', 'PO đã hoàn thành')}</div>
+                    <div className={styles.expenseKpiMeta}>
+                      {expense?.poDetail?.poCount ?? 0}{' '}
+                      {t('sellerDashboard.expense.kpi.poCount', 'PO đã hoàn thành')}
+                    </div>
                   </div>
                   {expensePieSlices.slice(0, 1).map((s) => (
-                    <div key={s.type} className={styles.expenseKpiCard} style={{ background: `${s.color}14`, border: `1px solid ${s.color}30` }}>
-                      <div className={styles.expenseKpiLabel}>{t('sellerDashboard.expense.kpi.largest', 'Chi phí lớn nhất')}</div>
-                      <div className={styles.expenseKpiValue} style={{ color: s.color }}>{formatCurrency(s.value)}</div>
-                      <div className={styles.expenseKpiMeta} style={{ color: s.color }}>{s.name}</div>
+                    <div
+                      key={s.type}
+                      className={styles.expenseKpiCard}
+                      style={{ background: `${s.color}14`, border: `1px solid ${s.color}30` }}
+                    >
+                      <div className={styles.expenseKpiLabel}>
+                        {t('sellerDashboard.expense.kpi.largest', 'Chi phí lớn nhất')}
+                      </div>
+                      <div className={styles.expenseKpiValue} style={{ color: s.color }}>
+                        {formatCurrency(s.value)}
+                      </div>
+                      <div className={styles.expenseKpiMeta} style={{ color: s.color }}>
+                        {s.name}
+                      </div>
                     </div>
                   ))}
                   {(() => {
                     const total = expensePieSlices.reduce((s, x) => s + x.value, 0);
                     const top = expensePieSlices[0];
                     if (!top || total === 0) {
-return null;
-}
+                      return null;
+                    }
                     return (
-                      <div className={styles.expenseKpiCard} style={{ background: '#fefce8', border: '1px solid #fef08a' }}>
-                        <div className={styles.expenseKpiLabel}>{t('sellerDashboard.expense.kpi.topShare', 'Tỷ trọng cao nhất')}</div>
-                        <div className={styles.expenseKpiValue} style={{ color: '#b45309' }}>{total > 0 ? ((top.value / total) * 100).toFixed(1) : 0}%</div>
-                        <div className={styles.expenseKpiMeta} style={{ color: '#b45309' }}>{top.name}</div>
+                      <div
+                        className={styles.expenseKpiCard}
+                        style={{ background: '#fefce8', border: '1px solid #fef08a' }}
+                      >
+                        <div className={styles.expenseKpiLabel}>
+                          {t('sellerDashboard.expense.kpi.topShare', 'Tỷ trọng cao nhất')}
+                        </div>
+                        <div className={styles.expenseKpiValue} style={{ color: '#b45309' }}>
+                          {total > 0 ? ((top.value / total) * 100).toFixed(1) : 0}%
+                        </div>
+                        <div className={styles.expenseKpiMeta} style={{ color: '#b45309' }}>
+                          {top.name}
+                        </div>
                       </div>
                     );
                   })()}
@@ -1232,7 +1398,7 @@ return null;
               )}
               {/* Donut Chart */}
               <div className={styles.expenseChartContainer}>
-                {(loading || expenseLoading) ? (
+                {loading || expenseLoading ? (
                   <div className={styles.loadingCenter}>
                     <Spin />
                   </div>
@@ -1275,16 +1441,26 @@ return null;
           </Card>
 
           {/* Right: Top Profitable Products */}
-          <Card
-            className={styles.erpSectionCard}
-            styles={{ body: { padding: 0 } }}
-          >
+          <Card className={styles.erpSectionCard} styles={{ body: { padding: 0 } }}>
             <div className={styles.erpSectionHeader}>
               <div className={styles.erpSectionTitleRow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" strokeWidth="2">
-                  <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#52c41a"
+                  strokeWidth="2"
+                >
+                  <path
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
-                <span className={styles.erpSectionTitle}>{t('sellerDashboard.topProducts.title', 'Top sản phẩm lợi nhuận cao')}</span>
+                <span className={styles.erpSectionTitle}>
+                  {t('sellerDashboard.topProducts.title', 'Top sản phẩm lợi nhuận cao')}
+                </span>
               </div>
               <Button
                 type="link"
@@ -1309,17 +1485,31 @@ return null;
 
         {/* ── 5) Product Analytics by Category (aligned with Phân tích chi phí) ── */}
         <div className={styles.erpCategoryBlock}>
-          <Card
-            className={styles.erpSectionCard}
-            styles={{ body: { padding: 0 } }}
-          >
+          <Card className={styles.erpSectionCard} styles={{ body: { padding: 0 } }}>
             <div className={styles.erpSectionHeader}>
               <div className={styles.erpSectionTitleRow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" strokeWidth="2">
-                  <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#52c41a"
+                  strokeWidth="2"
+                >
+                  <path
+                    d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
-                <span className={styles.erpSectionTitle}>{t('sellerDashboard.category.title', 'Phân tích sản phẩm theo danh mục')}</span>
+                <span className={styles.erpSectionTitle}>
+                  {t('sellerDashboard.category.title', 'Phân tích sản phẩm theo danh mục')}
+                </span>
                 <span className={styles.erpSectionSub}>
                   — {categoryPeriodLabels[categoryPeriod] ?? categoryPeriod}
                 </span>
@@ -1328,7 +1518,14 @@ return null;
                 <Segmented
                   size="small"
                   value={categoryPeriod}
-                  onChange={(val) => handleErpPeriodChange(val, setCategoryPeriod, setCategoryCustomRange, setCategoryPickerOpen)}
+                  onChange={(val) =>
+                    handleErpPeriodChange(
+                      val,
+                      setCategoryPeriod,
+                      setCategoryCustomRange,
+                      setCategoryPickerOpen
+                    )
+                  }
                   options={getErpPeriodOptions(t)}
                 />
                 {categoryPeriod === 'custom' && (
@@ -1351,12 +1548,23 @@ return null;
                       onOpenChange={setCategoryPickerOpen}
                       disabledDate={(current) => current && current > dayjs().endOf('day')}
                       size="small"
-                      style={{ width: 0, padding: 0, opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+                      style={{
+                        width: 0,
+                        padding: 0,
+                        opacity: 0,
+                        position: 'absolute',
+                        pointerEvents: 'none',
+                      }}
                     />
                     <button
                       onClick={() => setCategoryPickerOpen(true)}
                       className={styles.periodBtn}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        whiteSpace: 'nowrap',
+                      }}
                     >
                       <Calendar size={13} />
                       {categoryCustomRange
@@ -1376,34 +1584,69 @@ return null;
                 <>
                   {/* KPI Strip */}
                   <div className={styles.categoryKpiStrip}>
-                    <div className={styles.categoryKpiCard} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                      <div className={styles.categoryKpiLabel}>{t('sellerDashboard.category.kpi.totalRevenue', 'Tổng doanh thu')}</div>
+                    <div
+                      className={styles.categoryKpiCard}
+                      style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+                    >
+                      <div className={styles.categoryKpiLabel}>
+                        {t('sellerDashboard.category.kpi.totalRevenue', 'Tổng doanh thu')}
+                      </div>
                       <div className={styles.categoryKpiValue} style={{ color: '#15803d' }}>
                         {(() => {
                           const total = categoryChartData.reduce((s, x) => s + x.totalRevenue, 0);
                           return formatCurrency(total);
                         })()}
                       </div>
-                      <div className={styles.categoryKpiMeta}>{categoryChartData.length} {t('sellerDashboard.category.kpi.categories', 'danh mục')}</div>
+                      <div className={styles.categoryKpiMeta}>
+                        {categoryChartData.length}{' '}
+                        {t('sellerDashboard.category.kpi.categories', 'danh mục')}
+                      </div>
                     </div>
                     {categoryChartData[0] && (
-                      <div className={styles.categoryKpiCard} style={{ background: `${categoryChartData[0].color}14`, border: `1px solid ${categoryChartData[0].color}30` }}>
-                        <div className={styles.categoryKpiLabel}>{t('sellerDashboard.category.kpi.topCategory', 'Danh mục dẫn đầu')}</div>
-                        <div className={styles.categoryKpiValue} style={{ color: categoryChartData[0].color }}>{formatCurrency(categoryChartData[0].totalRevenue)}</div>
-                        <div className={styles.categoryKpiMeta} style={{ color: categoryChartData[0].color }}>{categoryChartData[0].categoryName}</div>
+                      <div
+                        className={styles.categoryKpiCard}
+                        style={{
+                          background: `${categoryChartData[0].color}14`,
+                          border: `1px solid ${categoryChartData[0].color}30`,
+                        }}
+                      >
+                        <div className={styles.categoryKpiLabel}>
+                          {t('sellerDashboard.category.kpi.topCategory', 'Danh mục dẫn đầu')}
+                        </div>
+                        <div
+                          className={styles.categoryKpiValue}
+                          style={{ color: categoryChartData[0].color }}
+                        >
+                          {formatCurrency(categoryChartData[0].totalRevenue)}
+                        </div>
+                        <div
+                          className={styles.categoryKpiMeta}
+                          style={{ color: categoryChartData[0].color }}
+                        >
+                          {categoryChartData[0].categoryName}
+                        </div>
                       </div>
                     )}
                     {(() => {
                       const total = categoryChartData.reduce((s, x) => s + x.totalRevenue, 0);
                       const top = categoryChartData[0];
                       if (!top || total === 0) {
-return null;
-}
+                        return null;
+                      }
                       return (
-                        <div className={styles.categoryKpiCard} style={{ background: '#fefce8', border: '1px solid #fef08a' }}>
-                          <div className={styles.categoryKpiLabel}>{t('sellerDashboard.category.kpi.topShare', 'Tỷ trọng cao nhất')}</div>
-                          <div className={styles.categoryKpiValue} style={{ color: '#b45309' }}>{top.revenuePercent}%</div>
-                          <div className={styles.categoryKpiMeta} style={{ color: '#b45309' }}>{top.categoryName}</div>
+                        <div
+                          className={styles.categoryKpiCard}
+                          style={{ background: '#fefce8', border: '1px solid #fef08a' }}
+                        >
+                          <div className={styles.categoryKpiLabel}>
+                            {t('sellerDashboard.category.kpi.topShare', 'Tỷ trọng cao nhất')}
+                          </div>
+                          <div className={styles.categoryKpiValue} style={{ color: '#b45309' }}>
+                            {top.revenuePercent}%
+                          </div>
+                          <div className={styles.categoryKpiMeta} style={{ color: '#b45309' }}>
+                            {top.categoryName}
+                          </div>
                         </div>
                       );
                     })()}
@@ -1428,15 +1671,17 @@ return null;
                                 <Cell key={entry.rowKey} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip
-                              {...DARK_CHART_TOOLTIP_PROPS}
-                              formatter={(value) => formatCurrency(value)}
-                            />
+                            <Tooltip formatter={(value) => formatCurrency(value)} />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className={styles.categoryDonutLabel}>
-                          <div className={styles.categoryDonutLabelSub}>{t('sellerDashboard.category.topCategoryLabel', 'Top Danh mục')}</div>
-                          <div className={styles.categoryDonutLabelTop} style={{ color: categoryChartData[0]?.color }}>
+                          <div className={styles.categoryDonutLabelSub}>
+                            {t('sellerDashboard.category.topCategoryLabel', 'Top Danh mục')}
+                          </div>
+                          <div
+                            className={styles.categoryDonutLabelTop}
+                            style={{ color: categoryChartData[0]?.color }}
+                          >
                             #{categoryChartData[0]?.categoryName}
                           </div>
                         </div>
@@ -1444,7 +1689,16 @@ return null;
                     </div>
                     {/* Legend */}
                     <div className={styles.categoryLegendSection}>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: '#94a3b8',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          marginBottom: 10,
+                        }}
+                      >
                         {t('sellerDashboard.category.distribution', 'Phân bố theo doanh thu')}
                       </div>
                       {renderCategoryLegend()}
@@ -1453,41 +1707,84 @@ return null;
 
                   {/* Featured Top Category Card */}
                   {categoryChartData[0] && (
-                    <div className={styles.categoryFeaturedCard} style={{ borderColor: `${categoryChartData[0].color}30`, background: `linear-gradient(135deg, ${categoryChartData[0].color}08 0%, ${categoryChartData[0].color}03 100%)` }}>
+                    <div
+                      className={styles.categoryFeaturedCard}
+                      style={{
+                        borderColor: `${categoryChartData[0].color}30`,
+                        background: `linear-gradient(135deg, ${categoryChartData[0].color}08 0%, ${categoryChartData[0].color}03 100%)`,
+                      }}
+                    >
                       <div className={styles.categoryFeaturedLeft}>
                         <div className={styles.categoryFeaturedBadge}>
                           <TrendingUp size={14} color={categoryChartData[0].color} />
-                          <span>{t('sellerDashboard.category.topCategoryBadge', 'Top Category')}</span>
+                          <span>
+                            {t('sellerDashboard.category.topCategoryBadge', 'Top Category')}
+                          </span>
                         </div>
-                        <div className={styles.categoryFeaturedName}>{categoryChartData[0].categoryName}</div>
-                        <div className={styles.categoryFeaturedRevenue} style={{ color: categoryChartData[0].color }}>
+                        <div className={styles.categoryFeaturedName}>
+                          {categoryChartData[0].categoryName}
+                        </div>
+                        <div
+                          className={styles.categoryFeaturedRevenue}
+                          style={{ color: categoryChartData[0].color }}
+                        >
                           {formatCurrency(categoryChartData[0].totalRevenue)}
                         </div>
                       </div>
                       <div className={styles.categoryFeaturedRight}>
                         <div className={styles.categoryFeaturedStat}>
-                          <span className={styles.categoryFeaturedStatValue}>{categoryChartData[0].revenuePercent}%</span>
-                          <span className={styles.categoryFeaturedStatLabel}>{t('sellerDashboard.category.shareLabel', 'Tỷ trọng')}</span>
+                          <span className={styles.categoryFeaturedStatValue}>
+                            {categoryChartData[0].revenuePercent}%
+                          </span>
+                          <span className={styles.categoryFeaturedStatLabel}>
+                            {t('sellerDashboard.category.shareLabel', 'Tỷ trọng')}
+                          </span>
                         </div>
                         <div className={styles.categoryFeaturedStat}>
                           <span className={styles.categoryFeaturedStatValue}>#1</span>
-                          <span className={styles.categoryFeaturedStatLabel}>{t('sellerDashboard.category.rankLabel', 'Hạng')}</span>
+                          <span className={styles.categoryFeaturedStatLabel}>
+                            {t('sellerDashboard.category.rankLabel', 'Hạng')}
+                          </span>
                         </div>
                       </div>
                     </div>
                   )}
 
                   <span className={styles.pieSourceNote}>
-                    {t('sellerDashboard.category.source', 'Nguồn: doanh thu theo danh mục — {{count}} danh mục trong kỳ', { count: categoryChartData.length })}
+                    {t(
+                      'sellerDashboard.category.source',
+                      'Nguồn: doanh thu theo danh mục — {{count}} danh mục trong kỳ',
+                      { count: categoryChartData.length }
+                    )}
                   </span>
                 </>
               ) : (
                 <div className={styles.emptyState}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                    <path d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#94a3b8"
+                    strokeWidth="1.5"
+                  >
+                    <path
+                      d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M20.488 15H12a9 9 9 0 010 18h8.488a9 9 9 0 000-18z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
-                  <p>{t('sellerDashboard.category.noData', 'Không có dữ liệu phân tích theo danh mục')}</p>
+                  <p>
+                    {t(
+                      'sellerDashboard.category.noData',
+                      'Không có dữ liệu phân tích theo danh mục'
+                    )}
+                  </p>
                 </div>
               )}
             </div>
@@ -1496,294 +1793,469 @@ return null;
 
         {/* ── 6) Customer Age Analytics ── */}
         <div className={styles.ageAnalyticsBlock}>
-        <Card
-          className={styles.erpSectionCard}
-          styles={{ body: { padding: 0 } }}
-        >
-          <div className={styles.erpSectionHeader}>
-            <div className={styles.erpSectionTitleRow}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M23 21v-2a4 4 0 00-3-3.87" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 3.13a4 4 0 010 7.75" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span className={styles.erpSectionTitle}>
-                {t('sellerDashboard.ageAnalytics.cardTitle', 'Phân tích độ tuổi khách hàng')}
-              </span>
-              <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
-                {ageAnalytics?.periodLabel || ''}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Segmented
-                size="small"
-                value={agePeriod}
-                onChange={(val) => handleErpPeriodChange(val, setAgePeriod, setAgeCustomRange, setAgePickerOpen)}
-                options={getErpPeriodOptions(t)}
-              />
-              {agePeriod === 'custom' && (
-                <>
-                  <RangePicker
-                    open={agePickerOpen}
-                    value={[
-                      ageCustomRange ? dayjs(ageCustomRange.startDate) : null,
-                      ageCustomRange ? dayjs(ageCustomRange.endDate) : null,
-                    ]}
-                    onChange={(dates) => {
-                      if (dates && dates[0] && dates[1]) {
-                        setAgeCustomRange({
-                          startDate: dates[0].format('YYYY-MM-DD'),
-                          endDate: dates[1].format('YYYY-MM-DD'),
-                        });
-                      }
-                      setAgePickerOpen(false);
-                    }}
-                    onOpenChange={setAgePickerOpen}
-                    disabledDate={(current) => current && current > dayjs().endOf('day')}
-                    size="small"
-                    style={{ width: 0, padding: 0, opacity: 0, position: 'absolute', pointerEvents: 'none' }}
+          <Card className={styles.erpSectionCard} styles={{ body: { padding: 0 } }}>
+            <div className={styles.erpSectionHeader}>
+              <div className={styles.erpSectionTitleRow}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                >
+                  <path
+                    d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
-                  <button
-                    onClick={() => setAgePickerOpen(true)}
-                    className={styles.periodBtn}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-                  >
-                    <Calendar size={13} />
-                    {ageCustomRange
-                      ? `${dayjs(ageCustomRange.startDate).format('DD/MM/YYYY')} – ${dayjs(ageCustomRange.endDate).format('DD/MM/YYYY')}`
-                      : t('sellerDashboard.period.custom', 'Tùy chỉnh')}
-                  </button>
-                </>
-              )}
-              <Button
-                type="primary"
-                size="small"
-                icon={<TrendingUp size={13} />}
-                onClick={() => setAgeAnalyticsModalOpen(true)}
-                style={{ background: '#3b82f6', borderColor: '#3b82f6', flexShrink: 0 }}
-              >
-                {t('sellerDashboard.ageAnalytics.viewDetail', 'Chi tiết')}
-              </Button>
-            </div>
-          </div>
-
-          <div className={styles.erpSectionBody}>
-            {ageAnalyticsLoading ? (
-              <div className={styles.loadingCenter}>
-                <Spin />
+                  <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M23 21v-2a4 4 0 00-3-3.87"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M16 3.13a4 4 0 010 7.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className={styles.erpSectionTitle}>
+                  {t('sellerDashboard.ageAnalytics.cardTitle', 'Phân tích độ tuổi khách hàng')}
+                </span>
+                <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                  {ageAnalytics?.periodLabel || ''}
+                </span>
               </div>
-            ) : ageAnalytics && ageAnalytics.ageGroups && ageAnalytics.ageGroups.some((g) => g.customers > 0) ? (
-              (() => {
-                const validGroups = ageAnalytics.ageGroups
-                  .filter((g) => g.label !== 'Unknown' && g.customers > 0)
-                  .sort((a, b) => {
-                    const order = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
-                    return order.indexOf(a.label) - order.indexOf(b.label);
-                  });
-
-                const donutData = validGroups.map((g) => ({
-                  name: formatAgeGroup(g.label),
-                  value: g.revenue || 0,
-                  label: g.label,
-                }));
-
-                const barData = validGroups.map((g) => ({
-                  name: formatAgeGroup(g.label),
-                  label: g.label,
-                  'Khách hàng': g.customers,
-                  'Doanh thu': g.revenue,
-                }));
-
-                const topGroup = validGroups[0] || null;
-
-                return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Segmented
+                  size="small"
+                  value={agePeriod}
+                  onChange={(val) =>
+                    handleErpPeriodChange(val, setAgePeriod, setAgeCustomRange, setAgePickerOpen)
+                  }
+                  options={getErpPeriodOptions(t)}
+                />
+                {agePeriod === 'custom' && (
                   <>
-                    {/* KPI Strip */}
-                    <div className={styles.ageKpiStrip}>
-                      <div className={styles.ageKpiCard} style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                        <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.totalCustomers', 'Tổng khách hàng')}</div>
-                        <div className={styles.ageKpiValue} style={{ color: '#1d4ed8' }}>
-                          {(ageAnalytics.totalCustomers || 0).toLocaleString()}
-                        </div>
-                        <div className={styles.ageKpiMeta}>{ageAnalytics.totalOrders?.toLocaleString()} {t('sellerDashboard.ageAnalytics.ordersUnit', 'đơn')}</div>
-                      </div>
-                      <div className={styles.ageKpiCard} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                        <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.totalRevenue', 'Tổng doanh thu')}</div>
-                        <div className={styles.ageKpiValue} style={{ color: '#15803d' }}>
-                          {formatCurrency(ageAnalytics.totalRevenue || 0)}
-                        </div>
-                        <div className={styles.ageKpiMeta}>TB {formatCurrency(ageAnalytics.avgOrderValue || 0)}/{t('sellerDashboard.ageAnalytics.ordersUnit', 'đơn')}</div>
-                      </div>
-                      {topGroup && (
-                        <div className={styles.ageKpiCard} style={{ background: `${getAgeColor(topGroup.label)}14`, border: `1px solid ${getAgeColor(topGroup.label)}30` }}>
-                          <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.primaryAgeGroup', 'Nhóm tuổi chính')}</div>
-                          <div className={styles.ageKpiValue} style={{ color: getAgeColor(topGroup.label) }}>
-                            {formatAgeGroup(topGroup.label)}
-                          </div>
-                          <div className={styles.ageKpiMeta} style={{ color: getAgeColor(topGroup.label) }}>
-                            {topGroup.percent}% DT · {topGroup.customers.toLocaleString()} KH
-                          </div>
-                        </div>
-                      )}
-                      <div className={styles.ageKpiCard} style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
-                        <div className={styles.ageKpiLabel}>{t('sellerDashboard.ageAnalytics.activeGroups', 'Nhóm hoạt động')}</div>
-                        <div className={styles.ageKpiValue} style={{ color: '#7c3aed' }}>{validGroups.length}</div>
-                        <div className={styles.ageKpiMeta}>{t('sellerDashboard.ageAnalytics.groupUnit', 'nhóm tuổi')}</div>
-                      </div>
-                    </div>
-
-                    {/* Chart + Legend Layout */}
-                    <div className={styles.ageChartSection}>
-                      {/* Donut */}
-                      <div className={styles.ageDonutWrapper}>
-                        <div className={styles.ageDonutCenter}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={donutData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={62}
-                                outerRadius={100}
-                                paddingAngle={2}
-                                strokeWidth={0}
-                              >
-                                {donutData.map((entry) => (
-                                  <Cell key={entry.label} fill={getAgeColor(entry.label)} />
-                                ))}
-                              </Pie>
-                              <Tooltip
-                                {...DARK_CHART_TOOLTIP_PROPS}
-                                formatter={(value, name) => [formatCurrency(value), name]}
-                              />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div className={styles.ageDonutLabel}>
-                            <div className={styles.ageDonutLabelSub}>Top nhóm</div>
-                            <div className={styles.ageDonutLabelAge} style={{ color: getAgeColor(topGroup?.label) }}>
-                              {formatAgeGroup(topGroup?.label)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Legend bars */}
-                      <div className={styles.ageLegendSection}>
-                        <div className={styles.ageLegendTitle}>
-                          {t('sellerDashboard.ageAnalytics.distribution', 'Phân bố khách hàng')}
-                        </div>
-                        {validGroups.map((g) => (
-                          <div key={g.label} className={styles.ageLegendRow}>
-                            <div className={styles.ageLegendRowHeader}>
-                              <div className={styles.ageLegendLabelGroup}>
-                                <span className={styles.ageLegendDot} style={{ background: getAgeColor(g.label) }} />
-                                <span className={styles.ageLegendName}>{formatAgeGroup(g.label)}</span>
-                              </div>
-                              <div className={styles.ageLegendStats}>
-                                <span className={styles.ageLegendCustomers}>
-                                  {g.customers.toLocaleString()} KH
-                                </span>
-                                <span className={styles.ageLegendPercent} style={{ color: getAgeColor(g.label) }}>
-                                  {g.percent}%
-                                </span>
-                              </div>
-                            </div>
-                            <Progress
-                              percent={g.percent}
-                              size="small"
-                              strokeColor={getAgeColor(g.label)}
-                              showInfo={false}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Dual-series bar chart */}
-                    <div className={styles.ageBarChartSection}>
-                      <div className={styles.ageBarChartTitle}>
-                        {t('sellerDashboard.ageAnalytics.customerCompare', 'So sánh khách hàng & doanh thu theo nhóm tuổi')}
-                      </div>
-                      <div className={styles.ageBarChartLegend}>
-                        <div className={styles.ageBarChartLegendItem}>
-                          <div className={styles.ageBarChartLegendDot} style={{ background: '#3b82f6' }} />
-                          <span>Khách hàng</span>
-                        </div>
-                        <div className={styles.ageBarChartLegendItem}>
-                          <div className={styles.ageBarChartLegendDot} style={{ background: '#dbeafe' }} />
-                          <span>Doanh thu</span>
-                        </div>
-                      </div>
-                      <ResponsiveContainer width="100%" height={180}>
-                        <BarChart data={barData} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} />
-                          <YAxis
-                            yAxisId="left"
-                            tick={{ fontSize: 10, fill: '#94a3b8' }}
-                            tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
-                          />
-                          <YAxis
-                            yAxisId="right"
-                            orientation="right"
-                            tick={{ fontSize: 10, fill: '#94a3b8' }}
-                            tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
-                          />
-                          <Tooltip
-                            {...DARK_CHART_TOOLTIP_PROPS}
-                            formatter={(value, name) => {
-                              if (name === 'Doanh thu') {
-return [formatCurrency(value), name];
-}
-                              return [value.toLocaleString(), name];
-                            }}
-                          />
-                          <Bar yAxisId="left" dataKey="Khách hàng" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                            {barData.map((entry) => (
-                              <Cell key={entry.label} fill="#3b82f6" />
-                            ))}
-                          </Bar>
-                          <Bar yAxisId="right" dataKey="Doanh thu" radius={[4, 4, 0, 0]} maxBarSize={32} fill="#dbeafe">
-                            {barData.map((entry) => (
-                              <Cell key={entry.label} fill="#dbeafe" stroke="#3b82f6" strokeWidth={1} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <RangePicker
+                      open={agePickerOpen}
+                      value={[
+                        ageCustomRange ? dayjs(ageCustomRange.startDate) : null,
+                        ageCustomRange ? dayjs(ageCustomRange.endDate) : null,
+                      ]}
+                      onChange={(dates) => {
+                        if (dates && dates[0] && dates[1]) {
+                          setAgeCustomRange({
+                            startDate: dates[0].format('YYYY-MM-DD'),
+                            endDate: dates[1].format('YYYY-MM-DD'),
+                          });
+                        }
+                        setAgePickerOpen(false);
+                      }}
+                      onOpenChange={setAgePickerOpen}
+                      disabledDate={(current) => current && current > dayjs().endOf('day')}
+                      size="small"
+                      style={{
+                        width: 0,
+                        padding: 0,
+                        opacity: 0,
+                        position: 'absolute',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <button
+                      onClick={() => setAgePickerOpen(true)}
+                      className={styles.periodBtn}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Calendar size={13} />
+                      {ageCustomRange
+                        ? `${dayjs(ageCustomRange.startDate).format('DD/MM/YYYY')} – ${dayjs(ageCustomRange.endDate).format('DD/MM/YYYY')}`
+                        : t('sellerDashboard.period.custom', 'Tùy chỉnh')}
+                    </button>
                   </>
-                );
-              })()
-            ) : (
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                justifyContent: 'center', padding: '32px 16px', gap: 10,
-              }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: '50%', background: '#f1f5f9',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M23 21v-2a4 4 0 00-3-3.87" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M16 3.13a4 4 0 010 7.75" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontWeight: 500, color: '#64748b', fontSize: 13, marginBottom: 4 }}>
-                    {t('sellerDashboard.ageAnalytics.noDataTitle', 'Chưa có dữ liệu độ tuổi')}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                    {t('sellerDashboard.ageAnalytics.noDataHint', 'Dữ liệu sẽ hiển thị khi khách hàng có cập nhật ngày sinh')}
-                  </div>
-                </div>
+                )}
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<TrendingUp size={13} />}
+                  onClick={() => setAgeAnalyticsModalOpen(true)}
+                  style={{ background: '#3b82f6', borderColor: '#3b82f6', flexShrink: 0 }}
+                >
+                  {t('sellerDashboard.ageAnalytics.viewDetail', 'Chi tiết')}
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
+
+            <div className={styles.erpSectionBody}>
+              {ageAnalyticsLoading ? (
+                <div className={styles.loadingCenter}>
+                  <Spin />
+                </div>
+              ) : ageAnalytics &&
+                ageAnalytics.ageGroups &&
+                ageAnalytics.ageGroups.some((g) => g.customers > 0) ? (
+                (() => {
+                  const validGroups = ageAnalytics.ageGroups
+                    .filter((g) => g.label !== 'Unknown' && g.customers > 0)
+                    .sort((a, b) => {
+                      const order = [
+                        'Under 18',
+                        '18-24',
+                        '25-34',
+                        '35-44',
+                        '45-54',
+                        '55-64',
+                        '65+',
+                      ];
+                      return order.indexOf(a.label) - order.indexOf(b.label);
+                    });
+
+                  const donutData = validGroups.map((g) => ({
+                    name: formatAgeGroup(g.label),
+                    value: g.revenue || 0,
+                    label: g.label,
+                  }));
+
+                  const barData = validGroups.map((g) => ({
+                    name: formatAgeGroup(g.label),
+                    label: g.label,
+                    'Khách hàng': g.customers,
+                    'Doanh thu': g.revenue,
+                  }));
+
+                  const topGroup = validGroups[0] || null;
+
+                  return (
+                    <>
+                      {/* KPI Strip */}
+                      <div className={styles.ageKpiStrip}>
+                        <div
+                          className={styles.ageKpiCard}
+                          style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}
+                        >
+                          <div className={styles.ageKpiLabel}>
+                            {t('sellerDashboard.ageAnalytics.totalCustomers', 'Tổng khách hàng')}
+                          </div>
+                          <div className={styles.ageKpiValue} style={{ color: '#1d4ed8' }}>
+                            {(ageAnalytics.totalCustomers || 0).toLocaleString()}
+                          </div>
+                          <div className={styles.ageKpiMeta}>
+                            {ageAnalytics.totalOrders?.toLocaleString()}{' '}
+                            {t('sellerDashboard.ageAnalytics.ordersUnit', 'đơn')}
+                          </div>
+                        </div>
+                        <div
+                          className={styles.ageKpiCard}
+                          style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+                        >
+                          <div className={styles.ageKpiLabel}>
+                            {t('sellerDashboard.ageAnalytics.totalRevenue', 'Tổng doanh thu')}
+                          </div>
+                          <div className={styles.ageKpiValue} style={{ color: '#15803d' }}>
+                            {formatCurrency(ageAnalytics.totalRevenue || 0)}
+                          </div>
+                          <div className={styles.ageKpiMeta}>
+                            TB {formatCurrency(ageAnalytics.avgOrderValue || 0)}/
+                            {t('sellerDashboard.ageAnalytics.ordersUnit', 'đơn')}
+                          </div>
+                        </div>
+                        {topGroup && (
+                          <div
+                            className={styles.ageKpiCard}
+                            style={{
+                              background: `${getAgeColor(topGroup.label)}14`,
+                              border: `1px solid ${getAgeColor(topGroup.label)}30`,
+                            }}
+                          >
+                            <div className={styles.ageKpiLabel}>
+                              {t('sellerDashboard.ageAnalytics.primaryAgeGroup', 'Nhóm tuổi chính')}
+                            </div>
+                            <div
+                              className={styles.ageKpiValue}
+                              style={{ color: getAgeColor(topGroup.label) }}
+                            >
+                              {formatAgeGroup(topGroup.label)}
+                            </div>
+                            <div
+                              className={styles.ageKpiMeta}
+                              style={{ color: getAgeColor(topGroup.label) }}
+                            >
+                              {topGroup.percent}% DT · {topGroup.customers.toLocaleString()} KH
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          className={styles.ageKpiCard}
+                          style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}
+                        >
+                          <div className={styles.ageKpiLabel}>
+                            {t('sellerDashboard.ageAnalytics.activeGroups', 'Nhóm hoạt động')}
+                          </div>
+                          <div className={styles.ageKpiValue} style={{ color: '#7c3aed' }}>
+                            {validGroups.length}
+                          </div>
+                          <div className={styles.ageKpiMeta}>
+                            {t('sellerDashboard.ageAnalytics.groupUnit', 'nhóm tuổi')}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chart + Legend Layout */}
+                      <div className={styles.ageChartSection}>
+                        {/* Donut */}
+                        <div className={styles.ageDonutWrapper}>
+                          <div className={styles.ageDonutCenter}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={donutData}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={62}
+                                  outerRadius={100}
+                                  paddingAngle={2}
+                                  strokeWidth={0}
+                                >
+                                  {donutData.map((entry) => (
+                                    <Cell key={entry.label} fill={getAgeColor(entry.label)} />
+                                  ))}
+                                </Pie>
+                                <Tooltip
+                                  contentStyle={{
+                                    background: '#1e293b',
+                                    border: '1px solid #334155',
+                                    borderRadius: 8,
+                                    fontSize: 12,
+                                    color: '#f8fafc',
+                                  }}
+                                  formatter={(value, name) => [formatCurrency(value), name]}
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
+                            <div className={styles.ageDonutLabel}>
+                              <div className={styles.ageDonutLabelSub}>Top nhóm</div>
+                              <div
+                                className={styles.ageDonutLabelAge}
+                                style={{ color: getAgeColor(topGroup?.label) }}
+                              >
+                                {formatAgeGroup(topGroup?.label)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Legend bars */}
+                        <div className={styles.ageLegendSection}>
+                          <div className={styles.ageLegendTitle}>
+                            {t('sellerDashboard.ageAnalytics.distribution', 'Phân bố khách hàng')}
+                          </div>
+                          {validGroups.map((g) => (
+                            <div key={g.label} className={styles.ageLegendRow}>
+                              <div className={styles.ageLegendRowHeader}>
+                                <div className={styles.ageLegendLabelGroup}>
+                                  <span
+                                    className={styles.ageLegendDot}
+                                    style={{ background: getAgeColor(g.label) }}
+                                  />
+                                  <span className={styles.ageLegendName}>
+                                    {formatAgeGroup(g.label)}
+                                  </span>
+                                </div>
+                                <div className={styles.ageLegendStats}>
+                                  <span className={styles.ageLegendCustomers}>
+                                    {g.customers.toLocaleString()} KH
+                                  </span>
+                                  <span
+                                    className={styles.ageLegendPercent}
+                                    style={{ color: getAgeColor(g.label) }}
+                                  >
+                                    {g.percent}%
+                                  </span>
+                                </div>
+                              </div>
+                              <Progress
+                                percent={g.percent}
+                                size="small"
+                                strokeColor={getAgeColor(g.label)}
+                                showInfo={false}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dual-series bar chart */}
+                      <div className={styles.ageBarChartSection}>
+                        <div className={styles.ageBarChartTitle}>
+                          {t(
+                            'sellerDashboard.ageAnalytics.customerCompare',
+                            'So sánh khách hàng & doanh thu theo nhóm tuổi'
+                          )}
+                        </div>
+                        <div className={styles.ageBarChartLegend}>
+                          <div className={styles.ageBarChartLegendItem}>
+                            <div
+                              className={styles.ageBarChartLegendDot}
+                              style={{ background: '#3b82f6' }}
+                            />
+                            <span>Khách hàng</span>
+                          </div>
+                          <div className={styles.ageBarChartLegendItem}>
+                            <div
+                              className={styles.ageBarChartLegendDot}
+                              style={{ background: '#dbeafe' }}
+                            />
+                            <span>Doanh thu</span>
+                          </div>
+                        </div>
+                        <ResponsiveContainer width="100%" height={180}>
+                          <BarChart
+                            data={barData}
+                            margin={{ top: 8, right: 16, left: -10, bottom: 0 }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="#f1f5f9"
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="name"
+                              tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }}
+                            />
+                            <YAxis
+                              yAxisId="left"
+                              tick={{ fontSize: 10, fill: '#94a3b8' }}
+                              tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v)}
+                            />
+                            <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              tick={{ fontSize: 10, fill: '#94a3b8' }}
+                              tickFormatter={(v) =>
+                                v >= 1000000
+                                  ? `${(v / 1000000).toFixed(1)}M`
+                                  : v >= 1000
+                                    ? `${(v / 1000).toFixed(0)}K`
+                                    : v
+                              }
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                background: '#1e293b',
+                                border: '1px solid #334155',
+                                borderRadius: 8,
+                                fontSize: 12,
+                                color: '#f8fafc',
+                              }}
+                              formatter={(value, name) => {
+                                if (name === 'Doanh thu') {
+                                  return [formatCurrency(value), name];
+                                }
+                                return [value.toLocaleString(), name];
+                              }}
+                            />
+                            <Bar
+                              yAxisId="left"
+                              dataKey="Khách hàng"
+                              radius={[4, 4, 0, 0]}
+                              maxBarSize={32}
+                            >
+                              {barData.map((entry) => (
+                                <Cell key={entry.label} fill="#3b82f6" />
+                              ))}
+                            </Bar>
+                            <Bar
+                              yAxisId="right"
+                              dataKey="Doanh thu"
+                              radius={[4, 4, 0, 0]}
+                              maxBarSize={32}
+                              fill="#dbeafe"
+                            >
+                              {barData.map((entry) => (
+                                <Cell
+                                  key={entry.label}
+                                  fill="#dbeafe"
+                                  stroke="#3b82f6"
+                                  strokeWidth={1}
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </>
+                  );
+                })()
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '32px 16px',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: '#f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#94a3b8"
+                      strokeWidth="1.5"
+                    >
+                      <path
+                        d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="9" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M23 21v-2a4 4 0 00-3-3.87"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M16 3.13a4 4 0 010 7.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div
+                      style={{ fontWeight: 500, color: '#64748b', fontSize: 13, marginBottom: 4 }}
+                    >
+                      {t('sellerDashboard.ageAnalytics.noDataTitle', 'Chưa có dữ liệu độ tuổi')}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                      {t(
+                        'sellerDashboard.ageAnalytics.noDataHint',
+                        'Dữ liệu sẽ hiển thị khi khách hàng có cập nhật ngày sinh'
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </Card>
         </div>
 
@@ -1825,7 +2297,6 @@ return [formatCurrency(value), name];
           open={ageAnalyticsModalOpen}
           onClose={() => setAgeAnalyticsModalOpen(false)}
         />
-
       </div>
     </div>
   );

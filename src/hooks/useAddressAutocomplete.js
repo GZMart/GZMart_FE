@@ -119,41 +119,73 @@ const useAddressAutocomplete = ({ addresses = [], formValues = {}, excludeId = n
   );
 
   const resolveSuggestionDetails = useCallback(async (suggestion) => {
+    console.log(
+      '📍 [useAddressAutocomplete] Starting resolveSuggestionDetails:',
+      JSON.stringify(
+        { name: suggestion?.name, source: suggestion?.source, id: suggestion?.id },
+        null,
+        2
+      )
+    );
+
     if (!suggestion || suggestion.source !== 'goong') {
+      console.log(
+        '📍 [useAddressAutocomplete] Not a Goong suggestion or no suggestion, returning as-is'
+      );
       return suggestion;
     }
 
     const placeId = suggestion.placeId || suggestion.id;
+    console.log('📍 [useAddressAutocomplete] Goong placeId:', placeId);
+
     if (!placeId) {
+      console.log('📍 [useAddressAutocomplete] No placeId found');
       return suggestion;
     }
 
     if (suggestion.location && suggestion.addressComponents?.length) {
+      console.log(
+        '📍 [useAddressAutocomplete] Suggestion already has location and addressComponents, returning as-is'
+      );
       return suggestion;
     }
 
     if (placeDetailsCacheRef.current.has(placeId)) {
-      return {
+      console.log('📍 [useAddressAutocomplete] Found in cache');
+      const cached = placeDetailsCacheRef.current.get(placeId);
+      const result = {
         ...suggestion,
-        ...placeDetailsCacheRef.current.get(placeId),
+        ...cached,
       };
+      console.log(
+        '📍 [useAddressAutocomplete] Returning cached result:',
+        JSON.stringify(result, null, 2)
+      );
+      return result;
     }
 
     try {
       const detail = await fetchGoongPlaceDetail(placeId);
       if (!detail) {
+        console.log('📍 [useAddressAutocomplete] fetchGoongPlaceDetail returned null');
         return suggestion;
       }
 
       placeDetailsCacheRef.current.set(placeId, detail);
 
-      return {
+      const result = {
         ...suggestion,
         ...detail,
         placeId,
       };
+      console.log(
+        '📍 [useAddressAutocomplete] Returning resolved detail:',
+        JSON.stringify(result, null, 2)
+      );
+      return result;
     } catch (error) {
       console.error('Failed to fetch Goong place detail:', error);
+      console.log('📍 [useAddressAutocomplete] Error occurred, returning original suggestion');
       return suggestion;
     }
   }, []);

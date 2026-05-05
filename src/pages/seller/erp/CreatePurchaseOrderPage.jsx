@@ -411,7 +411,9 @@ const ListingPickerModal = ({ products, loading, onSelect, onClose, exchangeRate
     );
     const parts = [];
     for (let i = 0; i < st.length; i += 1) {
-      if (i === primaryIdx) continue;
+      if (i === primaryIdx) {
+continue;
+}
       const idx = model.tierIndex[i];
       const optRaw = st[i]?.options?.[idx];
       const val =

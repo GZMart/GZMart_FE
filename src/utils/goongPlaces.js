@@ -30,19 +30,24 @@ export const fetchGoongPlaceDetail = async (placeId = '') => {
   }
 
   const url = `${PLACE_DETAIL_ENDPOINT}?place_id=${encodeURIComponent(id)}&api_key=${GOONG_API_KEY}`;
+  console.log('📍 [GoongPlaces] Fetching place detail for:', id);
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Goong place detail failed (${response.status})`);
   }
 
   const payload = await response.json();
+  console.log('📍 [GoongPlaces] Goong API response:', JSON.stringify(payload, null, 2));
+
   const result = payload?.result;
   if (!result) {
+    console.log('📍 [GoongPlaces] No result in Goong response');
     return null;
   }
 
   const location = result.geometry?.location;
-  return {
+  const returnData = {
     placeId: result.place_id || id,
     formattedAddress: result.formatted_address || result.name || '',
     name: result.name || '',
@@ -55,4 +60,7 @@ export const fetchGoongPlaceDetail = async (placeId = '') => {
           }
         : null,
   };
+
+  console.log('📍 [GoongPlaces] Returning place detail:', JSON.stringify(returnData, null, 2));
+  return returnData;
 };

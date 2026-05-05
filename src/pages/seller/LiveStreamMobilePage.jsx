@@ -240,7 +240,9 @@ export default function LiveStreamMobilePage() {
       <EndLiveConfirmModal
         isOpen={showEndConfirm}
         onCancel={() => setShowEndConfirm(false)}
-        onConfirm={() => { setShowEndConfirm(false); void handleEndLive(); }}
+        onConfirm={() => {
+ setShowEndConfirm(false); void handleEndLive(); 
+}}
       />
     </div>
   );

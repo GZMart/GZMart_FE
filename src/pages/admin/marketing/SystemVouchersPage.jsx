@@ -51,8 +51,7 @@ const SystemVouchersPage = () => {
     }
   };
 
-  const filteredVouchers = useMemo(() => {
-    return vouchers.filter((voucher) => {
+  const filteredVouchers = useMemo(() => vouchers.filter((voucher) => {
       const matchesSearch =
         voucher.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         voucher.code?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -67,8 +66,7 @@ const SystemVouchersPage = () => {
         (filterStatus === 'inactive' && voucher.status !== 'active') ||
         (filterStatus === 'expired' && exp);
       return matchesSearch && matchesType && matchesStatus;
-    });
-  }, [vouchers, searchTerm, filterType, filterStatus]);
+    }), [vouchers, searchTerm, filterType, filterStatus]);
 
   const totalPages = Math.max(1, Math.ceil(filteredVouchers.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
