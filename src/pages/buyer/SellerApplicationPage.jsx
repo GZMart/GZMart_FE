@@ -55,6 +55,22 @@ const SellerApplicationPage = () => {
     [watchedAddress, watchedProvinceName, watchedWardName]
   );
 
+  // Log address changes for debugging
+  useEffect(() => {
+    console.log(
+      '📍 [SellerApp] Address field changed:',
+      JSON.stringify(
+        {
+          address: watchedAddress,
+          provinceName: watchedProvinceName,
+          wardName: watchedWardName,
+        },
+        null,
+        2
+      )
+    );
+  }, [watchedAddress, watchedProvinceName, watchedWardName]);
+
   const {
     activeField: addressSuggestionField,
     setActiveField: setAddressSuggestionField,
@@ -65,6 +81,28 @@ const SellerApplicationPage = () => {
     addresses: savedAddresses,
     formValues: addressAutocompleteFormValues,
   });
+
+  // Log suggestions for debugging
+  useEffect(() => {
+    if (showAddressSuggestions) {
+      console.log(
+        '📍 [SellerApp] Address suggestions shown:',
+        JSON.stringify(
+          {
+            activeField: addressSuggestionField,
+            suggestionCount: addressSuggestions.length,
+            suggestions: addressSuggestions.map((s) => ({
+              name: s.name,
+              source: s.source,
+              id: s.id,
+            })),
+          },
+          null,
+          2
+        )
+      );
+    }
+  }, [showAddressSuggestions, addressSuggestionField, addressSuggestions]);
 
   useEffect(() => {
     fetchApplications();
@@ -136,12 +174,58 @@ const SellerApplicationPage = () => {
   };
 
   const handleAddressSuggestionSelect = async (suggestion) => {
+    console.log(
+      '📍 [SellerApp] Address suggestion selected:',
+      JSON.stringify({ name: suggestion.name, source: suggestion.source }, null, 2)
+    );
+
     const resolvedSuggestion = await resolveSuggestionDetails(suggestion);
+    console.log(
+      '📍 [SellerApp] Resolved suggestion:',
+      JSON.stringify(
+        {
+          name: resolvedSuggestion?.name,
+          source: resolvedSuggestion?.source,
+          description: resolvedSuggestion?.description,
+          province: resolvedSuggestion?.province,
+          ward: resolvedSuggestion?.ward,
+        },
+        null,
+        2
+      )
+    );
+
     const currentValues = form.getFieldsValue(true);
+    console.log(
+      '📍 [SellerApp] Current form values:',
+      JSON.stringify(
+        {
+          address: currentValues.address,
+          provinceCode: currentValues.provinceCode,
+          provinceName: currentValues.provinceName,
+          wardCode: currentValues.wardCode,
+          wardName: currentValues.wardName,
+        },
+        null,
+        2
+      )
+    );
 
     let addressPatch;
     if (resolvedSuggestion?.source === 'goong') {
-      addressPatch = applyGoongSuggestion({
+      console.log('📍 [SellerApp] Processing Goong suggestion...');
+      console.log(
+        '📍 [SellerApp] Provinces list:',
+        JSON.stringify(
+          provinces.slice(0, 3).map((p) => ({ code: p.code, name: p.name })),
+          null,
+          2
+        ),
+        `... (total: ${provinces.length})`
+      );
+      console.log('📍 [SellerApp] Wards list count:', wards.length);
+
+      const goongInput = {
         suggestion: resolvedSuggestion,
         activeField: 'street',
         provinces,
@@ -154,23 +238,51 @@ const SellerApplicationPage = () => {
           wardCode: currentValues.wardCode,
           wardName: currentValues.wardName,
         },
-      });
+      };
+      console.log(
+        '📍 [SellerApp] Goong suggestion input:',
+        JSON.stringify(
+          {
+            suggestion: {
+              name: goongInput.suggestion.name,
+              location: goongInput.suggestion.location,
+            },
+            activeField: goongInput.activeField,
+            currentFormValues: goongInput.currentFormValues,
+          },
+          null,
+          2
+        )
+      );
+
+      addressPatch = applyGoongSuggestion(goongInput);
+      console.log('📍 [SellerApp] Goong patch result:', JSON.stringify(addressPatch, null, 2));
     } else {
+      console.log('📍 [SellerApp] Processing saved address suggestion...');
       const savedPatch = applyAddressSuggestion(resolvedSuggestion);
       addressPatch = {
         ...savedPatch,
         street: buildAddressDisplayString(resolvedSuggestion),
       };
+      console.log(
+        '📍 [SellerApp] Saved address patch result:',
+        JSON.stringify(addressPatch, null, 2)
+      );
     }
 
-    form.setFieldsValue({
+    const fieldsToSet = {
       address: addressPatch.street || currentValues.address || '',
       provinceCode: addressPatch.provinceCode ? String(addressPatch.provinceCode) : undefined,
       provinceName: addressPatch.provinceName || currentValues.provinceName || '',
       wardCode: addressPatch.wardCode ? String(addressPatch.wardCode) : undefined,
       wardName: addressPatch.wardName || currentValues.wardName || '',
-    });
+    };
 
+    console.log('📍 [SellerApp] About to set form fields:', JSON.stringify(fieldsToSet, null, 2));
+
+    form.setFieldsValue(fieldsToSet);
+
+    console.log('📍 [SellerApp] Form fields updated, closing dropdown');
     setAddressSuggestionField(null);
   };
 
@@ -438,26 +550,41 @@ const SellerApplicationPage = () => {
                     </Form.Item>
                   </div>
 
-                  <Form.Item
-                    name="address"
-                    label="Detailed Address"
-                    rules={[{ required: true, message: 'Required' }]}
-                  >
-                    <div style={{ position: 'relative' }}>
-                      <Input.TextArea
-                        placeholder="Floor 4, Bitexco Tower, District 1..."
-                        rows={3}
-                        autoSize={{ minRows: 3, maxRows: 5 }}
-                        autoComplete="street-address"
-                        size="large"
-                        onFocus={() => setAddressSuggestionField('street')}
-                        onBlur={() => setTimeout(() => setAddressSuggestionField(null), 150)}
-                      />
-                      <AddressAutocompleteDropdown
-                        show={showAddressSuggestions && addressSuggestionField === 'street'}
-                        suggestions={addressSuggestions}
-                        onSelect={handleAddressSuggestionSelect}
-                      />
+                  <Form.Item label="Specific Address" required>
+                    <div style={{ position: 'relative', overflow: 'visible' }}>
+                      {/* Form.Item này sẽ chịu trách nhiệm bind data trực tiếp vào Input */}
+                      <Form.Item
+                        name="address"
+                        noStyle
+                        rules={[{ required: true, message: 'Required' }]}
+                      >
+                        <Input.TextArea
+                          rows={2}
+                          placeholder="Floor 4, Bitexco Tower, District 1..."
+                          autoComplete="address-line2"
+                          size="large"
+                          onChange={(e) =>
+                            console.log('📍 [SellerApp] Address input changed:', e.target.value)
+                          }
+                          onFocus={() => {
+                            console.log('📍 [SellerApp] Address field focused');
+                            setAddressSuggestionField('street');
+                          }}
+                          onBlur={() => {
+                            console.log('📍 [SellerApp] Address field blurred');
+                            setTimeout(() => setAddressSuggestionField(null), 200);
+                          }}
+                        />
+                      </Form.Item>
+
+                      {/* Dropdown giữ nguyên */}
+                      <div onMouseDown={(e) => e.preventDefault()}>
+                        <AddressAutocompleteDropdown
+                          show={showAddressSuggestions && addressSuggestionField === 'street'}
+                          suggestions={addressSuggestions}
+                          onSelect={handleAddressSuggestionSelect}
+                        />
+                      </div>
                     </div>
                   </Form.Item>
 

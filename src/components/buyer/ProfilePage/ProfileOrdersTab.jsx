@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   AlertCircle,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  FileText,
   MessageCircle,
   Package,
   Search,
@@ -12,6 +14,7 @@ import {
 import { Spinner } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import OrderTrackingEnhanced from '@components/buyer/OrderTrackingEnhanced';
+import InvoiceModal from '@components/buyer/ProfilePage/InvoiceModal';
 import styles from '@assets/styles/buyer/ProfilePage/ProfilePage.module.css';
 
 function formatPreorderShipDate(iso, language) {
@@ -76,36 +79,15 @@ const ProfileOrdersTab = ({
   onViewReturnStatus,
 }) => {
   const { i18n } = useTranslation();
-
-  const filteredOrders = orders.filter((order) => {
-    const statusMatch =
-      orderStatusFilter === 'all' ||
-      (orderStatusFilter === 'pending' && order.status === 'pending') ||
-      (orderStatusFilter === 'processing' &&
-        ['confirmed', 'processing', 'packing'].includes(order.status)) ||
-      (orderStatusFilter === 'shipping' && ['shipping', 'shipped'].includes(order.status)) ||
-      (orderStatusFilter === 'delivered' &&
-        ['delivered', 'delivered_pending_confirmation'].includes(order.status)) ||
-      (orderStatusFilter === 'completed' && order.status === 'completed') ||
-      (orderStatusFilter === 'cancelled' && order.status === 'cancelled') ||
-      (orderStatusFilter === 'return' &&
-        ['return_requested', 'return_approved', 'refunded'].includes(order.status));
-
-    const searchMatch =
-      !orderSearchQuery ||
-      order.items?.some((item) =>
-        item.productId?.name?.toLowerCase().includes(orderSearchQuery.toLowerCase())
-      );
-
-    return statusMatch && searchMatch;
-  });
+  const [showInvoice, setShowInvoice] = useState(false);
 
   const orderStatusTabs = [
     { key: 'all', label: 'All' },
     { key: 'pending', label: 'Pending Payment' },
     { key: 'processing', label: 'Processing' },
     { key: 'shipping', label: 'Shipping' },
-    { key: 'delivered', label: 'Completed' },
+    { key: 'delivered', label: 'Delivered' },
+    { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
     { key: 'return', label: 'Return/Refund' },
   ];
@@ -177,7 +159,7 @@ const ProfileOrdersTab = ({
                 <Spinner animation="border" variant="primary" />
                 <p className="mt-3 font-weight-bold">{t('profile_page.orders.loading')}</p>
               </div>
-            ) : filteredOrders.length === 0 ? (
+            ) : orders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '4rem', color: '#6B7280' }}>
                 <Package size={64} color="#D1D5DB" strokeWidth={1.5} />
                 <h4 style={{ marginTop: '1rem' }}>
@@ -192,7 +174,7 @@ const ProfileOrdersTab = ({
                 </p>
               </div>
             ) : (
-              filteredOrders.map((order) => (
+              orders.map((order) => (
                 <div key={order._id} className={styles.orderCard}>
                   <div className={styles.orderCardHeader}>
                     <div className={styles.orderCardHeaderLeft}>
@@ -566,6 +548,12 @@ const ProfileOrdersTab = ({
                 >
                   {reorderLoadingId === selectedOrderDetails._id ? 'Reordering...' : 'Reorder'}
                 </button>
+                <button
+                  className={styles.orderDetailsActionSecondary}
+                  onClick={() => setShowInvoice(true)}
+                >
+                  Export Invoice
+                </button>
                 {selectedOrderDetails.status === 'completed' && (
                   <button
                     className={styles.orderDetailsActionSecondary}
@@ -607,6 +595,15 @@ const ProfileOrdersTab = ({
                   </button>
                 )}
               </div>
+
+              {showInvoice && (
+                <InvoiceModal
+                  order={selectedOrderDetails}
+                  user={user}
+                  formatCurrency={formatCurrency}
+                  onClose={() => setShowInvoice(false)}
+                />
+              )}
             </>
           )}
         </div>

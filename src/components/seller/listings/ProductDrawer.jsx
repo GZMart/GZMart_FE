@@ -517,13 +517,19 @@ const ProductDrawer = ({ show, onHide, onSuccess, editingProduct }) => {
     const files = Array.from(input.files || []);
 
     const isLikelyImage = (file) => {
-      if (file.type && file.type.startsWith('image/')) return true;
+      if (file.type && file.type.startsWith('image/')) {
+return true;
+}
       return /\.(jpe?g|png|gif|webp|heic|avif|bmp)$/i.test(file.name || '');
     };
 
     const validFiles = files.filter((file) => {
-      if (!isLikelyImage(file)) return false;
-      if (file.size > 5 * 1024 * 1024) return false;
+      if (!isLikelyImage(file)) {
+return false;
+}
+      if (file.size > 5 * 1024 * 1024) {
+return false;
+}
       return true;
     });
 

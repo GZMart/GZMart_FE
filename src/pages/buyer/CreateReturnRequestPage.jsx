@@ -94,6 +94,14 @@ const CreateReturnRequestPage = () => {
     );
   };
 
+  const handleVariantChange = (itemId, variantId) => {
+    setSelectedItems((prev) =>
+      prev.map((item) =>
+        item.orderItemId === itemId ? { ...item, exchangeToVariantId: variantId } : item
+      )
+    );
+  };
+
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) {
@@ -140,6 +148,7 @@ const CreateReturnRequestPage = () => {
       .map((item) => ({
         orderItemId: item.orderItemId,
         quantity: item.quantity,
+        ...(item.exchangeToVariantId ? { exchangeToVariantId: item.exchangeToVariantId } : {}),
       }));
 
     if (itemsToReturn.length === 0) {
@@ -272,9 +281,52 @@ const CreateReturnRequestPage = () => {
                       <Image src={item.image} fluid rounded />
                     </Col>
                     <Col md={5}>
-                      <h6>{item.productName}</h6>
+                      <h6>{item.productName || item.productId?.name}</h6>
                       <p className="text-muted mb-1">{item.variantName}</p>
                       <Badge bg="secondary">SKU: {item.sku}</Badge>
+
+                      {selectedItem?.selected && item.productId?.models?.length > 1 && (
+                        <Form.Group className="mt-2">
+                          <Form.Label className="mb-1 text-muted" style={{ fontSize: '0.85rem' }}>
+                            Đổi sang mẫu/size (tùy chọn)
+                          </Form.Label>
+                          <Form.Select
+                            size="sm"
+                            value={selectedItem.exchangeToVariantId || ''}
+                            onChange={(e) => handleVariantChange(item._id, e.target.value)}
+                          >
+                            <option value="">-- Giữ nguyên mẫu gốc --</option>
+                            {item.productId.models.map((model) => {
+                              const labelParts = [];
+                              if (
+                                item.productId.tiers &&
+                                item.productId.tiers.length > 0 &&
+                                model.tierIndex
+                              ) {
+                                item.productId.tiers.forEach((tier, index) => {
+                                  const optIdx = model.tierIndex[index];
+                                  if (optIdx !== undefined && tier.options[optIdx]) {
+                                    labelParts.push(tier.options[optIdx]);
+                                  }
+                                });
+                              }
+                              const label =
+                                labelParts.length > 0 ? labelParts.join(' / ') : model.sku;
+                              const isCurrent = model._id === item.modelId;
+                              return (
+                                <option
+                                  key={model._id}
+                                  value={model._id}
+                                  disabled={model.stock <= 0}
+                                >
+                                  {label}{' '}
+                                  {model.stock <= 0 ? '(Hết hàng)' : isCurrent ? '(Hiện tại)' : ''}
+                                </option>
+                              );
+                            })}
+                          </Form.Select>
+                        </Form.Group>
+                      )}
                     </Col>
                     <Col md={2}>
                       <strong>{item.finalPrice?.toLocaleString('vi-VN')}₫</strong>

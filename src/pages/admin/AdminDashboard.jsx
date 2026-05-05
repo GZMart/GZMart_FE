@@ -397,7 +397,9 @@ const AdminDashboard = () => {
     primaryImage || secondaryImage || FALLBACK_PRODUCT_IMAGE;
 
   const handleOpenProductDetails = (productId) => {
-    if (!productId) return;
+    if (!productId) {
+return;
+}
     navigate(`/product/${productId}`);
   };
 

@@ -105,7 +105,9 @@ const RecommendSection = ({ limit = 4 }) => {
         (t) => t.type === 'SIZE' || resolveTierTypeKey(t.name) === 'SIZE'
       );
       const optAt = (tierIdx) => {
-        if (tierIdx < 0) return null;
+        if (tierIdx < 0) {
+return null;
+}
         const o = tiers[tierIdx]?.options;
         const i = activeModel.tierIndex[tierIdx];
         if (Array.isArray(o) && o[i] != null) {

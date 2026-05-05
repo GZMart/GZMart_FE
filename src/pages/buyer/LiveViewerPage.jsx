@@ -1170,7 +1170,9 @@ return;
                 byId.set(m.id, m);
               }
               for (const m of prev) {
-                if (byId.has(m.id)) continue;
+                if (byId.has(m.id)) {
+continue;
+}
                 // Local-only messages (id starts with 'local_') are optimistic placeholders
                 // added when the user sent a message. Once server history arrives, they
                 // must be dropped if a server message with the same content+sender exists —
@@ -1179,7 +1181,9 @@ return;
                   const serverMatch = fromServer.find(
                     (s) => s.content === m.content && String(s.userId) === String(m.userId),
                   );
-                  if (serverMatch) continue;
+                  if (serverMatch) {
+continue;
+}
                 }
                 byId.set(m.id, m);
               }

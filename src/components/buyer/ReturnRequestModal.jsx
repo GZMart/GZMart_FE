@@ -13,6 +13,7 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
   const [images, setImages] = useState([]);
   const [eligibility, setEligibility] = useState(null);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
+  const [exchangeVariants, setExchangeVariants] = useState({});
 
   // Check eligibility when modal opens
   const checkEligibility = useCallback(async () => {
@@ -47,6 +48,7 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
       setError(null);
       form.resetFields();
       setImages([]);
+      setExchangeVariants({});
     }
   }, [checkEligibility, form, order?._id, show]);
 
@@ -92,10 +94,14 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
         reason: values.reason,
         description: values.description,
         images,
-        items: order.items.map((item) => ({
-          orderItemId: item._id,
-          quantity: item.quantity, // Return all items by default
-        })),
+        items: order.items.map((item) => {
+          const selectedVariantId = exchangeVariants[item._id];
+          return {
+            orderItemId: item._id,
+            quantity: item.quantity,
+            ...(selectedVariantId ? { exchangeToVariantId: selectedVariantId } : {}),
+          };
+        }),
       };
 
       const response = await rmaService.createReturnRequest(requestData);
@@ -320,9 +326,66 @@ const ReturnRequestModal = ({ show, order, onHide, onSuccess }) => {
               description={
                 <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
                   {order?.items?.map((item) => (
-                    <li key={item._id}>
-                      {item.productId?.name} - Qty: {item.quantity} -{' '}
-                      {item.price.toLocaleString('vi-VN')}₫
+                    <li key={item._id} style={{ marginBottom: '12px' }}>
+                      <div style={{ fontWeight: '500' }}>
+                        {item.productId?.name} - Qty: {item.quantity} -{' '}
+                        {item.price.toLocaleString('vi-VN')}₫
+                      </div>
+
+                      {item.productId?.models?.length > 1 && (
+                        <div style={{ marginTop: '6px' }}>
+                          <label
+                            style={{
+                              fontSize: '12px',
+                              display: 'block',
+                              marginBottom: '4px',
+                              color: '#666',
+                            }}
+                          >
+                            Đổi sang mẫu/size (tùy chọn):
+                          </label>
+                          <select
+                            className="form-select form-select-sm"
+                            value={exchangeVariants[item._id] || ''}
+                            onChange={(e) =>
+                              setExchangeVariants((prev) => ({
+                                ...prev,
+                                [item._id]: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="">-- Giữ nguyên mẫu gốc --</option>
+                            {item.productId.models.map((model) => {
+                              const labelParts = [];
+                              if (
+                                item.productId.tiers &&
+                                item.productId.tiers.length > 0 &&
+                                model.tierIndex
+                              ) {
+                                item.productId.tiers.forEach((tier, index) => {
+                                  const optIdx = model.tierIndex[index];
+                                  if (optIdx !== undefined && tier.options[optIdx]) {
+                                    labelParts.push(tier.options[optIdx]);
+                                  }
+                                });
+                              }
+                              const label =
+                                labelParts.length > 0 ? labelParts.join(' / ') : model.sku;
+                              const isCurrent = model._id === item.modelId;
+                              return (
+                                <option
+                                  key={model._id}
+                                  value={model._id}
+                                  disabled={model.stock <= 0}
+                                >
+                                  {label}{' '}
+                                  {model.stock <= 0 ? '(Hết hàng)' : isCurrent ? '(Hiện tại)' : ''}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

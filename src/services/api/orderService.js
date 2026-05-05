@@ -5,8 +5,15 @@ export const orderService = {
   createOrder: async (orderData) => await api.post('/api/orders', orderData),
 
   // Get current user's orders with pagination
-  getMyOrders: async (page = 1, limit = 10) =>
-    await api.get('/api/orders', { params: { page, limit } }),
+  getMyOrders: async (page = 1, limit = 10, status, search) =>
+    await api.get('/api/orders', {
+      params: {
+        page,
+        limit,
+        status: status || undefined,
+        search: search || undefined,
+      },
+    }),
 
   // Get specific order details
   getOrderById: async (id) => await api.get(`/api/orders/${id}`),

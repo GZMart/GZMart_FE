@@ -33,7 +33,9 @@ const CartPage = () => {
     if (!isInitializedRef.current) {
       // First load — select everything
       setSelectedItems(cartIds);
-      if (cartItems.length > 0) isInitializedRef.current = true;
+      if (cartItems.length > 0) {
+isInitializedRef.current = true;
+}
     } else {
       // Cart changed — only remove IDs that no longer exist
       setSelectedItems((prev) => {

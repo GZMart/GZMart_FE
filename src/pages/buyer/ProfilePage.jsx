@@ -13,7 +13,7 @@ import ReturnRequestModal from '@components/buyer/ReturnRequestModal';
 import locationService from '@services/api/locationService';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next'; // Added import
-import { Coins, FileText, Package, Ticket } from 'lucide-react';
+import { Coins, FileText, Package } from 'lucide-react';
 import ReviewModal from '@components/common/ReviewModal';
 import socketService from '@services/socket/socketService';
 import { addToCart as addToCartApi } from '@services/api/cartService';
@@ -24,7 +24,6 @@ import ProfileAccountTab from '@/components/buyer/ProfilePage/ProfileAccountTab'
 import ProfileAddressTab from '@/components/buyer/ProfilePage/ProfileAddressTab';
 import ProfileOrdersTab from '@/components/buyer/ProfilePage/ProfileOrdersTab';
 import ProfileCoinTab from '@/components/buyer/ProfilePage/ProfileCoinTab';
-import ProfileVouchersTab from '@/components/buyer/ProfilePage/ProfileVouchersTab';
 import ProfileAddressDrawer from '@/components/buyer/ProfilePage/ProfileAddressDrawer';
 import DisputeCenter from '@/components/common/disputes/DisputeCenter';
 import BuyerReturnStatusDrawer from '@/components/buyer/ProfilePage/BuyerReturnStatusDrawer';
@@ -37,6 +36,23 @@ const sanitizeOrderId = (value = '') => {
   }
 
   return raw.split('?')[0].split('&')[0].trim();
+};
+
+const mapTabToApiStatuses = (tabKey) => {
+  switch (tabKey) {
+    case 'processing':
+      return 'confirmed,processing,packing';
+    case 'shipping':
+      return 'shipping,shipped';
+    case 'delivered':
+      return 'delivered,delivered_pending_confirmation';
+    case 'return':
+      return 'return_requested,return_approved,refunded';
+    case 'all':
+      return undefined;
+    default:
+      return tabKey;
+  }
 };
 
 const ProfilePage = () => {
@@ -496,10 +512,18 @@ const ProfilePage = () => {
       .join(', ');
 
   const fetchOrders = useCallback(
-    async (page) => {
+    async (pageToFetch, statusToFetch, searchToFetch) => {
       setOrderLoading(true);
       try {
-        const response = await orderService.getMyOrders(page, pagination.limit);
+        const mappedStatus = mapTabToApiStatuses(statusToFetch);
+        // Gọi service với 4 tham số rời rạc
+        const response = await orderService.getMyOrders(
+          pageToFetch,
+          pagination.limit,
+          mappedStatus,
+          searchToFetch
+        );
+
         if (response.success) {
           setOrders(response.data);
           setPagination(response.pagination);
@@ -514,13 +538,31 @@ const ProfilePage = () => {
   );
 
   useEffect(() => {
+    if (!isAuthenticated || !user || activeTab !== 'orders') {
+return;
+}
+
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchOrders(1, orderStatusFilter, orderSearchQuery);
+  }, [orderStatusFilter, activeTab, isAuthenticated, user, fetchOrders]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user || activeTab !== 'orders') {
+return;
+}
+
+    const timer = setTimeout(() => {
+      setPagination((prev) => ({ ...prev, page: 1 }));
+      fetchOrders(1, orderStatusFilter, orderSearchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [orderSearchQuery, activeTab, isAuthenticated, user, fetchOrders]);
+
+  useEffect(() => {
     // Only fetch if user is authenticated
     if (!isAuthenticated || !user) {
       return;
-    }
-
-    if (activeTab === 'orders') {
-      fetchOrders(pagination.page);
     }
     if (activeTab === 'address') {
       fetchAddresses();
@@ -528,20 +570,12 @@ const ProfilePage = () => {
     if (activeTab === 'coin') {
       fetchCoinData();
     }
-  }, [
-    activeTab,
-    fetchAddresses,
-    fetchCoinData,
-    fetchOrders,
-    isAuthenticated,
-    pagination.page,
-    user,
-  ]);
+  }, [activeTab, fetchAddresses, fetchCoinData, isAuthenticated, user]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.pages) {
       setPagination((prev) => ({ ...prev, page: newPage }));
-      fetchOrders(newPage);
+      fetchOrders(newPage, orderStatusFilter, orderSearchQuery);
     }
   };
 
@@ -811,7 +845,9 @@ const ProfilePage = () => {
         return id === String(modelId) || String(m._id) === String(modelId);
       });
 
-      if (!model) return { color: null, size: null };
+      if (!model) {
+return { color: null, size: null };
+}
 
       const tierIdx = Array.isArray(model.tierIndex) ? model.tierIndex : [];
       const tiers = Array.isArray(product.tiers) ? product.tiers : [];
@@ -822,9 +858,13 @@ const ProfilePage = () => {
       tiers.forEach((tier, idx) => {
         const name = String(tier?.name || '').toLowerCase();
         const optIdx = tierIdx[idx];
-        if (optIdx == null || optIdx < 0) return;
+        if (optIdx == null || optIdx < 0) {
+return;
+}
         const value = tier.options?.[optIdx];
-        if (!value) return;
+        if (!value) {
+return;
+}
         if (name.includes('color') || name.includes('màu') || name.includes('mau')) {
           color = value;
         } else if (name.includes('size') || name.includes('kích') || name.includes('kich')) {
@@ -1065,15 +1105,6 @@ const ProfilePage = () => {
         <>
           {renderTabHeader('My Reports', FileText)}
           <DisputeCenter mode="buyer" embedded />
-        </>
-      );
-    }
-
-    if (activeTab === 'vouchers') {
-      return (
-        <>
-          {renderTabHeader('My Vouchers', Ticket)}
-          <ProfileVouchersTab />
         </>
       );
     }

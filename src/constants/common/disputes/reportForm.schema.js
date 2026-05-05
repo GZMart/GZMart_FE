@@ -123,9 +123,7 @@ export const reportFormSchema = yup.object({
     }),
 });
 
-export const validateReportForm = async (values) => {
-  return reportFormSchema.validate(values, {
+export const validateReportForm = async (values) => reportFormSchema.validate(values, {
     abortEarly: false,
     stripUnknown: true,
   });
-};

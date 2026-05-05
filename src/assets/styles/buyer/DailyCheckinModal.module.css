@@ -1,0 +1,382 @@
+/* ========================================
+   Daily Check-in Modal — Clean & Simple
+   ======================================== */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Header */
+.header {
+  background: #f8f9fa;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.headerSubtitle {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: #e9ecef;
+  color: #212529;
+}
+
+/* Streak Banner */
+.streakBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #fff3cd;
+  border-bottom: 1px solid #ffeeba;
+}
+
+.streakInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #856404;
+}
+
+.streakText {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.streakCount {
+  font-weight: 700;
+}
+
+.balanceBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fd7e14;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Day Grid */
+.dayGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  padding: 20px 24px;
+}
+
+.dayCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 4px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: #f8f9fa;
+  transition: all 0.2s;
+}
+
+.dayLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 8px;
+}
+
+.dayIcon {
+  margin-bottom: 8px;
+  color: #adb5bd;
+}
+
+.dayCoins {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* States */
+.completed {
+  background: #e8f5e9;
+  border-color: #81c784;
+}
+
+.completed .dayLabel,
+.completed .dayCoins,
+.completed .dayIcon {
+  color: #2e7d32;
+}
+
+.todayAvailable {
+  background: #fff8e1;
+  border-color: #ffb300;
+  cursor: pointer;
+}
+
+.todayAvailable:hover {
+  background: #ffecb3;
+}
+
+.todayAvailable .dayLabel,
+.todayAvailable .dayCoins,
+.todayAvailable .dayIcon {
+  color: #e65100;
+}
+
+.todayCompleted {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  box-shadow: inset 0 0 0 1px #4caf50;
+}
+
+.todayCompleted .dayLabel,
+.todayCompleted .dayCoins,
+.todayCompleted .dayIcon {
+  color: #2e7d32;
+}
+
+.locked {
+  opacity: 0.6;
+}
+
+/* Check-in Button */
+.checkinSection {
+  padding: 0 24px 20px;
+}
+
+.checkinBtn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.checkinBtnActive {
+  background: #fd7e14;
+  color: #fff;
+}
+
+.checkinBtnActive:hover {
+  background: #e8590c;
+}
+
+.checkinBtnDone {
+  background: #e9ecef;
+  color: #495057;
+  cursor: not-allowed;
+}
+
+.checkinBtnLoading {
+  background: #ffc078;
+  color: #fff;
+  cursor: wait;
+}
+
+/* Footer */
+.footer {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.footerText {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Success Overlay */
+.successOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeIn 0.2s;
+}
+
+.successIcon {
+  color: #2e7d32;
+  margin-bottom: 16px;
+}
+
+.successCoins {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fd7e14;
+  margin-bottom: 8px;
+}
+
+.successLabel {
+  font-size: 1rem;
+  color: #495057;
+}
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  z-index: 1040;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #fd7e14;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+}
+
+.fabBadge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dc3545;
+  border: 2px solid #fff;
+}
+
+.fabTooltip {
+  position: absolute;
+  right: 70px;
+  white-space: nowrap;
+  background: #343a40;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.fab:hover .fabTooltip {
+  opacity: 1;
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .modal {
+    max-width: 100%;
+    border-radius: 12px;
+  }
+  .dayGrid {
+    gap: 4px;
+    padding: 16px;
+  }
+  .dayCard {
+    padding: 8px 2px;
+  }
+  .fab {
+    bottom: 80px;
+    right: 16px;
+  }
+}

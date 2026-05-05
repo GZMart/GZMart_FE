@@ -100,7 +100,9 @@ const Header = () => {
     setIsDraggingNav(false);
   };
   const handleNavMouseMove = (e) => {
-    if (!isDraggingNav) return;
+    if (!isDraggingNav) {
+return;
+}
     e.preventDefault();
     const x = e.pageX - navContainerRef.current.offsetLeft;
     const walk = (x - navStartX) * 2;
