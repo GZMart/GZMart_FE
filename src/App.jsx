@@ -50,76 +50,75 @@ function App() {
       <PersistGate loading={<LoadingSpinner />} persistor={persistor}>
         <Router>
           <ScrollToTop />
-          <Routes>
-            {routeConfig.map((route, index) => {
-              if (route._sellerErp) {
-                return (
-                  <Route
-                    key="seller-erp"
-                    path="/seller/*"
-                    element={
-                      <PrivateRoute allowedRoles={[USER_ROLES.SELLER]}>
-                        <ERPLayout />
-                      </PrivateRoute>
-                    }
-                  >
-                    {sellerErpChildRoutes.map((child) => {
-                      const Child = child.element;
-                      return <Route key={child.path} path={child.path} element={<Child />} />;
-                    })}
-                  </Route>
-                );
-              }
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {routeConfig.map((route, index) => {
+                if (route._sellerErp) {
+                  return (
+                    <Route
+                      key="seller-erp"
+                      path="/seller/*"
+                      element={
+                        <PrivateRoute allowedRoles={[USER_ROLES.SELLER]}>
+                          <ERPLayout />
+                        </PrivateRoute>
+                      }
+                    >
+                      {sellerErpChildRoutes.map((child) => {
+                        const Child = child.element;
+                        return <Route key={child.path} path={child.path} element={<Child />} />;
+                      })}
+                    </Route>
+                  );
+                }
 
-              const Layout = getLayout(route.layout);
-              const Element = route.element;
+                const Layout = getLayout(route.layout);
+                const Element = route.element;
 
-              if (route.protected) {
-                // Protected routes with role-based access
-                return (
-                  <Route
-                    key={index}
-                    path={route.path}
-                    element={
-                      <PrivateRoute allowedRoles={route.allowedRoles}>
+                if (route.protected) {
+                  return (
+                    <Route
+                      key={index}
+                      path={route.path}
+                      element={
+                        <PrivateRoute allowedRoles={route.allowedRoles}>
+                          <Layout>
+                            <Element />
+                          </Layout>
+                        </PrivateRoute>
+                      }
+                    />
+                  );
+                } else if (route.public) {
+                  return (
+                    <Route
+                      key={index}
+                      path={route.path}
+                      element={
+                        <PublicRoute restricted={route.restricted}>
+                          <Layout>
+                            <Element />
+                          </Layout>
+                        </PublicRoute>
+                      }
+                    />
+                  );
+                } else {
+                  return (
+                    <Route
+                      key={index}
+                      path={route.path}
+                      element={
                         <Layout>
                           <Element />
                         </Layout>
-                      </PrivateRoute>
-                    }
-                  />
-                );
-              } else if (route.public) {
-                // Public routes (with optional restriction for authenticated users)
-                return (
-                  <Route
-                    key={index}
-                    path={route.path}
-                    element={
-                      <PublicRoute restricted={route.restricted}>
-                        <Layout>
-                          <Element />
-                        </Layout>
-                      </PublicRoute>
-                    }
-                  />
-                );
-              } else {
-                // Default routes
-                return (
-                  <Route
-                    key={index}
-                    path={route.path}
-                    element={
-                      <Layout>
-                        <Element />
-                      </Layout>
-                    }
-                  />
-                );
-              }
-            })}
-          </Routes>
+                      }
+                    />
+                  );
+                }
+              })}
+            </Routes>
+          </Suspense>
 
           {/* Vercel Analytics */}
           <Analytics />
