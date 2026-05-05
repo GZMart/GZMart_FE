@@ -239,16 +239,6 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-/* Wrapper for PoCostBreakdown in popover (light theme) */
-.poCostBreakdownWrap {
-  margin-bottom: 12px;
-  padding: 8px 10px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 0 6px 6px 0;
-  border-left: 3px solid #16a34a;
-}
-
 /* ─── Reasoning text ────────────────────────────────────────────── */
 .reasoning {
   font-size: 11.5px;

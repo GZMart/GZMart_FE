@@ -1,9 +1,10 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 import { aiService } from '../../../services/api/aiService';
 import { formatCurrency } from '../../../utils/formatters';
+import { strategyCacheEntryIsComplete } from '../../../utils/aiPricingStrategyCache.js';
 import styles from '@assets/styles/seller/AiPriceSuggestModal.module.css';
 
 /** Đồng bộ với `riskFromSuggestedVsMarket` trên BE — mô tả rủi ro đầy đủ khi đổi chiến lược (không chỉ Cao/TB). */
@@ -12,20 +13,21 @@ function riskFromSuggestedVsMarket(suggested, refAvg, variantFloor, costData) {
   let riskLevel = 'safe';
   let warning = null;
   let warningMessage = null;
-  if (suggested === variantFloor && suggested > 0 && costData?.hasCostData) {
+  // Ưu tiên mức rủi ro so với TB thị trường — kể cả khi giá đã bị kẹt sàn vốn (clamp) vẫn cần thấy cảnh báo “thấp hơn 30% TB”.
+  if (refAvg > 0 && discountPct > 30) {
+    riskLevel = 'high';
+    warning = 'high_discount_risk';
+    warningMessage = 'Giá đề xuất thấp hơn 30% so với trung bình thị trường. Có nguy cơ lỗ vốn.';
+  } else if (refAvg > 0 && discountPct > 15) {
+    riskLevel = 'moderate';
+    warning = 'moderate_discount';
+    warningMessage = `Giá đề xuất thấp hơn ${Math.round(discountPct)}% so với trung bình thị trường.`;
+  } else if (suggested === variantFloor && suggested > 0 && costData?.hasCostData) {
     warning = 'floor_price_landed';
     warningMessage = `Giá đề xuất không thể thấp hơn giá vốn landed (${variantFloor.toLocaleString('vi-VN')}₫).`;
   } else if (suggested === variantFloor && suggested > 0) {
     warning = 'floor_price';
     warningMessage = `Giá đề xuất không thể thấp hơn giá hiện tại (${variantFloor.toLocaleString('vi-VN')}₫).`;
-  } else if (discountPct > 30) {
-    riskLevel = 'high';
-    warning = 'high_discount_risk';
-    warningMessage = 'Giá đề xuất thấp hơn 30% so với trung bình thị trường. Có nguy cơ lỗ vốn.';
-  } else if (discountPct > 15) {
-    riskLevel = 'moderate';
-    warning = 'moderate_discount';
-    warningMessage = `Giá đề xuất thấp hơn ${Math.round(discountPct)}% so với trung bình thị trường.`;
   } else if (refAvg > 0) {
     if (discountPct > 0) {
       warningMessage = `Giá tham khảo thấp hơn TB thị trường khoảng ${Math.round(discountPct)}% — trong ngưỡng an toàn (≤15%).`;
@@ -70,6 +72,75 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
   // [Multi-strategy Redis cache] All 4 strategies — enables instant switching without re-fetch
   const [allStrategies, setAllStrategies] = useState(null);
 
+  const fetchBatch = useCallback(
+    async (activeStrategy) => {
+      setStatus('loading');
+      setErrorMsg('');
+      try {
+        const sellerId = user?._id || user?.id;
+        const rawProduct = product?._raw || product;
+        const rawModels =
+          Array.isArray(rawProduct.models) && rawProduct.models.length
+            ? rawProduct.models
+            : Array.isArray(product?.models)
+              ? product.models
+              : [];
+        const modelIds = rawModels
+          .map((m, idx) => {
+            const fromTier =
+              Array.isArray(m.tierIndex) && m.tierIndex.length
+                ? `m-${m.tierIndex.join('-')}`
+                : null;
+            return (
+              m.clientId ||
+              (m._id != null && String(m._id)) ||
+              (m.id != null && String(m.id)) ||
+              fromTier ||
+              `m-idx-${idx}`
+            );
+          })
+          .filter(Boolean);
+
+        if (!modelIds.length) {
+          setErrorMsg('Sản phẩm này chưa có variant nào để đề xuất giá.');
+          setStatus('error');
+          return;
+        }
+
+        const res = await aiService.getPriceSuggestionBatch({
+          productId: product.id,
+          productName: product.name,
+          sellerId,
+          modelIds,
+          strategy: activeStrategy,
+        });
+
+        const payload = res.data ?? res;
+
+        if (payload.rateLimit) {
+          setErrorMsg(payload.message || 'Đã đạt giới hạn sử dụng.');
+          setStatus('error');
+          return;
+        }
+
+        if (payload.success && payload.results?.length) {
+          const allIds = new Set(payload.results.map((r) => r.modelId));
+          setSelected(allIds);
+          setAllStrategies(payload.allStrategies || null);
+          setData(payload);
+          setStatus('success');
+        } else {
+          setErrorMsg(payload.message || 'Không thể đề xuất giá cho sản phẩm này.');
+          setStatus('error');
+        }
+      } catch (err) {
+        setErrorMsg(err?.response?.data?.message || err.message || 'Lỗi kết nối.');
+        setStatus('error');
+      }
+    },
+    [product, user],
+  );
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (!show) {
@@ -93,9 +164,10 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
     return () => document.removeEventListener('keydown', handler);
   }, [show, onClose]);
 
-  // Reset when modal reopens — fresh fetch
+  // Reset when modal reopens — fresh fetch (align dropdown với request balanced)
   useEffect(() => {
     if (show) {
+      setStrategy('balanced');
       setStatus('loading');
       setData(null);
       setErrorMsg('');
@@ -103,39 +175,36 @@ const AiPriceSuggestModal = ({ show, product, onApply, onClose, onViewDetail }) 
       setAllStrategies(null);
       fetchBatch('balanced');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [show]);
+  }, [show, fetchBatch]);
 
-  /**
-   * Recalculate displayed results when user switches strategy — uses the already-
-   * cached allStrategies so switching is instant (no new API call / LLM wait).
-   */
-  useEffect(() => {
-    if (!show || status === 'loading' || !allStrategies) {
-      return;
+  /** Hiển thị theo chiến lược đang chọn; phụ thuộc allStrategies + data sau fetch — tránh kẹt sau đóng/mở modal. */
+  const displayResults = useMemo(() => {
+    if (status !== 'success' || !data?.results?.length) {
+      return data?.results || [];
     }
-    // Same data, different strategy — recompute from allStrategies
-    const strat = allStrategies[strategy];
-    if (!strat || !data?.results?.length) {
-      // Strategy not in cache — fall back to re-fetch (shouldn't happen with current BE)
-      fetchBatch(strategy);
-      return;
-    }
+    const strat = allStrategies?.[strategy];
+    const hasStrat = strategyCacheEntryIsComplete(strat);
 
+    if (!hasStrat) {
+      if (data.strategy === strategy) {
+        return data.results;
+      }
+      return [];
+    }
     const refAvgForCalc = data.marketData?.confidence === 'high'
       ? data.marketData?.clusterWeightedAvg
       : (data.marketData?.weightedAvg || data.marketData?.avg || 0);
     const floorPrice = data.costData?.hasCostData ? data.costData.landedCostPerUnit : 0;
 
-    const updated = data.results.map((r) => {
+    return data.results.map((r) => {
       let suggested = Number(strat.suggestedPrice) || 0;
       if (suggested > 0 && floorPrice > 0 && suggested < floorPrice) {
-suggested = floorPrice;
-}
+        suggested = floorPrice;
+      }
       const variantFloor = data.costData?.hasCostData ? data.costData.landedCostPerUnit : r.currentPrice;
       if (suggested > 0 && suggested < variantFloor) {
-suggested = variantFloor;
-}
+        suggested = variantFloor;
+      }
       const suggestedRounded = Math.round(suggested);
       const rowRisk = riskFromSuggestedVsMarket(
         suggestedRounded,
@@ -150,7 +219,7 @@ suggested = variantFloor;
       return {
         ...r,
         suggestedPrice: suggestedRounded,
-        reasoning: strat.reasoning || '',
+        reasoning: '',
         discountPct: rowRisk.discountPct,
         riskLevel: rowRisk.riskLevel,
         warning: rowRisk.warning,
@@ -159,77 +228,36 @@ suggested = variantFloor;
         suggestedMarginPct: Math.round(suggestedMarginPct * 10) / 10,
       };
     });
+  }, [status, data, allStrategies, strategy]);
 
-    setData((prev) => ({ ...prev, results: updated, strategy }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [strategy]);
-
-  const fetchBatch = async (activeStrategy) => {
-    try {
-      const sellerId = user?._id || user?.id;
-      const rawProduct = product?._raw || product;
-      const rawModels =
-        Array.isArray(rawProduct.models) && rawProduct.models.length
-          ? rawProduct.models
-          : Array.isArray(product?.models)
-            ? product.models
-            : [];
-      // clientId (draft) → Mongo _id / id → stable fallback from tierIndex
-      const modelIds = rawModels
-        .map((m, idx) => {
-          const fromTier =
-            Array.isArray(m.tierIndex) && m.tierIndex.length
-              ? `m-${m.tierIndex.join('-')}`
-              : null;
-          return (
-            m.clientId ||
-            (m._id != null && String(m._id)) ||
-            (m.id != null && String(m.id)) ||
-            fromTier ||
-            `m-idx-${idx}`
-          );
-        })
-        .filter(Boolean);
-
-      if (!modelIds.length) {
-        setErrorMsg('Sản phẩm này chưa có variant nào để đề xuất giá.');
-        setStatus('error');
-        return;
+  const handleStrategySelect = useCallback(
+    (e) => {
+      const v = e.target.value;
+      setStrategy(v);
+      if (
+        show &&
+        status === 'success' &&
+        data?.results?.length &&
+        !strategyCacheEntryIsComplete(allStrategies?.[v])
+      ) {
+        fetchBatch(v);
       }
+    },
+    [show, status, data?.results?.length, allStrategies, fetchBatch],
+  );
 
-      const res = await aiService.getPriceSuggestionBatch({
-        productId: product.id,
-        productName: product.name,
-        sellerId,
-        modelIds,
-        strategy: activeStrategy,
-      });
-
-      const payload = res.data ?? res;
-
-      if (payload.rateLimit) {
-        setErrorMsg(payload.message || 'Đã đạt giới hạn sử dụng.');
-        setStatus('error');
-        return;
-      }
-
-      if (payload.success && payload.results?.length) {
-        // Pre-select all by default
-        const allIds = new Set(payload.results.map((r) => r.modelId));
-        setSelected(allIds);
-        // [Multi-strategy Redis cache] Store all 4 strategies for instant strategy switching
-        setAllStrategies(payload.allStrategies || null);
-        setData(payload);
-        setStatus('success');
-      } else {
-        setErrorMsg(payload.message || 'Không thể đề xuất giá cho sản phẩm này.');
-        setStatus('error');
-      }
-    } catch (err) {
-      setErrorMsg(err?.response?.data?.message || err.message || 'Lỗi kết nối.');
-      setStatus('error');
+  useEffect(() => {
+    if (
+      !show ||
+      status !== 'success' ||
+      !data?.results?.length
+    ) {
+      return;
     }
-  };
+    if (data.strategy === strategy) return;
+    if (strategyCacheEntryIsComplete(allStrategies?.[strategy])) return;
+    fetchBatch(strategy);
+  }, [show, status, strategy, data?.strategy, data?.results?.length, allStrategies, fetchBatch]);
 
   // Build variant label from tierIndex
   const getVariantLabel = (tierIndex) => {
@@ -254,10 +282,10 @@ return `?`;
   };
 
   const toggleAll = () => {
-    if (!data?.results) {
+    if (!displayResults?.length) {
 return;
 }
-    const allIds = data.results.map((r) => r.modelId);
+    const allIds = displayResults.map((r) => r.modelId);
     if (selected.size === allIds.length) {
       setSelected(new Set());
     } else {
@@ -266,10 +294,10 @@ return;
   };
 
   const handleApply = () => {
-    if (!data?.results || !selected.size) {
+    if (!displayResults?.length || !selected.size) {
 return;
 }
-    const changes = data.results
+    const changes = displayResults
       .filter((r) => selected.has(r.modelId))
       .map((r) => ({ modelId: r.modelId, suggestedPrice: r.suggestedPrice }));
     onApply(changes);
@@ -307,7 +335,7 @@ return `${styles.riskNote} ${styles.riskNoteModerate}`;
 return null;
 }
 
-  const results = data?.results || [];
+  const results = displayResults;
 
   return createPortal(
     <>
@@ -347,7 +375,7 @@ return null;
           <div className={styles.headerRight}>
             <select
               value={strategy}
-              onChange={(e) => setStrategy(e.target.value)}
+              onChange={handleStrategySelect}
               className={styles.strategySelect}
               title="Chọn chiến lược định giá"
             >
@@ -520,7 +548,7 @@ return null;
                           </td>
                           <td className={styles.riskCell}>
                             <div className={riskNoteClass(result.riskLevel)}>
-                              {result.warningMessage}
+                              <div className={styles.riskMarketLine}>{result.warningMessage}</div>
                             </div>
                           </td>
                           <td style={{ textAlign: 'center' }}>
