@@ -57,11 +57,7 @@ return null;
                   <Sparkles size={18} className="text-warning" />
                   AI Identified Features
                 </h6>
-                {analyzedInfo.model && (
-                  <p className="small text-muted mb-2">
-                    {analyzedInfo.provider === 'groq' ? 'Groq' : 'AI'} · {analyzedInfo.model}
-                  </p>
-                )}
+                {/* Hidden AI model info */}
                 <ul className="list-group list-group-flush small">
                   {analyzedInfo.caption_en && (
                     <li className="list-group-item px-0 bg-transparent border-0 pb-2">
@@ -147,7 +143,7 @@ return null;
             <div className="alert d-flex align-items-start gap-2 mb-4 border-0 rounded" style={{ backgroundColor: '#FFF8E7', borderLeft: '4px solid #FF8A00' }}>
               <AlertCircle size={18} className="flex-shrink-0 mt-1" style={{ color: '#FF8A00' }} />
               <div className="small">
-                <strong>AI analysis unavailable</strong> — Set <code className="small">GROQ_API_KEY</code> (Groq vision, same as category image suggest) on the server, or configure Gemini / AI proxy for fallback. Showing <strong>popular products</strong> for now.
+                <strong>AI analysis unavailable</strong> — We couldn't process your image at this time due to high traffic. Showing <strong>popular products</strong> for now.
               </div>
             </div>
           )}
