@@ -82,6 +82,18 @@ const STATUS_TABS = [
 
 const ITEMS_PER_PAGE = 10;
 
+/** đơn gắn phiên live: Order model có liveSessionId / fromLiveSession / voucher live */
+const orderLooksFromLive = (order) => {
+  if (!order) {
+    return false;
+  }
+  const ref = order.liveSessionId ?? order.liveSessionVoucherId;
+  if (ref != null && String(ref).trim() !== '') {
+    return true;
+  }
+  return order.fromLiveSession != null && String(order.fromLiveSession).trim() !== '';
+};
+
 /* ─── Helper Components ───────────────────────────────────────── */
 const StatusBadge = ({ status, t }) => {
   const key = normalizeLegacyStatus(status);
@@ -277,6 +289,7 @@ const OrdersPage = () => {
     shippingAddress: order.shippingAddress,
     createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
     preOrderSlaBreached: !!order.preOrderSlaBreached,
+    fromLivePurchase: orderLooksFromLive(order),
     items: (order.items || []).map((item) => ({
       _id: item._id,
       productName: item.productId?.name || t('sellerOrders.order.product', 'Unknown Product'),
@@ -481,7 +494,14 @@ const OrdersPage = () => {
                 <div className={styles.orderMeta}>
                   <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>{t('sellerOrders.order.orderId')}</span>
-                    <span className={styles.metaValue}>{order.orderNumber}</span>
+                    <div className={styles.orderIdRow}>
+                      <span className={styles.metaValue}>{order.orderNumber}</span>
+                      {order.fromLivePurchase && (
+                        <span className={styles.liveTag} title={t('sellerOrders.order.liveHint')}>
+                          {t('sellerOrders.order.live')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>{t('sellerOrders.order.date')}</span>
