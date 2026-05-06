@@ -889,7 +889,9 @@
       "total": "Tổng",
       "qty": "SL:",
       "message": "Nhắn tin",
-      "opening": "Đang mở…"
+      "opening": "Đang mở…",
+      "live": "Live",
+      "liveHint": "Đơn được đặt từ phiên livestream"
     },
     "preorder": {
       "badge": "Đặt trước",

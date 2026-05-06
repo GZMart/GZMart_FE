@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { formatCurrency } from '../../../utils/formatters';
+import PoCostBreakdown from './PoCostBreakdown';
 import styles from '@assets/styles/seller/AiPriceDetailModal.module.css';
 
 const SORT_FIELDS = [
@@ -119,6 +120,37 @@ cls = styles.simBadgeMedium;
 cls = styles.simBadgeLow;
 }
     return <span className={`${styles.simBadge} ${cls}`}>{label}</span>;
+  };
+
+  // ── Lý giải: có PO → list phí + giải thích từ costData; không có PO → cảnh báo + text AI ──
+  const renderSuggestionExplanation = () => {
+    const costData = data?.costData;
+    const reasoning = data?.reasoning;
+    if (costData?.hasCostData) {
+      return (
+        <div className={styles.reasoningBox}>
+          <PoCostBreakdown
+            variant="modal"
+            costData={costData}
+            suggestedPrice={data?.suggestedPrice}
+            currentPrice={currentPrice}
+            marketAvg={data?.marketData?.avg}
+          />
+        </div>
+      );
+    }
+    return (
+      <div className={styles.reasoningBox}>
+        <div className={styles.reasoningLabel}>Lý giải gợi ý</div>
+        {reasoning ? (
+          <div className={styles.reasoningText}>{reasoning}</div>
+        ) : (
+          <div className={styles.reasoningNoPo}>
+            ⚠️ Chưa có thông tin phiếu nhập (Purchase Order) cho sản phẩm này. Không thể tính chính xác giá vốn landed.
+          </div>
+        )}
+      </div>
+    );
   };
 
   return createPortal(
@@ -259,6 +291,9 @@ cls = styles.simBadgeLow;
                   {' '}so với giá hiện tại
                 </div>
               )}
+            </div>
+            <div className={styles.suggestRight}>
+              {renderSuggestionExplanation()}
             </div>
           </div>
 

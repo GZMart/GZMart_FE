@@ -889,7 +889,9 @@
       "total": "Total",
       "qty": "Qty:",
       "message": "Message",
-      "opening": "Opening…"
+      "opening": "Opening…",
+      "live": "Live",
+      "liveHint": "Order placed from a live session"
     },
     "preorder": {
       "badge": "Pre-order",

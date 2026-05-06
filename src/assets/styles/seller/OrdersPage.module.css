@@ -252,6 +252,28 @@
   color: #92400e;
 }
 
+.orderIdRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.liveTag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  padding: 2px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(225, 29, 72, 0.35);
+  flex-shrink: 0;
+}
+
 /* ─── Order Header Row ───────────────────────────────────────── */
 .orderHeaderRow {
   display: flex;
